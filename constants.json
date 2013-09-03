@@ -1,0 +1,76 @@
+{
+    "NETWORK": {
+        "29736": "SERVER_ID",
+        "57078": "CLIENT_ID"
+    },
+    "NETPLAYER": {
+        "0": "TYPE_PLAYER1",
+        "1": "TYPE_PLAYER2",
+        "2": "TYPE_PLAYER3",
+        "3": "TYPE_PLAYER4",
+        "4": "TYPE_PLAYER5",
+        "5": "TYPE_PLAYER6",
+        "7": "TYPE_OBSERVER"
+    },
+    "CTOS": {
+        "1": "RESPONSE",
+        "2": "UPDATE_DECK",
+        "3": "HAND_RESULT",
+        "4": "TP_RESULT",
+        "16": "PLAYER_INFO",
+        "17": "CREATE_GAME",
+        "18": "JOIN_GAME",
+        "19": "LEAVE_GAME",
+        "20": "SURRENDER",
+        "21": "TIME_CONFIRM",
+        "22": "CHAT",
+        "32": "HS_TODUELIST",
+        "33": "HS_TOOBSERVER",
+        "34": "HS_READY",
+        "35": "HS_NOTREADY",
+        "36": "HS_KICK",
+        "37": "HS_START"
+    },
+    "STOC": {
+        "1": "GAME_MSG",
+        "2": "ERROR_MSG",
+        "3": "SELECT_HAND",
+        "4": "SELECT_TP",
+        "5": "HAND_RESULT",
+        "6": "TP_RESULT",
+        "7": "CHANGE_SIDE",
+        "8": "WAITING_SIDE",
+        "17": "CREATE_GAME",
+        "18": "JOIN_GAME",
+        "19": "TYPE_CHANGE",
+        "20": "LEAVE_GAME",
+        "21": "DUEL_START",
+        "22": "DUEL_END",
+        "23": "REPLAY",
+        "24": "TIME_LIMIT",
+        "25": "CHAT",
+        "32": "HS_PLAYER_ENTER",
+        "33": "HS_PLAYER_CHANGE",
+        "34": "HS_WATCH_CHANGE"
+    },
+    "PLAYERCHANGE":{
+        "8": "OBSERVE",
+        "9": "READY",
+        "10": "NOTREADY",
+        "11": "LEAVE"
+    },
+    "ERRMSG": {
+        "1": "JOINERROR",
+        "2": "DECKERROR",
+        "3": "SIDEERROR",
+        "4": "VERERROR"
+    },
+    "MODE": {
+        "0": "SINGLE",
+        "1": "MATCH",
+        "2": "TAG"
+    }
+}
+
+
+
