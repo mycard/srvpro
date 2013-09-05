@@ -10,7 +10,11 @@ spawn = require('child_process').spawn
 freeport = require 'freeport'
 Struct = require('struct').Struct
 _ = require 'underscore'
+_.str = require 'underscore.string'
+_.mixin(_.str.exports());
+_.str.include('Underscore.string', 'string');
 Inotify = require('inotify').Inotify
+request = require 'request'
 
 #常量/类型声明
 structs_declaration = require './structs.json'  #结构体声明
@@ -164,6 +168,15 @@ ctos_send = (socket, proto, info)->
   socket.write header
   socket.write buffer if buffer.length
   console.log 'ctos_sent:', buffer if debug
+
+#util
+stoc_send_chat = (client, msg, player = 8)->
+  stoc_send client, 'CHAT', {
+    player: player
+    msg:  msg
+  }
+
+
 
 #服务器端消息监听函数
 server_listener = (port, client, server)->
@@ -373,23 +386,32 @@ stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   }
 
 #登场台词
-taici = require './taici.json'
+dialogues = {}
+request
+  url: 'https://my-card.in/dialogues.json'
+  json: true
+  , (error, response, body)->
+    dialogues = body
+    console.log "loaded #{_.size body} dialogues"
+
 stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   msg = buffer.readInt8(0)
   if constants.MSG[msg] == 'SUMMONING' or constants.MSG[msg] == 'SPSUMMONING'
     card = buffer.readUInt32LE(1)
-    if taici[card]
-      for line in taici[card][Math.floor(Math.random() * taici[card].length)].split("\n")
-        stoc_send client, 'CHAT', {
-          player: 8
-          msg:  line
-        }
+    if dialogues[card]
+      for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
+        stoc_send_chat client, line
+#积分
+  if constants.MSG[msg] == 'WIN'
+    player = buffer.readUInt8(1)
+    type = buffer.readUInt8(2)
+    console.log player, type
+
 
 
 #stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
 #  console.log 'HS_PLAYER_CHANGE', info
-#stoc_follow 'CHAT', false, (buffer, info, client, server)->
-#  console.log info, buffer
+
 
 #房间数量
 http.createServer (request, response)->
@@ -429,23 +451,30 @@ setInterval ()->
       room.process.kill()
 , 900000
 
-
-
 #tip
-###
-request = require 'request'
+stoc_send_tip = (client, tip)->
+  lines = _.lines(tip)
+  stoc_send_chat(client, "Tip: #{lines[0]}")
+  for line in lines.slice(1)
+    stoc_send_chat(client, line)
+
+stoc_send_random_tip = (client)->
+  stoc_send_tip client, tips[Math.floor(Math.random() * tips.length)] if tips
+
+tips = null
 request
-  url: 'https://forum.my-card.in/admin/site_contents/faq'
+  url: 'https://my-card.in/tips.json'
   json: true
   , (error, response, body)->
-    console.log body
+    tips = body
+    console.log "loaded #{tips.length} tips"
 
 stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
-  stoc_send client, 'CHAT', {
-    player: 8
-    msg:  "FAQ: 喵喵喵"
-  }
-###
+  stoc_send_random_tip(client)
+
+ctos_follow 'CHAT', false, (buffer, info, client, server)->
+  if _.trim(info.msg) == '/tip'
+    stoc_send_random_tip(client)
 
 ###
 # 开包大战

@@ -2,7 +2,8 @@
     "CTOS":{
         "PLAYER_INFO": "CTOS_PlayerInfo",
         "JOIN_GAME":"CTOS_JoinGame",
-        "UPDATE_DECK": "deck"
+        "UPDATE_DECK": "deck",
+        "CHAT": "chat"
     },
     "STOC":{
         "JOIN_GAME":"STOC_JoinGame",

@@ -14,9 +14,11 @@
     "author": "zh99998 <zh99998@gmail.com>",
     "dependencies": {
         "underscore": "*",
+        "underscore.string": "*",
         "freeport": "*",
         "struct": "*",
-        "inotify": "*"
+        "inotify": "*",
+        "request": "*"
     },
     "license": "GPLv3",
     "main": "ygopro-server.js",

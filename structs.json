@@ -88,5 +88,8 @@
         {"name": "mainc", "type": "unsigned int"},
         {"name": "sidec", "type": "unsigned int"},
         {"name": "deckbuf", "type": "unsigned int", "length": 75}
+    ],
+    "chat": [
+        {"name": "msg", "type": "unsigned short", "length":"255", "encoding": "UTF-16LE"}
     ]
 }
