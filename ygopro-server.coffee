@@ -1,26 +1,71 @@
+#官方库
 net = require 'net'
 http = require 'http'
 url = require 'url'
+path = require 'path'
+fs = require 'fs'
 spawn = require('child_process').spawn
 
-
+#三方库
 freeport = require 'freeport'
 Struct = require('struct').Struct
 _ = require 'underscore'
+Inotify = require('inotify').Inotify
 
-
-
-
+#常量/类型声明
 structs_declaration = require './structs.json'  #结构体声明
 typedefs = require './typedefs.json'            #类型声明
 proto_structs = require './proto_structs.json' #消息与结构体的对应，未完成，对着duelclient.cpp加
 constants = require './constants.json'          #network.h里定义的常量
 
+#配置文件
 settings = require './config.json'            #本机IP端口设置
 
+class Room
+  @all = []
+
+  #name
+  #port
+  #players: [{client, server, name, pos}]
+  #process
+  #established
+  #alive
+  constructor: (name, port, client) ->
+    @name = name
+    @port = port
+    @alive = true
+    @players = []
+    @add_client(client)
+    Room.all.push this #这个故事告诉我们没事不要乱new Room
+
+  delete: (room)->
+    delete Room.all[_.indexOf(Room.all, room)]
+
+  add_client: (client)->
+    @players.push {client: client, name: client.player}
+
+
+  #需要性能优化，建立个索引
+  @find_by_name: (name)->
+    _.find @all, (room)->
+      room.name == name
+  @find_by_port: (port)->
+    _.find @all, (room)->
+      room.name == port
+  @find_by_client: (client)->
+    _.find @all, (room)->
+      _.some room.players, (player)->
+        player.client == client
+
+
+
+
+#debug模式 端口号+1
+debug = false
 if process.argv[2] == '--debug'
   settings.port++
   settings.http_port++
+  debug = true
 
 #结构体定义
 structs = {}
@@ -43,6 +88,8 @@ for name, declaration of structs_declaration
           result[type] field.name
   structs[name] = result
 
+
+#消息跟踪函数 需要重构, 另暂时只支持异步, 同步没做.
 stoc_follows = {}
 ctos_follows = {}
 stoc_follow = (proto, synchronous, callback)->
@@ -62,6 +109,8 @@ ctos_follow = (proto, synchronous, callback)->
     throw "unknown proto" if !constants.CTOS[proto]
   ctos_follows[proto] = {callback: callback, synchronous: synchronous}
 
+
+#消息发送函数,至少要把俩合起来....
 stoc_send = (socket, proto, info)->
   #console.log proto, proto_structs.STOC[proto], structs[proto_structs.STOC[proto]]
 
@@ -87,7 +136,7 @@ stoc_send = (socket, proto, info)->
   header.writeUInt8 proto, 2
   socket.write header
   socket.write buffer if buffer.length
-  console.log 'stoc_sent:', buffer
+  console.log 'stoc_sent:', buffer if debug
 
 ctos_send = (socket, proto, info)->
   #console.log proto, proto_structs.CTOS[proto], structs[proto_structs.CTOS[proto]]
@@ -114,8 +163,9 @@ ctos_send = (socket, proto, info)->
   header.writeUInt8 proto, 2
   socket.write header
   socket.write buffer if buffer.length
-  console.log 'ctos_sent:', buffer
+  console.log 'ctos_sent:', buffer if debug
 
+#服务器端消息监听函数
 server_listener = (port, client, server)->
   client.connected = true
   console.log "connected #{port}"
@@ -128,7 +178,7 @@ server_listener = (port, client, server)->
     server.write buffer
 
   server.on "data", (data) ->
-    console.log 'server: ', data
+    console.log 'server: ', data if debug
     stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length)
     #buffer的错误使用方式，好孩子不要学
 
@@ -145,7 +195,7 @@ server_listener = (port, client, server)->
           break
       else
         if stoc_buffer.length >= 2 + stoc_message_length
-          console.log constants.STOC[stoc_proto]
+          console.log constants.STOC[stoc_proto] if debug
           if stoc_follows[stoc_proto]
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
             if struct = structs[proto_structs.STOC[constants.STOC[stoc_proto]]]
@@ -173,10 +223,6 @@ server_listener = (port, client, server)->
 
 
 #main
-rooms = {}
-rooms_port_process = {}
-#rooms_clients = {}
-
 listener = net.createServer (client) ->
   client.connected = false
 
@@ -191,7 +237,7 @@ listener = net.createServer (client) ->
     console.log "server error #{e}"
 
   client.on "data", (data) ->
-    console.log 'client: ', data
+    console.log 'client: ', data if debug
     ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
     while true
@@ -207,7 +253,7 @@ listener = net.createServer (client) ->
           break
       else
         if ctos_buffer.length >= 2 + ctos_message_length
-          console.log constants.CTOS[ctos_proto]
+          console.log constants.CTOS[ctos_proto] if debug
           if ctos_follows[ctos_proto]
             b = ctos_buffer.slice(3, ctos_message_length-1+3)
             if struct = structs[proto_structs.CTOS[constants.CTOS[ctos_proto]]]
@@ -263,23 +309,20 @@ ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.end()
   else
     if client.player != '[INCORRECT]' #用户验证
-      if rooms[room_name]
-        if typeof rooms[room_name] == 'number' #already connected
-          #rooms_clients[room_name].push client
-          server.connect rooms[room_name], '127.0.0.1', ->
-            server_listener(rooms[room_name], client, server)
-        else
-          #rooms_clients[room_name].push client
-          rooms[room_name].push client
+      room = Room.find_by_name(room_name)
+      if room
+        room.add_client client
+        if room.established
+          server.connect room.port, '127.0.0.1', ->
+            server_listener(room.port, client, server)
       else
         freeport (err, port)->
-          if rooms[room_name] #如果等freeport的时间差又来了个.....
-            if typeof rooms[room_name] == 'number' #already connected
-              #rooms_clients[room_name].push client
-              server.connect rooms[room_name], '127.0.0.1', ->
-                server_listener(rooms[room_name], client, server)
-            else
-              rooms[room_name].push client
+          room = Room.find_by_name(room_name)
+          if room #如果等freeport的时间差又来了个.....
+            room.add_client client
+            if room.established
+              server.connect room.port, '127.0.0.1', ->
+                server_listener(room.port, client, server)
           else
             if(err)
               stoc_send client, 'ERROR_MSG',{
@@ -288,7 +331,7 @@ ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               }
               client.end()
             else
-              rooms[room_name] = [client]
+              room = new Room(room_name, port, client)
               if room_name[0...2] == 'M#'
                 param = [0, 0, 1, 'F', 'F', 'F', 8000, 5, 1]
               else if room_name[0...2] == 'T#'
@@ -300,20 +343,15 @@ ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
                 param = [0, 0, 0, 'F', 'F', 'F', 8000, 5, 1]
 
               param.unshift port
-              room = spawn './ygopro', param, cwd: 'ygocore'
-              room.alive = true
-              rooms_port_process[port] = room
-              room.on 'exit', (code)->
-                delete rooms[room_name]
-                delete rooms_port_process[port]
-              room.stdout.once 'data', (data)->
-                if(rooms[room_name])
-                  rooms[room_name].forEach (c)->
-                    server.connect port, '127.0.0.1', ->
-                      server_listener(port, c, server)
-                  rooms[room_name] = port
-                else
-                  room.kill()
+              process = spawn './ygopro', param, cwd: 'ygocore'
+              room.process = process
+              process.on 'exit', (code)->
+                room.delete()
+              process.stdout.once 'data', (data)->
+                room.established = true
+                _.each room.players, (player)->
+                  server.connect port, '127.0.0.1', ->
+                    server_listener(port, player.client, server)
     else
       stoc_send client, 'ERROR_MSG',{
         msg: 1
@@ -357,17 +395,13 @@ stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
 http.createServer (request, response)->
   if url.parse(request.url).pathname == '/count.json'
     response.writeHead(200);
-    response.end(Object.keys(rooms).length.toString())
+    response.end(rooms.length.toString())
   else
     response.writeHead(404);
     response.end();
 .listen settings.http_port
 
 #清理90s没活动的房间
-path = require 'path'
-fs = require 'fs'
-Inotify = require('inotify').Inotify
-
 inotify = new Inotify()
 inotify.addWatch
   path: 'ygocore/replay',
@@ -376,7 +410,7 @@ inotify.addWatch
     mask = event.mask
     if event.name
       port = parseInt path.basename(event.name, '.yrp')
-      room = rooms_port_process[port]
+      room = Room.find_by_port port
       if room
         if mask & Inotify.IN_CREATE
         else if mask & Inotify.IN_CLOSE_WRITE
@@ -387,12 +421,12 @@ inotify.addWatch
       console.log '[warn] event without filename'
 
 setInterval ()->
-  for port, room of rooms_port_process
+  for room in rooms
     if room.alive
       room.alive = false
     else
-      console.log "killed #{port} #{room}"
-      room.kill()
+      console.log "kill #{port} #{room}"
+      room.process.kill()
 , 900000
 
 

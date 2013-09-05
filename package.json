@@ -1,0 +1,30 @@
+{
+    "name": "ygopro-server",
+    "version": "2.0.0",
+    "description": "a server for ygopro",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/mycard/ygopro-server.git"
+    },
+    "keywords": [
+        "mycard",
+        "ygopro",
+        "server"
+    ],
+    "author": "zh99998 <zh99998@gmail.com>",
+    "dependencies": {
+        "underscore": "*",
+        "freeport": "*",
+        "struct": "*",
+        "inotify": "*"
+    },
+    "license": "GPLv3",
+    "main": "ygopro-server.js",
+    "scripts": {
+        "start": "forever start mycard-server-match.js",
+        "build": "coffee -c mycard-server-match.coffee"
+    },
+    "engines": {
+        "node": "*"
+    }
+}
