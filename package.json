@@ -18,7 +18,8 @@
         "freeport": "*",
         "struct": "*",
         "inotify": "*",
-        "request": "*"
+        "request": "*",
+        "mongoose": "*"
     },
     "license": "GPLv3",
     "main": "ygopro-server.js",

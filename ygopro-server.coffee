@@ -39,15 +39,26 @@ class Room
     @port = port
     @alive = true
     @players = []
+    @dueling = false
+    @established = false
+    @pos_name = {}#重构
+
     @add_client(client)
     Room.all.push this #这个故事告诉我们没事不要乱new Room
 
   delete: (room)->
-    delete Room.all[_.indexOf(Room.all, room)]
+    Room.all.splice(_.indexOf(Room.all, room), 1)
 
   add_client: (client)->
     @players.push {client: client, name: client.player}
+  remove_client: (client, error)->
+    @players = _.reject @players, (player)->
+      player.client is client
+    for player in @players
+      stoc_send_chat(player.client, "#{client.player} 离开了游戏#{if error then ": #{error}" else ''}")
 
+  toString: ->
+    "room: #{@name} #{@port} #{@alive ? 'alive' : 'not-alive'} #{@dueling ? 'dueling' : 'not-dueling'} [#{("client #{typeof player.client} server #{typeof player.server} #{player.name} #{player.pos}. " for player in @players)}] #{JSON.stringify @pos_name}"
 
   #需要性能优化，建立个索引
   @find_by_name: (name)->
@@ -60,6 +71,10 @@ class Room
     _.find @all, (room)->
       _.some room.players, (player)->
         player.client == client
+  @find_by_server: (server)->
+    _.find @all, (room)->
+      _.some room.players, (player)->
+        player.server == server
 
 
 
@@ -69,7 +84,6 @@ debug = false
 if process.argv[2] == '--debug'
   settings.port++
   settings.http_port++
-  debug = true
 
 #结构体定义
 structs = {}
@@ -117,7 +131,6 @@ ctos_follow = (proto, synchronous, callback)->
 #消息发送函数,至少要把俩合起来....
 stoc_send = (socket, proto, info)->
   #console.log proto, proto_structs.STOC[proto], structs[proto_structs.STOC[proto]]
-
   if typeof info == 'undefined'
     buffer = ""
   else if Buffer.isBuffer(info)
@@ -140,11 +153,9 @@ stoc_send = (socket, proto, info)->
   header.writeUInt8 proto, 2
   socket.write header
   socket.write buffer if buffer.length
-  console.log 'stoc_sent:', buffer if debug
 
 ctos_send = (socket, proto, info)->
   #console.log proto, proto_structs.CTOS[proto], structs[proto_structs.CTOS[proto]]
-
   if typeof info == 'undefined'
     buffer = ""
   else if Buffer.isBuffer(info)
@@ -167,7 +178,6 @@ ctos_send = (socket, proto, info)->
   header.writeUInt8 proto, 2
   socket.write header
   socket.write buffer if buffer.length
-  console.log 'ctos_sent:', buffer if debug
 
 #util
 stoc_send_chat = (client, msg, player = 8)->
@@ -191,7 +201,6 @@ server_listener = (port, client, server)->
     server.write buffer
 
   server.on "data", (data) ->
-    console.log 'server: ', data if debug
     stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length)
     #buffer的错误使用方式，好孩子不要学
 
@@ -208,14 +217,13 @@ server_listener = (port, client, server)->
           break
       else
         if stoc_buffer.length >= 2 + stoc_message_length
-          console.log constants.STOC[stoc_proto] if debug
           if stoc_follows[stoc_proto]
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
             if struct = structs[proto_structs.STOC[constants.STOC[stoc_proto]]]
               struct._setBuff(b)
-              setTimeout stoc_follows[stoc_proto].callback, 0, b, struct.fields, client, server
+              setImmediate stoc_follows[stoc_proto].callback, b, struct.fields, client, server
             else
-              setTimeout stoc_follows[stoc_proto].callback, 0, b, null, client, server
+              setImmediate stoc_follows[stoc_proto].callback, b, null, client, server
 
           stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
           stoc_message_length = 0
@@ -247,10 +255,10 @@ listener = net.createServer (client) ->
 
   server = new net.Socket()
   server.on "error", (e) ->
+    stoc_send_chat(client, "服务器错误")
     console.log "server error #{e}"
 
   client.on "data", (data) ->
-    console.log 'client: ', data if debug
     ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
     while true
@@ -266,7 +274,6 @@ listener = net.createServer (client) ->
           break
       else
         if ctos_buffer.length >= 2 + ctos_message_length
-          console.log constants.CTOS[ctos_proto] if debug
           if ctos_follows[ctos_proto]
             b = ctos_buffer.slice(3, ctos_message_length-1+3)
             if struct = structs[proto_structs.CTOS[constants.CTOS[ctos_proto]]]
@@ -288,12 +295,20 @@ listener = net.createServer (client) ->
         client.pre_connecion_buffers.push data
 
   client.on "error", (e) ->
+    room = Room.find_by_client(client)
+    room.remove_client(client, e) if room
+
     console.log "client error #{e}"
     server.end()
 
   client.on "close", (had_error) ->
     console.log "client closed #{had_error}"
+    return if had_error
+
+    room = Room.find_by_client(client)
+    room.remove_client(client) if room
     server.end()
+
 .listen settings.port, null, null, ->
   console.log "server started on #{settings.ip}:#{settings.port}"
 
@@ -309,10 +324,10 @@ ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
   else if !room_name.length
-    stoc_send client, 'JOIN_GAME', {}
-    stoc_send client, 'HS_PLAYER_ENTER', {
-      name: '提示: 房间为空，请修改房间名'
-      pos: 0
+    stoc_send_chat(client,"房间为空，请修改房间名")
+    stoc_send client, 'ERROR_MSG',{
+      msg: 1
+      code: 2
     }
   else if room_name == '[INCORRECT]' #房间密码验证
     stoc_send client, 'ERROR_MSG',{
@@ -323,6 +338,7 @@ ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   else
     if client.player != '[INCORRECT]' #用户验证
       room = Room.find_by_name(room_name)
+      console.log "[join]find_by_room #{room_name} #{room}"
       if room
         room.add_client client
         if room.established
@@ -331,6 +347,7 @@ ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       else
         freeport (err, port)->
           room = Room.find_by_name(room_name)
+          console.log "[join freeport]find_by_room #{room_name} #{room}"
           if room #如果等freeport的时间差又来了个.....
             room.add_client client
             if room.established
@@ -359,6 +376,7 @@ ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               process = spawn './ygopro', param, cwd: 'ygocore'
               room.process = process
               process.on 'exit', (code)->
+                console.log "room process #{port} exited with code #{code}"
                 room.delete()
               process.stdout.once 'data', (data)->
                 room.established = true
@@ -403,21 +421,62 @@ stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
         stoc_send_chat client, line
 #积分
   if constants.MSG[msg] == 'WIN'
-    player = buffer.readUInt8(1)
-    type = buffer.readUInt8(2)
-    console.log player, type
+    room = Room.find_by_client(client)
+    if !room
+      console.log "[WARN]win: can't find room by player #{client.player}"
+      return
+    if _.startsWith(room.name, 'M#') and room.dueling
+      room.dueling = false
+
+      loser_name = room.pos_name[buffer.readUInt8(1)]
+      winner_name = room.pos_name[1 - buffer.readUInt8(1)]
+      #type = buffer.readUInt8(2)
+      User.findOne { name: winner_name }, (err, winner)->
+        if(err)
+          console.log "#{err} when finding user #{winner_name}"
+        else if(!winner)
+          console.log "user #{winner_name} not exist"
+        else
+          User.findOne { name: loser_name }, (err, loser)->
+            if(err)
+              console.log "#{err} when finding user #{loser_name}"
+            else if(!loser)
+              console.log "user #{loser_name} not exist"
+            else
+              winner.points += 10
+              loser.points -= 5
+              winner.save()
+              loser.save()
+              console.log "#{winner} 增加10点积分，现在有#{winner.points}点"
+              console.log "#{loser} 减少5点积分，现在有#{loser.points}点"
 
 
+stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
+  client.ready = info.status & 0xF != 0
+  client.pos = info.status >> 4
+  console.log client.ready, client.pos
+mongoose = require 'mongoose'
+mongoose.connect('mongodb://localhost/mycard');
+User = mongoose.model 'User',
+  name: String
+  points: Number
 
 #stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
 #  console.log 'HS_PLAYER_CHANGE', info
 
+#房间管理
+stoc_follow 'HS_PLAYER_ENTER', false, (buffer, info, client, server)->
+  room = Room.find_by_client(client)
+  if !room
+    console.log "[WARN]player_enter: can't find room by player #{client.player}"
+    return
+  room.pos_name[info.pos] = info.name
 
 #房间数量
 http.createServer (request, response)->
   if url.parse(request.url).pathname == '/count.json'
     response.writeHead(200);
-    response.end(rooms.length.toString())
+    response.end(Room.all.length.toString())
   else
     response.writeHead(404);
     response.end();
@@ -443,11 +502,11 @@ inotify.addWatch
       console.log '[warn] event without filename'
 
 setInterval ()->
-  for room in rooms
+  for room in Room.all
     if room.alive
       room.alive = false
     else
-      console.log "kill #{port} #{room}"
+      console.log "kill room #{room.port}"
       room.process.kill()
 , 900000
 
@@ -471,6 +530,19 @@ request
 
 stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   stoc_send_random_tip(client)
+
+  room = Room.find_by_client(client)
+  if !room
+    console.log "[WARN]duel start: can't find room by player #{client.player}"
+    return
+
+  room.dueling = true
+  if _.startsWith(room.name, 'M#')
+    User.findOne { name: client.player }, (err, user)->
+      if !user
+        user = new User({name: client.player, points: 0})
+        user.save()
+      stoc_send_chat(client, "积分系统测试中，你现在有#{user.points}点积分，这些积分以后可能会重置")
 
 ctos_follow 'CHAT', false, (buffer, info, client, server)->
   if _.trim(info.msg) == '/tip'
