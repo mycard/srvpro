@@ -4,6 +4,7 @@ http = require 'http'
 url = require 'url'
 path = require 'path'
 fs = require 'fs'
+execFile = require('child_process').execFile
 
 #三方库
 _ = require 'underscore'
@@ -13,18 +14,31 @@ _.mixin(_.str.exports());
 Inotify = require('inotify').Inotify
 request = require 'request'
 
-#组件
-ygopro = require './ygopro.js'
-Room = require './room.js'
+bunyan = require 'bunyan'
 
 #配置文件
-settings = require './config.json'            #本机IP端口设置
+settings = require './config.json'
+
+#组件
+ygopro = require './ygopro.js'
+mycard = require './mycard.js'
+Room = require './room.js'
+User = require './user.js' if settings.modules.database
+Deck = require './deck.js' if settings.modules.database
+
+victories = require './victories.json'
+
+
 
 #debug模式 端口号+1
 debug = false
+log = null
 if process.argv[2] == '--debug'
   settings.port++
-  settings.http_port++
+  settings.modules.http.port++ if settings.modules.http
+  log = bunyan.createLogger name: "mycard-debug"
+else
+  log = bunyan.createLogger name: "mycard"
 
 #网络连接
 net.createServer (client) ->
@@ -33,33 +47,35 @@ net.createServer (client) ->
 
   #释放处理
   client.on 'close', (had_error) ->
-    console.log "client closed #{had_error}"
+    log.info "client closed", client.name, had_error
+    client.room.disconnector = client if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
-      client.room.disconnect(client) if client.room
       client.closed = true
+      client.room.disconnect(client) if client.room
     server.end()
 
   client.on 'error', (error)->
-    console.log "client error #{error}"
+    log.info "client error", client.name, error
+    client.room.disconnector = client if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
-      client.room.disconnect(client, error) if client.room
       client.closed = error
+      client.room.disconnect(client, error) if client.room
     server.end()
 
   server.on 'close', (had_error) ->
-    console.log "server closed #{had_error}"
+    log.info "server closed", client.name, had_error
     server.closed = true unless server.closed
+    client.room.disconnector = 'server' if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接")
-      client.closed = true
       client.end()
 
   server.on 'error', (error)->
-    console.log "server error #{error}"
+    log.info "server error", client.name, error
     server.closed = error
+    client.room.disconnector = 'server' if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}")
-      client.closed = true
       client.end()
 
   #需要重构
@@ -71,40 +87,43 @@ net.createServer (client) ->
   client.pre_establish_buffers = new Array()
 
   client.on 'data', (data) ->
-    ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
-    #console.log data
-    while true
-      if ctos_message_length == 0
-        if ctos_buffer.length >= 2
-          ctos_message_length = ctos_buffer.readUInt16LE(0)
-        else
-          break
-      else if ctos_proto == 0
-        if ctos_buffer.length >= 3
-          ctos_proto = ctos_buffer.readUInt8(2)
-        else
-          break
-      else
-        if ctos_buffer.length >= 2 + ctos_message_length
-          if ygopro.ctos_follows[ctos_proto]
-            b = ctos_buffer.slice(3, ctos_message_length-1+3)
-            if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
-              struct._setBuff(b)
-              setTimeout ygopro.ctos_follows[ctos_proto].callback, 0, b, _.clone(struct.fields), client, server
-            else
-              setTimeout ygopro.ctos_follows[ctos_proto].callback, 0, b, null, client, server
+    if client.is_post_watcher
+      client.room.watcher.write data
+    else
+      ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
-          ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
-          ctos_message_length = 0
-          ctos_proto = 0
-        else
-          break
-
-    unless ygopro.ctos_follows[ctos_proto] and ygopro.ctos_follows[ctos_proto].synchronous
       if client.established
         server.write data
       else
         client.pre_establish_buffers.push data
+
+      while true
+        if ctos_message_length == 0
+          if ctos_buffer.length >= 2
+            ctos_message_length = ctos_buffer.readUInt16LE(0)
+          else
+            break
+        else if ctos_proto == 0
+          if ctos_buffer.length >= 3
+            ctos_proto = ctos_buffer.readUInt8(2)
+          else
+            break
+        else
+          if ctos_buffer.length >= 2 + ctos_message_length
+            #console.log "CTOS", ygopro.constants.CTOS[ctos_proto]
+            if ygopro.ctos_follows[ctos_proto]
+              b = ctos_buffer.slice(3, ctos_message_length-1+3)
+              if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
+                struct._setBuff(b)
+                ygopro.ctos_follows[ctos_proto].callback b, _.clone(struct.fields), client, server
+              else
+                ygopro.ctos_follows[ctos_proto].callback b, null, client, server
+
+            ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
+            ctos_message_length = 0
+            ctos_proto = 0
+          else
+            break
 
   #服务端到客户端(stoc)
   stoc_buffer = new Buffer(0)
@@ -113,6 +132,9 @@ net.createServer (client) ->
 
   server.on 'data', (data)->
     stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
+
+    #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
+    client.write data
 
     while true
       if stoc_message_length == 0
@@ -127,13 +149,14 @@ net.createServer (client) ->
           break
       else
         if stoc_buffer.length >= 2 + stoc_message_length
+          #console.log "STOC", ygopro.constants.STOC[stoc_proto]
           if ygopro.stoc_follows[stoc_proto]
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
             if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
               struct._setBuff(b)
-              setImmediate ygopro.stoc_follows[stoc_proto].callback, b, _.clone(struct.fields), client, server
+              ygopro.stoc_follows[stoc_proto].callback b, _.clone(struct.fields), client, server
             else
-              setImmediate ygopro.stoc_follows[stoc_proto].callback, b, null, client, server
+              ygopro.stoc_follows[stoc_proto].callback b, null, client, server
 
           stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
           stoc_message_length = 0
@@ -141,11 +164,8 @@ net.createServer (client) ->
         else
           break
 
-    #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
-    client.write data
-
 .listen settings.port, ->
-  console.log "server started on #{settings.ip}:#{settings.port}"
+  log.info "server started", settings.ip, settings.port
 
 #功能模块
 
@@ -153,6 +173,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   client.name = info.name #在创建room之前暂存
 
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
+  #log.info info
   if info.version != settings.version
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 4
@@ -166,12 +187,18 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
-  else if info.pass == '[INCORRECT]' #模拟房间密码验证
+  else if !Room.validate(info.pass)
+    #ygopro.stoc_send client, 'ERROR_MSG',{
+    #  msg: 1
+    #  code: 1 #这返错有问题，直接双ygopro直连怎么都正常，在这里就经常弹不出提示
+    #}
+    ygopro.stoc_send_chat(client,"房间密码不正确")
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
-      code: 1 #这返错有问题，直接双ygopro直连怎么都正常，在服务器上就经常弹不出提示
+      code: 2
     }
     client.end()
+
   else if client.name == '[INCORRECT]' #模拟用户验证
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
@@ -179,89 +206,96 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
   else
+    log.info 'join_game',info.pass, client.name
     client.room = Room.find_or_create_by_name(info.pass)
-    client.room.connect(client)
+    if client.room.started
+      if settings.modules.post_start_watching
+        client.is_post_watcher = true
+        ygopro.stoc_send_chat_to_room client.room, "#{client.name} 加入了观战"
+        client.room.watchers.push client
+        for buffer in client.room.watcher_buffers
+          client.write buffer
+        ygopro.stoc_send_chat client, "观战中."
+      else
+        ygopro.stoc_send_chat(client,"决斗已开始")
+        ygopro.stoc_send client, 'ERROR_MSG',{
+          msg: 1
+          code: 2
+        }
+        client.end()
+    else
+      client.room.connect(client)
 
 ######################################################################################################################
 
-#欢迎信息
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
-  ygopro.stoc_send client, 'CHAT', {
-    player: 8
-    msg: "Mycard Debugging Server"
-  }
-  ygopro.stoc_send client, 'CHAT', {
-    player: 8
-    msg: "这里是测试中的新服务器, 还不稳定, 随时可能崩溃, 遇到意外请淡定\n                           ˉˉˉˉˉ"
-  }
+  #欢迎信息
+  if settings.modules.welcome
+    ygopro.stoc_send_chat client, settings.modules.welcome
+  if settings.modules.database
+    if _.startsWith(client.room.name, 'M#')
+      User.findOne { name: client.name }, (err, user)->
+        if !user
+          user = new User({name: client.name, points: 0})
+          user.save()
+        User.count {points:{$gt:user.points}}, (err, count)->
+          rank = count + 1
+          ygopro.stoc_send_chat(client, "积分系统测试中，你现在有#{user.points}点积分，排名#{rank}，这些积分以后正式使用时会重置")
+
+  if settings.modules.post_start_watching and !client.room.watcher
+    client.room.watcher = watcher = net.connect client.room.port, ->
+      ygopro.ctos_send watcher, 'PLAYER_INFO', {
+        name: "the Big Brother"
+      }
+      ygopro.ctos_send watcher, 'JOIN_GAME', {
+        version: settings.version,
+        gameid: 2577,
+        some_unknown_mysterious_fucking_thing: 0
+        pass: ""
+      }
+      ygopro.ctos_send watcher, 'HS_TOOBSERVER'
+
+    watcher.on 'data', (data)->
+      client.room.watcher_buffers.push data
+      for w in client.room.watchers
+        w.write data
 
 #登场台词
-dialogues = {}
-request
-  url: 'https://my-card.in/dialogues.json'
-  json: true
-  , (error, response, body)->
-    if _.isString body
-      console.log "[WARN]dialogues bad json #{body}"
-    else
-      console.log "loaded #{_.size body} dialogues"
-      dialogues = body
+if settings.modules.dialogues
+  dialogues = {}
+  request
+    url: settings.modules.dialogues
+    json: true
+    , (error, response, body)->
+      if _.isString body
+        log.warn "dialogues bad json", body
+      else
+        log.info "dialogues loaded", _.size body
+        dialogues = body
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   msg = buffer.readInt8(0)
-  if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING'
-    card = buffer.readUInt32LE(1)
-    if dialogues[card]
-      for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
-        ygopro.stoc_send_chat client, line
+  if ygopro.constants.MSG[msg] == 'START'
+    playertype = buffer.readUInt8(1)
+    client.is_first = !(playertype & 0xf);
+  if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(client.room.name, 'M#') and client.is_host
+    pos = buffer.readUInt8(1)
+    pos = 1 - pos unless client.is_first or pos == 2
+    reason = buffer.readUInt8(2)
+    log.info {winner: pos, reason: reason}
+    client.room.duels.push {winner: pos, reason: reason}
+  #登场台词
+  if settings.modules.dialogues
+    if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING'
+      card = buffer.readUInt32LE(1)
+      if dialogues[card]
+        for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
+          ygopro.stoc_send_chat client, line
 
-#积分
 ###
-  if ygopro.constants.MSG[msg] == 'WIN'
-    room = Room.find_by_client(client)
-    if !room
-      console.log "[WARN]win: can't find room by player #{client.player}"
-      return
-    if _.startsWith(room.name, 'M#') and room.dueling
-      room.dueling = false
-
-      loser_name = room.pos_name[buffer.readUInt8(1)]
-      winner_name = room.pos_name[1 - buffer.readUInt8(1)]
-      #type = buffer.readUInt8(2)
-      User.findOne { name: winner_name }, (err, winner)->
-        if(err)
-          console.log "#{err} when finding user #{winner_name}"
-        else if(!winner)
-          console.log "user #{winner_name} not exist"
-        else
-          User.findOne { name: loser_name }, (err, loser)->
-            if(err)
-              console.log "#{err} when finding user #{loser_name}"
-            else if(!loser)
-              console.log "user #{loser_name} not exist"
-            else
-              winner.points += 10
-              loser.points -= 5
-              winner.save()
-              loser.save()
-              console.log "#{winner} 增加10点积分，现在有#{winner.points}点"
-              console.log "#{loser} 减少5点积分，现在有#{loser.points}点"
-
-
-#mongoose = require 'mongoose'
-#mongoose.connect('mongodb://localhost/mycard');
-#User = mongoose.model 'User',
-#  name: String
-#  points: Number
-
-#ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
-#  console.log 'HS_PLAYER_CHANGE', info
-###
-
-
 #房间管理
 ygopro.stoc_follow 'HS_PLAYER_ENTER', false, (buffer, info, client, server)->
-  console.log "PLAYER_ENTER to #{client.name}: #{info.name}, #{info.pos}"
+  #console.log "PLAYER_ENTER to #{client.name}: #{info.name}, #{info.pos}"
   #room = client.room
   #if !room
   #  console.log "[WARN]player_enter: can't find room by player #{client.player}"
@@ -271,111 +305,97 @@ ygopro.stoc_follow 'HS_PLAYER_ENTER', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
   #client.ready = info.status & 0xF != 0
   #client.pos = info.status >> 4
-  console.log "PLAYER_CHANGE to #{client.name}: #{info.status & 0xF != 0}, #{info.status >> 4}"
+  #console.log "PLAYER_CHANGE to #{client.name}: #{info.status & 0xF != 0}, #{info.status >> 4}"
+###
 
 ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
   selftype = info.type & 0xf;
   is_host = ((info.type >> 4) & 0xf) != 0;
   client.is_host = is_host
   client.pos = selftype
-  console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
-
-#房间数量
-http.createServer (request, response)->
-#http://122.0.65.70:7922/?operation=getroomjson
-  url = url.parse(request.url)
-  if url.pathname == '/count.json'
-    response.writeHead(200);
-    response.end(Room.all.length.toString())
-  else if url.pathname == '/rooms.json'
-    response.writeHead(404);
-    response.end();
-  if url.query == 'operation=getroomjson'
-    response.writeHead(200);
-    response.end JSON.stringify rooms: (for room in Room.all
-      roomid: room.port.toString(),
-      roomname: room.name,
-      needpass: false.toString(),
-      users: (for player in room.players
-        id: (-1).toString(),
-        name: player.name,
-        pos: player.pos
-      ),
-      istart: "wait"
-    )
-  else
-    response.writeHead(404);
-    response.end();
-.listen settings.http_port
-
-#清理90s没活动的房间
-inotify = new Inotify()
-inotify.addWatch
-  path: 'ygocore/replay',
-  watch_for: Inotify.IN_CLOSE_WRITE | Inotify.IN_CREATE | Inotify.IN_MODIFY,
-  callback: (event)->
-    mask = event.mask
-    if event.name
-      port = parseInt path.basename(event.name, '.yrp')
-      room = Room.find_by_port port
-      if room
-        if mask & Inotify.IN_CREATE
-        else if mask & Inotify.IN_CLOSE_WRITE
-          fs.unlink path.join('ygocore/replay'), (err)->
-        else if mask & Inotify.IN_MODIFY
-          room.alive = true
-    else
-      console.log '[warn] event without filename'
-
-setInterval ()->
-  for room in Room.all
-    if room.alive
-      room.alive = false
-    else
-      console.log "kill room #{room.port}"
-      for player in room.players
-        ygopro.stoc_send_chat(player, "由于长时间没有活动被关闭") unless player.closed
-      room.process.kill()
-, 900000
+  #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
 
 #tip
-ygopro.stoc_send_tip = (client, tip)->
-  lines = _.lines(tip)
-  ygopro.stoc_send_chat(client, "Tip: #{lines[0]}")
-  for line in lines.slice(1)
-    ygopro.stoc_send_chat(client, line)
-
 ygopro.stoc_send_random_tip = (client)->
-  ygopro.stoc_send_tip client, tips[Math.floor(Math.random() * tips.length)] if tips
+  ygopro.stoc_send_chat client, "Tip: " + tips[Math.floor(Math.random() * tips.length)] if tips
 
 tips = null
 request
-  url: 'https://my-card.in/tips.json'
+  url: settings.modules.tips
   json: true
   , (error, response, body)->
     tips = body
-    console.log "loaded #{tips.length} tips"
+    log.info "tips loaded", tips.length
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
-  ygopro.stoc_send_random_tip(client)
+  unless client.room.started #first start
+    client.room.started = true
+    client.room.duels = []
+    client.room.dueling_players = []
+    for player in client.room.players when player.pos != 7
+      client.room.dueling_players[player.pos] = player
+      player.deck = mycard.load_card_usages_from_cards(player.main, player.side)
 
-  ###
-  room = Room.find_by_client(client)
-  if !room
-    console.log "[WARN]duel start: can't find room by player #{client.player}"
-    return
+    if !client.room.dueling_players[0] or !client.room.dueling_players[1]
+      log.error 'incomplete room', client.room.dueling_players, client.room.players
 
-  room.dueling = true
-  if _.startsWith(room.name, 'M#')
-    User.findOne { name: client.player }, (err, user)->
-      if !user
-        user = new User({name: client.player, points: 0})
-        user.save()
-      ygopro.stoc_send_chat(client, "积分系统测试中，你现在有#{user.points}点积分，这些积分以后可能会重置")
-  ###
-ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
-  if _.trim(info.msg) == '/tip'
+  if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
+
+ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
+  switch _.trim(info.msg)
+    when '/ping'
+      execFile 'ss', ['-it', "dst #{client.remoteAddress}:#{client.remotePort}"], (error, stdout, stderr)->
+        if error
+          ygopro.stoc_send_chat_to_room client.room, error
+        else
+          line = _.lines(stdout)[2]
+          if line.indexOf('rtt') != -1
+            ygopro.stoc_send_chat_to_room client.room, line
+          else
+            log.warn 'ping', stdout
+            ygopro.stoc_send_chat_to_room client.room, stdout
+    when '/ranktop'
+      if settings.modules.database
+        User.find null, null, { sort: { points : -1 }, limit: 8 }, (err, users)->
+          if err
+            return log.error 'ranktop', err
+          for index, user of users
+            ygopro.stoc_send_chat client, [parseInt(index)+1, user.points, user.name].join(' ')
+
+    when '/help'
+      ygopro.stoc_send_chat(client,"Mycard MatchServer 指令帮助")
+      ygopro.stoc_send_chat(client,"/help 显示这个帮助信息")
+      ygopro.stoc_send_chat(client,"/tip 显示一条提示") if settings.modules.tips
+      ygopro.stoc_send_chat(client,"/senddeck 发送自己的卡组")
+    when '/tip'
+      ygopro.stoc_send_random_tip(client) if settings.modules.tips
+#发送卡组
+    when '/senddeck'
+      if client.deck?
+        ygopro.stoc_send_chat(client, "正在读取卡组信息... ")
+        mycard.deck_url_short client.name, client.deck, (url)->
+          ygopro.stoc_send_chat_to_room(client.room, "卡组链接: " + url)
+      else
+        ygopro.stoc_send_chat_to_room(client.room, "读取卡组信息失败")
+    when '/admin showroom'
+      log.info client.room
+ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
+  log.info info
+  main = (info.deckbuf[i] for i in [0...info.mainc])
+  side = (info.deckbuf[i] for i in [info.mainc...info.mainc+info.sidec])
+  client.main = main
+  client.side = side
+
+if settings.modules.skip_empty_side
+  ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
+    if not _.any(client.deck, (card_usage)->card_usage.side)
+      ygopro.ctos_send server, 'UPDATE_DECK', {
+        mainc: client.main.length,
+        sidec: 0,
+        deckbuf: client.main
+      }
+      ygopro.stoc_send_chat client, '等待更换副卡组中...'
 
 ###
 # 开包大战
@@ -407,3 +427,143 @@ ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
 
 ###
 
+#http
+if settings.modules.http
+  level_points = require './level_points.json'
+  waiting = [[]]
+  for i of level_points
+    waiting.push []
+
+  log.info 'level_points loaded', level_points
+  http.createServer (request, response)->
+    #http://122.0.65.70:7922/?operation=getroomjson
+      url = url.parse(request.url)
+      #log.info url
+      if url.pathname == '/count.json'
+        response.writeHead(200);
+        response.end(Room.all.length.toString())
+      else if url.pathname == '/match'
+        if request.headers['authorization']
+          [name, password] = new Buffer(request.headers['authorization'].split(/\s+/).pop() ? '','base64').toString().split(':')
+          User.findOne { name: name }, (err, user)->
+            if !user
+              user = new User({name: name, points: 0, elo: 1400})
+              user.save()
+            level = level_points.length
+            for index, points of level_points
+              if user.points < points
+                level = index
+                break
+            response.allowance = 0
+            waiting[level].push response
+            request.on 'close', ()->
+              index = waiting[level].indexOf(response)
+              waiting[level].splice(index, 1) unless index == -1
+        else
+          #log.info 'unauth match'
+          #response.writeHead(401);
+          #response.end("请更新mycard到1.2.8版本");
+          level = 1
+          response.allowance = 0
+          waiting[level].push response
+          request.on 'close', ()->
+            index = waiting[level].indexOf(response)
+            waiting[level].splice(index, 1) unless index == -1
+
+      else if url.pathname == '/rooms.json'
+        response.writeHead(404);
+        response.end();
+      else if url.query == 'operation=getroomjson'
+        response.writeHead(200);
+        response.end JSON.stringify rooms: (for room in Room.all when room.established
+          roomid: room.port.toString(),
+          roomname: room.name.split('$',2)[0],
+          needpass: (room.name.indexOf('$') != -1).toString(),
+          users: (for player in room.players when player.pos?
+            id: (-1).toString(),
+            name: player.name,
+            pos: player.pos
+          ),
+          istart: if room.started then "start" else "wait"
+        )
+      else
+        response.writeHead(404);
+        response.end();
+  .listen settings.modules.http.port
+
+  setInterval ()->
+    for level in [level_points.length..0]
+      for index, player of waiting[level]
+        opponent_level = null
+        opponent = _.find waiting[level], (opponent)->
+          log.info opponent,player
+          opponent isnt player
+        log.info '--------1--------', waiting, opponent
+
+        if opponent
+          opponent_level = level
+        else if player.allowance > 0
+          for displacement in [1..player.allowance]
+            if level+displacement <= level_points.length
+              opponent = waiting[level+displacement][0]
+              if opponent
+                opponent_level = level+displacement
+                break
+            if level-displacement >= 0
+              opponent = waiting[level-displacement][0]
+              if opponent
+                opponent_level = level-displacement
+                break
+
+        if opponent
+          if waiting[level].indexOf(player) == -1 or waiting[opponent_level].indexOf(opponent) == -1
+            log.info waiting, player, level, opponent, opponent_level
+            throw 'WTF'
+          waiting[level].splice(waiting[level].indexOf(player), 1)
+          waiting[opponent_level].splice(waiting[opponent_level].indexOf(opponent), 1)
+          index--
+
+          room = "mycard://#{settings.ip}:#{settings.port}/M##{_.uniqueId()}$#{_.random(999)}"
+          log.info 'matched', room
+          headers = {"Access-Control-Allow-Origin":"*","Content-Type": "text/plain"}
+          player.writeHead(200, headers)
+          player.end room
+          opponent.writeHead(200, headers)
+          opponent.end room
+
+        else
+          player.allowance++
+
+  , 2000
+
+
+#清理90s没活动的房间
+inotify = new Inotify()
+inotify.addWatch
+  path: 'ygocore/replay',
+  watch_for: Inotify.IN_CLOSE_WRITE | Inotify.IN_CREATE | Inotify.IN_MODIFY,
+  callback: (event)->
+    mask = event.mask
+    if event.name
+      port = parseInt path.basename(event.name, '.yrp')
+      room = Room.find_by_port port
+      if room
+        if mask & Inotify.IN_CREATE
+        else if mask & Inotify.IN_CLOSE_WRITE
+          fs.unlink path.join('ygocore/replay'), (err)->
+        else if mask & Inotify.IN_MODIFY
+          room.alive = true
+    else
+      log.error "event without filename"
+
+setInterval ()->
+  for room in Room.all
+    if room.alive
+      room.alive = false
+    else
+      log.info "kill room", room.port
+
+      for player in room.players
+        ygopro.stoc_send_chat(player, "由于长时间没有活动被关闭") unless player.closed
+      room.process.kill()
+, 900000

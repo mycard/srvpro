@@ -1,3 +1,7 @@
+_ = require 'underscore'
+_.str = require 'underscore.string'
+_.mixin(_.str.exports());
+
 Struct = require('struct').Struct
 
 #常量/类型声明
@@ -102,7 +106,14 @@ for name, declaration of structs_declaration
 
 #util
 @stoc_send_chat = (client, msg, player = 8)->
-  @stoc_send client, 'CHAT', {
-    player: player
-    msg:  msg
-  }
+  for line in _.lines(msg)
+    @stoc_send client, 'CHAT', {
+      player: player
+      msg: line
+    }
+
+@stoc_send_chat_to_room = (room, msg, player = 8)->
+  for client in room.players
+    @stoc_send_chat(client, msg, player) if client
+  for client in room.watchers
+    @stoc_send_chat(client, msg, player) if client

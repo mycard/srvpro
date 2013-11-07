@@ -3,6 +3,7 @@
         "PLAYER_INFO": "CTOS_PlayerInfo",
         "JOIN_GAME":"CTOS_JoinGame",
         "UPDATE_DECK": "deck",
+        "CHANGE_SIDE":"",
         "CHAT": "chat"
     },
     "STOC":{
