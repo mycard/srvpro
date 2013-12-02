@@ -76,16 +76,33 @@
       this.watcher_buffers = [];
       this.watchers = [];
       Room.all.push(this);
+      this.hostinfo = {
+        lflist: 0,
+        rule: 0,
+        mode: 0,
+        enable_priority: false,
+        no_check_deck: false,
+        no_shuffle_deck: false,
+        start_lp: 8000,
+        start_hand: 5,
+        draw_count: 1,
+        time_limit: 180
+      };
       if (name.slice(0, 2) === 'M#') {
-        param = [0, 0, 0, 1, 'F', 'F', 'F', 8000, 5, 1];
+        this.hostinfo.mode = 1;
       } else if (name.slice(0, 2) === 'T#') {
-        param = [0, 0, 0, 2, 'F', 'F', 'F', 8000, 5, 1];
+        this.hostinfo.mode = 2;
       } else if ((param = name.match(/^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i))) {
-        param.shift();
-        param.unshift(0, 0);
-      } else {
-        param = [0, 0, 0, 0, 'F', 'F', 'F', 8000, 5, 1];
+        this.hostinfo.rule = parseInt(param[1]);
+        this.hostinfo.mode = parseInt(param[2]);
+        this.hostinfo.enable_priority = param[3] === 'T';
+        this.hostinfo.no_check_deck = param[4] === 'T';
+        this.hostinfo.no_shuffle_deck = param[5] === 'T';
+        this.hostinfo.start_lp = parseInt(param[6]);
+        this.hostinfo.start_hand = parseInt(param[7]);
+        this.hostinfo.draw_count = parseInt(param[8]);
       }
+      param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count];
       this.process = spawn('./ygopro', param, {
         cwd: 'ygocore'
       });
@@ -177,6 +194,9 @@
         return;
       }
       match_winner = _.last(this.duels).winner;
+      if (!(this.dueling_players[0] && this.dueling_players[1])) {
+        return;
+      }
       return User.findOne({
         name: this.dueling_players[0].name
       }, function(err, player0) {

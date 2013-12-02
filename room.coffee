@@ -57,15 +57,33 @@ class Room
     @watchers = []
     Room.all.push this
 
+    @hostinfo =
+      lflist: 0
+      rule: 0
+      mode: 0
+      enable_priority: false
+      no_check_deck: false
+      no_shuffle_deck: false
+      start_lp: 8000
+      start_hand: 5
+      draw_count: 1
+      time_limit: 180
+
     if name[0...2] == 'M#'
-      param = [0, 0, 0, 1, 'F', 'F', 'F', 8000, 5, 1]
+      @hostinfo.mode = 1
     else if name[0...2] == 'T#'
-      param = [0, 0, 0, 2, 'F', 'F', 'F', 8000, 5, 1]
+      @hostinfo.mode = 2
     else if (param = name.match /^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i)
-      param.shift()
-      param.unshift(0, 0)
-    else
-      param = [0, 0, 0, 0, 'F', 'F', 'F', 8000, 5, 1]
+      @hostinfo.rule = parseInt(param[1])
+      @hostinfo.mode = parseInt(param[2])
+      @hostinfo.enable_priority = param[3] == 'T'
+      @hostinfo.no_check_deck = param[4] == 'T'
+      @hostinfo.no_shuffle_deck = param[5] == 'T'
+      @hostinfo.start_lp = parseInt(param[6])
+      @hostinfo.start_hand = parseInt(param[7])
+      @hostinfo.draw_count = parseInt(param[8])
+
+    param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'), (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'), @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count]
 
     @process = spawn './ygopro', param, cwd: 'ygocore'
     @process.on 'exit', (code)=>
@@ -112,6 +130,7 @@ class Room
     return unless @ensure_finish()
     match_winner = _.last(@duels).winner
 
+    return unless @dueling_players[0] and @dueling_players[1] #a WTF fix
     User.findOne { name: @dueling_players[0].name }, (err, player0)=>
       if(err)
         log.error "error when find user", @dueling_players[0].name, err

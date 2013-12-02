@@ -258,7 +258,10 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     watcher.on 'data', (data)->
       client.room.watcher_buffers.push data
       for w in client.room.watchers
-        w.write data
+        w.write data if w #a WTF fix
+
+    watcher.on 'error', (error)->
+      log.error "watcher error", error
 
 #登场台词
 if settings.modules.dialogues
@@ -269,21 +272,67 @@ if settings.modules.dialogues
     , (error, response, body)->
       if _.isString body
         log.warn "dialogues bad json", body
+      else if error or !body
+        log.warn 'dialogues error', error, response
       else
         log.info "dialogues loaded", _.size body
         dialogues = body
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   msg = buffer.readInt8(0)
+  #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf);
+    client.lp = client.room.hostinfo.start_lp
+
+    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
   if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(client.room.name, 'M#') and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2
     reason = buffer.readUInt8(2)
     log.info {winner: pos, reason: reason}
     client.room.duels.push {winner: pos, reason: reason}
+  #lp跟踪
+  if ygopro.constants.MSG[msg] == 'DAMAGE' and client.is_host
+    pos = buffer.readUInt8(1)
+    pos = 1 - pos unless client.is_first
+    val = buffer.readInt32LE(2)
+    client.room.dueling_players[pos].lp -= val
+
+    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 受到伤害 #{val}，现在的LP为 #{client.room.dueling_players[pos].lp}")
+    if 0 < client.room.dueling_players[pos].lp <= 100
+      ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！")
+
+  if ygopro.constants.MSG[msg] == 'RECOVER' and client.is_host
+    pos = buffer.readUInt8(1)
+    pos = 1 - pos unless client.is_first
+    val = buffer.readInt32LE(2)
+    client.room.dueling_players[pos].lp += val
+
+    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 回复 #{val}，现在的LP为 #{client.room.dueling_players[pos].lp}")
+
+  if ygopro.constants.MSG[msg] == 'LPUPDATE' and client.is_host
+    pos = buffer.readUInt8(1)
+    pos = 1 - pos unless client.is_first
+    val = buffer.readInt32LE(2)
+    client.room.dueling_players[pos].lp = val
+
+    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 的LP变成 #{client.room.dueling_players[pos].lp}")
+
+  if ygopro.constants.MSG[msg] == 'PAY_LPCOST' and client.is_host
+    pos = buffer.readUInt8(1)
+    pos = 1 - pos unless client.is_first
+    val = buffer.readInt32LE(2)
+    client.room.dueling_players[pos].lp -= val
+
+    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 支付 #{val}，现在的LP为 #{client.room.dueling_players[pos].lp}")
+
+    if 0 < client.room.dueling_players[pos].lp <= 100
+      ygopro.stoc_send_chat_to_room(client.room, "背水一战！")
+
+
+
   #登场台词
   if settings.modules.dialogues
     if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING'
@@ -291,6 +340,12 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       if dialogues[card]
         for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
           ygopro.stoc_send_chat client, line
+
+
+
+
+
+
 
 ###
 #房间管理
@@ -334,7 +389,10 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     client.room.dueling_players = []
     for player in client.room.players when player.pos != 7
       client.room.dueling_players[player.pos] = player
-      player.deck = mycard.load_card_usages_from_cards(player.main, player.side)
+      if !player.main
+        log.error 'WTF', client
+      else
+        player.deck = mycard.load_card_usages_from_cards(player.main, player.side)
 
     if !client.room.dueling_players[0] or !client.room.dueling_players[1]
       log.error 'incomplete room', client.room.dueling_players, client.room.players

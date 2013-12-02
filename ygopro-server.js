@@ -316,16 +316,23 @@
         });
         return ygopro.ctos_send(watcher, 'HS_TOOBSERVER');
       });
-      return watcher.on('data', function(data) {
+      watcher.on('data', function(data) {
         var w, _i, _len, _ref, _results;
         client.room.watcher_buffers.push(data);
         _ref = client.room.watchers;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           w = _ref[_i];
-          _results.push(w.write(data));
+          if (w) {
+            _results.push(w.write(data));
+          } else {
+            _results.push(void 0);
+          }
         }
         return _results;
+      });
+      return watcher.on('error', function(error) {
+        return log.error("watcher error", error);
       });
     }
   });
@@ -338,6 +345,8 @@
     }, function(error, response, body) {
       if (_.isString(body)) {
         return log.warn("dialogues bad json", body);
+      } else if (error || !body) {
+        return log.warn('dialogues error', error, response);
       } else {
         log.info("dialogues loaded", _.size(body));
         return dialogues = body;
@@ -346,11 +355,12 @@
   }
 
   ygopro.stoc_follow('GAME_MSG', false, function(buffer, info, client, server) {
-    var card, line, msg, playertype, pos, reason, _i, _len, _ref, _results;
+    var card, line, msg, playertype, pos, reason, val, _i, _len, _ref, _ref1, _ref2, _results;
     msg = buffer.readInt8(0);
     if (ygopro.constants.MSG[msg] === 'START') {
       playertype = buffer.readUInt8(1);
       client.is_first = !(playertype & 0xf);
+      client.lp = client.room.hostinfo.start_lp;
     }
     if (ygopro.constants.MSG[msg] === 'WIN' && _.startsWith(client.room.name, 'M#') && client.is_host) {
       pos = buffer.readUInt8(1);
@@ -367,14 +377,52 @@
         reason: reason
       });
     }
+    if (ygopro.constants.MSG[msg] === 'DAMAGE' && client.is_host) {
+      pos = buffer.readUInt8(1);
+      if (!client.is_first) {
+        pos = 1 - pos;
+      }
+      val = buffer.readInt32LE(2);
+      client.room.dueling_players[pos].lp -= val;
+      if ((0 < (_ref = client.room.dueling_players[pos].lp) && _ref <= 100)) {
+        ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！");
+      }
+    }
+    if (ygopro.constants.MSG[msg] === 'RECOVER' && client.is_host) {
+      pos = buffer.readUInt8(1);
+      if (!client.is_first) {
+        pos = 1 - pos;
+      }
+      val = buffer.readInt32LE(2);
+      client.room.dueling_players[pos].lp += val;
+    }
+    if (ygopro.constants.MSG[msg] === 'LPUPDATE' && client.is_host) {
+      pos = buffer.readUInt8(1);
+      if (!client.is_first) {
+        pos = 1 - pos;
+      }
+      val = buffer.readInt32LE(2);
+      client.room.dueling_players[pos].lp = val;
+    }
+    if (ygopro.constants.MSG[msg] === 'PAY_LPCOST' && client.is_host) {
+      pos = buffer.readUInt8(1);
+      if (!client.is_first) {
+        pos = 1 - pos;
+      }
+      val = buffer.readInt32LE(2);
+      client.room.dueling_players[pos].lp -= val;
+      if ((0 < (_ref1 = client.room.dueling_players[pos].lp) && _ref1 <= 100)) {
+        ygopro.stoc_send_chat_to_room(client.room, "背水一战！");
+      }
+    }
     if (settings.modules.dialogues) {
       if (ygopro.constants.MSG[msg] === 'SUMMONING' || ygopro.constants.MSG[msg] === 'SPSUMMONING') {
         card = buffer.readUInt32LE(1);
         if (dialogues[card]) {
-          _ref = _.lines(dialogues[card][Math.floor(Math.random() * dialogues[card].length)]);
+          _ref2 = _.lines(dialogues[card][Math.floor(Math.random() * dialogues[card].length)]);
           _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            line = _ref[_i];
+          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+            line = _ref2[_i];
             _results.push(ygopro.stoc_send_chat(client, line));
           }
           return _results;
@@ -437,7 +485,11 @@
           continue;
         }
         client.room.dueling_players[player.pos] = player;
-        player.deck = mycard.load_card_usages_from_cards(player.main, player.side);
+        if (!player.main) {
+          log.error('WTF', client);
+        } else {
+          player.deck = mycard.load_card_usages_from_cards(player.main, player.side);
+        }
       }
       if (!client.room.dueling_players[0] || !client.room.dueling_players[1]) {
         log.error('incomplete room', client.room.dueling_players, client.room.players);
