@@ -464,13 +464,15 @@
 
   tips = null;
 
-  request({
-    url: settings.modules.tips,
-    json: true
-  }, function(error, response, body) {
-    tips = body;
-    return log.info("tips loaded", tips.length);
-  });
+  if (settings.modules.tips) {
+    request({
+      url: settings.modules.tips,
+      json: true
+    }, function(error, response, body) {
+      tips = body;
+      return log.info("tips loaded", tips.length);
+    });
+  }
 
   ygopro.stoc_follow('DUEL_START', false, function(buffer, info, client, server) {
     var player, _i, _len, _ref;

@@ -375,12 +375,13 @@ ygopro.stoc_send_random_tip = (client)->
   ygopro.stoc_send_chat client, "Tip: " + tips[Math.floor(Math.random() * tips.length)] if tips
 
 tips = null
-request
-  url: settings.modules.tips
-  json: true
-  , (error, response, body)->
-    tips = body
-    log.info "tips loaded", tips.length
+if settings.modules.tips
+  request
+    url: settings.modules.tips
+    json: true
+    , (error, response, body)->
+      tips = body
+      log.info "tips loaded", tips.length
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   unless client.room.started #first start
