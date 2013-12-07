@@ -1,7 +1,7 @@
 {
     "ip": "",
     "port": 7911,
-    "version": 4896,
+    "version": 4897,
     "modules": {
         "welcome": "Mycard Server",
         "tips": "https://my-card.in/tips.json",
