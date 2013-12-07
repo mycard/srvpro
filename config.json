@@ -1,13 +1,13 @@
 {
-    "ip": "112.124.4.110",
+    "ip": "",
     "port": 7911,
     "version": 4896,
     "modules": {
-        "welcome": "Mycard MatchServer\n这里是测试中的新服务器, 还不稳定, 随时可能崩溃, 遇到意外请淡定",
+        "welcome": "Mycard Server",
         "tips": "https://my-card.in/tips.json",
         "dialogues": "https://my-card.in/dialogues.json",
-        "database": "mongodb://phoenix.my-card.in/mycard",
-        "post_start_watching": false,
+        "database": false,
+        "post_start_watching": true,
         "skip_empty_side": true,
         "http": {
             "port": 7922,

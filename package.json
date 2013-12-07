@@ -1,6 +1,6 @@
 {
     "name": "ygopro-server",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "a server for ygopro",
     "repository": {
         "type": "git",
@@ -18,7 +18,8 @@
         "freeport": "*",
         "inotify": "*",
         "request": "*",
-        "mongoose": "*"
+        "mongoose": "*",
+        "bunyan": "*"
     },
     "license": "GPLv3",
     "main": "ygopro-server.js",
