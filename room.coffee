@@ -54,7 +54,9 @@ class Room
     @status = 'starting'
     @established = false
     @watcher_buffers = []
+    @watcher_stanzas = []
     @watchers = []
+    @ws_watchers = []
     Room.all.push this
 
     @hostinfo =
@@ -217,6 +219,5 @@ class Room
       else
         @process.kill()
         this.delete()
-
 
 module.exports = Room

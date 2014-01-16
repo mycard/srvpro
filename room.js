@@ -74,7 +74,9 @@
       this.status = 'starting';
       this.established = false;
       this.watcher_buffers = [];
+      this.watcher_stanzas = [];
       this.watchers = [];
+      this.ws_watchers = [];
       Room.all.push(this);
       this.hostinfo = {
         lflist: 0,

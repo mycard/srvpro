@@ -12,6 +12,7 @@ _.str = require 'underscore.string'
 _.mixin(_.str.exports());
 
 Inotify = require('inotify').Inotify
+WebSocketServer = require('websocket').server
 request = require 'request'
 
 bunyan = require 'bunyan'
@@ -150,6 +151,7 @@ net.createServer (client) ->
       else
         if stoc_buffer.length >= 2 + stoc_message_length
           #console.log "STOC", ygopro.constants.STOC[stoc_proto]
+          stanzas = stoc_proto
           if ygopro.stoc_follows[stoc_proto]
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
             if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
@@ -255,13 +257,41 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       ygopro.ctos_send watcher, 'HS_TOOBSERVER'
 
+    watcher.ws_buffer = new Buffer(0)
+    watcher.ws_message_length = 0
+    client.room.watcher_stanzas = []
+
     watcher.on 'data', (data)->
       client.room.watcher_buffers.push data
       for w in client.room.watchers
         w.write data if w #a WTF fix
 
+      watcher.ws_buffer = Buffer.concat([watcher.ws_buffer, data], watcher.ws_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
+
+      while true
+        if watcher.ws_message_length == 0
+          if watcher.ws_buffer.length >= 2
+            watcher.ws_message_length = watcher.ws_buffer.readUInt16LE(0)
+          else
+            break
+        else
+          if watcher.ws_buffer.length >= 2 + watcher.ws_message_length
+            stanza = watcher.ws_buffer.slice(2, watcher.ws_message_length + 2)
+            for w in client.room.ws_watchers
+              w.sendBytes stanza if w #a WTF fix
+            client.room.watcher_stanzas.push stanza
+
+            watcher.ws_buffer = watcher.ws_buffer.slice(2 + watcher.ws_message_length)
+            watcher.ws_message_length = 0
+          else
+            break
+
     watcher.on 'error', (error)->
       log.error "watcher error", error
+
+    watcher.on 'close', (had_error)->
+      for w in client.room.ws_watchers
+        w.close()
 
 #登场台词
 if settings.modules.dialogues
@@ -494,14 +524,14 @@ if settings.modules.http
     waiting.push []
 
   log.info 'level_points loaded', level_points
-  http.createServer (request, response)->
+  http_server = http.createServer (request, response)->
     #http://122.0.65.70:7922/?operation=getroomjson
-      url = url.parse(request.url)
-      #log.info url
-      if url.pathname == '/count.json'
+      u = url.parse(request.url)
+      #log.info u
+      if u.pathname == '/count.json'
         response.writeHead(200);
         response.end(Room.all.length.toString())
-      else if url.pathname == '/match'
+      else if u.pathname == '/match'
         if request.headers['authorization']
           [name, password] = new Buffer(request.headers['authorization'].split(/\s+/).pop() ? '','base64').toString().split(':')
           User.findOne { name: name }, (err, user)->
@@ -529,10 +559,10 @@ if settings.modules.http
             index = waiting[level].indexOf(response)
             waiting[level].splice(index, 1) unless index == -1
 
-      else if url.pathname == '/rooms.json'
+      else if u.pathname == '/rooms.json'
         response.writeHead(404);
         response.end();
-      else if url.query == 'operation=getroomjson'
+      else if u.query == 'operation=getroomjson'
         response.writeHead(200);
         response.end JSON.stringify rooms: (for room in Room.all when room.established
           roomid: room.port.toString(),
@@ -548,7 +578,7 @@ if settings.modules.http
       else
         response.writeHead(404);
         response.end();
-  .listen settings.modules.http.port
+  http_server.listen settings.modules.http.port
 
   setInterval ()->
     for level in [level_points.length..0]
@@ -595,6 +625,51 @@ if settings.modules.http
 
   , 2000
 
+  originIsAllowed = (origin) ->
+    # allow all origin, for debug
+    true
+  wsServer = new WebSocketServer(
+    httpServer: http_server
+    autoAcceptConnections: false
+  )
+  wsServer.on "request", (request) ->
+    unless originIsAllowed(request.origin)
+      # Make sure we only accept requests from an allowed origin
+      request.reject()
+      console.log (new Date()) + " Connection from origin " + request.origin + " rejected."
+      return
+
+    room_name = decodeURIComponent(request.resource.slice(1))
+    if room_name == 'started'
+      room = _.find Room.all, (room)->
+        room.started
+    else
+      room = Room.find_by_name room_name
+    unless room
+      request.reject()
+      console.log (new Date()) + " Connection from origin " + request.origin + " rejected. #{room_name}"
+      return
+
+    connection = request.accept(null, request.origin)
+    console.log (new Date()) + " Connection accepted. #{room.name}"
+    room.ws_watchers.push connection
+
+    for stanza in room.watcher_stanzas
+      connection.sendBytes stanza
+
+    ###
+    connection.on "message", (message) ->
+      if message.type is "utf8"
+        console.log "Received Message: " + message.utf8Data
+        connection.sendUTF message.utf8Data
+      else if message.type is "binary"
+        console.log "Received Binary Message of " + message.binaryData.length + " bytes"
+        connection.sendBytes message.binaryData
+    ###
+    connection.on "close", (reasonCode, description) ->
+      index = _.indexOf(room.ws_watchers, connection)
+      room.ws_watchers.splice(index, 1) unless index == -1
+      console.log (new Date()) + " Peer " + connection.remoteAddress + " disconnected."
 
 #清理90s没活动的房间
 inotify = new Inotify()
@@ -614,7 +689,7 @@ inotify.addWatch
           room.alive = true
     else
       log.error "event without filename"
-
+###
 setInterval ()->
   for room in Room.all
     if room.alive
@@ -626,3 +701,4 @@ setInterval ()->
         ygopro.stoc_send_chat(player, "由于长时间没有活动被关闭") unless player.closed
       room.process.kill()
 , 900000
+###
