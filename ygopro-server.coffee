@@ -600,7 +600,8 @@ if settings.modules.http
         response.writeHead(404);
         response.end();
   http_server.listen settings.modules.http.port
-
+  
+  ###
   setInterval ()->
     for level in [level_points.length..0]
       for index, player of waiting[level]
@@ -645,7 +646,8 @@ if settings.modules.http
           player.allowance++
 
   , 2000
-
+  ###
+  
   originIsAllowed = (origin) ->
     # allow all origin, for debug
     true

@@ -825,69 +825,53 @@
       }
     });
     http_server.listen(settings.modules.http.port);
-    setInterval(function() {
-      var displacement, headers, index, j, level, opponent, opponent_level, player, ref, results, room;
-      results = [];
-      for (level = j = ref = level_points.length; ref <= 0 ? j <= 0 : j >= 0; level = ref <= 0 ? ++j : --j) {
-        results.push((function() {
-          var k, ref1, ref2, results1;
-          ref1 = waiting[level];
-          results1 = [];
-          for (index in ref1) {
-            player = ref1[index];
-            opponent_level = null;
-            opponent = _.find(waiting[level], function(opponent) {
-              log.info(opponent, player);
-              return opponent !== player;
-            });
-            log.info('--------1--------', waiting, opponent);
-            if (opponent) {
-              opponent_level = level;
-            } else if (player.allowance > 0) {
-              for (displacement = k = 1, ref2 = player.allowance; 1 <= ref2 ? k <= ref2 : k >= ref2; displacement = 1 <= ref2 ? ++k : --k) {
-                if (level + displacement <= level_points.length) {
-                  opponent = waiting[level + displacement][0];
-                  if (opponent) {
-                    opponent_level = level + displacement;
-                    break;
-                  }
-                }
-                if (level - displacement >= 0) {
-                  opponent = waiting[level - displacement][0];
-                  if (opponent) {
-                    opponent_level = level - displacement;
-                    break;
-                  }
-                }
-              }
-            }
-            if (opponent) {
-              if (waiting[level].indexOf(player) === -1 || waiting[opponent_level].indexOf(opponent) === -1) {
-                log.info(waiting, player, level, opponent, opponent_level);
-                throw 'WTF';
-              }
-              waiting[level].splice(waiting[level].indexOf(player), 1);
-              waiting[opponent_level].splice(waiting[opponent_level].indexOf(opponent), 1);
-              index--;
-              room = "mycard://" + settings.ip + ":" + settings.port + "/M#" + (_.uniqueId()) + "$" + (_.random(999));
-              log.info('matched', room);
-              headers = {
-                "Access-Control-Allow-Origin": "*",
-                "Content-Type": "text/plain"
-              };
-              player.writeHead(200, headers);
-              player.end(room);
-              opponent.writeHead(200, headers);
-              results1.push(opponent.end(room));
-            } else {
-              results1.push(player.allowance++);
-            }
-          }
-          return results1;
-        })());
-      }
-      return results;
-    }, 2000);
+
+    /*
+    setInterval ()->
+      for level in [level_points.length..0]
+        for index, player of waiting[level]
+          opponent_level = null
+          opponent = _.find waiting[level], (opponent)->
+            log.info opponent,player
+            opponent isnt player
+          log.info '--------1--------', waiting, opponent
+    
+          if opponent
+            opponent_level = level
+          else if player.allowance > 0
+            for displacement in [1..player.allowance]
+              if level+displacement <= level_points.length
+                opponent = waiting[level+displacement][0]
+                if opponent
+                  opponent_level = level+displacement
+                  break
+              if level-displacement >= 0
+                opponent = waiting[level-displacement][0]
+                if opponent
+                  opponent_level = level-displacement
+                  break
+    
+          if opponent
+            if waiting[level].indexOf(player) == -1 or waiting[opponent_level].indexOf(opponent) == -1
+              log.info waiting, player, level, opponent, opponent_level
+              throw 'WTF'
+            waiting[level].splice(waiting[level].indexOf(player), 1)
+            waiting[opponent_level].splice(waiting[opponent_level].indexOf(opponent), 1)
+            index--
+    
+            room = "mycard://#{settings.ip}:#{settings.port}/M##{_.uniqueId()}$#{_.random(999)}"
+            log.info 'matched', room
+            headers = {"Access-Control-Allow-Origin":"*","Content-Type": "text/plain"}
+            player.writeHead(200, headers)
+            player.end room
+            opponent.writeHead(200, headers)
+            opponent.end room
+    
+          else
+            player.allowance++
+    
+    , 2000
+     */
     originIsAllowed = function(origin) {
       return true;
     };

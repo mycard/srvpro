@@ -30,7 +30,7 @@ class Room
   @find_by_name: (name)->
     result = _.find @all, (room)->
       room.name == name
-    log.info 'find_by_name', name, result
+    #log.info 'find_by_name', name, result
     result
 
   @find_by_port: (port)->

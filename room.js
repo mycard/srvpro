@@ -41,7 +41,6 @@
       result = _.find(this.all, function(room) {
         return room.name === name;
       });
-      log.info('find_by_name', name, result);
       return result;
     };
 
