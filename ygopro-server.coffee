@@ -4,6 +4,7 @@ http = require 'http'
 url = require 'url'
 path = require 'path'
 fs = require 'fs'
+os = require 'os'
 execFile = require('child_process').execFile
 
 #三方库
@@ -190,7 +191,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
   
-  else if (os.freemem() / os.totalmem())>=0.1
+  else if (os.freemem() / os.totalmem())>=0.9
     ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试")
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
