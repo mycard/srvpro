@@ -189,6 +189,15 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
+  
+  else if (os.freemem() / os.totalmem())>=0.1
+    ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试")
+    ygopro.stoc_send client, 'ERROR_MSG',{
+      msg: 1
+      code: 2
+    }
+    client.end()
+  
   else if !Room.validate(info.pass)
     #ygopro.stoc_send client, 'ERROR_MSG',{
     #  msg: 1
