@@ -582,7 +582,7 @@ if settings.modules.http
           ),
           istart: if room.started then 'start' else 'wait'
         )
-        response.end("loadroom( { " + roomsjson + " } );");
+        response.end("loadroom( " + roomsjson + " );");
       else if u.query == 'operation=getroomjson'
         response.writeHead(200);
         response.end JSON.stringify rooms: (for room in Room.all when room.established

@@ -781,7 +781,7 @@
             return results;
           })()
         });
-        return response.end("loadroom( { " + roomsjson + " } );");
+        return response.end("loadroom( " + roomsjson + " );");
       } else if (u.query === 'operation=getroomjson') {
         response.writeHead(200);
         return response.end(JSON.stringify({
