@@ -228,12 +228,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       client.room.connect(client)
 
-######################################################################################################################
-
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #欢迎信息
   if settings.modules.welcome
     ygopro.stoc_send_chat client, settings.modules.welcome
+  if (os.freemem() / os.totalmem())>=0.9
+    ygopro.stoc_send_chat client, "服务器已经爆满，随时存在崩溃风险！"
   if settings.modules.database
     if _.startsWith(client.room.name, 'M#')
       User.findOne { name: client.name }, (err, user)->
