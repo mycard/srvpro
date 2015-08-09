@@ -695,7 +695,7 @@
     }
     log.info('level_points loaded', level_points);
     http_server = http.createServer(function(request, response) {
-      var level, name, password, player, ref, ref1, room, u;
+      var level, name, password, player, ref, ref1, room, roomsjson, u;
       u = url.parse(request.url);
       if (u.pathname === '/count.json') {
         response.writeHead(200);
@@ -744,9 +744,44 @@
             }
           });
         }
-      } else if (u.pathname === '/rooms.json') {
-        response.writeHead(404);
-        return response.end();
+      } else if (u.pathname === '/rooms.js') {
+        response.writeHead(200);
+        roomsjson = JSON.stringify({
+          rooms: (function() {
+            var j, len, ref2, results;
+            ref2 = Room.all;
+            results = [];
+            for (j = 0, len = ref2.length; j < len; j++) {
+              room = ref2[j];
+              if (room.established) {
+                results.push({
+                  roomid: room.port.toString(),
+                  roomname: room.name.split('$', 2)[0],
+                  needpass: (room.name.indexOf('$') !== -1).toString(),
+                  users: (function() {
+                    var k, len1, ref3, results1;
+                    ref3 = room.players;
+                    results1 = [];
+                    for (k = 0, len1 = ref3.length; k < len1; k++) {
+                      player = ref3[k];
+                      if (player.pos != null) {
+                        results1.push({
+                          id: (-1).toString(),
+                          name: player.name,
+                          pos: player.pos
+                        });
+                      }
+                    }
+                    return results1;
+                  })(),
+                  istart: room.started ? 'start' : 'wait'
+                });
+              }
+            }
+            return results;
+          })()
+        });
+        return response.end("loadroom( { " + roomsjson + " } );");
       } else if (u.query === 'operation=getroomjson') {
         response.writeHead(200);
         return response.end(JSON.stringify({

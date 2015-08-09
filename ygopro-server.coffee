@@ -569,9 +569,20 @@ if settings.modules.http
             index = waiting[level].indexOf(response)
             waiting[level].splice(index, 1) unless index == -1
 
-      else if u.pathname == '/rooms.json'
-        response.writeHead(404);
-        response.end();
+      else if u.pathname == '/rooms.js'
+        response.writeHead(200);
+        roomsjson = JSON.stringify rooms: (for room in Room.all when room.established
+          roomid: room.port.toString(),
+          roomname: room.name.split('$',2)[0],
+          needpass: (room.name.indexOf('$') != -1).toString(),
+          users: (for player in room.players when player.pos?
+            id: (-1).toString(),
+            name: player.name,
+            pos: player.pos
+          ),
+          istart: if room.started then 'start' else 'wait'
+        )
+        response.end("loadroom( { " + roomsjson + " } );");
       else if u.query == 'operation=getroomjson'
         response.writeHead(200);
         response.end JSON.stringify rooms: (for room in Room.all when room.established
