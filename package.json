@@ -16,7 +16,6 @@
     "underscore": "*",
     "underscore.string": "*",
     "freeport": "*",
-    "inotify": "*",
     "request": "*",
     "mongoose": "*",
     "bunyan": "*",

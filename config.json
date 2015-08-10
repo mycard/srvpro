@@ -1,11 +1,11 @@
 {
-    "ip": "",
+    "ip": "127.0.0.1",
     "port": 7911,
-    "version": 4897,
+    "version": 4917,
     "modules": {
         "welcome": "Mycard Server",
-        "tips": "https://my-card.in/tips.json",
-        "dialogues": "https://my-card.in/dialogues.json",
+        "tips": "http://mercury233.me/ygosrv233/tips.json",
+        "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
         "database": false,
         "post_start_watching": true,
         "skip_empty_side": true,

@@ -12,7 +12,7 @@ _ = require 'underscore'
 _.str = require 'underscore.string'
 _.mixin(_.str.exports());
 
-Inotify = require('inotify').Inotify
+#Inotify = require('inotify').Inotify
 WebSocketServer = require('websocket').server
 request = require 'request'
 
