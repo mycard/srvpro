@@ -108,7 +108,6 @@
       });
       this.process.on('exit', (function(_this) {
         return function(code) {
-          log.info('room-exit', _this.name, _this.port, code);
           if (!_this.disconnector) {
             _this.disconnector = 'server';
           }
@@ -205,29 +204,25 @@
       }, (function(_this) {
         return function(err, player0) {
           if (err) {
-            return log.error("error when find user", _this.dueling_players[0].name, err);
+
           } else if (!player0) {
-            return log.error("can't find user ", _this.dueling_players[0].name);
+
           } else {
             return User.findOne({
               name: _this.dueling_players[1].name
             }, function(err, player1) {
               var loser, winner;
               if (err) {
-                return log.error("error when find user", _this.dueling_players[1].name, err);
+
               } else if (!player1) {
-                return log.error("can't find user ", _this.dueling_players[1].name);
+
               } else {
-                log.info({
-                  user: player0._id,
-                  card_usages: _this.dueling_players[0].deck
-                });
                 Deck.findOne({
                   user: player0._id,
                   card_usages: _this.dueling_players[0].deck
                 }, function(err, deck0) {
                   if (err) {
-                    log.error("error when find deck");
+
                   } else if (!deck0) {
                     deck0 = new Deck({
                       name: 'match',
@@ -242,14 +237,12 @@
                     deck0.last_used_at = Date.now();
                     deck0.save();
                   }
-                  log.info(deck0);
-                  log.info(_this.dueling_players[0].deck, _this.dueling_players[1].deck, _this.dueling_players);
                   return Deck.findOne({
                     user: player1._id,
                     card_usages: _this.dueling_players[1].deck
                   }, function(err, deck1) {
                     if (err) {
-                      log.error("error when find deck");
+
                     } else if (!deck1) {
                       deck1 = new Deck({
                         name: 'match',
@@ -264,7 +257,6 @@
                       deck1.last_used_at = Date.now();
                       deck1.save();
                     }
-                    log.info(deck1);
                     return Match.create({
                       players: [
                         {
@@ -278,9 +270,7 @@
                       duels: _this.duels,
                       winner: match_winner === 0 ? player0._id : player1._id,
                       ygopro_version: settings.version
-                    }, function(err, match) {
-                      return log.info(err, match);
-                    });
+                    }, function(err, match) {});
                   });
                 });
                 if (match_winner === 0) {
@@ -290,14 +280,12 @@
                   winner = player1;
                   loser = player0;
                 }
-                log.info('before_settle_result', winner.name, winner.points, loser.name, loser.points);
                 winner.points += 5;
                 if (_.last(_this.duels).reason === 4) {
                   loser.points -= 8;
                 } else {
                   loser.points -= 3;
                 }
-                log.info('duel_settle_result', winner.name, winner.points, loser.name, loser.points);
                 winner.save();
                 return loser.save();
               }

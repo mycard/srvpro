@@ -49,7 +49,7 @@ net.createServer (client) ->
 
   #释放处理
   client.on 'close', (had_error) ->
-    log.info "client closed", client.name, had_error
+    #log.info "client closed", client.name, had_error
     client.room.disconnector = client if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
       client.closed = true
@@ -57,7 +57,7 @@ net.createServer (client) ->
     server.end()
 
   client.on 'error', (error)->
-    log.info "client error", client.name, error
+    #log.info "client error", client.name, error
     client.room.disconnector = client if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
       client.closed = error
@@ -65,7 +65,7 @@ net.createServer (client) ->
     server.end()
 
   server.on 'close', (had_error) ->
-    log.info "server closed", client.name, had_error
+    #log.info "server closed", client.name, had_error
     server.closed = true unless server.closed
     client.room.disconnector = 'server' if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
@@ -73,7 +73,7 @@ net.createServer (client) ->
       client.end()
 
   server.on 'error', (error)->
-    log.info "server error", client.name, error
+    #log.info "server error", client.name, error
     server.closed = error
     client.room.disconnector = 'server' if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
@@ -218,7 +218,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
   else
-    log.info 'join_game',info.pass, client.name
+    #log.info 'join_game',info.pass, client.name
     client.room = Room.find_or_create_by_name(info.pass)
     if client.room.started
       if settings.modules.post_start_watching
@@ -297,7 +297,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             break
 
     watcher.on 'error', (error)->
-      log.error "watcher error", error
+      #log.error "watcher error", error
 
     watcher.on 'close', (had_error)->
       for w in client.room.ws_watchers
@@ -331,7 +331,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2
     reason = buffer.readUInt8(2)
-    log.info {winner: pos, reason: reason}
+    #log.info {winner: pos, reason: reason}
     client.room.duels.push {winner: pos, reason: reason}
   #lp跟踪
   if ygopro.constants.MSG[msg] == 'DAMAGE' and client.is_host
@@ -421,7 +421,7 @@ if settings.modules.tips
     json: true
     , (error, response, body)->
       tips = body
-      log.info "tips loaded", tips.length
+      #log.info "tips loaded", tips.length
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   unless client.room.started #first start
@@ -431,12 +431,12 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     for player in client.room.players when player.pos != 7
       client.room.dueling_players[player.pos] = player
       if !player.main
-        log.error 'WTF', client
+        #log.error 'WTF', client
       else
         player.deck = mycard.load_card_usages_from_cards(player.main, player.side)
 
-    if !client.room.dueling_players[0] or !client.room.dueling_players[1]
-      log.error 'incomplete room', client.room.dueling_players, client.room.players
+    #if !client.room.dueling_players[0] or !client.room.dueling_players[1]
+      #log.error 'incomplete room', client.room.dueling_players, client.room.players
 
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
@@ -452,13 +452,13 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
           if line.indexOf('rtt') != -1
             ygopro.stoc_send_chat_to_room client.room, line
           else
-            log.warn 'ping', stdout
+            #log.warn 'ping', stdout
             ygopro.stoc_send_chat_to_room client.room, stdout
     when '/ranktop'
       if settings.modules.database
         User.find null, null, { sort: { points : -1 }, limit: 8 }, (err, users)->
           if err
-            return log.error 'ranktop', err
+            return #log.error 'ranktop', err
           for index, user of users
             ygopro.stoc_send_chat client, [parseInt(index)+1, user.points, user.name].join(' ')
 
@@ -480,7 +480,7 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
     when '/admin showroom'
       log.info client.room
 ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
-  log.info info
+  #log.info info
   main = (info.deckbuf[i] for i in [0...info.mainc])
   side = (info.deckbuf[i] for i in [info.mainc...info.mainc+info.sidec])
   client.main = main
@@ -536,7 +536,7 @@ if settings.modules.http
   log.info 'level_points loaded', level_points
   http_server = http.createServer (request, response)->
     #http://122.0.65.70:7922/?operation=getroomjson
-      u = url.parse(request.url)
+      u = url.parse(request.url,1)
       #log.info u
       if u.pathname == '/count.json'
         response.writeHead(200);
@@ -583,7 +583,7 @@ if settings.modules.http
           istart: if room.started then 'start' else 'wait'
         )
         response.end("loadroom( " + roomsjson + " );");
-      else if u.query == 'operation=getroomjson'
+      else if u.query.operation == 'getroomjson'
         response.writeHead(200);
         response.end JSON.stringify rooms: (for room in Room.all when room.established
           roomid: room.port.toString(),
@@ -596,6 +596,10 @@ if settings.modules.http
           ),
           istart: if room.started then "start" else "wait"
         )
+      else if u.query.pass == settings.modules.http.password && u.query.shout
+        for room in Room.all
+          ygopro.stoc_send_chat_to_room(room, u.query.shout)
+        response.writeHead(200);
       else
         response.writeHead(404);
         response.end();

@@ -70,7 +70,6 @@
     server = new net.Socket();
     client.server = server;
     client.on('close', function(had_error) {
-      log.info("client closed", client.name, had_error);
       if (client.room && client.room.started && indexOf.call(client.room.dueling_players, client) >= 0 && !client.room.disconnector) {
         client.room.disconnector = client;
       }
@@ -83,7 +82,6 @@
       return server.end();
     });
     client.on('error', function(error) {
-      log.info("client error", client.name, error);
       if (client.room && client.room.started && indexOf.call(client.room.dueling_players, client) >= 0 && !client.room.disconnector) {
         client.room.disconnector = client;
       }
@@ -96,7 +94,6 @@
       return server.end();
     });
     server.on('close', function(had_error) {
-      log.info("server closed", client.name, had_error);
       if (!server.closed) {
         server.closed = true;
       }
@@ -109,7 +106,6 @@
       }
     });
     server.on('error', function(error) {
-      log.info("server error", client.name, error);
       server.closed = error;
       if (client.room && client.room.started && indexOf.call(client.room.dueling_players, client) >= 0 && !client.room.disconnector) {
         client.room.disconnector = 'server';
@@ -257,7 +253,6 @@
       });
       return client.end();
     } else {
-      log.info('join_game', info.pass, client.name);
       client.room = Room.find_or_create_by_name(info.pass);
       if (client.room.started) {
         if (settings.modules.post_start_watching) {
@@ -371,9 +366,7 @@
         }
         return results;
       });
-      watcher.on('error', function(error) {
-        return log.error("watcher error", error);
-      });
+      watcher.on('error', function(error) {});
       return watcher.on('close', function(had_error) {
         var j, len, ref, results, w;
         ref = client.room.ws_watchers;
@@ -418,10 +411,6 @@
         pos = 1 - pos;
       }
       reason = buffer.readUInt8(2);
-      log.info({
-        winner: pos,
-        reason: reason
-      });
       client.room.duels.push({
         winner: pos,
         reason: reason
@@ -519,8 +508,7 @@
       url: settings.modules.tips,
       json: true
     }, function(error, response, body) {
-      tips = body;
-      return log.info("tips loaded", tips.length);
+      return tips = body;
     });
   }
 
@@ -538,13 +526,10 @@
         }
         client.room.dueling_players[player.pos] = player;
         if (!player.main) {
-          log.error('WTF', client);
+
         } else {
           player.deck = mycard.load_card_usages_from_cards(player.main, player.side);
         }
-      }
-      if (!client.room.dueling_players[0] || !client.room.dueling_players[1]) {
-        log.error('incomplete room', client.room.dueling_players, client.room.players);
       }
     }
     if (settings.modules.tips) {
@@ -564,7 +549,6 @@
             if (line.indexOf('rtt') !== -1) {
               return ygopro.stoc_send_chat_to_room(client.room, line);
             } else {
-              log.warn('ping', stdout);
               return ygopro.stoc_send_chat_to_room(client.room, stdout);
             }
           }
@@ -579,7 +563,7 @@
           }, function(err, users) {
             var index, results, user;
             if (err) {
-              return log.error('ranktop', err);
+              return;
             }
             results = [];
             for (index in users) {
@@ -619,7 +603,6 @@
 
   ygopro.ctos_follow('UPDATE_DECK', false, function(buffer, info, client, server) {
     var i, main, side;
-    log.info(info);
     main = (function() {
       var j, ref, results;
       results = [];
@@ -693,8 +676,8 @@
     }
     log.info('level_points loaded', level_points);
     http_server = http.createServer(function(request, response) {
-      var level, name, password, player, ref, ref1, room, roomsjson, u;
-      u = url.parse(request.url);
+      var j, len, level, name, password, player, ref, ref1, ref2, room, roomsjson, u;
+      u = url.parse(request.url, 1);
       if (u.pathname === '/count.json') {
         response.writeHead(200);
         return response.end(Room.all.length.toString());
@@ -780,7 +763,7 @@
           })()
         });
         return response.end("loadroom( " + roomsjson + " );");
-      } else if (u.query === 'operation=getroomjson') {
+      } else if (u.query.operation === 'getroomjson') {
         response.writeHead(200);
         return response.end(JSON.stringify({
           rooms: (function() {
@@ -817,6 +800,13 @@
             return results;
           })()
         }));
+      } else if (u.query.pass === settings.modules.http.password && u.query.shout) {
+        ref2 = Room.all;
+        for (j = 0, len = ref2.length; j < len; j++) {
+          room = ref2[j];
+          ygopro.stoc_send_chat_to_room(room, u.query.shout);
+        }
+        return response.writeHead(200);
       } else {
         response.writeHead(404);
         return response.end();

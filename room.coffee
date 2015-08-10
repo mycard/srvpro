@@ -89,7 +89,7 @@ class Room
 
     @process = spawn './ygopro', param, cwd: 'ygocore'
     @process.on 'exit', (code)=>
-      log.info 'room-exit', this.name, this.port, code
+      #log.info 'room-exit', this.name, this.port, code
       @disconnector = 'server' unless @disconnector
       this.delete()
     @process.stdout.setEncoding('utf8')
@@ -135,22 +135,22 @@ class Room
     return unless @dueling_players[0] and @dueling_players[1] #a WTF fix
     User.findOne { name: @dueling_players[0].name }, (err, player0)=>
       if(err)
-        log.error "error when find user", @dueling_players[0].name, err
+        #log.error "error when find user", @dueling_players[0].name, err
       else if(!player0)
-        log.error "can't find user ", @dueling_players[0].name
+        #log.error "can't find user ", @dueling_players[0].name
       else
         User.findOne { name: @dueling_players[1].name }, (err, player1)=>
           if(err)
-            log.error "error when find user", @dueling_players[1].name, err
+            #log.error "error when find user", @dueling_players[1].name, err
           else if(!player1)
-            log.error "can't find user ", @dueling_players[1].name
+            #log.error "can't find user ", @dueling_players[1].name
           else
             #---------------------------------------------------------------------------
             #卡组
-            log.info user: player0._id, card_usages: @dueling_players[0].deck
+            #log.info user: player0._id, card_usages: @dueling_players[0].deck
             Deck.findOne user: player0._id, card_usages: @dueling_players[0].deck, (err, deck0)=>
               if(err)
-                log.error "error when find deck"
+                #log.error "error when find deck"
               else if(!deck0)
                 deck0 = new Deck({name: 'match', user: player0._id, card_usages: @dueling_players[0].deck, used_count: 1, last_used_at: Date.now()})
                 deck0.save()
@@ -158,11 +158,11 @@ class Room
                 deck0.used_count++
                 deck0.last_used_at = Date.now()
                 deck0.save()
-              log.info deck0
-              log.info @dueling_players[0].deck, @dueling_players[1].deck, @dueling_players
+              #log.info deck0
+              #log.info @dueling_players[0].deck, @dueling_players[1].deck, @dueling_players
               Deck.findOne user: player1._id, card_usages: @dueling_players[1].deck, (err, deck1)=>
                 if(err)
-                  log.error "error when find deck"
+                  #log.error "error when find deck"
                 else if(!deck1)
                   deck1 = new Deck({name: 'match', user: player1._id, card_usages: @dueling_players[1].deck, used_count: 1, last_used_at: Date.now()})
                   deck1.save()
@@ -170,7 +170,7 @@ class Room
                   deck1.used_count++
                   deck1.last_used_at = Date.now()
                   deck1.save()
-                log.info deck1
+                #log.info deck1
 
                 Match.create
                   players: [{user: player0._id, deck: deck0._id}, {user: player1._id, deck: deck1._id}]
@@ -178,7 +178,7 @@ class Room
                   winner: if match_winner == 0 then player0._id else player1._id,
                   ygopro_version: settings.version
                 ,(err, match)->
-                    log.info err, match
+                    #log.info err, match
 
             #积分
             if match_winner == 0
@@ -188,13 +188,13 @@ class Room
               winner = player1
               loser = player0
 
-            log.info('before_settle_result',winner.name, winner.points,loser.name, loser.points)
+            #log.info('before_settle_result',winner.name, winner.points,loser.name, loser.points)
             winner.points += 5
             if _.last(@duels).reason == 4
               loser.points -= 8
             else
               loser.points -= 3
-            log.info('duel_settle_result',winner.name, winner.points,loser.name, loser.points)
+            #log.info('duel_settle_result',winner.name, winner.points,loser.name, loser.points)
             winner.save()
             loser.save()
 
