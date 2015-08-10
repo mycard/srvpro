@@ -191,7 +191,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
   
-  else if (os.freemem() / os.totalmem())>=0.9
+  else if (os.freemem() / os.totalmem())<=0.1
     ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试")
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
@@ -242,7 +242,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #欢迎信息
   if settings.modules.welcome
     ygopro.stoc_send_chat client, settings.modules.welcome
-  if (os.freemem() / os.totalmem())>=0.9
+  if (os.freemem() / os.totalmem())<=0.1
     ygopro.stoc_send_chat client, "服务器已经爆满，随时存在崩溃风险！"
   if settings.modules.database
     if _.startsWith(client.room.name, 'M#')
