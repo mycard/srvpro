@@ -600,6 +600,7 @@ if settings.modules.http
         for room in Room.all
           ygopro.stoc_send_chat_to_room(room, u.query.shout)
         response.writeHead(200);
+        response.end("shout " + u.query.shout + " ok");
       else
         response.writeHead(404);
         response.end();

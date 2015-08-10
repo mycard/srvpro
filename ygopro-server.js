@@ -806,7 +806,8 @@
           room = ref2[j];
           ygopro.stoc_send_chat_to_room(room, u.query.shout);
         }
-        return response.writeHead(200);
+        response.writeHead(200);
+        return response.end("shout " + u.query.shout + " ok");
       } else {
         response.writeHead(404);
         return response.end();
