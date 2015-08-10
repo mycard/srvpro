@@ -695,6 +695,7 @@ if settings.modules.http
       console.log (new Date()) + " Peer " + connection.remoteAddress + " disconnected."
 
 #清理90s没活动的房间
+###
 inotify = new Inotify()
 inotify.addWatch
   path: 'ygocore/replay',
@@ -712,6 +713,7 @@ inotify.addWatch
           room.alive = true
     else
       log.error "event without filename"
+###
 ###
 setInterval ()->
   for room in Room.all
