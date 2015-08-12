@@ -11,6 +11,7 @@
         "skip_empty_side": true,
         "http": {
             "port": 7922,
+            "password": "123456",
             "match": true
         }
     }
