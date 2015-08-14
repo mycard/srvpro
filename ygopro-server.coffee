@@ -18,10 +18,6 @@ request = require 'request'
 
 bunyan = require 'bunyan'
 
-memwatch = require 'memwatch'
-
-heapdump = require 'heapdump'
-
 #配置文件
 settings = require './config.json'
 
@@ -34,6 +30,8 @@ Deck = require './deck.js' if settings.modules.database
 
 victories = require './victories.json'
 
+
+
 #debug模式 端口号+1
 debug = false
 log = null
@@ -43,11 +41,6 @@ if process.argv[2] == '--debug'
   log = bunyan.createLogger name: "mycard-debug"
 else
   log = bunyan.createLogger name: "mycard"
-
-
-memwatch.on 'leak', (info) ->
-  log.info('Memory leak detected: ', info);
-
 
 #网络连接
 net.createServer (client) ->
@@ -192,16 +185,6 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.end()
   else if !info.pass.length
     ygopro.stoc_send_chat(client,"房间为空，请修改房间名")
-    ygopro.stoc_send client, 'ERROR_MSG',{
-      msg: 1
-      code: 2
-    }
-    client.end()
-  
-  else if info.pass=='logdump'
-    file = '/tmp/myapp-' + process.pid + '-' + Date.now() + '.heapsnapshot';
-    heapdump.writeSnapshot(file);
-    ygopro.stoc_send_chat(client,"OK")
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
       code: 2
