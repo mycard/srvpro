@@ -72,9 +72,7 @@
       this.status = 'starting';
       this.established = false;
       this.watcher_buffers = [];
-      this.watcher_stanzas = [];
       this.watchers = [];
-      this.ws_watchers = [];
       Room.all.push(this);
       this.hostinfo = {
         lflist: 0,
@@ -92,6 +90,7 @@
         this.hostinfo.mode = 1;
       } else if (name.slice(0, 2) === 'T#') {
         this.hostinfo.mode = 2;
+        this.hostinfo.start_lp = 16000;
       } else if ((param = name.match(/^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i))) {
         this.hostinfo.rule = parseInt(param[1]);
         this.hostinfo.mode = parseInt(param[2]);
@@ -143,6 +142,9 @@
         this.save_match();
       }
       index = _.indexOf(Room.all, this);
+      if (index !== -1) {
+        Room.all[index] = null;
+      }
       if (index !== -1) {
         Room.all.splice(index, 1);
       }

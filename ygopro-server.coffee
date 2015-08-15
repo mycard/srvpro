@@ -18,6 +18,8 @@ request = require 'request'
 
 bunyan = require 'bunyan'
 
+#heapdump = require 'heapdump'
+
 #配置文件
 settings = require './config.json'
 
@@ -183,6 +185,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: settings.version
     }
     client.end()
+  
   else if !info.pass.length
     ygopro.stoc_send_chat(client,"房间为空，请修改房间名")
     ygopro.stoc_send client, 'ERROR_MSG',{
@@ -267,15 +270,17 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       ygopro.ctos_send watcher, 'HS_TOOBSERVER'
 
+    ###
     watcher.ws_buffer = new Buffer(0)
     watcher.ws_message_length = 0
     client.room.watcher_stanzas = []
-
+    ###
+    
     watcher.on 'data', (data)->
       client.room.watcher_buffers.push data
       for w in client.room.watchers
         w.write data if w #a WTF fix
-
+    ###
       watcher.ws_buffer = Buffer.concat([watcher.ws_buffer, data], watcher.ws_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
       while true
@@ -295,13 +300,14 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             watcher.ws_message_length = 0
           else
             break
-
+    ###
     watcher.on 'error', (error)->
       #log.error "watcher error", error
-
+    ###
     watcher.on 'close', (had_error)->
       for w in client.room.ws_watchers
         w.close()
+    ###
 
 #登场台词
 if settings.modules.dialogues
@@ -315,7 +321,7 @@ if settings.modules.dialogues
       else if error or !body
         log.warn 'dialogues error', error, response
       else
-        log.info "dialogues loaded", _.size body
+        #log.info "dialogues loaded", _.size body
         dialogues = body
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
@@ -533,7 +539,7 @@ if settings.modules.http
   for i of level_points
     waiting.push []
 
-  log.info 'level_points loaded', level_points
+  #log.info 'level_points loaded', level_points
   http_server = http.createServer (request, response)->
     #http://122.0.65.70:7922/?operation=getroomjson
       u = url.parse(request.url,1)
@@ -652,7 +658,7 @@ if settings.modules.http
 
   , 2000
   ###
-  
+  ###
   originIsAllowed = (origin) ->
     # allow all origin, for debug
     true
@@ -684,8 +690,8 @@ if settings.modules.http
 
     for stanza in room.watcher_stanzas
       connection.sendBytes stanza
-
-    ###
+  ###
+  ###
     connection.on "message", (message) ->
       if message.type is "utf8"
         console.log "Received Message: " + message.utf8Data
@@ -693,12 +699,13 @@ if settings.modules.http
       else if message.type is "binary"
         console.log "Received Binary Message of " + message.binaryData.length + " bytes"
         connection.sendBytes message.binaryData
-    ###
+  ###
+  ###
     connection.on "close", (reasonCode, description) ->
       index = _.indexOf(room.ws_watchers, connection)
       room.ws_watchers.splice(index, 1) unless index == -1
       console.log (new Date()) + " Peer " + connection.remoteAddress + " disconnected."
-
+  ###
 #清理90s没活动的房间
 ###
 inotify = new Inotify()
