@@ -13,7 +13,7 @@ _.str = require 'underscore.string'
 _.mixin(_.str.exports());
 
 #Inotify = require('inotify').Inotify
-WebSocketServer = require('websocket').server
+
 request = require 'request'
 
 bunyan = require 'bunyan'
@@ -25,13 +25,7 @@ settings = require './config.json'
 
 #组件
 ygopro = require './ygopro.js'
-mycard = require './mycard.js'
 Room = require './room.js'
-User = require './user.js' if settings.modules.database
-Deck = require './deck.js' if settings.modules.database
-
-victories = require './victories.json'
-
 
 
 #debug模式 端口号+1
@@ -51,33 +45,29 @@ net.createServer (client) ->
 
   #释放处理
   client.on 'close', (had_error) ->
-    #log.info "client closed", client.name, had_error
-    client.room.disconnector = client if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
+    log.info "client closed", client.name, had_error
     unless client.closed
       client.closed = true
       client.room.disconnect(client) if client.room
     server.end()
 
   client.on 'error', (error)->
-    #log.info "client error", client.name, error
-    client.room.disconnector = client if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
+    log.info "client error", client.name, error
     unless client.closed
       client.closed = error
       client.room.disconnect(client, error) if client.room
     server.end()
 
   server.on 'close', (had_error) ->
-    #log.info "server closed", client.name, had_error
+    log.info "server closed", client.name, had_error
     server.closed = true unless server.closed
-    client.room.disconnector = 'server' if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接")
       client.end()
 
   server.on 'error', (error)->
-    #log.info "server error", client.name, error
+    log.info "server error", client.name, error
     server.closed = error
-    client.room.disconnector = 'server' if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}")
       client.end()
@@ -247,15 +237,6 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_send_chat client, settings.modules.welcome
   if (os.freemem() / os.totalmem())<=0.1
     ygopro.stoc_send_chat client, "服务器已经爆满，随时存在崩溃风险！"
-  if settings.modules.database
-    if _.startsWith(client.room.name, 'M#')
-      User.findOne { name: client.name }, (err, user)->
-        if !user
-          user = new User({name: client.name, points: 0})
-          user.save()
-        User.count {points:{$gt:user.points}}, (err, count)->
-          rank = count + 1
-          ygopro.stoc_send_chat(client, "积分系统测试中，你现在有#{user.points}点积分，排名#{rank}，这些积分以后正式使用时会重置")
 
   if settings.modules.post_start_watching and !client.room.watcher
     client.room.watcher = watcher = net.connect client.room.port, ->
@@ -270,38 +251,13 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       ygopro.ctos_send watcher, 'HS_TOOBSERVER'
 
-    ###
-    watcher.ws_buffer = new Buffer(0)
-    watcher.ws_message_length = 0
-    client.room.watcher_stanzas = []
-    ###
     
     watcher.on 'data', (data)->
       client.room.watcher_buffers.push data
       for w in client.room.watchers
         w.write data if w #a WTF fix
-    ###
-      watcher.ws_buffer = Buffer.concat([watcher.ws_buffer, data], watcher.ws_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
-      while true
-        if watcher.ws_message_length == 0
-          if watcher.ws_buffer.length >= 2
-            watcher.ws_message_length = watcher.ws_buffer.readUInt16LE(0)
-          else
-            break
-        else
-          if watcher.ws_buffer.length >= 2 + watcher.ws_message_length
-            stanza = watcher.ws_buffer.slice(2, watcher.ws_message_length + 2)
-            for w in client.room.ws_watchers
-              w.sendBytes stanza if w #a WTF fix
-            client.room.watcher_stanzas.push stanza
-
-            watcher.ws_buffer = watcher.ws_buffer.slice(2 + watcher.ws_message_length)
-            watcher.ws_message_length = 0
-          else
-            break
-    ###
-    watcher.on 'error', (error)->
+    #watcher.on 'error', (error)->
       #log.error "watcher error", error
     ###
     watcher.on 'close', (had_error)->
@@ -388,26 +344,8 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
           ygopro.stoc_send_chat client, line
 
 
-
-
-
-
-
-###
 #房间管理
-ygopro.stoc_follow 'HS_PLAYER_ENTER', false, (buffer, info, client, server)->
-  #console.log "PLAYER_ENTER to #{client.name}: #{info.name}, #{info.pos}"
-  #room = client.room
-  #if !room
-  #  console.log "[WARN]player_enter: can't find room by player #{client.player}"
-  #  return
-  #room.pos_name[info.pos] = info.name
 
-ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
-  #client.ready = info.status & 0xF != 0
-  #client.pos = info.status >> 4
-  #console.log "PLAYER_CHANGE to #{client.name}: #{info.status & 0xF != 0}, #{info.status >> 4}"
-###
 
 ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
   selftype = info.type & 0xf;
@@ -436,10 +374,10 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     client.room.dueling_players = []
     for player in client.room.players when player.pos != 7
       client.room.dueling_players[player.pos] = player
-      if !player.main
+      #if !player.main
         #log.error 'WTF', client
-      else
-        player.deck = mycard.load_card_usages_from_cards(player.main, player.side)
+      #else
+        #player.deck = mycard.load_card_usages_from_cards(player.main, player.side)
 
     #if !client.room.dueling_players[0] or !client.room.dueling_players[1]
       #log.error 'incomplete room', client.room.dueling_players, client.room.players
@@ -460,31 +398,15 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
           else
             #log.warn 'ping', stdout
             ygopro.stoc_send_chat_to_room client.room, stdout
-    when '/ranktop'
-      if settings.modules.database
-        User.find null, null, { sort: { points : -1 }, limit: 8 }, (err, users)->
-          if err
-            return #log.error 'ranktop', err
-          for index, user of users
-            ygopro.stoc_send_chat client, [parseInt(index)+1, user.points, user.name].join(' ')
 
     when '/help'
-      ygopro.stoc_send_chat(client,"Mycard MatchServer 指令帮助")
+      ygopro.stoc_send_chat(client,"YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client,"/help 显示这个帮助信息")
       ygopro.stoc_send_chat(client,"/tip 显示一条提示") if settings.modules.tips
-      ygopro.stoc_send_chat(client,"/senddeck 发送自己的卡组")
+      #ygopro.stoc_send_chat(client,"/senddeck 发送自己的卡组")
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
-#发送卡组
-    when '/senddeck'
-      if client.deck?
-        ygopro.stoc_send_chat(client, "正在读取卡组信息... ")
-        mycard.deck_url_short client.name, client.deck, (url)->
-          ygopro.stoc_send_chat_to_room(client.room, "卡组链接: " + url)
-      else
-        ygopro.stoc_send_chat_to_room(client.room, "读取卡组信息失败")
-    when '/admin showroom'
-      log.info client.room
+
 ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   #log.info info
   main = (info.deckbuf[i] for i in [0...info.mainc])
@@ -502,44 +424,8 @@ if settings.modules.skip_empty_side
       }
       ygopro.stoc_send_chat client, '等待更换副卡组中...'
 
-###
-# 开包大战
-
-packs_weighted_cards = {}
-for pack, cards of require './packs.json'
-  packs_weighted_cards[pack] = []
-  for card in cards
-    for i in [0..card.count]
-      packs_weighted_cards[pack].push card.card
-
-console.log packs_weighted_cards
-
-ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
-  ygopro.ctos_send server, 'HS_NOTREADY'
-
-  deck = []
-  for pack in client.player
-    for i in [0...5]
-      deck.push packs_weighted_cards[pack][Math.floor(Math.random()*packs_weighted_cards[pack].length)]
-
-
-  ygopro.ctos_send server, 'UPDATE_DECK', {
-    mainc: deck.length,
-    sidec: 0,
-    deckbuf: deck
-  }
-  ygopro.ctos_send server, 'HS_READY'
-
-###
-
 #http
 if settings.modules.http
-  level_points = require './level_points.json'
-  waiting = [[]]
-  for i of level_points
-    waiting.push []
-
-  #log.info 'level_points loaded', level_points
   http_server = http.createServer (request, response)->
     #http://122.0.65.70:7922/?operation=getroomjson
       u = url.parse(request.url,1)
@@ -547,33 +433,6 @@ if settings.modules.http
       if u.pathname == '/count.json'
         response.writeHead(200);
         response.end(Room.all.length.toString())
-      else if u.pathname == '/match'
-        if request.headers['authorization']
-          [name, password] = new Buffer(request.headers['authorization'].split(/\s+/).pop() ? '','base64').toString().split(':')
-          User.findOne { name: name }, (err, user)->
-            if !user
-              user = new User({name: name, points: 0, elo: 1400})
-              user.save()
-            level = level_points.length
-            for index, points of level_points
-              if user.points < points
-                level = index
-                break
-            response.allowance = 0
-            waiting[level].push response
-            request.on 'close', ()->
-              index = waiting[level].indexOf(response)
-              waiting[level].splice(index, 1) unless index == -1
-        else
-          #log.info 'unauth match'
-          #response.writeHead(401);
-          #response.end("请更新mycard到1.2.8版本");
-          level = 1
-          response.allowance = 0
-          waiting[level].push response
-          request.on 'close', ()->
-            index = waiting[level].indexOf(response)
-            waiting[level].splice(index, 1) unless index == -1
 
       else if u.pathname == '/rooms.js'
         response.writeHead(200);
@@ -589,6 +448,7 @@ if settings.modules.http
           istart: if room.started then 'start' else 'wait'
         )
         response.end("loadroom( " + roomsjson + " );");
+
       else if u.query.operation == 'getroomjson'
         response.writeHead(200);
         response.end JSON.stringify rooms: (for room in Room.all when room.established
@@ -602,110 +462,18 @@ if settings.modules.http
           ),
           istart: if room.started then "start" else "wait"
         )
+
       else if u.query.pass == settings.modules.http.password && u.query.shout
         for room in Room.all
           ygopro.stoc_send_chat_to_room(room, u.query.shout)
         response.writeHead(200);
         response.end("shout " + u.query.shout + " ok");
+
       else
         response.writeHead(404);
         response.end();
   http_server.listen settings.modules.http.port
-  
-  ###
-  setInterval ()->
-    for level in [level_points.length..0]
-      for index, player of waiting[level]
-        opponent_level = null
-        opponent = _.find waiting[level], (opponent)->
-          log.info opponent,player
-          opponent isnt player
-        log.info '--------1--------', waiting, opponent
 
-        if opponent
-          opponent_level = level
-        else if player.allowance > 0
-          for displacement in [1..player.allowance]
-            if level+displacement <= level_points.length
-              opponent = waiting[level+displacement][0]
-              if opponent
-                opponent_level = level+displacement
-                break
-            if level-displacement >= 0
-              opponent = waiting[level-displacement][0]
-              if opponent
-                opponent_level = level-displacement
-                break
-
-        if opponent
-          if waiting[level].indexOf(player) == -1 or waiting[opponent_level].indexOf(opponent) == -1
-            log.info waiting, player, level, opponent, opponent_level
-            throw 'WTF'
-          waiting[level].splice(waiting[level].indexOf(player), 1)
-          waiting[opponent_level].splice(waiting[opponent_level].indexOf(opponent), 1)
-          index--
-
-          room = "mycard://#{settings.ip}:#{settings.port}/M##{_.uniqueId()}$#{_.random(999)}"
-          log.info 'matched', room
-          headers = {"Access-Control-Allow-Origin":"*","Content-Type": "text/plain"}
-          player.writeHead(200, headers)
-          player.end room
-          opponent.writeHead(200, headers)
-          opponent.end room
-
-        else
-          player.allowance++
-
-  , 2000
-  ###
-  ###
-  originIsAllowed = (origin) ->
-    # allow all origin, for debug
-    true
-  wsServer = new WebSocketServer(
-    httpServer: http_server
-    autoAcceptConnections: false
-  )
-  wsServer.on "request", (request) ->
-    unless originIsAllowed(request.origin)
-      # Make sure we only accept requests from an allowed origin
-      request.reject()
-      console.log (new Date()) + " Connection from origin " + request.origin + " rejected."
-      return
-
-    room_name = decodeURIComponent(request.resource.slice(1))
-    if room_name == 'started'
-      room = _.find Room.all, (room)->
-        room.started
-    else
-      room = Room.find_by_name room_name
-    unless room
-      request.reject()
-      console.log (new Date()) + " Connection from origin " + request.origin + " rejected. #{room_name}"
-      return
-
-    connection = request.accept(null, request.origin)
-    console.log (new Date()) + " Connection accepted. #{room.name}"
-    room.ws_watchers.push connection
-
-    for stanza in room.watcher_stanzas
-      connection.sendBytes stanza
-  ###
-  ###
-    connection.on "message", (message) ->
-      if message.type is "utf8"
-        console.log "Received Message: " + message.utf8Data
-        connection.sendUTF message.utf8Data
-      else if message.type is "binary"
-        console.log "Received Binary Message of " + message.binaryData.length + " bytes"
-        connection.sendBytes message.binaryData
-  ###
-  ###
-    connection.on "close", (reasonCode, description) ->
-      index = _.indexOf(room.ws_watchers, connection)
-      room.ws_watchers.splice(index, 1) unless index == -1
-      console.log (new Date()) + " Peer " + connection.remoteAddress + " disconnected."
-  ###
 #清理90s没活动的房间
 ###
 inotify = new Inotify()

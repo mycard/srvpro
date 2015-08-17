@@ -5,14 +5,8 @@ spawn = require('child_process').spawn
 ygopro = require './ygopro.js'
 bunyan = require 'bunyan'
 settings = require './config.json'
-log = bunyan.createLogger name: "mycard-room"
 
-if settings.modules.database
-  mongoose = require 'mongoose'
-  mongoose.connect(settings.modules.database);
-  User = require './user.js'
-  Deck = require './deck.js'
-  Match = require './match.js'
+log = bunyan.createLogger name: "mycard-room"
 
 class Room
   #name
@@ -54,9 +48,7 @@ class Room
     @status = 'starting'
     @established = false
     @watcher_buffers = []
-    #@watcher_stanzas = []
     @watchers = []
-    #@ws_watchers = []
     Room.all.push this
 
     @hostinfo =
@@ -105,100 +97,10 @@ class Room
   delete: ->
     #积分
     return if @deleted
-    @save_match() if _.startsWith(@name, 'M#') and @started and settings.modules.database
-
     index = _.indexOf(Room.all, this)
     Room.all[index] = null unless index == -1
     Room.all.splice(index, 1) unless index == -1
     @deleted = true
-
-
-  toString: ->
-    "room: #{@name} #{@port} #{@alive ? 'alive' : 'not-alive'} #{@dueling ? 'dueling' : 'not-dueling'} [#{("client #{typeof player.client} server #{typeof player.server} #{player.name} #{player.pos}. " for player in @players)}] #{JSON.stringify @pos_name}"
-
-  ensure_finish: ()->
-    #判断match是否正常结束
-    player_wins = [0,0,0]
-    for duel in @duels
-      player_wins[duel.winner] += 1
-    normal_ended = player_wins[0] >= 2 or player_wins[1] >= 2
-
-    if !normal_ended
-      if @disconnector == 'server'
-        return false
-      if @duels.length == 0 or _.last(@duels).reason != 4
-        @duels.push {winner: 1-@disconnector.pos, reason: 4}
-    true
-
-  save_match: ()->
-    return unless @ensure_finish()
-    match_winner = _.last(@duels).winner
-
-    return unless @dueling_players[0] and @dueling_players[1] #a WTF fix
-    User.findOne { name: @dueling_players[0].name }, (err, player0)=>
-      if(err)
-        #log.error "error when find user", @dueling_players[0].name, err
-      else if(!player0)
-        #log.error "can't find user ", @dueling_players[0].name
-      else
-        User.findOne { name: @dueling_players[1].name }, (err, player1)=>
-          if(err)
-            #log.error "error when find user", @dueling_players[1].name, err
-          else if(!player1)
-            #log.error "can't find user ", @dueling_players[1].name
-          else
-            #---------------------------------------------------------------------------
-            #卡组
-            #log.info user: player0._id, card_usages: @dueling_players[0].deck
-            Deck.findOne user: player0._id, card_usages: @dueling_players[0].deck, (err, deck0)=>
-              if(err)
-                #log.error "error when find deck"
-              else if(!deck0)
-                deck0 = new Deck({name: 'match', user: player0._id, card_usages: @dueling_players[0].deck, used_count: 1, last_used_at: Date.now()})
-                deck0.save()
-              else
-                deck0.used_count++
-                deck0.last_used_at = Date.now()
-                deck0.save()
-              #log.info deck0
-              #log.info @dueling_players[0].deck, @dueling_players[1].deck, @dueling_players
-              Deck.findOne user: player1._id, card_usages: @dueling_players[1].deck, (err, deck1)=>
-                if(err)
-                  #log.error "error when find deck"
-                else if(!deck1)
-                  deck1 = new Deck({name: 'match', user: player1._id, card_usages: @dueling_players[1].deck, used_count: 1, last_used_at: Date.now()})
-                  deck1.save()
-                else
-                  deck1.used_count++
-                  deck1.last_used_at = Date.now()
-                  deck1.save()
-                #log.info deck1
-
-                Match.create
-                  players: [{user: player0._id, deck: deck0._id}, {user: player1._id, deck: deck1._id}]
-                  duels: @duels
-                  winner: if match_winner == 0 then player0._id else player1._id,
-                  ygopro_version: settings.version
-                ,(err, match)->
-                    #log.info err, match
-
-            #积分
-            if match_winner == 0
-              winner = player0
-              loser = player1
-            else
-              winner = player1
-              loser = player0
-
-            #log.info('before_settle_result',winner.name, winner.points,loser.name, loser.points)
-            winner.points += 5
-            if _.last(@duels).reason == 4
-              loser.points -= 8
-            else
-              loser.points -= 3
-            #log.info('duel_settle_result',winner.name, winner.points,loser.name, loser.points)
-            winner.save()
-            loser.save()
 
   connect: (client)->
     @players.push client
