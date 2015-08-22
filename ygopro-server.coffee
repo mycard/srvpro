@@ -27,6 +27,8 @@ settings = require './config.json'
 ygopro = require './ygopro.js'
 Room = require './room.js'
 
+#连接池
+sockets = []
 
 #debug模式 端口号+1
 debug = false
@@ -42,120 +44,147 @@ else
 net.createServer (client) ->
   server = new net.Socket()
   client.server = server
-
-  #释放处理
-  client.on 'close', (had_error) ->
-    log.info "client closed", client.name, had_error
-    unless client.closed
+  sockets.push client
+  sockets.push server
+  
+  client.setTimeout(200000)
+  
+  client.bye = () ->
+    unless !client || client.closed
       client.closed = true
       client.room.disconnect(client) if client.room
-    server.end()
-
-  client.on 'error', (error)->
-    log.info "client error", client.name, error
-    unless client.closed
-      client.closed = error
-      client.room.disconnect(client, error) if client.room
-    server.end()
-
-  server.on 'close', (had_error) ->
-    log.info "server closed", client.name, had_error
-    server.closed = true unless server.closed
-    unless client.closed
+      sockets.splice(sockets.indexOf(client),1)
+      client.destroy()
+      client = null
+    server.end() if server
+  
+  server.bye = () ->
+    unless !server || server.closed
+      server.closed = true
+      sockets.splice(sockets.indexOf(server),1)
+      server.destroy()
+      server = null
+    unless !client || client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接")
-      client.end()
+      client.end() if client
+  
+  #释放处理
+  client.on 'close', () ->
+    #log.info "client closed", client.name
+    client.bye() if client
 
-  server.on 'error', (error)->
-    log.info "server error", client.name, error
-    server.closed = error
-    unless client.closed
-      ygopro.stoc_send_chat(client, "服务器错误: #{error}")
-      client.end()
+  client.on 'error', ()->
+    #log.info "client error", client.name
+    client.bye() if client
+
+  client.on 'end', ()->
+    #log.info "client end", client.name
+    client.bye() if client
+
+  client.on 'timeout', ()->
+    #log.info "client closed", client.name
+    client.bye() if client
+
+  server.on 'close', () ->
+    #log.info "server closed", client.name
+    server.bye() if server
+
+  server.on 'error', ()->
+    #log.info "server error", client.name
+    server.bye() if server
+
+  server.on 'end', ()->
+    #log.info "server end", client.name
+    server.bye() if server
+
+  server.on 'timeout', ()->
+    #log.info "server timeout", client.name
+    server.bye() if server
 
   #需要重构
   #客户端到服务端(ctos)协议分析
-  ctos_buffer = new Buffer(0)
-  ctos_message_length = 0
-  ctos_proto = 0
+  client.ctos_buffer = new Buffer(0)
+  client.ctos_message_length = 0
+  client.ctos_proto = 0
 
   client.pre_establish_buffers = new Array()
 
   client.on 'data', (data) ->
-    if client.is_post_watcher
+    if client.is_post_watcher and client.room.watcher
       client.room.watcher.write data
     else
-      ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
+      client.ctos_buffer = Buffer.concat([client.ctos_buffer, data], client.ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
       if client.established
-        server.write data
+        server.write(data) if server
       else
         client.pre_establish_buffers.push data
 
       while true
-        if ctos_message_length == 0
-          if ctos_buffer.length >= 2
-            ctos_message_length = ctos_buffer.readUInt16LE(0)
+        if client.ctos_message_length == 0
+          if client.ctos_buffer.length >= 2
+            client.ctos_message_length = client.ctos_buffer.readUInt16LE(0)
           else
             break
-        else if ctos_proto == 0
-          if ctos_buffer.length >= 3
-            ctos_proto = ctos_buffer.readUInt8(2)
+        else if client.ctos_proto == 0
+          if client.ctos_buffer.length >= 3
+            client.ctos_proto = client.ctos_buffer.readUInt8(2)
           else
             break
         else
-          if ctos_buffer.length >= 2 + ctos_message_length
-            #console.log "CTOS", ygopro.constants.CTOS[ctos_proto]
-            if ygopro.ctos_follows[ctos_proto]
-              b = ctos_buffer.slice(3, ctos_message_length-1+3)
-              if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
+          if client.ctos_buffer.length >= 2 + client.ctos_message_length
+            #console.log "CTOS", ygopro.constants.CTOS[client.ctos_proto]
+            if ygopro.ctos_follows[client.ctos_proto]
+              b = client.ctos_buffer.slice(3, client.ctos_message_length-1+3)
+              if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[client.ctos_proto]]]
                 struct._setBuff(b)
-                ygopro.ctos_follows[ctos_proto].callback b, _.clone(struct.fields), client, server
+                ygopro.ctos_follows[client.ctos_proto].callback b, _.clone(struct.fields), client, server
               else
-                ygopro.ctos_follows[ctos_proto].callback b, null, client, server
+                ygopro.ctos_follows[client.ctos_proto].callback b, null, client, server
 
-            ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
-            ctos_message_length = 0
-            ctos_proto = 0
+            client.ctos_buffer = client.ctos_buffer.slice(2 + client.ctos_message_length)
+            client.ctos_message_length = 0
+            client.ctos_proto = 0
           else
             break
 
   #服务端到客户端(stoc)
-  stoc_buffer = new Buffer(0)
-  stoc_message_length = 0
-  stoc_proto = 0
+  server.stoc_buffer = new Buffer(0)
+  server.stoc_message_length = 0
+  server.stoc_proto = 0
 
   server.on 'data', (data)->
-    stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
+    server.stoc_buffer = Buffer.concat([server.stoc_buffer, data], server.stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
-    #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
-    client.write data
+    #unless ygopro.stoc_follows[server.stoc_proto] and ygopro.stoc_follows[server.stoc_proto].synchronous
+    client.write data if client
 
     while true
-      if stoc_message_length == 0
-        if stoc_buffer.length >= 2
-          stoc_message_length = stoc_buffer.readUInt16LE(0)
+      if server.stoc_message_length == 0
+        if server.stoc_buffer.length >= 2
+          server.stoc_message_length = server.stoc_buffer.readUInt16LE(0)
         else
           break
-      else if stoc_proto == 0
-        if stoc_buffer.length >= 3
-          stoc_proto = stoc_buffer.readUInt8(2)
+      else if server.stoc_proto == 0
+        if server.stoc_buffer.length >= 3
+          server.stoc_proto = server.stoc_buffer.readUInt8(2)
         else
           break
       else
-        if stoc_buffer.length >= 2 + stoc_message_length
-          #console.log "STOC", ygopro.constants.STOC[stoc_proto]
-          stanzas = stoc_proto
-          if ygopro.stoc_follows[stoc_proto]
-            b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
-            if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
+        if server.stoc_buffer.length >= 2 + server.stoc_message_length
+          #console.log "STOC", ygopro.constants.STOC[server.stoc_proto]
+          stanzas = server.stoc_proto
+          if ygopro.stoc_follows[server.stoc_proto]
+            b = server.stoc_buffer.slice(3, server.stoc_message_length - 1 + 3)
+            if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[server.stoc_proto]]]
               struct._setBuff(b)
-              ygopro.stoc_follows[stoc_proto].callback b, _.clone(struct.fields), client, server
+              ygopro.stoc_follows[server.stoc_proto].callback b, _.clone(struct.fields), client, server
             else
-              ygopro.stoc_follows[stoc_proto].callback b, null, client, server
+              ygopro.stoc_follows[server.stoc_proto].callback b, null, client, server
 
-          stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
-          stoc_message_length = 0
-          stoc_proto = 0
+          server.stoc_buffer = server.stoc_buffer.slice(2 + server.stoc_message_length)
+          server.stoc_message_length = 0
+          server.stoc_proto = 0
         else
           break
 
@@ -289,7 +318,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     client.lp = client.room.hostinfo.start_lp
 
     #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
-  if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(client.room.name, 'M#') and client.is_host
+  if client and ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(client.room.name, 'M#') and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2
     reason = buffer.readUInt8(2)
@@ -368,7 +397,7 @@ if settings.modules.tips
       #log.info "tips loaded", tips.length
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
-  unless client.room.started #first start
+  if client && !client.room.started #first start
     client.room.started = true
     client.room.duels = []
     client.room.dueling_players = []
@@ -398,12 +427,12 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
           else
             #log.warn 'ping', stdout
             ygopro.stoc_send_chat_to_room client.room, stdout
-
+    when '/count'
+      ygopro.stoc_send_chat(client,sockets.length.toString())
     when '/help'
       ygopro.stoc_send_chat(client,"YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client,"/help 显示这个帮助信息")
       ygopro.stoc_send_chat(client,"/tip 显示一条提示") if settings.modules.tips
-      #ygopro.stoc_send_chat(client,"/senddeck 发送自己的卡组")
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
 

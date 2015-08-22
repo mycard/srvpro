@@ -83,7 +83,7 @@ class Room
     @process = spawn './ygopro', param, cwd: 'ygocore'
     @process.on 'exit', (code)=>
       #log.info 'room-exit', this.name, this.port, code
-      @disconnector = 'server' unless @disconnector
+      @process = null
       this.delete()
     @process.stdout.setEncoding('utf8')
     @process.stdout.once 'data', (data)=>
@@ -91,7 +91,10 @@ class Room
       @port = parseInt data
       _.each @players, (player)=>
         player.server.connect @port, '127.0.0.1',=>
-          player.server.write buffer for buffer in player.pre_establish_buffers
+          for buffer in player.pre_establish_buffers
+            player.buffer=buffer
+            buffer=null
+            player.server.write player.buffer
           player.established = true
 
   delete: ->
@@ -107,7 +110,10 @@ class Room
 
     if @established
       client.server.connect @port, '127.0.0.1', ->
-        client.server.write buffer for buffer in client.pre_establish_buffers
+        for buffer in client.pre_establish_buffers
+          client.buffer=buffer
+          buffer=null
+          client.server.write client.buffer 
         client.established = true
 
   disconnect: (client, error)->
@@ -121,7 +127,7 @@ class Room
       if @players.length
         ygopro.stoc_send_chat_to_room this, "#{client.name} #{'离开了游戏'}#{if error then ": #{error}" else ''}"
       else
-        @process.kill()
+        @process.kill() if @process
         this.delete()
 
 module.exports = Room

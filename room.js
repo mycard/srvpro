@@ -99,9 +99,7 @@
       });
       this.process.on('exit', (function(_this) {
         return function(code) {
-          if (!_this.disconnector) {
-            _this.disconnector = 'server';
-          }
+          _this.process = null;
           return _this["delete"]();
         };
       })(this));
@@ -116,7 +114,9 @@
               ref = player.pre_establish_buffers;
               for (i = 0, len = ref.length; i < len; i++) {
                 buffer = ref[i];
-                player.server.write(buffer);
+                player.buffer = buffer;
+                buffer = null;
+                player.server.write(player.buffer);
               }
               return player.established = true;
             });
@@ -148,7 +148,9 @@
           ref = client.pre_establish_buffers;
           for (i = 0, len = ref.length; i < len; i++) {
             buffer = ref[i];
-            client.server.write(buffer);
+            client.buffer = buffer;
+            buffer = null;
+            client.server.write(client.buffer);
           }
           return client.established = true;
         });
@@ -171,7 +173,9 @@
         if (this.players.length) {
           return ygopro.stoc_send_chat_to_room(this, client.name + " " + '离开了游戏' + (error ? ": " + error : ''));
         } else {
-          this.process.kill();
+          if (this.process) {
+            this.process.kill();
+          }
           return this["delete"]();
         }
       }

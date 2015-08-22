@@ -76,8 +76,9 @@ for name, declaration of structs_declaration
   header = new Buffer(3)
   header.writeUInt16LE buffer.length + 1, 0
   header.writeUInt8 proto, 2
-  socket.write header
-  socket.write buffer if buffer.length
+  if socket
+    socket.write header
+    socket.write buffer if buffer.length
 
 @ctos_send = (socket, proto, info)->
   #console.log proto, proto_structs.CTOS[proto], structs[proto_structs.CTOS[proto]]
@@ -101,8 +102,9 @@ for name, declaration of structs_declaration
   header = new Buffer(3)
   header.writeUInt16LE buffer.length + 1, 0
   header.writeUInt8 proto, 2
-  socket.write header
-  socket.write buffer if buffer.length
+  if socket
+    socket.write header
+    socket.write buffer if buffer.length
 
 #util
 @stoc_send_chat = (client, msg, player = 8)->

@@ -16,7 +16,7 @@
     "underscore": "*",
     "underscore.string": "*",
     "request": "*",
-    "bunyan": "*",
+    "bunyan": "*"
   },
   "license": "GPLv3",
   "main": "ygopro-server.js",
