@@ -55,7 +55,6 @@
     server = new net.Socket();
     client.server = server;
     client.on('close', function(had_error) {
-      log.info("client closed", client.name, had_error);
       if (!client.closed) {
         client.closed = true;
         if (client.room) {
@@ -65,7 +64,6 @@
       return server.end();
     });
     client.on('error', function(error) {
-      log.info("client error", client.name, error);
       if (!client.closed) {
         client.closed = error;
         if (client.room) {
@@ -75,7 +73,6 @@
       return server.end();
     });
     server.on('close', function(had_error) {
-      log.info("server closed", client.name, had_error);
       if (!server.closed) {
         server.closed = true;
       }
@@ -85,7 +82,6 @@
       }
     });
     server.on('error', function(error) {
-      log.info("server error", client.name, error);
       server.closed = error;
       if (!client.closed) {
         ygopro.stoc_send_chat(client, "服务器错误: " + error);

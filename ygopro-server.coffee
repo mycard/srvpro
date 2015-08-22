@@ -45,28 +45,28 @@ net.createServer (client) ->
 
   #释放处理
   client.on 'close', (had_error) ->
-    log.info "client closed", client.name, had_error
+    #log.info "client closed", client.name, had_error
     unless client.closed
       client.closed = true
       client.room.disconnect(client) if client.room
     server.end()
 
   client.on 'error', (error)->
-    log.info "client error", client.name, error
+    #log.info "client error", client.name, error
     unless client.closed
       client.closed = error
       client.room.disconnect(client, error) if client.room
     server.end()
 
   server.on 'close', (had_error) ->
-    log.info "server closed", client.name, had_error
+    #log.info "server closed", client.name, had_error
     server.closed = true unless server.closed
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接")
       client.end()
 
   server.on 'error', (error)->
-    log.info "server error", client.name, error
+    #log.info "server error", client.name, error
     server.closed = error
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}")
