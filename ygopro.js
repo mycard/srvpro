@@ -126,11 +126,9 @@
     header = new Buffer(3);
     header.writeUInt16LE(buffer.length + 1, 0);
     header.writeUInt8(proto, 2);
-    if (socket) {
-      socket.write(header);
-      if (buffer.length) {
-        return socket.write(buffer);
-      }
+    socket.write(header);
+    if (buffer.length) {
+      return socket.write(buffer);
     }
   };
 
@@ -162,11 +160,9 @@
     header = new Buffer(3);
     header.writeUInt16LE(buffer.length + 1, 0);
     header.writeUInt8(proto, 2);
-    if (socket) {
-      socket.write(header);
-      if (buffer.length) {
-        return socket.write(buffer);
-      }
+    socket.write(header);
+    if (buffer.length) {
+      return socket.write(buffer);
     }
   };
 
