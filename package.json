@@ -13,6 +13,7 @@
   ],
   "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>",
   "dependencies": {
+    "struct": "*",
     "underscore": "*",
     "underscore.string": "*",
     "request": "*",
