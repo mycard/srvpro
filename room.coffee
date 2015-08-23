@@ -98,7 +98,7 @@ class Room
     #积分
     return if @deleted
     index = _.indexOf(Room.all, this)
-    Room.all[index] = null unless index == -1
+    #Room.all[index] = null unless index == -1
     Room.all.splice(index, 1) unless index == -1
     @deleted = true
 

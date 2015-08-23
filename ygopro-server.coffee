@@ -12,8 +12,6 @@ _ = require 'underscore'
 _.str = require 'underscore.string'
 _.mixin(_.str.exports());
 
-#Inotify = require('inotify').Inotify
-
 request = require 'request'
 
 bunyan = require 'bunyan'
@@ -257,13 +255,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       for w in client.room.watchers
         w.write data if w #a WTF fix
 
-    #watcher.on 'error', (error)->
+    watcher.on 'error', (error)->
       #log.error "watcher error", error
-    ###
-    watcher.on 'close', (had_error)->
-      for w in client.room.ws_watchers
-        w.close()
-    ###
 
 #登场台词
 if settings.modules.dialogues
@@ -374,14 +367,6 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     client.room.dueling_players = []
     for player in client.room.players when player.pos != 7
       client.room.dueling_players[player.pos] = player
-      #if !player.main
-        #log.error 'WTF', client
-      #else
-        #player.deck = mycard.load_card_usages_from_cards(player.main, player.side)
-
-    #if !client.room.dueling_players[0] or !client.room.dueling_players[1]
-      #log.error 'incomplete room', client.room.dueling_players, client.room.players
-
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
 
@@ -448,6 +433,7 @@ if settings.modules.http
           istart: if room.started then 'start' else 'wait'
         )
         response.end("loadroom( " + roomsjson + " );");
+        # todo: 增加JSONP支持
 
       else if u.query.operation == 'getroomjson'
         response.writeHead(200);
@@ -473,37 +459,3 @@ if settings.modules.http
         response.writeHead(404);
         response.end();
   http_server.listen settings.modules.http.port
-
-#清理90s没活动的房间
-###
-inotify = new Inotify()
-inotify.addWatch
-  path: 'ygocore/replay',
-  watch_for: Inotify.IN_CLOSE_WRITE | Inotify.IN_CREATE | Inotify.IN_MODIFY,
-  callback: (event)->
-    mask = event.mask
-    if event.name
-      port = parseInt path.basename(event.name, '.yrp')
-      room = Room.find_by_port port
-      if room
-        if mask & Inotify.IN_CREATE
-        else if mask & Inotify.IN_CLOSE_WRITE
-          fs.unlink path.join('ygocore/replay'), (err)->
-        else if mask & Inotify.IN_MODIFY
-          room.alive = true
-    else
-      log.error "event without filename"
-###
-###
-setInterval ()->
-  for room in Room.all
-    if room.alive
-      room.alive = false
-    else
-      log.info "kill room", room.port
-
-      for player in room.players
-        ygopro.stoc_send_chat(player, "由于长时间没有活动被关闭") unless player.closed
-      room.process.kill()
-, 900000
-###

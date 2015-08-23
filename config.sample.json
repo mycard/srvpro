@@ -1,7 +1,7 @@
 {
     "ip": "123.45.67.89",
     "port": 233,
-    "version": 4917,
+    "version": 4918,
     "modules": {
         "welcome": "YGOPRO Server",
         "tips": "http://mercury233.me/ygosrv233/tips.json",

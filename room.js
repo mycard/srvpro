@@ -132,9 +132,6 @@
       }
       index = _.indexOf(Room.all, this);
       if (index !== -1) {
-        Room.all[index] = null;
-      }
-      if (index !== -1) {
         Room.all.splice(index, 1);
       }
       return this.deleted = true;

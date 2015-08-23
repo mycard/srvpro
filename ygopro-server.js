@@ -273,7 +273,7 @@
         });
         return ygopro.ctos_send(watcher, 'HS_TOOBSERVER');
       });
-      return watcher.on('data', function(data) {
+      watcher.on('data', function(data) {
         var j, len, ref, results, w;
         client.room.watcher_buffers.push(data);
         ref = client.room.watchers;
@@ -288,12 +288,7 @@
         }
         return results;
       });
-
-      /*
-      watcher.on 'close', (had_error)->
-        for w in client.room.ws_watchers
-          w.close()
-       */
+      return watcher.on('error', function(error) {});
     }
   });
 
@@ -594,41 +589,5 @@
     });
     http_server.listen(settings.modules.http.port);
   }
-
-
-  /*
-  inotify = new Inotify()
-  inotify.addWatch
-    path: 'ygocore/replay',
-    watch_for: Inotify.IN_CLOSE_WRITE | Inotify.IN_CREATE | Inotify.IN_MODIFY,
-    callback: (event)->
-      mask = event.mask
-      if event.name
-        port = parseInt path.basename(event.name, '.yrp')
-        room = Room.find_by_port port
-        if room
-          if mask & Inotify.IN_CREATE
-          else if mask & Inotify.IN_CLOSE_WRITE
-            fs.unlink path.join('ygocore/replay'), (err)->
-          else if mask & Inotify.IN_MODIFY
-            room.alive = true
-      else
-        log.error "event without filename"
-   */
-
-
-  /*
-  setInterval ()->
-    for room in Room.all
-      if room.alive
-        room.alive = false
-      else
-        log.info "kill room", room.port
-  
-        for player in room.players
-          ygopro.stoc_send_chat(player, "由于长时间没有活动被关闭") unless player.closed
-        room.process.kill()
-  , 900000
-   */
 
 }).call(this);
