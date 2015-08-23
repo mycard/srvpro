@@ -40,6 +40,8 @@ else
 net.createServer (client) ->
   server = new net.Socket()
   client.server = server
+  
+  client.setTimeout(300000) # 5分钟
 
   #释放处理
   client.on 'close', (had_error) ->
@@ -54,6 +56,9 @@ net.createServer (client) ->
     unless client.closed
       client.closed = error
       client.room.disconnect(client, error) if client.room
+    server.end()
+
+  client.on 'timeout', ()->
     server.end()
 
   server.on 'close', (had_error) ->
@@ -399,15 +404,17 @@ ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   client.main = main
   client.side = side
 
+###
 if settings.modules.skip_empty_side
   ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
-    if not _.any(client.deck, (card_usage)->card_usage.side)
+    if client.side
       ygopro.ctos_send server, 'UPDATE_DECK', {
         mainc: client.main.length,
         sidec: 0,
         deckbuf: client.main
       }
       ygopro.stoc_send_chat client, '等待更换副卡组中...'
+###
 
 #http
 if settings.modules.http

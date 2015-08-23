@@ -54,6 +54,7 @@
     var ctos_buffer, ctos_message_length, ctos_proto, server, stoc_buffer, stoc_message_length, stoc_proto;
     server = new net.Socket();
     client.server = server;
+    client.setTimeout(300000);
     client.on('close', function(had_error) {
       if (!client.closed) {
         client.closed = true;
@@ -70,6 +71,9 @@
           client.room.disconnect(client, error);
         }
       }
+      return server.end();
+    });
+    client.on('timeout', function() {
       return server.end();
     });
     server.on('close', function(had_error) {
@@ -477,20 +481,18 @@
     return client.side = side;
   });
 
-  if (settings.modules.skip_empty_side) {
-    ygopro.stoc_follow('CHANGE_SIDE', false, function(buffer, info, client, server) {
-      if (!_.any(client.deck, function(card_usage) {
-        return card_usage.side;
-      })) {
-        ygopro.ctos_send(server, 'UPDATE_DECK', {
+
+  /*
+  if settings.modules.skip_empty_side
+    ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
+      if client.side
+        ygopro.ctos_send server, 'UPDATE_DECK', {
           mainc: client.main.length,
           sidec: 0,
           deckbuf: client.main
-        });
-        return ygopro.stoc_send_chat(client, '等待更换副卡组中...');
-      }
-    });
-  }
+        }
+        ygopro.stoc_send_chat client, '等待更换副卡组中...'
+   */
 
   if (settings.modules.http) {
     http_server = http.createServer(function(request, response) {
