@@ -4,8 +4,13 @@ config.json
 /ygocore/
 /ygocore
 
-/node_modules/
+node_modules/.bin/
+node_modules/bunyan/
+node_modules/request/
+node_modules/underscore/
+node_modules/underscore.string/
 
+*.heapsnapshot
 *.tmp
 *.bak
 *.log

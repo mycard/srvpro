@@ -16,7 +16,7 @@ request = require 'request'
 
 bunyan = require 'bunyan'
 
-#heapdump = require 'heapdump'
+heapdump = require 'heapdump'
 
 #配置文件
 settings = require './config.json'
@@ -35,17 +35,32 @@ if process.argv[2] == '--debug'
   log = bunyan.createLogger name: "mycard-debug"
 else
   log = bunyan.createLogger name: "mycard"
+###
+#定时清理关闭的连接
+Graveyard = [] 
 
+send_to_graveyard = (socket) ->
+  unless _.indexOf(Graveyard, socket)
+    Graveyard.push(socket)
+
+tribute = (socket) ->
+  setTimeout send_to_graveyard(socket), 30000
+
+setInterval ()->
+  log.info Graveyard
+, 30000
+###
 #网络连接
 net.createServer (client) ->
   server = new net.Socket()
   client.server = server
   
-  client.setTimeout(300000) # 5分钟
+  client.setTimeout(300000) #5分钟
 
   #释放处理
   client.on 'close', (had_error) ->
     #log.info "client closed", client.name, had_error
+    #tribute(client)
     unless client.closed
       client.closed = true
       client.room.disconnect(client) if client.room
@@ -53,6 +68,7 @@ net.createServer (client) ->
 
   client.on 'error', (error)->
     #log.info "client error", client.name, error
+    #tribute(client)
     unless client.closed
       client.closed = error
       client.room.disconnect(client, error) if client.room
@@ -63,6 +79,7 @@ net.createServer (client) ->
 
   server.on 'close', (had_error) ->
     #log.info "server closed", client.name, had_error
+    #tribute(server)
     server.closed = true unless server.closed
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接")
@@ -70,6 +87,7 @@ net.createServer (client) ->
 
   server.on 'error', (error)->
     #log.info "server error", client.name, error
+    #tribute(server)
     server.closed = error
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}")
@@ -161,7 +179,7 @@ net.createServer (client) ->
           stoc_proto = 0
         else
           break
-
+  return 0
 .listen settings.port, ->
   log.info "server started", settings.ip, settings.port
 

@@ -118,7 +118,8 @@
                 buffer = ref[i];
                 player.server.write(buffer);
               }
-              return player.established = true;
+              player.established = true;
+              return player.pre_establish_buffers = null;
             });
           });
         };
@@ -147,7 +148,8 @@
             buffer = ref[i];
             client.server.write(buffer);
           }
-          return client.established = true;
+          client.established = true;
+          return client.pre_establish_buffers = null;
         });
       }
     };
