@@ -222,6 +222,13 @@
         code: settings.version
       });
       return client.end();
+    } else if (settings.modules.stop) {
+      ygopro.stoc_send_chat(client, settings.modules.stop);
+      ygopro.stoc_send(client, 'ERROR_MSG', {
+        msg: 1,
+        code: 2
+      });
+      return client.end();
     } else if (!info.pass.length) {
       ygopro.stoc_send_chat(client, "房间为空，请修改房间名");
       ygopro.stoc_send(client, 'ERROR_MSG', {

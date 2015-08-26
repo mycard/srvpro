@@ -99,6 +99,7 @@ class Room
     #积分
     return if @deleted
     #log.info 'room-delete', this.name, Room.all.length
+    @watcher_buffers = []
     index = _.indexOf(Room.all, this)
     #Room.all[index] = null unless index == -1
     Room.all.splice(index, 1) unless index == -1
@@ -111,7 +112,7 @@ class Room
       client.server.connect @port, '127.0.0.1', ->
         client.server.write buffer for buffer in client.pre_establish_buffers
         client.established = true
-        client.pre_establish_buffers = null
+        client.pre_establish_buffers = []
 
   disconnect: (client, error)->
     if client.is_post_watcher

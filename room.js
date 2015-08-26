@@ -131,6 +131,7 @@
       if (this.deleted) {
         return;
       }
+      this.watcher_buffers = [];
       index = _.indexOf(Room.all, this);
       if (index !== -1) {
         Room.all.splice(index, 1);
@@ -149,7 +150,7 @@
             client.server.write(buffer);
           }
           client.established = true;
-          return client.pre_establish_buffers = null;
+          return client.pre_establish_buffers = [];
         });
       }
     };
