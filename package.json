@@ -19,11 +19,10 @@
     "request": "*",
     "bunyan": "*"
   },
-  "license": "GPLv3",
+  "license": "GPL-3.0",
   "main": "ygopro-server.js",
   "scripts": {
-    "start": "forever start mycard-server-match.js",
-    "build": "coffee -c mycard-server-match.coffee"
+    "start": "forever start ygopro-server.js"
   },
   "engines": {
     "node": "*"
