@@ -71,7 +71,7 @@
         throw "unknown proto";
       }
     }
-    return this.stoc_follows[proto] = {
+    this.stoc_follows[proto] = {
       callback: callback,
       synchronous: synchronous
     };
@@ -92,7 +92,7 @@
         throw "unknown proto";
       }
     }
-    return this.ctos_follows[proto] = {
+    this.ctos_follows[proto] = {
       callback: callback,
       synchronous: synchronous
     };
@@ -128,7 +128,7 @@
     header.writeUInt8(proto, 2);
     socket.write(header);
     if (buffer.length) {
-      return socket.write(buffer);
+      socket.write(buffer);
     }
   };
 
@@ -162,29 +162,27 @@
     header.writeUInt8(proto, 2);
     socket.write(header);
     if (buffer.length) {
-      return socket.write(buffer);
+      socket.write(buffer);
     }
   };
 
   this.stoc_send_chat = function(client, msg, player) {
-    var j, len1, line, ref, results;
+    var j, len1, line, ref;
     if (player == null) {
       player = 8;
     }
     ref = _.lines(msg);
-    results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       line = ref[j];
-      results.push(this.stoc_send(client, 'CHAT', {
+      this.stoc_send(client, 'CHAT', {
         player: player,
         msg: line
-      }));
+      });
     }
-    return results;
   };
 
   this.stoc_send_chat_to_room = function(room, msg, player) {
-    var client, j, k, len1, len2, ref, ref1, results;
+    var client, j, k, len1, len2, ref, ref1;
     if (player == null) {
       player = 8;
     }
@@ -196,16 +194,12 @@
       }
     }
     ref1 = room.watchers;
-    results = [];
     for (k = 0, len2 = ref1.length; k < len2; k++) {
       client = ref1[k];
       if (client) {
-        results.push(this.stoc_send_chat(client, msg, player));
-      } else {
-        results.push(void 0);
+        this.stoc_send_chat(client, msg, player);
       }
     }
-    return results;
   };
 
 }).call(this);

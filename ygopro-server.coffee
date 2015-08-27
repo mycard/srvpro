@@ -65,6 +65,7 @@ net.createServer (client) ->
       client.closed = true
       client.room.disconnect(client) if client.room
     server.end()
+    return
 
   client.on 'error', (error)->
     #log.info "client error", client.name, error
@@ -73,9 +74,11 @@ net.createServer (client) ->
       client.closed = error
       client.room.disconnect(client, error) if client.room
     server.end()
+    return
 
   client.on 'timeout', ()->
     server.end()
+    return
 
   server.on 'close', (had_error) ->
     #log.info "server closed", client.name, had_error
@@ -84,6 +87,7 @@ net.createServer (client) ->
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接")
       client.end()
+    return
 
   server.on 'error', (error)->
     #log.info "server error", client.name, error
@@ -92,6 +96,7 @@ net.createServer (client) ->
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}")
       client.end()
+    return
 
   #需要重构
   #客户端到服务端(ctos)协议分析
@@ -139,6 +144,7 @@ net.createServer (client) ->
             ctos_proto = 0
           else
             break
+    return
 
   #服务端到客户端(stoc)
   stoc_buffer = new Buffer(0)
@@ -179,14 +185,17 @@ net.createServer (client) ->
           stoc_proto = 0
         else
           break
-  return 0
+     return
+   return
 .listen settings.port, ->
   log.info "server started", settings.ip, settings.port
+  return
 
 #功能模块
 
 ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   client.name = info.name #在创建room之前暂存
+  return
 
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #log.info info
@@ -259,6 +268,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         client.end()
     else
       client.room.connect(client)
+  return
 
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #欢迎信息
@@ -279,15 +289,18 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         pass: ""
       }
       ygopro.ctos_send watcher, 'HS_TOOBSERVER'
-
+      return
     
     watcher.on 'data', (data)->
       client.room.watcher_buffers.push data
       for w in client.room.watchers
         w.write data if w #a WTF fix
+      return
 
     watcher.on 'error', (error)->
       #log.error "watcher error", error
+      return
+  return
 
 #登场台词
 if settings.modules.dialogues
@@ -303,6 +316,7 @@ if settings.modules.dialogues
       else
         #log.info "dialogues loaded", _.size body
         dialogues = body
+      return
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   msg = buffer.readInt8(0)
@@ -366,7 +380,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       if dialogues[card]
         for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
           ygopro.stoc_send_chat client, line
-
+  return
 
 #房间管理
 
@@ -377,10 +391,12 @@ ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
   client.is_host = is_host
   client.pos = selftype
   #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
+  return
 
 #tip
 ygopro.stoc_send_random_tip = (client)->
   ygopro.stoc_send_chat client, "Tip: " + tips[Math.floor(Math.random() * tips.length)] if tips
+  return
 
 tips = null
 if settings.modules.tips
@@ -390,6 +406,7 @@ if settings.modules.tips
     , (error, response, body)->
       tips = body
       #log.info "tips loaded", tips.length
+      return
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   unless client.room.started #first start
@@ -400,6 +417,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       client.room.dueling_players[player.pos] = player
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
+  return
 
 ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
   switch _.trim(info.msg)
@@ -414,6 +432,7 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
           else
             #log.warn 'ping', stdout
             ygopro.stoc_send_chat_to_room client.room, stdout
+        return
 
     when '/help'
       ygopro.stoc_send_chat(client,"YGOSrv233 指令帮助")
@@ -422,6 +441,7 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
       #ygopro.stoc_send_chat(client,"/senddeck 发送自己的卡组")
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
+  return
 
 ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   #log.info info
@@ -429,6 +449,7 @@ ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   side = (info.deckbuf[i] for i in [info.mainc...info.mainc+info.sidec])
   client.main = main
   client.side = side
+  return
 
 ###
 if settings.modules.skip_empty_side
@@ -491,4 +512,5 @@ if settings.modules.http
       else
         response.writeHead(404);
         response.end();
+      return
   http_server.listen settings.modules.http.port

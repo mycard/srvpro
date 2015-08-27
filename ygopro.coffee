@@ -43,6 +43,7 @@ for name, declaration of structs_declaration
         break
     throw "unknown proto" if !@constants.STOC[proto]
   @stoc_follows[proto] = {callback: callback, synchronous: synchronous}
+  return
 @ctos_follow = (proto, synchronous, callback)->
   if typeof proto == 'string'
     for key, value of @constants.CTOS
@@ -51,6 +52,7 @@ for name, declaration of structs_declaration
         break
     throw "unknown proto" if !@constants.CTOS[proto]
   @ctos_follows[proto] = {callback: callback, synchronous: synchronous}
+  return
 
 
 #消息发送函数,至少要把俩合起来....
@@ -78,6 +80,7 @@ for name, declaration of structs_declaration
   header.writeUInt8 proto, 2
   socket.write header
   socket.write buffer if buffer.length
+  return
 
 @ctos_send = (socket, proto, info)->
   #console.log proto, proto_structs.CTOS[proto], structs[proto_structs.CTOS[proto]]
@@ -103,6 +106,7 @@ for name, declaration of structs_declaration
   header.writeUInt8 proto, 2
   socket.write header
   socket.write buffer if buffer.length
+  return
 
 #util
 @stoc_send_chat = (client, msg, player = 8)->
@@ -111,9 +115,11 @@ for name, declaration of structs_declaration
       player: player
       msg: line
     }
+  return
 
 @stoc_send_chat_to_room = (room, msg, player = 8)->
   for client in room.players
     @stoc_send_chat(client, msg, player) if client
   for client in room.watchers
     @stoc_send_chat(client, msg, player) if client
+  return

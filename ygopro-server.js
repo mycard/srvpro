@@ -81,7 +81,7 @@
           client.room.disconnect(client);
         }
       }
-      return server.end();
+      server.end();
     });
     client.on('error', function(error) {
       if (!client.closed) {
@@ -90,10 +90,10 @@
           client.room.disconnect(client, error);
         }
       }
-      return server.end();
+      server.end();
     });
     client.on('timeout', function() {
-      return server.end();
+      server.end();
     });
     server.on('close', function(had_error) {
       if (!server.closed) {
@@ -101,14 +101,14 @@
       }
       if (!client.closed) {
         ygopro.stoc_send_chat(client, "服务器关闭了连接");
-        return client.end();
+        client.end();
       }
     });
     server.on('error', function(error) {
       server.closed = error;
       if (!client.closed) {
         ygopro.stoc_send_chat(client, "服务器错误: " + error);
-        return client.end();
+        client.end();
       }
     });
     ctos_buffer = new Buffer(0);
@@ -116,9 +116,9 @@
     ctos_proto = 0;
     client.pre_establish_buffers = new Array();
     client.on('data', function(data) {
-      var b, results, struct;
+      var b, struct;
       if (client.is_post_watcher) {
-        return client.room.watcher.write(data);
+        client.room.watcher.write(data);
       } else {
         ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length);
         if (client.established) {
@@ -126,17 +126,16 @@
         } else {
           client.pre_establish_buffers.push(data);
         }
-        results = [];
         while (true) {
           if (ctos_message_length === 0) {
             if (ctos_buffer.length >= 2) {
-              results.push(ctos_message_length = ctos_buffer.readUInt16LE(0));
+              ctos_message_length = ctos_buffer.readUInt16LE(0);
             } else {
               break;
             }
           } else if (ctos_proto === 0) {
             if (ctos_buffer.length >= 3) {
-              results.push(ctos_proto = ctos_buffer.readUInt8(2));
+              ctos_proto = ctos_buffer.readUInt8(2);
             } else {
               break;
             }
@@ -153,33 +152,31 @@
               }
               ctos_buffer = ctos_buffer.slice(2 + ctos_message_length);
               ctos_message_length = 0;
-              results.push(ctos_proto = 0);
+              ctos_proto = 0;
             } else {
               break;
             }
           }
         }
-        return results;
       }
     });
     stoc_buffer = new Buffer(0);
     stoc_message_length = 0;
     stoc_proto = 0;
     server.on('data', function(data) {
-      var b, results, stanzas, struct;
+      var b, stanzas, struct;
       stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length);
       client.write(data);
-      results = [];
       while (true) {
         if (stoc_message_length === 0) {
           if (stoc_buffer.length >= 2) {
-            results.push(stoc_message_length = stoc_buffer.readUInt16LE(0));
+            stoc_message_length = stoc_buffer.readUInt16LE(0);
           } else {
             break;
           }
         } else if (stoc_proto === 0) {
           if (stoc_buffer.length >= 3) {
-            results.push(stoc_proto = stoc_buffer.readUInt8(2));
+            stoc_proto = stoc_buffer.readUInt8(2);
           } else {
             break;
           }
@@ -197,21 +194,19 @@
             }
             stoc_buffer = stoc_buffer.slice(2 + stoc_message_length);
             stoc_message_length = 0;
-            results.push(stoc_proto = 0);
+            stoc_proto = 0;
           } else {
             break;
           }
         }
       }
-      return results;
     });
-    return 0;
   }).listen(settings.port, function() {
-    return log.info("server started", settings.ip, settings.port);
+    log.info("server started", settings.ip, settings.port);
   });
 
   ygopro.ctos_follow('PLAYER_INFO', true, function(buffer, info, client, server) {
-    return client.name = info.name;
+    client.name = info.name;
   });
 
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
@@ -221,41 +216,41 @@
         msg: 4,
         code: settings.version
       });
-      return client.end();
+      client.end();
     } else if (settings.modules.stop) {
       ygopro.stoc_send_chat(client, settings.modules.stop);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
-      return client.end();
+      client.end();
     } else if (!info.pass.length) {
       ygopro.stoc_send_chat(client, "房间为空，请修改房间名");
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
-      return client.end();
+      client.end();
     } else if ((os.freemem() / os.totalmem()) <= 0.1) {
       ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试");
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
-      return client.end();
+      client.end();
     } else if (!Room.validate(info.pass)) {
       ygopro.stoc_send_chat(client, "房间密码不正确");
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
-      return client.end();
+      client.end();
     } else if (client.name === '[INCORRECT]') {
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
-      return client.end();
+      client.end();
     } else {
       client.room = Room.find_or_create_by_name(info.pass);
       if (client.room.started) {
@@ -268,17 +263,17 @@
             buffer = ref[j];
             client.write(buffer);
           }
-          return ygopro.stoc_send_chat(client, "观战中.");
+          ygopro.stoc_send_chat(client, "观战中.");
         } else {
           ygopro.stoc_send_chat(client, "决斗已开始");
           ygopro.stoc_send(client, 'ERROR_MSG', {
             msg: 1,
             code: 2
           });
-          return client.end();
+          client.end();
         }
       } else {
-        return client.room.connect(client);
+        client.room.connect(client);
       }
     }
   });
@@ -302,24 +297,20 @@
           some_unknown_mysterious_fucking_thing: 0,
           pass: ""
         });
-        return ygopro.ctos_send(watcher, 'HS_TOOBSERVER');
+        ygopro.ctos_send(watcher, 'HS_TOOBSERVER');
       });
       watcher.on('data', function(data) {
-        var j, len, ref, results, w;
+        var j, len, ref, w;
         client.room.watcher_buffers.push(data);
         ref = client.room.watchers;
-        results = [];
         for (j = 0, len = ref.length; j < len; j++) {
           w = ref[j];
           if (w) {
-            results.push(w.write(data));
-          } else {
-            results.push(void 0);
+            w.write(data);
           }
         }
-        return results;
       });
-      return watcher.on('error', function(error) {});
+      watcher.on('error', function(error) {});
     }
   });
 
@@ -330,17 +321,17 @@
       json: true
     }, function(error, response, body) {
       if (_.isString(body)) {
-        return log.warn("dialogues bad json", body);
+        log.warn("dialogues bad json", body);
       } else if (error || !body) {
-        return log.warn('dialogues error', error, response);
+        log.warn('dialogues error', error, response);
       } else {
-        return dialogues = body;
+        dialogues = body;
       }
     });
   }
 
   ygopro.stoc_follow('GAME_MSG', false, function(buffer, info, client, server) {
-    var card, j, len, line, msg, playertype, pos, reason, ref, ref1, ref2, results, val;
+    var card, j, len, line, msg, playertype, pos, reason, ref, ref1, ref2, val;
     msg = buffer.readInt8(0);
     if (ygopro.constants.MSG[msg] === 'START') {
       playertype = buffer.readUInt8(1);
@@ -401,12 +392,10 @@
         card = buffer.readUInt32LE(1);
         if (dialogues[card]) {
           ref2 = _.lines(dialogues[card][Math.floor(Math.random() * dialogues[card].length)]);
-          results = [];
           for (j = 0, len = ref2.length; j < len; j++) {
             line = ref2[j];
-            results.push(ygopro.stoc_send_chat(client, line));
+            ygopro.stoc_send_chat(client, line);
           }
-          return results;
         }
       }
     }
@@ -417,12 +406,12 @@
     selftype = info.type & 0xf;
     is_host = ((info.type >> 4) & 0xf) !== 0;
     client.is_host = is_host;
-    return client.pos = selftype;
+    client.pos = selftype;
   });
 
   ygopro.stoc_send_random_tip = function(client) {
     if (tips) {
-      return ygopro.stoc_send_chat(client, "Tip: " + tips[Math.floor(Math.random() * tips.length)]);
+      ygopro.stoc_send_chat(client, "Tip: " + tips[Math.floor(Math.random() * tips.length)]);
     }
   };
 
@@ -433,7 +422,7 @@
       url: settings.modules.tips,
       json: true
     }, function(error, response, body) {
-      return tips = body;
+      tips = body;
     });
   }
 
@@ -452,36 +441,37 @@
       }
     }
     if (settings.modules.tips) {
-      return ygopro.stoc_send_random_tip(client);
+      ygopro.stoc_send_random_tip(client);
     }
   });
 
   ygopro.ctos_follow('CHAT', false, function(buffer, info, client, server) {
     switch (_.trim(info.msg)) {
       case '/ping':
-        return execFile('ss', ['-it', "dst " + client.remoteAddress + ":" + client.remotePort], function(error, stdout, stderr) {
+        execFile('ss', ['-it', "dst " + client.remoteAddress + ":" + client.remotePort], function(error, stdout, stderr) {
           var line;
           if (error) {
-            return ygopro.stoc_send_chat_to_room(client.room, error);
+            ygopro.stoc_send_chat_to_room(client.room, error);
           } else {
             line = _.lines(stdout)[2];
             if (line.indexOf('rtt') !== -1) {
-              return ygopro.stoc_send_chat_to_room(client.room, line);
+              ygopro.stoc_send_chat_to_room(client.room, line);
             } else {
-              return ygopro.stoc_send_chat_to_room(client.room, stdout);
+              ygopro.stoc_send_chat_to_room(client.room, stdout);
             }
           }
         });
+        break;
       case '/help':
         ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助");
         ygopro.stoc_send_chat(client, "/help 显示这个帮助信息");
         if (settings.modules.tips) {
-          return ygopro.stoc_send_chat(client, "/tip 显示一条提示");
+          ygopro.stoc_send_chat(client, "/tip 显示一条提示");
         }
         break;
       case '/tip':
         if (settings.modules.tips) {
-          return ygopro.stoc_send_random_tip(client);
+          ygopro.stoc_send_random_tip(client);
         }
     }
   });
@@ -505,7 +495,7 @@
       return results;
     })();
     client.main = main;
-    return client.side = side;
+    client.side = side;
   });
 
 
@@ -527,7 +517,7 @@
       u = url.parse(request.url, 1);
       if (u.pathname === '/count.json') {
         response.writeHead(200);
-        return response.end(Room.all.length.toString());
+        response.end(Room.all.length.toString());
       } else if (u.pathname === '/rooms.js') {
         response.writeHead(200);
         roomsjson = JSON.stringify({
@@ -565,10 +555,10 @@
             return results;
           })()
         });
-        return response.end("loadroom( " + roomsjson + " );");
+        response.end("loadroom( " + roomsjson + " );");
       } else if (u.query.operation === 'getroomjson') {
         response.writeHead(200);
-        return response.end(JSON.stringify({
+        response.end(JSON.stringify({
           rooms: (function() {
             var j, len, ref, results;
             ref = Room.all;
@@ -610,10 +600,10 @@
           ygopro.stoc_send_chat_to_room(room, u.query.shout);
         }
         response.writeHead(200);
-        return response.end("shout " + u.query.shout + " ok");
+        response.end("shout " + u.query.shout + " ok");
       } else {
         response.writeHead(404);
-        return response.end();
+        response.end();
       }
     });
     http_server.listen(settings.modules.http.port);

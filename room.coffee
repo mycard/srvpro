@@ -85,6 +85,7 @@ class Room
       #log.info 'room-exit', this.name, this.port, code
       @disconnector = 'server' unless @disconnector
       this.delete()
+      return
     @process.stdout.setEncoding('utf8')
     @process.stdout.once 'data', (data)=>
       @established = true
@@ -94,7 +95,9 @@ class Room
           player.server.write buffer for buffer in player.pre_establish_buffers
           player.established = true
           player.pre_establish_buffers = null
-
+          return
+        return
+      return
   delete: ->
     #积分
     return if @deleted
@@ -104,6 +107,7 @@ class Room
     #Room.all[index] = null unless index == -1
     Room.all.splice(index, 1) unless index == -1
     @deleted = true
+    return
 
   connect: (client)->
     @players.push client
@@ -113,6 +117,8 @@ class Room
         client.server.write buffer for buffer in client.pre_establish_buffers
         client.established = true
         client.pre_establish_buffers = []
+        return
+    return
 
   disconnect: (client, error)->
     if client.is_post_watcher
@@ -127,5 +133,6 @@ class Room
       else
         @process.kill()
         this.delete()
+    return
 
 module.exports = Room
