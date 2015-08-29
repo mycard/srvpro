@@ -199,20 +199,20 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
 
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #log.info info
-  if info.version != settings.version
-    ygopro.stoc_send client, 'ERROR_MSG',{
-      msg: 4
-      code: settings.version
-    }
-    client.end()
-  
-  else if settings.modules.stop
+  if settings.modules.stop
     ygopro.stoc_send_chat(client,settings.modules.stop)
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
       code: 2
     }
     client.end()  
+  
+  else if info.version != settings.version
+    ygopro.stoc_send client, 'ERROR_MSG',{
+      msg: 4
+      code: settings.version
+    }
+    client.end()
 
   else if !info.pass.length
     ygopro.stoc_send_chat(client,"房间为空，请修改房间名")
@@ -248,6 +248,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
+  
   else
     #log.info 'join_game',info.pass, client.name
     client.room = Room.find_or_create_by_name(info.pass)

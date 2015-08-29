@@ -211,17 +211,17 @@
 
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
     var j, len, ref;
-    if (info.version !== settings.version) {
-      ygopro.stoc_send(client, 'ERROR_MSG', {
-        msg: 4,
-        code: settings.version
-      });
-      client.end();
-    } else if (settings.modules.stop) {
+    if (settings.modules.stop) {
       ygopro.stoc_send_chat(client, settings.modules.stop);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
+      });
+      client.end();
+    } else if (info.version !== settings.version) {
+      ygopro.stoc_send(client, 'ERROR_MSG', {
+        msg: 4,
+        code: settings.version
       });
       client.end();
     } else if (!info.pass.length) {
