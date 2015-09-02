@@ -2,11 +2,25 @@ _ = require 'underscore'
 _.str = require 'underscore.string'
 _.mixin(_.str.exports());
 spawn = require('child_process').spawn
+spawnSync = require('child_process').spawnSync
 ygopro = require './ygopro.js'
 bunyan = require 'bunyan'
 settings = require './config.json'
 
 log = bunyan.createLogger name: "mycard-room"
+
+#获取可用内存
+get_memory_usage = ()->
+  prc_free = spawnSync("free", [])
+  lines = prc_free.stdout.toString().split(/\n/g)
+  line = lines[1].split(/\s+/)
+  total = parseInt(line[1], 10)
+  free = parseInt(line[3], 10)
+  buffers = parseInt(line[5], 10)
+  cached = parseInt(line[6], 10)
+  actualFree = free + buffers + cached
+  percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2))
+  return percentUsed
 
 class Room
   #name
@@ -19,7 +33,12 @@ class Room
   @all = []
 
   @find_or_create_by_name: (name)->
-    @find_by_name(name) ? new Room(name)
+    if room = @find_by_name(name)
+      return room
+    else if get_memory_usage()>=90
+      return null
+    else 
+      return new Room(name)
 
   @find_by_name: (name)->
     result = _.find @all, (room)->
