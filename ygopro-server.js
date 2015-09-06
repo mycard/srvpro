@@ -632,11 +632,11 @@
       } else if (u.query.pass === settings.modules.http.password && u.query.stop) {
         settings.modules.stop = u.query.stop;
         response.writeHead(200);
-        response.end("stop " + u.query.shout + " ok");
+        response.end("stop " + u.query.stop + " ok");
       } else if (u.query.pass === settings.modules.http.password && u.query.welcome) {
         settings.modules.welcome = u.query.welcome;
         response.writeHead(200);
-        response.end("welcome " + u.query.shout + " ok");
+        response.end("welcome " + u.query.stop + " ok");
       } else {
         response.writeHead(404);
         response.end();

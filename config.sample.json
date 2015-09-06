@@ -8,7 +8,7 @@
         "tips": "http://mercury233.me/ygosrv233/tips.json",
         "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
         "post_start_watching": true,
-        "skip_empty_side": true,
+        "TCG_banlist_id": 7,
         "http": {
             "port": 7922,
             "password": "123456",

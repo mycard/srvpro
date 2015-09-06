@@ -79,7 +79,7 @@
     };
 
     function Room(name) {
-      var param;
+      var draw_count, lflist, param, rule, start_hand, start_lp, time_limit;
       this.name = name;
       this.alive = true;
       this.players = [];
@@ -114,8 +114,84 @@
         this.hostinfo.start_lp = parseInt(param[6]);
         this.hostinfo.start_hand = parseInt(param[7]);
         this.hostinfo.draw_count = parseInt(param[8]);
+      } else if ((param = name.match(/(.+)#/))) {
+        rule = param[1];
+        log.info(rule);
+        if (rule.match(/(^|，|,)(M|MATCH)(，|,|$)/i)) {
+          this.hostinfo.mode = 1;
+        }
+        if (rule.match(/(^|，|,)(T|TAG)(，|,|$)/i)) {
+          this.hostinfo.mode = 2;
+          this.hostinfo.start_lp = 16000;
+        }
+        if (rule.match(/(^|，|,)(TCGONLY|TO)(，|,|$)/i)) {
+          this.hostinfo.rule = 1;
+          this.hostinfo.lflist = settings.modules.TCG_banlist_id;
+        }
+        if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/i)) {
+          this.hostinfo.rule = 2;
+        }
+        if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/i))) {
+          start_lp = parseInt(param[2]);
+          if (start_lp <= 0) {
+            start_lp = 1;
+          }
+          if (start_lp >= 99999) {
+            start_lp = 99999;
+          }
+          this.hostinfo.start_lp = start_lp;
+        }
+        if ((param = rule.match(/(^|，|,)TIME(\d+)(，|,|$)/i))) {
+          time_limit = parseInt(param[2]);
+          if (time_limit <= 0) {
+            time_limit = 180;
+          }
+          if (time_limit >= 1 && time_limit <= 60) {
+            time_limit = time_limit * 60;
+          }
+          if (time_limit >= 999) {
+            time_limit = 999;
+          }
+          this.hostinfo.time_limit = time_limit;
+        }
+        if ((param = rule.match(/(^|，|,)START(\d+)(，|,|$)/i))) {
+          start_hand = parseInt(param[2]);
+          if (start_hand <= 0) {
+            start_hand = 1;
+          }
+          if (start_hand >= 40) {
+            start_hand = 40;
+          }
+          this.hostinfo.start_hand = start_hand;
+        }
+        if ((param = rule.match(/(^|，|,)DRAW(\d+)(，|,|$)/i))) {
+          draw_count = parseInt(param[2]);
+          if (draw_count >= 35) {
+            draw_count = 35;
+          }
+          this.hostinfo.draw_count = draw_count;
+        }
+        if ((param = rule.match(/(^|，|,)LFLIST(\d+)(，|,|$)/i))) {
+          lflist = parseInt(param[2]) - 1;
+          this.hostinfo.lflist = lflist;
+        }
+        if ((param = rule.match(/(^|，|,)NOLFLIST(，|,|$)/i))) {
+          this.hostinfo.lflist = -1;
+        }
+        if ((param = rule.match(/(^|，|,)NOUNIQUE(，|,|$)/i))) {
+          this.hostinfo.rule = 3;
+        }
+        if ((param = rule.match(/(^|，|,)NOCHECK(，|,|$)/i))) {
+          this.hostinfo.no_check_deck = "T";
+        }
+        if ((param = rule.match(/(^|，|,)NOSHUFFLE(，|,|$)/i))) {
+          this.hostinfo.no_shuffle_deck = "T";
+        }
+        if ((param = rule.match(/(^|，|,)IGPRIORITY(，|,|$)/i))) {
+          this.hostinfo.enable_priority = "T";
+        }
       }
-      param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count];
+      param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit];
       this.process = spawn('./ygopro', param, {
         cwd: 'ygocore'
       });

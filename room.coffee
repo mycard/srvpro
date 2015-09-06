@@ -96,8 +96,55 @@ class Room
       @hostinfo.start_lp = parseInt(param[6])
       @hostinfo.start_hand = parseInt(param[7])
       @hostinfo.draw_count = parseInt(param[8])
+    else if (param = name.match /(.+)#/)
+      rule=param[1]
+      log.info rule
+      if (rule.match /(^|，|,)(M|MATCH)(，|,|$)/i)
+        @hostinfo.mode = 1
+      if (rule.match /(^|，|,)(T|TAG)(，|,|$)/i)
+        @hostinfo.mode = 2
+        @hostinfo.start_lp = 16000
+      if (rule.match /(^|，|,)(TCGONLY|TO)(，|,|$)/i)
+        @hostinfo.rule = 1
+        @hostinfo.lflist = settings.modules.TCG_banlist_id
+      if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/i)
+        @hostinfo.rule = 2
+      if (param = rule.match /(^|，|,)LP(\d+)(，|,|$)/i)
+        start_lp = parseInt(param[2])
+        if (start_lp <= 0) then start_lp = 1
+        if (start_lp >= 99999) then start_lp = 99999
+        @hostinfo.start_lp = start_lp
+      if (param = rule.match /(^|，|,)TIME(\d+)(，|,|$)/i)
+        time_limit = parseInt(param[2])
+        if (time_limit <= 0) then time_limit = 180
+        if (time_limit >= 1 and time_limit <= 60) then time_limit = time_limit*60
+        if (time_limit >= 999) then time_limit = 999
+        @hostinfo.time_limit = time_limit
+      if (param = rule.match /(^|，|,)START(\d+)(，|,|$)/i)
+        start_hand = parseInt(param[2])
+        if (start_hand <= 0) then start_hand = 1
+        if (start_hand >= 40) then start_hand = 40
+        @hostinfo.start_hand = start_hand
+      if (param = rule.match /(^|，|,)DRAW(\d+)(，|,|$)/i)
+        draw_count = parseInt(param[2])
+        if (draw_count >= 35) then draw_count = 35
+        @hostinfo.draw_count = draw_count
+      if (param = rule.match /(^|，|,)LFLIST(\d+)(，|,|$)/i)
+        lflist = parseInt(param[2])-1
+        @hostinfo.lflist = lflist
+      if (param = rule.match /(^|，|,)NOLFLIST(，|,|$)/i)
+        @hostinfo.lflist = -1
+      if (param = rule.match /(^|，|,)NOUNIQUE(，|,|$)/i)
+        @hostinfo.rule = 3
+      if (param = rule.match /(^|，|,)NOCHECK(，|,|$)/i)
+        @hostinfo.no_check_deck = "T"
+      if (param = rule.match /(^|，|,)NOSHUFFLE(，|,|$)/i)
+        @hostinfo.no_shuffle_deck = "T"
+      if (param = rule.match /(^|，|,)IGPRIORITY(，|,|$)/i)
+        @hostinfo.enable_priority = "T"
 
-    param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'), (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'), @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count]
+
+    param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'), (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'), @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit]
 
     @process = spawn './ygopro', param, cwd: 'ygocore'
     @process.on 'exit', (code)=>
