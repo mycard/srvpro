@@ -122,10 +122,12 @@ class Room
     return if @deleted
     #log.info 'room-delete', this.name, Room.all.length
     @watcher_buffers = []
+    @players = []
+    @watcher.end() if @watcher
+    @deleted = true
     index = _.indexOf(Room.all, this)
     #Room.all[index] = null unless index == -1
     Room.all.splice(index, 1) unless index == -1
-    @deleted = true
     return
 
   connect: (client)->
@@ -144,13 +146,16 @@ class Room
       ygopro.stoc_send_chat_to_room this, "#{client.name} #{'退出了观战'}#{if error then ": #{error}" else ''}"
       index = _.indexOf(@watchers, client)
       @watchers.splice(index, 1) unless index == -1
+      client.room = null
     else
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       if @players.length
         ygopro.stoc_send_chat_to_room this, "#{client.name} #{'离开了游戏'}#{if error then ": #{error}" else ''}"
+        client.room = null
       else
         @process.kill()
+        client.room = null
         this.delete()
     return
 

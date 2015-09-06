@@ -35,21 +35,24 @@ if process.argv[2] == '--debug'
   log = bunyan.createLogger name: "mycard-debug"
 else
   log = bunyan.createLogger name: "mycard"
-###
+
 #定时清理关闭的连接
 Graveyard = [] 
 
-send_to_graveyard = (socket) ->
-  unless _.indexOf(Graveyard, socket)
-    Graveyard.push(socket)
-
 tribute = (socket) ->
-  setTimeout send_to_graveyard(socket), 30000
+  setTimeout ((socket)-> Graveyard.push(socket);return)(socket), 3000
+  return
 
 setInterval ()->
-  log.info Graveyard
-, 30000
-###
+  for fuck,i in Graveyard
+    Graveyard[i].destroy() if Graveyard[i]
+    for you,j in Graveyard[i]
+      Graveyard[i][j] = null
+    Graveyard[i] = null
+  Graveyard = []
+  return
+, 3000
+
 #网络连接
 net.createServer (client) ->
   server = new net.Socket()
@@ -60,7 +63,7 @@ net.createServer (client) ->
   #释放处理
   client.on 'close', (had_error) ->
     #log.info "client closed", client.name, had_error
-    #tribute(client)
+    tribute(client)
     unless client.closed
       client.closed = true
       client.room.disconnect(client) if client.room
@@ -69,7 +72,7 @@ net.createServer (client) ->
 
   client.on 'error', (error)->
     #log.info "client error", client.name, error
-    #tribute(client)
+    tribute(client)
     unless client.closed
       client.closed = error
       client.room.disconnect(client, error) if client.room
@@ -82,7 +85,7 @@ net.createServer (client) ->
 
   server.on 'close', (had_error) ->
     #log.info "server closed", client.name, had_error
-    #tribute(server)
+    tribute(server)
     server.closed = true unless server.closed
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接")
@@ -91,7 +94,7 @@ net.createServer (client) ->
 
   server.on 'error', (error)->
     #log.info "server error", client.name, error
-    #tribute(server)
+    tribute(server)
     server.closed = error
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}")
@@ -111,11 +114,8 @@ net.createServer (client) ->
       client.room.watcher.write data
     else
       ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
-
-      if client.established
-        server.write data
-      else
-        client.pre_establish_buffers.push data
+      
+      datas = []
 
       while true
         if ctos_message_length == 0
@@ -131,19 +131,28 @@ net.createServer (client) ->
         else
           if ctos_buffer.length >= 2 + ctos_message_length
             #console.log "CTOS", ygopro.constants.CTOS[ctos_proto]
+            cancel = false
             if ygopro.ctos_follows[ctos_proto]
               b = ctos_buffer.slice(3, ctos_message_length-1+3)
               if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
                 struct._setBuff(b)
-                ygopro.ctos_follows[ctos_proto].callback b, _.clone(struct.fields), client, server
+                if ygopro.ctos_follows[ctos_proto].synchronous
+                  cancel = ygopro.ctos_follows[ctos_proto].callback b, _.clone(struct.fields), client, server
+                else
+                  ygopro.ctos_follows[ctos_proto].callback b, _.clone(struct.fields), client, server
               else
                 ygopro.ctos_follows[ctos_proto].callback b, null, client, server
-
+            datas.push ctos_buffer.slice(0, 2 + ctos_message_length) unless cancel
             ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
             ctos_message_length = 0
             ctos_proto = 0
           else
             break
+      if client.established
+        server.write buffer for buffer in datas
+      else
+        client.pre_establish_buffers.push buffer for buffer in datas
+
     return
 
   #服务端到客户端(stoc)
@@ -194,8 +203,13 @@ net.createServer (client) ->
 #功能模块
 
 ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
-  client.name = info.name #在创建room之前暂存
-  return
+  name=info.name.split("$")[0];
+  struct = ygopro.structs["CTOS_PlayerInfo"]
+  struct._setBuff(buffer)
+  struct.set("name",name)
+  buffer = struct.buffer
+  client.name = name
+  return false
 
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #log.info info
@@ -272,6 +286,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #欢迎信息
+  return unless client.room
   if settings.modules.welcome
     ygopro.stoc_send_chat client, settings.modules.welcome
   if (os.freemem() / os.totalmem())<=0.1
@@ -292,6 +307,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       return
     
     watcher.on 'data', (data)->
+      return unless client.room
       client.room.watcher_buffers.push data
       for w in client.room.watchers
         w.write data if w #a WTF fix
@@ -327,20 +343,21 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     client.lp = client.room.hostinfo.start_lp
 
     #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
+  ###
   if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(client.room.name, 'M#') and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2
     reason = buffer.readUInt8(2)
     #log.info {winner: pos, reason: reason}
     client.room.duels.push {winner: pos, reason: reason}
+  ###
+  
   #lp跟踪
   if ygopro.constants.MSG[msg] == 'DAMAGE' and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
     client.room.dueling_players[pos].lp -= val
-
-    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 受到伤害 #{val}，现在的LP为 #{client.room.dueling_players[pos].lp}")
     if 0 < client.room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！")
 
@@ -350,28 +367,19 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     val = buffer.readInt32LE(2)
     client.room.dueling_players[pos].lp += val
 
-    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 回复 #{val}，现在的LP为 #{client.room.dueling_players[pos].lp}")
-
   if ygopro.constants.MSG[msg] == 'LPUPDATE' and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
     client.room.dueling_players[pos].lp = val
 
-    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 的LP变成 #{client.room.dueling_players[pos].lp}")
-
   if ygopro.constants.MSG[msg] == 'PAY_LPCOST' and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
     client.room.dueling_players[pos].lp -= val
-
-    #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 支付 #{val}，现在的LP为 #{client.room.dueling_players[pos].lp}")
-
     if 0 < client.room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(client.room, "背水一战！")
-
-
 
   #登场台词
   if settings.modules.dialogues
@@ -383,8 +391,6 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   return
 
 #房间管理
-
-
 ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
   selftype = info.type & 0xf;
   is_host = ((info.type >> 4) & 0xf) != 0;
@@ -409,9 +415,10 @@ if settings.modules.tips
       return
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
+  return unless client.room
   unless client.room.started #first start
     client.room.started = true
-    client.room.duels = []
+    #client.room.duels = []
     client.room.dueling_players = []
     for player in client.room.players when player.pos != 7
       client.room.dueling_players[player.pos] = player
@@ -419,7 +426,8 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     ygopro.stoc_send_random_tip(client)
   return
 
-ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
+ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
+  cancel = _.startsWith(_.trim(info.msg),"/")
   switch _.trim(info.msg)
     when '/ping'
       execFile 'ss', ['-it', "dst #{client.remoteAddress}:#{client.remotePort}"], (error, stdout, stderr)->
@@ -433,15 +441,15 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
             #log.warn 'ping', stdout
             ygopro.stoc_send_chat_to_room client.room, stdout
         return
-
+    
     when '/help'
       ygopro.stoc_send_chat(client,"YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client,"/help 显示这个帮助信息")
       ygopro.stoc_send_chat(client,"/tip 显示一条提示") if settings.modules.tips
-      #ygopro.stoc_send_chat(client,"/senddeck 发送自己的卡组")
+    
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
-  return
+  return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   #log.info info
@@ -451,22 +459,9 @@ ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   client.side = side
   return
 
-###
-if settings.modules.skip_empty_side
-  ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
-    if client.side
-      ygopro.ctos_send server, 'UPDATE_DECK', {
-        mainc: client.main.length,
-        sidec: 0,
-        deckbuf: client.main
-      }
-      ygopro.stoc_send_chat client, '等待更换副卡组中...'
-###
-
 #http
 if settings.modules.http
   http_server = http.createServer (request, response)->
-    #http://122.0.65.70:7922/?operation=getroomjson
       u = url.parse(request.url,1)
       #log.info u
       if u.pathname == '/count.json'
@@ -506,8 +501,18 @@ if settings.modules.http
       else if u.query.pass == settings.modules.http.password && u.query.shout
         for room in Room.all
           ygopro.stoc_send_chat_to_room(room, u.query.shout)
-        response.writeHead(200);
-        response.end("shout " + u.query.shout + " ok");
+        response.writeHead(200)
+        response.end("shout " + u.query.shout + " ok")
+
+      else if u.query.pass == settings.modules.http.password && u.query.stop
+        settings.modules.stop = u.query.stop
+        response.writeHead(200)
+        response.end("stop " + u.query.shout + " ok")
+
+      else if u.query.pass == settings.modules.http.password && u.query.welcome
+        settings.modules.welcome = u.query.welcome
+        response.writeHead(200)
+        response.end("welcome " + u.query.shout + " ok")
 
       else
         response.writeHead(404);
