@@ -220,13 +220,11 @@ class Room
 
     @process = spawn './ygopro', param, cwd: 'ygocore'
     @process.on 'exit', (code)=>
-      log.info 'room-exit', this.name, this.port, code
       @disconnector = 'server' unless @disconnector
       this.delete()
       return
     @process.stdout.setEncoding('utf8')
     @process.stdout.once 'data', (data)=>
-      log.info data
       @established = true
       @port = parseInt data
       _.each @players, (player)=>

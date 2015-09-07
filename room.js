@@ -269,7 +269,6 @@
       });
       this.process.on('exit', (function(_this) {
         return function(code) {
-          log.info('room-exit', _this.name, _this.port, code);
           if (!_this.disconnector) {
             _this.disconnector = 'server';
           }
@@ -279,7 +278,6 @@
       this.process.stdout.setEncoding('utf8');
       this.process.stdout.once('data', (function(_this) {
         return function(data) {
-          log.info(data);
           _this.established = true;
           _this.port = parseInt(data);
           _.each(_this.players, function(player) {
