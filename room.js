@@ -114,24 +114,96 @@
         this.hostinfo.start_lp = parseInt(param[6]);
         this.hostinfo.start_hand = parseInt(param[7]);
         this.hostinfo.draw_count = parseInt(param[8]);
-      } else if ((param = name.match(/(.+)#/))) {
-        rule = param[1];
-        log.info(rule);
-        if (rule.match(/(^|，|,)(M|MATCH)(，|,|$)/i)) {
+      } else if (((param = name.match(/(.+)#/)) !== null) && ((param[1].length <= 2 && param[1].match(/(S|N|M|T)(0|1|2|T|A)/i)) || (param[1].match(/^(S|N|M|T)(0|1|2|O|T|A)(0|1|O|T)/i)))) {
+        rule = param[1].toUpperCase();
+        log.info("C", rule);
+        switch (rule.charAt(0)) {
+          case "M":
+          case "1":
+            this.hostinfo.mode = 1;
+            break;
+          case "T":
+          case "2":
+            this.hostinfo.mode = 2;
+            this.hostinfo.start_lp = 16000;
+            break;
+          default:
+            this.hostinfo.mode = 0;
+        }
+        switch (rule.charAt(1)) {
+          case "0":
+          case "O":
+            this.hostinfo.rule = 0;
+            break;
+          case "1":
+          case "T":
+            this.hostinfo.rule = 1;
+            break;
+          default:
+            this.hostinfo.rule = 2;
+        }
+        switch (rule.charAt(2)) {
+          case "1":
+          case "T":
+            this.hostinfo.lflist = settings.modules.TCG_banlist_id;
+            break;
+          default:
+            this.hostinfo.lflist = 0;
+        }
+        if ((param = rule.charAt(3).match(/\d/)) > 0) {
+          this.hostinfo.time_limit = param * 60;
+        }
+        switch (rule.charAt(4)) {
+          case "T":
+          case "1":
+            this.hostinfo.enable_priority = true;
+            break;
+          default:
+            this.hostinfo.enable_priority = false;
+        }
+        switch (rule.charAt(5)) {
+          case "T":
+          case "1":
+            this.hostinfo.no_check_deck = true;
+            break;
+          default:
+            this.hostinfo.no_check_deck = false;
+        }
+        switch (rule.charAt(6)) {
+          case "T":
+          case "1":
+            this.hostinfo.no_shuffle_deck = true;
+            break;
+          default:
+            this.hostinfo.no_shuffle_deck = false;
+        }
+        if ((param = rule.charAt(7).match(/\d/)) > 0) {
+          this.hostinfo.start_lp = param * 4000;
+        }
+        if ((param = rule.charAt(8).match(/\d/)) > 0) {
+          this.hostinfo.start_hand = param;
+        }
+        if ((param = rule.charAt(3).match(/\d/)) >= 0) {
+          this.hostinfo.draw_count = param;
+        }
+      } else if ((param = name.match(/(.+)#/)) !== null) {
+        rule = param[1].toUpperCase();
+        log.info("233", rule);
+        if (rule.match(/(^|，|,)(M|MATCH)(，|,|$)/)) {
           this.hostinfo.mode = 1;
         }
-        if (rule.match(/(^|，|,)(T|TAG)(，|,|$)/i)) {
+        if (rule.match(/(^|，|,)(T|TAG)(，|,|$)/)) {
           this.hostinfo.mode = 2;
           this.hostinfo.start_lp = 16000;
         }
-        if (rule.match(/(^|，|,)(TCGONLY|TO)(，|,|$)/i)) {
+        if (rule.match(/(^|，|,)(TCGONLY|TO)(，|,|$)/)) {
           this.hostinfo.rule = 1;
           this.hostinfo.lflist = settings.modules.TCG_banlist_id;
         }
-        if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/i)) {
+        if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/)) {
           this.hostinfo.rule = 2;
         }
-        if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/i))) {
+        if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/))) {
           start_lp = parseInt(param[2]);
           if (start_lp <= 0) {
             start_lp = 1;
@@ -141,7 +213,7 @@
           }
           this.hostinfo.start_lp = start_lp;
         }
-        if ((param = rule.match(/(^|，|,)TIME(\d+)(，|,|$)/i))) {
+        if ((param = rule.match(/(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/))) {
           time_limit = parseInt(param[2]);
           if (time_limit <= 0) {
             time_limit = 180;
@@ -154,7 +226,7 @@
           }
           this.hostinfo.time_limit = time_limit;
         }
-        if ((param = rule.match(/(^|，|,)START(\d+)(，|,|$)/i))) {
+        if ((param = rule.match(/(^|，|,)(START|ST)(\d+)(，|,|$)/))) {
           start_hand = parseInt(param[2]);
           if (start_hand <= 0) {
             start_hand = 1;
@@ -164,31 +236,31 @@
           }
           this.hostinfo.start_hand = start_hand;
         }
-        if ((param = rule.match(/(^|，|,)DRAW(\d+)(，|,|$)/i))) {
+        if ((param = rule.match(/(^|，|,)(DRAW|DR)(\d+)(，|,|$)/))) {
           draw_count = parseInt(param[2]);
           if (draw_count >= 35) {
             draw_count = 35;
           }
           this.hostinfo.draw_count = draw_count;
         }
-        if ((param = rule.match(/(^|，|,)LFLIST(\d+)(，|,|$)/i))) {
+        if ((param = rule.match(/(^|，|,)(LFLIST|LF)(\d+)(，|,|$)/))) {
           lflist = parseInt(param[2]) - 1;
           this.hostinfo.lflist = lflist;
         }
-        if ((param = rule.match(/(^|，|,)NOLFLIST(，|,|$)/i))) {
+        if (rule.match(/(^|，|,)(NOLFLIST|NF)(，|,|$)/)) {
           this.hostinfo.lflist = -1;
         }
-        if ((param = rule.match(/(^|，|,)NOUNIQUE(，|,|$)/i))) {
+        if (rule.match(/(^|，|,)(NOUNIQUE|NU)(，|,|$)/)) {
           this.hostinfo.rule = 3;
         }
-        if ((param = rule.match(/(^|，|,)NOCHECK(，|,|$)/i))) {
-          this.hostinfo.no_check_deck = "T";
+        if (rule.match(/(^|，|,)(NOCHECK|NC)(，|,|$)/)) {
+          this.hostinfo.no_check_deck = true;
         }
-        if ((param = rule.match(/(^|，|,)NOSHUFFLE(，|,|$)/i))) {
-          this.hostinfo.no_shuffle_deck = "T";
+        if (rule.match(/(^|，|,)(NOSHUFFLE|NS)(，|,|$)/)) {
+          this.hostinfo.no_shuffle_deck = true;
         }
-        if ((param = rule.match(/(^|，|,)IGPRIORITY(，|,|$)/i))) {
-          this.hostinfo.enable_priority = "T";
+        if (rule.match(/(^|，|,)(IGPRIORITY|PR)(，|,|$)/)) {
+          this.hostinfo.enable_priority = true;
         }
       }
       param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit];
@@ -197,6 +269,7 @@
       });
       this.process.on('exit', (function(_this) {
         return function(code) {
+          log.info('room-exit', _this.name, _this.port, code);
           if (!_this.disconnector) {
             _this.disconnector = 'server';
           }
@@ -206,6 +279,7 @@
       this.process.stdout.setEncoding('utf8');
       this.process.stdout.once('data', (function(_this) {
         return function(data) {
+          log.info(data);
           _this.established = true;
           _this.port = parseInt(data);
           _.each(_this.players, function(player) {
