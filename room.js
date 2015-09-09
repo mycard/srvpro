@@ -150,7 +150,7 @@
           default:
             this.hostinfo.lflist = 0;
         }
-        if ((param = rule.charAt(3).match(/\d/)) > 0) {
+        if ((param = parseInt(rule.charAt(3).match(/\d/))) > 0) {
           this.hostinfo.time_limit = param * 60;
         }
         switch (rule.charAt(4)) {
@@ -177,13 +177,13 @@
           default:
             this.hostinfo.no_shuffle_deck = false;
         }
-        if ((param = rule.charAt(7).match(/\d/)) > 0) {
+        if ((param = parseInt(rule.charAt(7).match(/\d/))) > 0) {
           this.hostinfo.start_lp = param * 4000;
         }
-        if ((param = rule.charAt(8).match(/\d/)) > 0) {
+        if ((param = parseInt(rule.charAt(8).match(/\d/))) > 0) {
           this.hostinfo.start_hand = param;
         }
-        if ((param = rule.charAt(3).match(/\d/)) >= 0) {
+        if ((param = parseInt(rule.charAt(9).match(/\d/))) >= 0) {
           this.hostinfo.draw_count = param;
         }
       } else if ((param = name.match(/(.+)#/)) !== null) {
