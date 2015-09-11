@@ -9,6 +9,7 @@ node_modules/bunyan/
 node_modules/request/
 node_modules/underscore/
 node_modules/underscore.string/
+node_modules/sqlite3/
 
 *.heapsnapshot
 *.tmp
