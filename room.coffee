@@ -180,25 +180,25 @@ class Room
         @hostinfo.start_lp = start_lp
       
       if (param = rule.match /(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/)
-        time_limit = parseInt(param[2])
+        time_limit = parseInt(param[3])
         if (time_limit <= 0) then time_limit = 180
         if (time_limit >= 1 and time_limit <= 60) then time_limit = time_limit*60
         if (time_limit >= 999) then time_limit = 999
         @hostinfo.time_limit = time_limit
       
       if (param = rule.match /(^|，|,)(START|ST)(\d+)(，|,|$)/)
-        start_hand = parseInt(param[2])
+        start_hand = parseInt(param[3])
         if (start_hand <= 0) then start_hand = 1
         if (start_hand >= 40) then start_hand = 40
         @hostinfo.start_hand = start_hand
       
       if (param = rule.match /(^|，|,)(DRAW|DR)(\d+)(，|,|$)/)
-        draw_count = parseInt(param[2])
+        draw_count = parseInt(param[3])
         if (draw_count >= 35) then draw_count = 35
         @hostinfo.draw_count = draw_count
       
       if (param = rule.match /(^|，|,)(LFLIST|LF)(\d+)(，|,|$)/)
-        lflist = parseInt(param[2])-1
+        lflist = parseInt(param[3])-1
         @hostinfo.lflist = lflist
       
       if (rule.match /(^|，|,)(NOLFLIST|NF)(，|,|$)/)
