@@ -12,8 +12,7 @@
         "enable_TCG_as_default": false,
         "http": {
             "port": 7922,
-            "password": "123456",
-            "match": true
+            "password": "123456"
         },
         "pre": {
             "port": 7911,

@@ -185,49 +185,49 @@ var loadAllDbs = function() {
 
 //从远程更新数据库，异步
 var fetchDatas = function() {
-    var process = spawn("git", ["pull", "origin"], { cwd: config.git_db_path });
-    process.stdout.setEncoding('utf8');
-    process.stdout.on('data', function(data) {
+    var proc = spawn("git", ["pull", "origin"], { cwd: config.git_db_path, env: process.env });
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', function(data) {
         sendResponse("git pull: "+data);
     });
-    process.stderr.setEncoding('utf8');
-    process.stderr.on('data', function(data) {
+    proc.stderr.setEncoding('utf8');
+    proc.stderr.on('data', function(data) {
         sendResponse("git pull error: "+data);
     });
-    process.on('close', function (code) {
+    proc.on('close', function (code) {
         sendResponse("命令执行完成。");
     });
 }
 
 //更新本地网页到服务器，异步
 var pushDatas = function() {
-    var process = spawn("git", ["pull", "origin"], { cwd: config.git_html_path });
-    process.stdout.setEncoding('utf8');
-    process.stdout.on('data', function(data) {
+    var proc = spawn("git", ["pull", "origin"], { cwd: config.git_html_path, env: process.env });
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', function(data) {
         sendResponse("git pull: "+data);
     });
-    process.stderr.setEncoding('utf8');
-    process.stderr.on('data', function(data) {
+    proc.stderr.setEncoding('utf8');
+    proc.stderr.on('data', function(data) {
         sendResponse("git pull error: "+data);
     });
-    process.on('close', function (code) {
+    proc.on('close', function (code) {
         sendResponse("请稍候。");
         try {
-            execSync('git add --all .', { cwd: config.git_html_path });
-            execSync('git commit -m update-auto', { cwd: config.git_html_path });
+            execSync('git add --all .', { cwd: config.git_html_path, env: process.env });
+            execSync('git commit -m update-auto', { cwd: config.git_html_path, env: process.env });
         } catch (error) {
             sendResponse("git error: "+error.stdout);
         }
-        var process2 = spawn("git", ["push"], { cwd: config.git_html_path });
-        process2.stdout.setEncoding('utf8');
-        process2.stdout.on('data', function(data) {
+        var proc2 = spawn("git", ["push"], { cwd: config.git_html_path, env: process.env });
+        proc2.stdout.setEncoding('utf8');
+        proc2.stdout.on('data', function(data) {
             sendResponse("git push: "+data);
         });
-        process2.stderr.setEncoding('utf8');
-        process2.stderr.on('data', function(data) {
+        proc2.stderr.setEncoding('utf8');
+        proc2.stderr.on('data', function(data) {
             sendResponse("git push: "+data);
         });
-        process2.on('close', function (code) {
+        proc2.on('close', function (code) {
             sendResponse("命令执行完成。");
         });
     });
@@ -250,29 +250,29 @@ var copyToYGOPRO = function() {
 
 //生成更新包，异步
 var packDatas = function() {
-    var process = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "ygosrv233-pre.zip", "*"], { cwd: config.db_path });
-    process.stdout.setEncoding('utf8');
-    process.stdout.on('data', function(data) {
+    var proc = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "ygosrv233-pre.zip", "*"], { cwd: config.db_path, env: process.env });
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', function(data) {
         sendResponse("7z: "+data);
     });
-    process.stderr.setEncoding('utf8');
-    process.stderr.on('data', function(data) {
+    proc.stderr.setEncoding('utf8');
+    proc.stderr.on('data', function(data) {
         sendResponse("7z error: "+data);
     });
-    process.on('close', function (code) {
+    proc.on('close', function (code) {
         execSync('mv -f "' + config.db_path +'ygosrv233-pre.zip" "'+ config.html_path +'"');
         sendResponse("电脑更新包打包完成。");
     });
-    var process2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path });
-    process2.stdout.setEncoding('utf8');
-    process2.stdout.on('data', function(data) {
+    var proc2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path, env: process.env });
+    proc2.stdout.setEncoding('utf8');
+    proc2.stdout.on('data', function(data) {
         sendResponse("7z: "+data);
     });
-    process2.stderr.setEncoding('utf8');
-    process2.stderr.on('data', function(data) {
+    proc2.stderr.setEncoding('utf8');
+    proc2.stderr.on('data', function(data) {
         sendResponse("7z error: "+data);
     });
-    process2.on('close', function (code) {
+    proc2.on('close', function (code) {
         execSync('mv -f "' + config.db_path +'ygosrv233-pre-mobile.zip" "'+ config.html_path +'"');
         sendResponse("手机更新包打包完成。");
     });
