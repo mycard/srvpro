@@ -4,22 +4,27 @@
     "version": 4918,
     "modules": {
         "welcome": "YGOPRO Server",
-        "stop": "停服",
+        "stop": false,
         "tips": "http://mercury233.me/ygosrv233/tips.json",
         "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
         "post_start_watching": true,
         "TCG_banlist_id": 7,
+        "enable_TCG_as_default": false,
         "http": {
             "port": 7922,
             "password": "123456",
             "match": true
         },
         "pre": {
-            "port": 7921,
+            "port": 7911,
+            "password": "123456",
+            "git_html_path": "../mercury233.github.io/",
             "html_path": "../mercury233.github.io/ygosrv233/",
             "html_filename": "pre.html",
+            "git_db_path": "../ygopro-cards/",
             "db_path": "../ygopro-cards/unofficial/",
-            "img_rel_path": "pre/pics/"
+            "html_img_rel_path": "pre/pics/",
+            "ygopro_path": "../ygopro-pre/"
         }
     }
 }

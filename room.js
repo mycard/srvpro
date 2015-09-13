@@ -90,7 +90,7 @@
       Room.all.push(this);
       this.hostinfo = {
         lflist: 0,
-        rule: 0,
+        rule: settings.modules.enable_TCG_as_default ? 0 : 2,
         mode: 0,
         enable_priority: false,
         no_check_deck: false,

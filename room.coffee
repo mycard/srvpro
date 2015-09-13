@@ -72,7 +72,7 @@ class Room
 
     @hostinfo =
       lflist: 0
-      rule: 0
+      rule: if settings.modules.enable_TCG_as_default then 0 else 2
       mode: 0
       enable_priority: false
       no_check_deck: false

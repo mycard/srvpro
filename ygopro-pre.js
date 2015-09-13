@@ -11,6 +11,8 @@ var http = require('http');
 var sqlite3 = require('sqlite3').verbose();
 var fs = require('fs');
 var execSync = require('child_process').execSync;
+var spawn = require('child_process').spawn;
+var url = require('url');
 
 var constants = require('./constants.json');
 var config = require('./config.json').modules.pre;
@@ -22,7 +24,9 @@ var responder;
 
 //输出反馈信息，如有http长连接则输出到http，否则输出到控制台
 var sendResponse = function(text) {
+    text=""+text;
     if (responder) {
+        text=text.replace(/\n/g,"<br>");
         responder.write("data: " + text + "\n\n");
     }
     else {
@@ -164,10 +168,12 @@ var writeToFile = function() {
     fileContent=fileContent.replace(/<tbody class="auto-generated">[\w\W]*<\/tbody>/,'<tbody class="auto-generated">\r\n'+newContent+'\r\n</tbody>');
     fs.writeFileSync(config.html_path+config.html_filename, fileContent);
     sendResponse("列表更新完成。");
+    copyImages();
 }
 
 //读取指定文件夹里所有数据库，异步
 var loadAllDbs = function() {
+    cardHTMLs=[];
     var files = fs.readdirSync(config.db_path+"expansions/");
     for (var i in files) {
         var filename = files[i];
@@ -177,17 +183,114 @@ var loadAllDbs = function() {
     }
 }
 
-//将数据库文件夹里卡图复制到列表页对应文件夹里
+//从远程更新数据库，异步
+var fetchDatas = function() {
+    var process = spawn("git", ["pull", "origin"], { cwd: config.git_db_path });
+    process.stdout.setEncoding('utf8');
+    process.stdout.on('data', function(data) {
+        sendResponse("git pull: "+data);
+    });
+    process.stderr.setEncoding('utf8');
+    process.stderr.on('data', function(data) {
+        sendResponse("git pull error: "+data);
+    });
+    process.on('close', function (code) {
+        sendResponse("命令执行完成。");
+    });
+}
+
+//更新本地网页到服务器，异步
+var pushDatas = function() {
+    var process = spawn("git", ["pull", "origin"], { cwd: config.git_html_path });
+    process.stdout.setEncoding('utf8');
+    process.stdout.on('data', function(data) {
+        sendResponse("git pull: "+data);
+    });
+    process.stderr.setEncoding('utf8');
+    process.stderr.on('data', function(data) {
+        sendResponse("git pull error: "+data);
+    });
+    process.on('close', function (code) {
+        sendResponse("请稍候。");
+        try {
+            execSync('git add --all .', { cwd: config.git_html_path });
+            execSync('git commit -m update-auto', { cwd: config.git_html_path });
+        } catch (error) {
+            sendResponse("git error: "+error.stdout);
+        }
+        var process2 = spawn("git", ["push"], { cwd: config.git_html_path });
+        process2.stdout.setEncoding('utf8');
+        process2.stdout.on('data', function(data) {
+            sendResponse("git push: "+data);
+        });
+        process2.stderr.setEncoding('utf8');
+        process2.stderr.on('data', function(data) {
+            sendResponse("git push: "+data);
+        });
+        process2.on('close', function (code) {
+            sendResponse("命令执行完成。");
+        });
+    });
+}
+
+//将数据库文件夹里卡图复制到列表页对应文件夹里，同步
 var copyImages = function() {
     execSync('rm -rf "' + config.html_path+config.html_img_rel_path +'"');
     execSync('cp -r "' + config.db_path + 'pics' + '" "' + config.html_path+config.html_img_rel_path + '"');
     sendResponse("卡图复制完成。");
 }
 
+//将数据库文件夹复制到YGOPRO文件夹里，同步
+var copyToYGOPRO = function() {
+    execSync('rm -rf "' + config.ygopro_path + 'expansions/*' + '"');
+    execSync('cp -rf "' + config.db_path + 'expansions' + '" "' + config.ygopro_path + '"');
+    execSync('cp -rf "' + config.db_path + 'script' + '" "' + config.ygopro_path + 'expansions"');
+    sendResponse("更新完成。");
+}
+
+//生成更新包，异步
+var packDatas = function() {
+    var process = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "ygosrv233-pre.zip", "*"], { cwd: config.db_path });
+    process.stdout.setEncoding('utf8');
+    process.stdout.on('data', function(data) {
+        sendResponse("7z: "+data);
+    });
+    process.stderr.setEncoding('utf8');
+    process.stderr.on('data', function(data) {
+        sendResponse("7z error: "+data);
+    });
+    process.on('close', function (code) {
+        execSync('mv -f "' + config.db_path +'ygosrv233-pre.zip" "'+ config.html_path +'"');
+        sendResponse("电脑更新包打包完成。");
+    });
+    var process2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path });
+    process2.stdout.setEncoding('utf8');
+    process2.stdout.on('data', function(data) {
+        sendResponse("7z: "+data);
+    });
+    process2.stderr.setEncoding('utf8');
+    process2.stderr.on('data', function(data) {
+        sendResponse("7z error: "+data);
+    });
+    process2.on('close', function (code) {
+        execSync('mv -f "' + config.db_path +'ygosrv233-pre-mobile.zip" "'+ config.html_path +'"');
+        sendResponse("手机更新包打包完成。");
+    });
+}
+
 //建立一个http服务器，接收API操作
 http.createServer(function (req, res) {
-    if(req.url === '/api/msg') {
+    var u = url.parse(req.url, true);
+    
+    if (u.query.password !== config.password) {
+        res.writeHead(403);
+        res.end("Auth Failed.");
+        return;
+    }
+    
+    if (u.pathname === '/api/msg') {
         res.writeHead(200, {
+            "Access-Control-Allow-origin": "*",
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
             "Connection": "keep-alive"
@@ -198,25 +301,42 @@ http.createServer(function (req, res) {
         });
         
         responder = res;
+        
+        sendResponse("已连接。");
     }
-    else if (req.url === '/api/load_db') {
+    else if (u.pathname === '/api/load_db') {
+        res.writeHead(200);
+        res.end(u.query.callback+'({"message":"开始加载数据库。"});');
         loadAllDbs();
-        res.writeHead(200);
-        res.end("开始加载数据库。");
     }
-    else if (req.url === '/api/write_to_file') {
+    else if (u.pathname === '/api/fetch_datas') {
+        res.writeHead(200);
+        res.end(u.query.callback+'({"message":"开始更新数据库。"});');
+        fetchDatas();
+    }
+    else if (u.pathname === '/api/push_datas') {
+        res.writeHead(200);
+        res.end(u.query.callback+'({"message":"开始上传到网页。"});');
+        pushDatas();
+    }
+    else if (u.pathname === '/api/write_to_file') {
+        res.writeHead(200);
+        res.end(u.query.callback+'({"message":"开始写列表页。"});');
         writeToFile();
-        res.writeHead(200);
-        res.end("开始写列表页。");
     }
-    else if (req.url === '/api/copy_images') {
-        copyImages();
+    else if (u.pathname === '/api/copy_to_ygopro') {
         res.writeHead(200);
-        res.end("开始复制卡图。");
+        res.end(u.query.callback+'({"message":"开始更新到服务器。"});');
+        copyToYGOPRO();
+    }
+    else if (u.pathname === '/api/pack_data') {
+        res.writeHead(200);
+        res.end(u.query.callback+'({"message":"开始生成更新包。"});');
+        packDatas();
     }
     else {
-        res.writeHead(404);
-        res.end("no");
+        res.writeHead(400);
+        res.end("400");
     }
 
 }).listen(config.port);
