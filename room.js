@@ -337,7 +337,6 @@
         if (index !== -1) {
           this.watchers.splice(index, 1);
         }
-        client.room = null;
       } else {
         index = _.indexOf(this.players, client);
         if (index !== -1) {
@@ -345,10 +344,8 @@
         }
         if (this.players.length) {
           ygopro.stoc_send_chat_to_room(this, client.name + " " + '离开了游戏' + (error ? ": " + error : ''));
-          client.room = null;
         } else {
           this.process.kill();
-          client.room = null;
           this["delete"]();
         }
       }

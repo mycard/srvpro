@@ -264,16 +264,16 @@ class Room
       ygopro.stoc_send_chat_to_room this, "#{client.name} #{'退出了观战'}#{if error then ": #{error}" else ''}"
       index = _.indexOf(@watchers, client)
       @watchers.splice(index, 1) unless index == -1
-      client.room = null
+      #client.room = null
     else
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       if @players.length
         ygopro.stoc_send_chat_to_room this, "#{client.name} #{'离开了游戏'}#{if error then ": #{error}" else ''}"
-        client.room = null
+        #client.room = null
       else
         @process.kill()
-        client.room = null
+        #client.room = null
         this.delete()
     return
 

@@ -512,7 +512,7 @@ if settings.modules.http
       else if u.query.pass == settings.modules.http.password && u.query.welcome
         settings.modules.welcome = u.query.welcome
         response.writeHead(200)
-        response.end("welcome " + u.query.stop + " ok")
+        response.end("welcome " + u.query.welcome + " ok")
 
       else
         response.writeHead(404);
