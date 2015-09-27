@@ -116,7 +116,6 @@
         this.hostinfo.draw_count = parseInt(param[8]);
       } else if (((param = name.match(/(.+)#/)) !== null) && ((param[1].length <= 2 && param[1].match(/(S|N|M|T)(0|1|2|T|A)/i)) || (param[1].match(/^(S|N|M|T)(0|1|2|O|T|A)(0|1|O|T)/i)))) {
         rule = param[1].toUpperCase();
-        log.info("C", rule);
         switch (rule.charAt(0)) {
           case "M":
           case "1":
@@ -150,7 +149,7 @@
           default:
             this.hostinfo.lflist = 0;
         }
-        if ((param = parseInt(rule.charAt(3).match(/\d/))) > 0) {
+        if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0) {
           this.hostinfo.time_limit = param * 60;
         }
         switch (rule.charAt(4)) {
@@ -188,7 +187,6 @@
         }
       } else if ((param = name.match(/(.+)#/)) !== null) {
         rule = param[1].toUpperCase();
-        log.info("233", rule);
         if (rule.match(/(^|，|,)(M|MATCH)(，|,|$)/)) {
           this.hostinfo.mode = 1;
         }
@@ -215,7 +213,7 @@
         }
         if ((param = rule.match(/(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/))) {
           time_limit = parseInt(param[3]);
-          if (time_limit <= 0) {
+          if (time_limit < 0) {
             time_limit = 180;
           }
           if (time_limit >= 1 && time_limit <= 60) {

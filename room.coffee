@@ -100,7 +100,7 @@ class Room
     
     else if (((param = name.match /(.+)#/) != null) and ( (param[1].length<=2 and param[1].match(/(S|N|M|T)(0|1|2|T|A)/i)) or (param[1].match(/^(S|N|M|T)(0|1|2|O|T|A)(0|1|O|T)/i)) ) )
       rule=param[1].toUpperCase()
-      log.info "C", rule
+      #log.info "C", rule
       
       switch rule.charAt(0)
         when "M","1"
@@ -125,7 +125,7 @@ class Room
         else
           @hostinfo.lflist = 0
       
-      if ((param = parseInt(rule.charAt(3).match(/\d/))) > 0)
+      if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0)
         @hostinfo.time_limit=param*60
       
       switch rule.charAt(4)
@@ -157,7 +157,7 @@ class Room
     
     else if ((param = name.match /(.+)#/) != null)
       rule=param[1].toUpperCase()
-      log.info "233", rule
+      #log.info "233", rule
       
       if (rule.match /(^|，|,)(M|MATCH)(，|,|$)/)
         @hostinfo.mode = 1
@@ -181,7 +181,7 @@ class Room
       
       if (param = rule.match /(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/)
         time_limit = parseInt(param[3])
-        if (time_limit <= 0) then time_limit = 180
+        if (time_limit < 0) then time_limit = 180
         if (time_limit >= 1 and time_limit <= 60) then time_limit = time_limit*60
         if (time_limit >= 999) then time_limit = 999
         @hostinfo.time_limit = time_limit
