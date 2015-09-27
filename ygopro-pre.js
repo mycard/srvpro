@@ -185,7 +185,7 @@ var loadAllDbs = function() {
 
 //从远程更新数据库，异步
 var fetchDatas = function() {
-    var proc = spawn("git", ["pull", "origin"], { cwd: config.git_db_path, env: process.env });
+    var proc = spawn("git", ["pull", "origin", "master"], { cwd: config.git_db_path, env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
         sendResponse("git pull: "+data);
@@ -195,41 +195,41 @@ var fetchDatas = function() {
         sendResponse("git pull error: "+data);
     });
     proc.on('close', function (code) {
-        sendResponse("命令执行完成。");
+        sendResponse("数据更新完成。");
+    });
+    var proc2 = spawn("git", ["pull", "origin", "master"], { cwd: config.git_html_path, env: process.env });
+    proc2.stdout.setEncoding('utf8');
+    proc2.stdout.on('data', function(data) {
+        sendResponse("git pull: "+data);
+    });
+    proc2.stderr.setEncoding('utf8');
+    proc2.stderr.on('data', function(data) {
+        sendResponse("git pull error: "+data);
+    });
+    proc2.on('close', function (code) {
+        sendResponse("网页同步完成。");
     });
 }
 
 //更新本地网页到服务器，异步
 var pushDatas = function() {
-    var proc = spawn("git", ["pull", "origin"], { cwd: config.git_html_path, env: process.env });
+    try {
+        execSync('git add --all .', { cwd: config.git_html_path, env: process.env });
+        execSync('git commit -m update-auto', { cwd: config.git_html_path, env: process.env });
+    } catch (error) {
+        sendResponse("git error: "+error.stdout);
+    }
+    var proc = spawn("git", ["push"], { cwd: config.git_html_path, env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
-        sendResponse("git pull: "+data);
+        sendResponse("git push: "+data);
     });
     proc.stderr.setEncoding('utf8');
     proc.stderr.on('data', function(data) {
-        sendResponse("git pull error: "+data);
+        sendResponse("git push: "+data);
     });
     proc.on('close', function (code) {
-        sendResponse("请稍候。");
-        try {
-            execSync('git add --all .', { cwd: config.git_html_path, env: process.env });
-            execSync('git commit -m update-auto', { cwd: config.git_html_path, env: process.env });
-        } catch (error) {
-            sendResponse("git error: "+error.stdout);
-        }
-        var proc2 = spawn("git", ["push"], { cwd: config.git_html_path, env: process.env });
-        proc2.stdout.setEncoding('utf8');
-        proc2.stdout.on('data', function(data) {
-            sendResponse("git push: "+data);
-        });
-        proc2.stderr.setEncoding('utf8');
-        proc2.stderr.on('data', function(data) {
-            sendResponse("git push: "+data);
-        });
-        proc2.on('close', function (code) {
-            sendResponse("命令执行完成。");
-        });
+        sendResponse("命令执行完成。");
     });
 }
 
