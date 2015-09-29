@@ -256,13 +256,6 @@
         code: settings.version
       });
       client.end();
-    } else if (!info.pass.length) {
-      ygopro.stoc_send_chat(client, "房间为空，请修改房间名");
-      ygopro.stoc_send(client, 'ERROR_MSG', {
-        msg: 1,
-        code: 2
-      });
-      client.end();
     } else if (!Room.validate(info.pass)) {
       ygopro.stoc_send_chat(client, "房间密码不正确");
       ygopro.stoc_send(client, 'ERROR_MSG', {
@@ -277,7 +270,7 @@
       });
       client.end();
     } else {
-      client.room = Room.find_or_create_by_name(info.pass);
+      client.room = Room.find_or_create_by_name(info.pass, client.name);
       if (!client.room) {
         ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试");
         ygopro.stoc_send(client, 'ERROR_MSG', {
@@ -317,6 +310,9 @@
     }
     if (settings.modules.welcome) {
       ygopro.stoc_send_chat(client, settings.modules.welcome);
+    }
+    if (client.room.welcome) {
+      ygopro.stoc_send_chat(client, client.room.welcome);
     }
     if (settings.modules.post_start_watching && !client.room.watcher) {
       client.room.watcher = watcher = net.connect(client.room.port, function() {
@@ -510,6 +506,9 @@
         if (settings.modules.tips) {
           ygopro.stoc_send_random_tip(client);
         }
+        break;
+      case '/test':
+        log.info(Room.players_oppentlist);
     }
     return cancel;
   });

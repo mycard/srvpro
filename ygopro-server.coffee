@@ -228,13 +228,13 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
 
-  else if !info.pass.length
-    ygopro.stoc_send_chat(client,"房间为空，请修改房间名")
-    ygopro.stoc_send client, 'ERROR_MSG',{
-      msg: 1
-      code: 2
-    }
-    client.end()
+  #else if !info.pass.length
+  #  ygopro.stoc_send_chat(client,"房间为空，请修改房间名")
+  #  ygopro.stoc_send client, 'ERROR_MSG',{
+  #    msg: 1
+  #    code: 2
+  #  }
+  #  client.end()
     
   else if !Room.validate(info.pass)
     #ygopro.stoc_send client, 'ERROR_MSG',{
@@ -257,7 +257,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   
   else
     #log.info 'join_game',info.pass, client.name
-    client.room = Room.find_or_create_by_name(info.pass)
+    client.room = Room.find_or_create_by_name(info.pass, client.name)
     if !client.room
       ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试")
       ygopro.stoc_send client, 'ERROR_MSG',{
@@ -289,8 +289,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   return unless client.room
   if settings.modules.welcome
     ygopro.stoc_send_chat client, settings.modules.welcome
-  ##if (os.freemem() / os.totalmem())<=0.1
-  ##  ygopro.stoc_send_chat client, "服务器已经爆满，随时存在崩溃风险！"
+  if client.room.welcome
+    ygopro.stoc_send_chat client, client.room.welcome
 
   if settings.modules.post_start_watching and !client.room.watcher
     client.room.watcher = watcher = net.connect client.room.port, ->
@@ -449,6 +449,9 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
+    
+    when '/test'
+      log.info Room.players_oppentlist
   return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->

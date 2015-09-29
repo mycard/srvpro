@@ -31,20 +31,42 @@ class Room
   #alive
 
   @all = []
+  @players_oppentlist = {}
 
-  @find_or_create_by_name: (name)->
+  @find_or_create_by_name: (name, player_name)->
+    if name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M'
+      return @find_or_create_random(name.toUpperCase(), player_name)
     if room = @find_by_name(name)
       return room
     else if get_memory_usage()>=90
       return null
     else 
       return new Room(name)
+  
+  @find_or_create_random: (type, player_name)->
+    if type == ''
+      result = _.find @all, (room)->
+        room.random_type and room.players.length == 1 and room.players[0].name != Room.players_oppentlist[player_name]
+    else
+      result = _.find @all, (room)->
+        room.random_type == type and room.players.length == 1 and room.players[0].name != Room.players_oppentlist[player_name]
+    if result
+      result.welcome = '对手已经在等你了，开始决斗吧！'
+      log.info 'found room', player_name
+    else
+      type = if type then type else 'S'
+      name = type + ',RANDOM#' + Math.floor(Math.random()*100000)
+      result = new Room(name)
+      result.random_type = type
+      result.welcome = '已建立随机对战房间，正在等待对手！'
+      log.info 'create room', player_name, name
+    return result
 
   @find_by_name: (name)->
     result = _.find @all, (room)->
       room.name == name
     #log.info 'find_by_name', name, result
-    result
+    return result
 
   @find_by_port: (port)->
     _.find @all, (room)->
@@ -68,6 +90,8 @@ class Room
     @established = false
     @watcher_buffers = []
     @watchers = []
+    @random_type = ''
+    @welcome = ''
     Room.all.push this
 
     @hostinfo =
@@ -250,6 +274,9 @@ class Room
 
   connect: (client)->
     @players.push client
+    if @random_type
+      Room.players_oppentlist[@players[0].name] = if @players[1] then @players[1].name else null
+      if @players[1] then Room.players_oppentlist[@players[1].name] = @players[0].name
 
     if @established
       client.server.connect @port, '127.0.0.1', ->

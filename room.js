@@ -39,8 +39,13 @@
   Room = (function() {
     Room.all = [];
 
-    Room.find_or_create_by_name = function(name) {
+    Room.players_oppentlist = {};
+
+    Room.find_or_create_by_name = function(name, player_name) {
       var room;
+      if (name === '' || name.toUpperCase() === 'S' || name.toUpperCase() === 'M') {
+        return this.find_or_create_random(name.toUpperCase(), player_name);
+      }
       if (room = this.find_by_name(name)) {
         return room;
       } else if (get_memory_usage() >= 90) {
@@ -48,6 +53,31 @@
       } else {
         return new Room(name);
       }
+    };
+
+    Room.find_or_create_random = function(type, player_name) {
+      var name, result;
+      if (type === '') {
+        result = _.find(this.all, function(room) {
+          return room.random_type && room.players.length === 1 && room.players[0].name !== Room.players_oppentlist[player_name];
+        });
+      } else {
+        result = _.find(this.all, function(room) {
+          return room.random_type === type && room.players.length === 1 && room.players[0].name !== Room.players_oppentlist[player_name];
+        });
+      }
+      if (result) {
+        result.welcome = '对手已经在等你了，开始决斗吧！';
+        log.info('found room', player_name);
+      } else {
+        type = type ? type : 'S';
+        name = type + ',RANDOM#' + Math.floor(Math.random() * 100000);
+        result = new Room(name);
+        result.random_type = type;
+        result.welcome = '已建立随机对战房间，正在等待对手！';
+        log.info('create room', player_name, name);
+      }
+      return result;
     };
 
     Room.find_by_name = function(name) {
@@ -87,6 +117,8 @@
       this.established = false;
       this.watcher_buffers = [];
       this.watchers = [];
+      this.random_type = '';
+      this.welcome = '';
       Room.all.push(this);
       this.hostinfo = {
         lflist: 0,
@@ -313,6 +345,12 @@
 
     Room.prototype.connect = function(client) {
       this.players.push(client);
+      if (this.random_type) {
+        Room.players_oppentlist[this.players[0].name] = this.players[1] ? this.players[1].name : null;
+        if (this.players[1]) {
+          Room.players_oppentlist[this.players[1].name] = this.players[0].name;
+        }
+      }
       if (this.established) {
         client.server.connect(this.port, '127.0.0.1', function() {
           var buffer, i, len, ref;
