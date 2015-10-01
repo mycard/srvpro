@@ -44,22 +44,18 @@ class Room
       return new Room(name)
   
   @find_or_create_random: (type, player_name)->
-    if type == ''
-      result = _.find @all, (room)->
-        room.random_type and room.players.length == 1 and room.players[0].name != Room.players_oppentlist[player_name]
-    else
-      result = _.find @all, (room)->
-        room.random_type == type and room.players.length == 1 and room.players[0].name != Room.players_oppentlist[player_name]
+    result = _.find @all, (room)->
+      (type == '' or room.random_type == type) and room.get_playing_player().length == 1 and room.get_playing_player()[0].name != Room.players_oppentlist[player_name]
     if result
       result.welcome = '对手已经在等你了，开始决斗吧！'
-      log.info 'found room', player_name
+      #log.info 'found room', player_name
     else
       type = if type then type else 'S'
       name = type + ',RANDOM#' + Math.floor(Math.random()*100000)
       result = new Room(name)
       result.random_type = type
       result.welcome = '已建立随机对战房间，正在等待对手！'
-      log.info 'create room', player_name, name
+      #log.info 'create room', player_name, name
     return result
 
   @find_by_name: (name)->
@@ -271,12 +267,25 @@ class Room
     #Room.all[index] = null unless index == -1
     Room.all.splice(index, 1) unless index == -1
     return
+    
+  get_playing_player: ->
+    playing_player=[]
+    _.each @players, (player)=>
+      if player.pos < 4 then playing_player.push player
+      return
+    return playing_player
 
   connect: (client)->
     @players.push client
     if @random_type
-      Room.players_oppentlist[@players[0].name] = if @players[1] then @players[1].name else null
-      if @players[1] then Room.players_oppentlist[@players[1].name] = @players[0].name
+      playing_players=@get_playing_player()
+      if playing_players.length
+        #进来时已经有人在等待了，互相记录为匹配过
+        Room.players_oppentlist[playing_players[0].name] = client.name
+        Room.players_oppentlist[client.name] = playing_players[0].name
+      else
+        #第一个玩家刚进来，还没就位
+        Room.players_oppentlist[client.name] = null
 
     if @established
       client.server.connect @port, '127.0.0.1', ->

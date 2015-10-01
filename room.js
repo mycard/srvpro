@@ -57,25 +57,17 @@
 
     Room.find_or_create_random = function(type, player_name) {
       var name, result;
-      if (type === '') {
-        result = _.find(this.all, function(room) {
-          return room.random_type && room.players.length === 1 && room.players[0].name !== Room.players_oppentlist[player_name];
-        });
-      } else {
-        result = _.find(this.all, function(room) {
-          return room.random_type === type && room.players.length === 1 && room.players[0].name !== Room.players_oppentlist[player_name];
-        });
-      }
+      result = _.find(this.all, function(room) {
+        return (type === '' || room.random_type === type) && room.get_playing_player().length === 1 && room.get_playing_player()[0].name !== Room.players_oppentlist[player_name];
+      });
       if (result) {
         result.welcome = '对手已经在等你了，开始决斗吧！';
-        log.info('found room', player_name);
       } else {
         type = type ? type : 'S';
         name = type + ',RANDOM#' + Math.floor(Math.random() * 100000);
         result = new Room(name);
         result.random_type = type;
         result.welcome = '已建立随机对战房间，正在等待对手！';
-        log.info('create room', player_name, name);
       }
       return result;
     };
@@ -343,12 +335,29 @@
       }
     };
 
+    Room.prototype.get_playing_player = function() {
+      var playing_player;
+      playing_player = [];
+      _.each(this.players, (function(_this) {
+        return function(player) {
+          if (player.pos < 4) {
+            playing_player.push(player);
+          }
+        };
+      })(this));
+      return playing_player;
+    };
+
     Room.prototype.connect = function(client) {
+      var playing_players;
       this.players.push(client);
       if (this.random_type) {
-        Room.players_oppentlist[this.players[0].name] = this.players[1] ? this.players[1].name : null;
-        if (this.players[1]) {
-          Room.players_oppentlist[this.players[1].name] = this.players[0].name;
+        playing_players = this.get_playing_player();
+        if (playing_players.length) {
+          Room.players_oppentlist[playing_players[0].name] = client.name;
+          Room.players_oppentlist[client.name] = playing_players[0].name;
+        } else {
+          Room.players_oppentlist[client.name] = null;
         }
       }
       if (this.established) {
