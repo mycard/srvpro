@@ -126,12 +126,13 @@
     ctos_proto = 0;
     client.pre_establish_buffers = new Array();
     client.on('data', function(data) {
-      var b, buffer, cancel, datas, k, l, len, len1, struct;
+      var b, buffer, cancel, datas, k, l, len, len1, looplimit, struct;
       if (client.is_post_watcher) {
         client.room.watcher.write(data);
       } else {
         ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length);
         datas = [];
+        looplimit = 0;
         while (true) {
           if (ctos_message_length === 0) {
             if (ctos_buffer.length >= 2) {
@@ -171,6 +172,12 @@
               break;
             }
           }
+          looplimit++;
+          if (looplimit > 800) {
+            log.info("error ctos");
+            server.end();
+            break;
+          }
         }
         if (client.established) {
           for (k = 0, len = datas.length; k < len; k++) {
@@ -189,9 +196,10 @@
     stoc_message_length = 0;
     stoc_proto = 0;
     server.on('data', function(data) {
-      var b, stanzas, struct;
+      var b, looplimit, stanzas, struct;
       stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length);
       client.write(data);
+      looplimit = 0;
       while (true) {
         if (stoc_message_length === 0) {
           if (stoc_buffer.length >= 2) {
@@ -223,6 +231,12 @@
           } else {
             break;
           }
+        }
+        looplimit++;
+        if (looplimit > 800) {
+          log.info("error stoc");
+          server.end();
+          break;
         }
       }
     });

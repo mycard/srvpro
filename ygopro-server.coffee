@@ -116,6 +116,8 @@ net.createServer (client) ->
       ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
       
       datas = []
+      
+      looplimit = 0
 
       while true
         if ctos_message_length == 0
@@ -148,6 +150,14 @@ net.createServer (client) ->
             ctos_proto = 0
           else
             break
+      
+        looplimit++
+        #log.info(looplimit)
+        if looplimit>800
+          log.info("error ctos")
+          server.end()
+          break
+
       if client.established
         server.write buffer for buffer in datas
       else
@@ -165,6 +175,8 @@ net.createServer (client) ->
 
     #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
     client.write data
+    
+    looplimit = 0
 
     while true
       if stoc_message_length == 0
@@ -194,8 +206,15 @@ net.createServer (client) ->
           stoc_proto = 0
         else
           break
-     return
-   return
+      
+      looplimit++
+      #log.info(looplimit)
+      if looplimit>800
+        log.info("error stoc")
+        server.end()
+        break
+    return
+  return
 .listen settings.port, ->
   log.info "server started", settings.ip, settings.port
   return
