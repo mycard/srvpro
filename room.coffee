@@ -12,14 +12,17 @@ log = bunyan.createLogger name: "mycard-room"
 #获取可用内存
 get_memory_usage = ()->
   prc_free = spawnSync("free", [])
-  lines = prc_free.stdout.toString().split(/\n/g)
-  line = lines[1].split(/\s+/)
-  total = parseInt(line[1], 10)
-  free = parseInt(line[3], 10)
-  buffers = parseInt(line[5], 10)
-  cached = parseInt(line[6], 10)
-  actualFree = free + buffers + cached
-  percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2))
+  if (prc_free.stdout)
+    lines = prc_free.stdout.toString().split(/\n/g)
+    line = lines[1].split(/\s+/)
+    total = parseInt(line[1], 10)
+    free = parseInt(line[3], 10)
+    buffers = parseInt(line[5], 10)
+    cached = parseInt(line[6], 10)
+    actualFree = free + buffers + cached
+    percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2))
+  else
+    percentUsed = 0
   return percentUsed
 
 class Room
