@@ -45,7 +45,7 @@ class Room
   
   @find_or_create_random: (type, player_name)->
     result = _.find @all, (room)->
-      (type == '' or room.random_type == type) and room.get_playing_player().length == 1 and room.get_playing_player()[0].name != Room.players_oppentlist[player_name]
+      room.random_type != '' and (type == '' or room.random_type == type) and room.get_playing_player().length == 1 and room.get_playing_player()[0].name != Room.players_oppentlist[player_name]
     if result
       result.welcome = '对手已经在等你了，开始决斗吧！'
       #log.info 'found room', player_name
