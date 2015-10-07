@@ -62,7 +62,7 @@
     Room.find_or_create_random = function(type, player_name) {
       var name, result;
       result = _.find(this.all, function(room) {
-        return room.random_type !== '' && (type === '' || room.random_type === type) && room.get_playing_player().length === 1 && room.get_playing_player()[0].name !== Room.players_oppentlist[player_name];
+        return room.random_type !== '' && !room.started && (type === '' || room.random_type === type) && room.get_playing_player().length === 1 && room.get_playing_player()[0].name !== Room.players_oppentlist[player_name];
       });
       if (result) {
         result.welcome = '对手已经在等你了，开始决斗吧！';
@@ -110,6 +110,7 @@
       this.alive = true;
       this.players = [];
       this.status = 'starting';
+      this.started = false;
       this.established = false;
       this.watcher_buffers = [];
       this.watchers = [];
