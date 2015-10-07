@@ -292,6 +292,13 @@
           code: 2
         });
         client.end();
+      } else if (client.room.error) {
+        ygopro.stoc_send_chat(client, client.room.error);
+        ygopro.stoc_send(client, 'ERROR_MSG', {
+          msg: 1,
+          code: 2
+        });
+        client.end();
       } else if (client.room.started) {
         if (settings.modules.post_start_watching) {
           client.is_post_watcher = true;

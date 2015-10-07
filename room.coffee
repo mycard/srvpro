@@ -242,23 +242,26 @@ class Room
 
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'), (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'), @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit]
 
-    @process = spawn './ygopro', param, cwd: 'ygocore'
-    @process.on 'exit', (code)=>
-      @disconnector = 'server' unless @disconnector
-      this.delete()
-      return
-    @process.stdout.setEncoding('utf8')
-    @process.stdout.once 'data', (data)=>
-      @established = true
-      @port = parseInt data
-      _.each @players, (player)=>
-        player.server.connect @port, '127.0.0.1',=>
-          player.server.write buffer for buffer in player.pre_establish_buffers
-          player.established = true
-          player.pre_establish_buffers = null
+    try
+      @process = spawn './ygopro', param, cwd: 'ygocore'
+      @process.on 'exit', (code)=>
+        @disconnector = 'server' unless @disconnector
+        this.delete()
+        return
+      @process.stdout.setEncoding('utf8')
+      @process.stdout.once 'data', (data)=>
+        @established = true
+        @port = parseInt data
+        _.each @players, (player)=>
+          player.server.connect @port, '127.0.0.1',=>
+            player.server.write buffer for buffer in player.pre_establish_buffers
+            player.established = true
+            player.pre_establish_buffers = null
+            return
           return
         return
-      return
+    catch
+      @error = "建立房间失败，请重试"
   delete: ->
     #积分
     return if @deleted

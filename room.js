@@ -291,36 +291,40 @@
         }
       }
       param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit];
-      this.process = spawn('./ygopro', param, {
-        cwd: 'ygocore'
-      });
-      this.process.on('exit', (function(_this) {
-        return function(code) {
-          if (!_this.disconnector) {
-            _this.disconnector = 'server';
-          }
-          _this["delete"]();
-        };
-      })(this));
-      this.process.stdout.setEncoding('utf8');
-      this.process.stdout.once('data', (function(_this) {
-        return function(data) {
-          _this.established = true;
-          _this.port = parseInt(data);
-          _.each(_this.players, function(player) {
-            player.server.connect(_this.port, '127.0.0.1', function() {
-              var buffer, i, len, ref;
-              ref = player.pre_establish_buffers;
-              for (i = 0, len = ref.length; i < len; i++) {
-                buffer = ref[i];
-                player.server.write(buffer);
-              }
-              player.established = true;
-              player.pre_establish_buffers = null;
+      try {
+        this.process = spawn('./ygopro', param, {
+          cwd: 'ygocore'
+        });
+        this.process.on('exit', (function(_this) {
+          return function(code) {
+            if (!_this.disconnector) {
+              _this.disconnector = 'server';
+            }
+            _this["delete"]();
+          };
+        })(this));
+        this.process.stdout.setEncoding('utf8');
+        this.process.stdout.once('data', (function(_this) {
+          return function(data) {
+            _this.established = true;
+            _this.port = parseInt(data);
+            _.each(_this.players, function(player) {
+              player.server.connect(_this.port, '127.0.0.1', function() {
+                var buffer, i, len, ref;
+                ref = player.pre_establish_buffers;
+                for (i = 0, len = ref.length; i < len; i++) {
+                  buffer = ref[i];
+                  player.server.write(buffer);
+                }
+                player.established = true;
+                player.pre_establish_buffers = null;
+              });
             });
-          });
-        };
-      })(this));
+          };
+        })(this));
+      } catch (_error) {
+        this.error = "建立房间失败，请重试";
+      }
     }
 
     Room.prototype["delete"] = function() {
