@@ -265,6 +265,7 @@
       });
       client.end();
     } else if (info.version !== settings.version) {
+      ygopro.stoc_send_chat(client, "版本号不符，电脑用户请更新游戏到最新版本，手机用户可以尝试使用2333端口");
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
         code: settings.version
