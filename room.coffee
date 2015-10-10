@@ -256,7 +256,7 @@ class Room
           player.server.connect @port, '127.0.0.1',=>
             player.server.write buffer for buffer in player.pre_establish_buffers
             player.established = true
-            player.pre_establish_buffers = null
+            player.pre_establish_buffers = []
             return
           return
         return

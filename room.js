@@ -317,7 +317,7 @@
                   player.server.write(buffer);
                 }
                 player.established = true;
-                player.pre_establish_buffers = null;
+                player.pre_establish_buffers = [];
               });
             });
           };
