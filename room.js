@@ -47,7 +47,7 @@
 
     Room.find_or_create_by_name = function(name, player_name) {
       var room;
-      if (name === '' || name.toUpperCase() === 'S' || name.toUpperCase() === 'M') {
+      if (settings.modules.enable_random_duel && (name === '' || name.toUpperCase() === 'S' || name.toUpperCase() === 'M')) {
         return this.find_or_create_random(name.toUpperCase(), player_name);
       }
       if (room = this.find_by_name(name)) {
@@ -293,7 +293,7 @@
       param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit];
       try {
         this.process = spawn('./ygopro', param, {
-          cwd: 'ygocore'
+          cwd: settings.ygopro_path
         });
         this.process.on('exit', (function(_this) {
           return function(code) {

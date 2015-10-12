@@ -15,7 +15,7 @@ var spawn = require('child_process').spawn;
 var url = require('url');
 
 var constants = require('./constants.json');
-var config = require('./config.json').modules.pre;
+var config = require('./config.pre.json');
 
 //全卡HTML列表
 var cardHTMLs=[];

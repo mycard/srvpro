@@ -37,7 +37,7 @@ class Room
   @players_oppentlist = {}
 
   @find_or_create_by_name: (name, player_name)->
-    if name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M'
+    if settings.modules.enable_random_duel and (name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M')
       return @find_or_create_random(name.toUpperCase(), player_name)
     if room = @find_by_name(name)
       return room
@@ -243,7 +243,7 @@ class Room
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'), (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'), @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit]
 
     try
-      @process = spawn './ygopro', param, cwd: 'ygocore'
+      @process = spawn './ygopro', param, cwd: settings.ygopro_path
       @process.on 'exit', (code)=>
         @disconnector = 'server' unless @disconnector
         this.delete()

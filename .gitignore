@@ -1,9 +1,9 @@
-# 23333333
-config.json
-/config.json
+# ignore
 test*
 /ygocore/
 /ygocore
+/ygopro/
+/ygopro
 
 node_modules/.bin/
 node_modules/bunyan/
