@@ -88,7 +88,7 @@ net.createServer (client) ->
     tribute(server)
     server.closed = true unless server.closed
     unless client.closed
-      ygopro.stoc_send_chat(client, "服务器关闭了连接")
+      ygopro.stoc_send_chat(client, "服务器关闭了连接", 11)
       client.end()
     return
 
@@ -97,7 +97,7 @@ net.createServer (client) ->
     tribute(server)
     server.closed = error
     unless client.closed
-      ygopro.stoc_send_chat(client, "服务器错误: #{error}")
+      ygopro.stoc_send_chat(client, "服务器错误: #{error}", 11)
       client.end()
     return
 
@@ -233,7 +233,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #log.info info
   if settings.modules.stop
-    ygopro.stoc_send_chat(client,settings.modules.stop)
+    ygopro.stoc_send_chat(client,settings.modules.stop, 11)
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
       code: 2
@@ -241,7 +241,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.end()  
   
   else if info.version != settings.version
-    ygopro.stoc_send_chat(client,settings.modules.update)
+    ygopro.stoc_send_chat(client,settings.modules.update, 11)
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 4
       code: settings.version
@@ -249,7 +249,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.end()
 
   else if !info.pass.length and !settings.modules.enable_random_duel
-    ygopro.stoc_send_chat(client,"房间为空，请修改房间名")
+    ygopro.stoc_send_chat(client,"房间名为空，请填写主机密码", 11)
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
       code: 2
@@ -261,7 +261,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     #  msg: 1
     #  code: 1 #这返错有问题，直接双ygopro直连怎么都正常，在这里就经常弹不出提示
     #}
-    ygopro.stoc_send_chat(client,"房间密码不正确")
+    ygopro.stoc_send_chat(client,"房间密码不正确", 11)
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
       code: 2
@@ -279,14 +279,14 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     #log.info 'join_game',info.pass, client.name
     client.room = Room.find_or_create_by_name(info.pass, client.name)
     if !client.room
-      ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试")
+      ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试", 11)
       ygopro.stoc_send client, 'ERROR_MSG',{
         msg: 1
         code: 2
       }
       client.end()
     else if client.room.error
-      ygopro.stoc_send_chat(client,client.room.error)
+      ygopro.stoc_send_chat(client,client.room.error,11)
       ygopro.stoc_send client, 'ERROR_MSG',{
         msg: 1
         code: 2
@@ -297,11 +297,11 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         client.is_post_watcher = true
         ygopro.stoc_send_chat_to_room client.room, "#{client.name} 加入了观战"
         client.room.watchers.push client
+        ygopro.stoc_send_chat client, "观战中", 14
         for buffer in client.room.watcher_buffers
           client.write buffer
-        ygopro.stoc_send_chat client, "观战中."
       else
-        ygopro.stoc_send_chat(client,"决斗已开始")
+        ygopro.stoc_send_chat(client,"决斗已开始，不允许观战", 11)
         ygopro.stoc_send client, 'ERROR_MSG',{
           msg: 1
           code: 2
@@ -317,7 +317,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   if settings.modules.welcome
     ygopro.stoc_send_chat client, settings.modules.welcome
   if client.room.welcome
-    ygopro.stoc_send_chat client, client.room.welcome
+    ygopro.stoc_send_chat client, client.room.welcome, 14
 
   if settings.modules.post_start_watching and !client.room.watcher
     client.room.watcher = watcher = net.connect client.room.port, ->
@@ -386,7 +386,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     val = buffer.readInt32LE(2)
     client.room.dueling_players[pos].lp -= val
     if 0 < client.room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！")
+      ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！", 15)
 
   if ygopro.constants.MSG[msg] == 'RECOVER' and client.is_host
     pos = buffer.readUInt8(1)
@@ -406,7 +406,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     val = buffer.readInt32LE(2)
     client.room.dueling_players[pos].lp -= val
     if 0 < client.room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(client.room, "背水一战！")
+      ygopro.stoc_send_chat_to_room(client.room, "背水一战！", 15)
 
   #登场台词
   if settings.modules.dialogues
@@ -414,7 +414,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       card = buffer.readUInt32LE(1)
       if dialogues[card]
         for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
-          ygopro.stoc_send_chat client, line
+          ygopro.stoc_send_chat client, line, 15
   return
 
 #房间管理
@@ -477,8 +477,6 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
     
-    when '/test'
-      log.info Room.players_oppentlist
   return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
@@ -492,57 +490,56 @@ ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
 #http
 if settings.modules.http
   http_server = http.createServer (request, response)->
-      u = url.parse(request.url,1)
-      #log.info u
-      if u.pathname == '/count.json'
-        response.writeHead(200);
-        response.end(Room.all.length.toString())
+      parseQueryString = true
+      u = url.parse(request.url, parseQueryString)
+      pass_validated = u.query.pass == settings.modules.http.password
+      
+      if u.pathname == '/api/getrooms'
+        if u.query.pass and !pass_validated
+          response.writeHead(200);
+          response.end(u.query.callback+'( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );')
+        else 
+          response.writeHead(200);
+          roomsjson = JSON.stringify rooms: (for room in Room.all when room.established
+            roomid: room.port.toString(),
+            roomname: if pass_validated then room.name else room.name.split('$',2)[0],
+            needpass: (room.name.indexOf('$') != -1).toString(),
+            users: (for player in room.players when player.pos?
+              id: (-1).toString(),
+              name: player.name,
+              pos: player.pos
+            ),
+            istart: if room.started then 'start' else 'wait'
+          )
+          response.end(u.query.callback+"( " + roomsjson + " );")
 
-      else if u.pathname == '/rooms.js'
-        response.writeHead(200);
-        roomsjson = JSON.stringify rooms: (for room in Room.all when room.established
-          roomid: room.port.toString(),
-          roomname: room.name.split('$',2)[0],
-          needpass: (room.name.indexOf('$') != -1).toString(),
-          users: (for player in room.players when player.pos?
-            id: (-1).toString(),
-            name: player.name,
-            pos: player.pos
-          ),
-          istart: if room.started then 'start' else 'wait'
-        )
-        response.end("loadroom( " + roomsjson + " );");
-        # todo: 增加JSONP支持
+      else if u.pathname == '/api/message'
+        if !pass_validated
+          response.writeHead(200);
+          response.end(u.query.callback+"( '密码错误', 0 );");
+          return
 
-      else if u.query.operation == 'getroomjson'
-        response.writeHead(200);
-        response.end JSON.stringify rooms: (for room in Room.all when room.established
-          roomid: room.port.toString(),
-          roomname: room.name.split('$',2)[0],
-          needpass: (room.name.indexOf('$') != -1).toString(),
-          users: (for player in room.players when player.pos?
-            id: (-1).toString(),
-            name: player.name,
-            pos: player.pos
-          ),
-          istart: if room.started then "start" else "wait"
-        )
+        if u.query.shout
+          for room in Room.all
+            ygopro.stoc_send_chat_to_room(room, u.query.shout, 16)
+          response.writeHead(200)
+          response.end(u.query.callback+"( 'shout ok', '" + u.query.shout + "' );")
 
-      else if u.query.pass == settings.modules.http.password && u.query.shout
-        for room in Room.all
-          ygopro.stoc_send_chat_to_room(room, u.query.shout)
-        response.writeHead(200)
-        response.end("shout " + u.query.shout + " ok")
+        else if u.query.stop
+          if u.query.stop == 'false'
+            u.query.stop=false
+          settings.modules.stop = u.query.stop
+          response.writeHead(200)
+          response.end(u.query.callback+"( 'stop ok', '" + u.query.stop + "' );")
 
-      else if u.query.pass == settings.modules.http.password && u.query.stop
-        settings.modules.stop = u.query.stop
-        response.writeHead(200)
-        response.end("stop " + u.query.stop + " ok")
-
-      else if u.query.pass == settings.modules.http.password && u.query.welcome
-        settings.modules.welcome = u.query.welcome
-        response.writeHead(200)
-        response.end("welcome " + u.query.welcome + " ok")
+        else if u.query.welcome
+          settings.modules.welcome = u.query.welcome
+          response.writeHead(200)
+          response.end(u.query.callback+"( 'welcome ok', '" + u.query.welcome + "' );")
+        
+        else
+          response.writeHead(404);
+          response.end();
 
       else
         response.writeHead(404);

@@ -109,7 +109,7 @@
         server.closed = true;
       }
       if (!client.closed) {
-        ygopro.stoc_send_chat(client, "服务器关闭了连接");
+        ygopro.stoc_send_chat(client, "服务器关闭了连接", 11);
         client.end();
       }
     });
@@ -117,7 +117,7 @@
       tribute(server);
       server.closed = error;
       if (!client.closed) {
-        ygopro.stoc_send_chat(client, "服务器错误: " + error);
+        ygopro.stoc_send_chat(client, "服务器错误: " + error, 11);
         client.end();
       }
     });
@@ -258,28 +258,28 @@
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
     var k, len, ref;
     if (settings.modules.stop) {
-      ygopro.stoc_send_chat(client, settings.modules.stop);
+      ygopro.stoc_send_chat(client, settings.modules.stop, 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
       client.end();
     } else if (info.version !== settings.version) {
-      ygopro.stoc_send_chat(client, settings.modules.update);
+      ygopro.stoc_send_chat(client, settings.modules.update, 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
         code: settings.version
       });
       client.end();
     } else if (!info.pass.length && !settings.modules.enable_random_duel) {
-      ygopro.stoc_send_chat(client, "房间为空，请修改房间名");
+      ygopro.stoc_send_chat(client, "房间名为空，请填写主机密码", 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
       client.end();
     } else if (!Room.validate(info.pass)) {
-      ygopro.stoc_send_chat(client, "房间密码不正确");
+      ygopro.stoc_send_chat(client, "房间密码不正确", 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
@@ -294,14 +294,14 @@
     } else {
       client.room = Room.find_or_create_by_name(info.pass, client.name);
       if (!client.room) {
-        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试");
+        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", 11);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
         });
         client.end();
       } else if (client.room.error) {
-        ygopro.stoc_send_chat(client, client.room.error);
+        ygopro.stoc_send_chat(client, client.room.error, 11);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
@@ -312,14 +312,14 @@
           client.is_post_watcher = true;
           ygopro.stoc_send_chat_to_room(client.room, client.name + " 加入了观战");
           client.room.watchers.push(client);
+          ygopro.stoc_send_chat(client, "观战中", 14);
           ref = client.room.watcher_buffers;
           for (k = 0, len = ref.length; k < len; k++) {
             buffer = ref[k];
             client.write(buffer);
           }
-          ygopro.stoc_send_chat(client, "观战中.");
         } else {
-          ygopro.stoc_send_chat(client, "决斗已开始");
+          ygopro.stoc_send_chat(client, "决斗已开始，不允许观战", 11);
           ygopro.stoc_send(client, 'ERROR_MSG', {
             msg: 1,
             code: 2
@@ -341,7 +341,7 @@
       ygopro.stoc_send_chat(client, settings.modules.welcome);
     }
     if (client.room.welcome) {
-      ygopro.stoc_send_chat(client, client.room.welcome);
+      ygopro.stoc_send_chat(client, client.room.welcome, 14);
     }
     if (settings.modules.post_start_watching && !client.room.watcher) {
       client.room.watcher = watcher = net.connect(client.room.port, function() {
@@ -415,7 +415,7 @@
       val = buffer.readInt32LE(2);
       client.room.dueling_players[pos].lp -= val;
       if ((0 < (ref = client.room.dueling_players[pos].lp) && ref <= 100)) {
-        ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！");
+        ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！", 15);
       }
     }
     if (ygopro.constants.MSG[msg] === 'RECOVER' && client.is_host) {
@@ -442,7 +442,7 @@
       val = buffer.readInt32LE(2);
       client.room.dueling_players[pos].lp -= val;
       if ((0 < (ref1 = client.room.dueling_players[pos].lp) && ref1 <= 100)) {
-        ygopro.stoc_send_chat_to_room(client.room, "背水一战！");
+        ygopro.stoc_send_chat_to_room(client.room, "背水一战！", 15);
       }
     }
     if (settings.modules.dialogues) {
@@ -452,7 +452,7 @@
           ref2 = _.lines(dialogues[card][Math.floor(Math.random() * dialogues[card].length)]);
           for (k = 0, len = ref2.length; k < len; k++) {
             line = ref2[k];
-            ygopro.stoc_send_chat(client, line);
+            ygopro.stoc_send_chat(client, line, 15);
           }
         }
       }
@@ -535,9 +535,6 @@
         if (settings.modules.tips) {
           ygopro.stoc_send_random_tip(client);
         }
-        break;
-      case '/test':
-        log.info(Room.players_oppentlist);
     }
     return cancel;
   });
@@ -566,102 +563,82 @@
 
   if (settings.modules.http) {
     http_server = http.createServer(function(request, response) {
-      var k, len, player, ref, room, roomsjson, u;
-      u = url.parse(request.url, 1);
-      if (u.pathname === '/count.json') {
-        response.writeHead(200);
-        response.end(Room.all.length.toString());
-      } else if (u.pathname === '/rooms.js') {
-        response.writeHead(200);
-        roomsjson = JSON.stringify({
-          rooms: (function() {
-            var k, len, ref, results;
-            ref = Room.all;
-            results = [];
-            for (k = 0, len = ref.length; k < len; k++) {
-              room = ref[k];
-              if (room.established) {
-                results.push({
-                  roomid: room.port.toString(),
-                  roomname: room.name.split('$', 2)[0],
-                  needpass: (room.name.indexOf('$') !== -1).toString(),
-                  users: (function() {
-                    var l, len1, ref1, results1;
-                    ref1 = room.players;
-                    results1 = [];
-                    for (l = 0, len1 = ref1.length; l < len1; l++) {
-                      player = ref1[l];
-                      if (player.pos != null) {
-                        results1.push({
-                          id: (-1).toString(),
-                          name: player.name,
-                          pos: player.pos
-                        });
+      var k, len, parseQueryString, pass_validated, player, ref, room, roomsjson, u;
+      parseQueryString = true;
+      u = url.parse(request.url, parseQueryString);
+      pass_validated = u.query.pass === settings.modules.http.password;
+      if (u.pathname === '/api/getrooms') {
+        if (u.query.pass && !pass_validated) {
+          response.writeHead(200);
+          response.end(u.query.callback + '( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );');
+        } else {
+          response.writeHead(200);
+          roomsjson = JSON.stringify({
+            rooms: (function() {
+              var k, len, ref, results;
+              ref = Room.all;
+              results = [];
+              for (k = 0, len = ref.length; k < len; k++) {
+                room = ref[k];
+                if (room.established) {
+                  results.push({
+                    roomid: room.port.toString(),
+                    roomname: pass_validated ? room.name : room.name.split('$', 2)[0],
+                    needpass: (room.name.indexOf('$') !== -1).toString(),
+                    users: (function() {
+                      var l, len1, ref1, results1;
+                      ref1 = room.players;
+                      results1 = [];
+                      for (l = 0, len1 = ref1.length; l < len1; l++) {
+                        player = ref1[l];
+                        if (player.pos != null) {
+                          results1.push({
+                            id: (-1).toString(),
+                            name: player.name,
+                            pos: player.pos
+                          });
+                        }
                       }
-                    }
-                    return results1;
-                  })(),
-                  istart: room.started ? 'start' : 'wait'
-                });
+                      return results1;
+                    })(),
+                    istart: room.started ? 'start' : 'wait'
+                  });
+                }
               }
-            }
-            return results;
-          })()
-        });
-        response.end("loadroom( " + roomsjson + " );");
-      } else if (u.query.operation === 'getroomjson') {
-        response.writeHead(200);
-        response.end(JSON.stringify({
-          rooms: (function() {
-            var k, len, ref, results;
-            ref = Room.all;
-            results = [];
-            for (k = 0, len = ref.length; k < len; k++) {
-              room = ref[k];
-              if (room.established) {
-                results.push({
-                  roomid: room.port.toString(),
-                  roomname: room.name.split('$', 2)[0],
-                  needpass: (room.name.indexOf('$') !== -1).toString(),
-                  users: (function() {
-                    var l, len1, ref1, results1;
-                    ref1 = room.players;
-                    results1 = [];
-                    for (l = 0, len1 = ref1.length; l < len1; l++) {
-                      player = ref1[l];
-                      if (player.pos != null) {
-                        results1.push({
-                          id: (-1).toString(),
-                          name: player.name,
-                          pos: player.pos
-                        });
-                      }
-                    }
-                    return results1;
-                  })(),
-                  istart: room.started ? "start" : "wait"
-                });
-              }
-            }
-            return results;
-          })()
-        }));
-      } else if (u.query.pass === settings.modules.http.password && u.query.shout) {
-        ref = Room.all;
-        for (k = 0, len = ref.length; k < len; k++) {
-          room = ref[k];
-          ygopro.stoc_send_chat_to_room(room, u.query.shout);
+              return results;
+            })()
+          });
+          response.end(u.query.callback + "( " + roomsjson + " );");
         }
-        response.writeHead(200);
-        response.end("shout " + u.query.shout + " ok");
-      } else if (u.query.pass === settings.modules.http.password && u.query.stop) {
-        settings.modules.stop = u.query.stop;
-        response.writeHead(200);
-        response.end("stop " + u.query.stop + " ok");
-      } else if (u.query.pass === settings.modules.http.password && u.query.welcome) {
-        settings.modules.welcome = u.query.welcome;
-        response.writeHead(200);
-        response.end("welcome " + u.query.welcome + " ok");
+      } else if (u.pathname === '/api/message') {
+        if (!pass_validated) {
+          response.writeHead(200);
+          response.end(u.query.callback + "( '密码错误', 0 );");
+          return;
+        }
+        if (u.query.shout) {
+          ref = Room.all;
+          for (k = 0, len = ref.length; k < len; k++) {
+            room = ref[k];
+            ygopro.stoc_send_chat_to_room(room, u.query.shout, 16);
+          }
+          response.writeHead(200);
+          response.end(u.query.callback + "( 'shout ok', '" + u.query.shout + "' );");
+        } else if (u.query.stop) {
+          if (u.query.stop === 'false') {
+            u.query.stop = false;
+          }
+          settings.modules.stop = u.query.stop;
+          response.writeHead(200);
+          response.end(u.query.callback + "( 'stop ok', '" + u.query.stop + "' );");
+        } else if (u.query.welcome) {
+          settings.modules.welcome = u.query.welcome;
+          response.writeHead(200);
+          response.end(u.query.callback + "( 'welcome ok', '" + u.query.welcome + "' );");
+        } else {
+          response.writeHead(404);
+          response.end();
+        }
       } else {
         response.writeHead(404);
         response.end();

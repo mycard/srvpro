@@ -114,6 +114,8 @@ for name, declaration of structs_declaration
     console.log "err stoc_send_chat"
     return
   for line in _.lines(msg)
+    if player>=10
+      line="[System]: "+line
     @stoc_send client, 'CHAT', {
       player: player
       msg: line
