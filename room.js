@@ -95,6 +95,9 @@
       client_name_and_pass = name.split('$', 2);
       client_name = client_name_and_pass[0];
       client_pass = client_name_and_pass[1];
+      if (!client_pass) {
+        return true;
+      }
       return !_.find(Room.all, function(room) {
         var room_name, room_name_and_pass, room_pass;
         room_name_and_pass = room.name.split('$', 2);

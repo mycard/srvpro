@@ -278,7 +278,7 @@
         code: 2
       });
       client.end();
-    } else if (!Room.validate(info.pass)) {
+    } else if (info.pass.length && !Room.validate(info.pass)) {
       ygopro.stoc_send_chat(client, "房间密码不正确", 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,

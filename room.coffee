@@ -75,6 +75,7 @@ class Room
     client_name_and_pass = name.split('$',2)
     client_name = client_name_and_pass[0]
     client_pass = client_name_and_pass[1]
+    return true if !client_pass
     !_.find Room.all, (room)->
       room_name_and_pass = room.name.split('$',2)
       room_name = room_name_and_pass[0]

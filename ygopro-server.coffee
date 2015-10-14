@@ -256,7 +256,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
     
-  else if !Room.validate(info.pass)
+  else if info.pass.length && !Room.validate(info.pass)
     #ygopro.stoc_send client, 'ERROR_MSG',{
     #  msg: 1
     #  code: 1 #这返错有问题，直接双ygopro直连怎么都正常，在这里就经常弹不出提示
