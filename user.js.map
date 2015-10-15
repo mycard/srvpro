@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "user.js",
+  "sourceRoot": "..",
+  "sources": [
+    "ygopro-server-mycard\\user.coffee"
+  ],
+  "names": [],
+  "mappings": ";AAAA;AAAA,MAAA;;EAAA,QAAA,GAAW,OAAA,CAAQ,eAAR;;EAEX,QAAA,GAAW,OAAA,CAAQ,UAAR;;EACX,IAAA,GAAO,QAAQ,CAAC,KAAT,CAAe,MAAf,EACL;IAAA,IAAA,EAAM,MAAN;IACA,MAAA,EAAQ,MADR;GADK;;EAIP,MAAM,CAAC,OAAP,GAAiB;AAPjB"
+}

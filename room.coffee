@@ -87,7 +87,7 @@ class Room
 
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'), (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'), @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count]
 
-    @process = spawn './ygopro', param, cwd: 'ygocore'
+    @process = spawn './ygopro', param, {cwd: 'ygocore'}
     @process.on 'exit', (code)=>
       log.info 'room-exit', this.name, this.port, code
       @disconnector = 'server' unless @disconnector
