@@ -113,7 +113,7 @@
           if (!_this.disconnector) {
             _this.disconnector = 'server';
           }
-          return _this["delete"]();
+          _this["delete"]();
         };
       })(this));
       this.process.stdout.setEncoding('utf8');
@@ -121,8 +121,8 @@
         return function(data) {
           _this.established = true;
           _this.port = parseInt(data);
-          return _.each(_this.players, function(player) {
-            return player.server.connect(_this.port, '127.0.0.1', function() {
+          _.each(_this.players, function(player) {
+            player.server.connect(_this.port, '127.0.0.1', function() {
               var buffer, i, len, ref;
               ref = player.pre_establish_buffers;
               for (i = 0, len = ref.length; i < len; i++) {
@@ -311,14 +311,14 @@
     Room.prototype.connect = function(client) {
       this.players.push(client);
       if (this.established) {
-        return client.server.connect(this.port, '127.0.0.1', function() {
+        client.server.connect(this.port, '127.0.0.1', function() {
           var buffer, i, len, ref;
           ref = client.pre_establish_buffers;
           for (i = 0, len = ref.length; i < len; i++) {
             buffer = ref[i];
             client.server.write(buffer);
           }
-          return client.established = true;
+          client.established = true;
         });
       }
     };
@@ -329,7 +329,7 @@
         ygopro.stoc_send_chat_to_room(this, client.name + " " + '退出了观战' + (error ? ": " + error : ''));
         index = _.indexOf(this.watchers, client);
         if (index !== -1) {
-          return this.watchers.splice(index, 1);
+          this.watchers.splice(index, 1);
         }
       } else {
         index = _.indexOf(this.players, client);
@@ -337,10 +337,10 @@
           this.players.splice(index, 1);
         }
         if (this.players.length) {
-          return ygopro.stoc_send_chat_to_room(this, client.name + " " + '离开了游戏' + (error ? ": " + error : ''));
+          ygopro.stoc_send_chat_to_room(this, client.name + " " + '离开了游戏' + (error ? ": " + error : ''));
         } else {
           this.process.kill();
-          return this["delete"]();
+          this["delete"]();
         }
       }
     };
