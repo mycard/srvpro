@@ -301,6 +301,9 @@
 
   ygopro.stoc_follow('JOIN_GAME', false, function(buffer, info, client, server) {
     var watcher;
+    if (!client.room) {
+      return;
+    }
     if (settings.modules.welcome) {
       ygopro.stoc_send_chat(client, settings.modules.welcome);
     }
@@ -346,6 +349,9 @@
       client.room.watcher_stanzas = [];
       watcher.on('data', function(data) {
         var j, k, len, len1, ref, ref1, stanza, w;
+        if (!client.room) {
+          return;
+        }
         client.room.watcher_buffers.push(data);
         ref = client.room.watchers;
         for (j = 0, len = ref.length; j < len; j++) {
@@ -532,6 +538,9 @@
 
   ygopro.stoc_follow('DUEL_START', false, function(buffer, info, client, server) {
     var j, len, player, ref;
+    if (!client.room) {
+      return;
+    }
     if (!client.room.started) {
       client.room.started = true;
       client.room.duels = [];

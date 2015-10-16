@@ -171,6 +171,10 @@
     if (player == null) {
       player = 8;
     }
+    if (!client) {
+      console.log("err stoc_send_chat");
+      return;
+    }
     ref = _.lines(msg);
     for (j = 0, len1 = ref.length; j < len1; j++) {
       line = ref[j];
@@ -188,6 +192,10 @@
     var client, j, k, len1, len2, ref, ref1;
     if (player == null) {
       player = 8;
+    }
+    if (!room) {
+      console.log("err stoc_send_chat_to_room");
+      return;
     }
     ref = room.players;
     for (j = 0, len1 = ref.length; j < len1; j++) {

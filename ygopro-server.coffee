@@ -272,6 +272,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #欢迎信息
+  return unless client.room
   if settings.modules.welcome
     ygopro.stoc_send_chat client, settings.modules.welcome
   if settings.modules.database
@@ -305,6 +306,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.room.watcher_stanzas = []
 
     watcher.on 'data', (data)->
+      return unless client.room
       client.room.watcher_buffers.push data
       for w in client.room.watchers
         w.write data if w #a WTF fix
@@ -464,6 +466,7 @@ if settings.modules.tips
       return
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
+  return unless client.room
   unless client.room.started #first start
     client.room.started = true
     client.room.duels = []

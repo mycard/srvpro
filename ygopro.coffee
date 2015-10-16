@@ -110,6 +110,9 @@ for name, declaration of structs_declaration
 
 #util
 @stoc_send_chat = (client, msg, player = 8)->
+  if !client
+    console.log "err stoc_send_chat"
+    return
   for line in _.lines(msg)
     if player>=10
       line="[System]: "+line
@@ -120,6 +123,9 @@ for name, declaration of structs_declaration
   return
 
 @stoc_send_chat_to_room = (room, msg, player = 8)->
+  if !room
+    console.log "err stoc_send_chat_to_room"
+    return
   for client in room.players
     @stoc_send_chat(client, msg, player) if client
   for client in room.watchers
