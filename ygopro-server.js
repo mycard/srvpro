@@ -69,6 +69,7 @@
     var ctos_buffer, ctos_message_length, ctos_proto, server, stoc_buffer, stoc_message_length, stoc_proto;
     server = new net.Socket();
     client.server = server;
+    client.setTimeout(300000);
     client.on('close', function(had_error) {
       log.info("client closed", client.name, had_error);
       if (client.room && client.room.started && indexOf.call(client.room.dueling_players, client) >= 0 && !client.room.disconnector) {
@@ -93,6 +94,10 @@
           client.room.disconnect(client, error);
         }
       }
+      server.end();
+    });
+    client.on('timeout', function() {
+      log.info("client timeout", client.name);
       server.end();
     });
     server.on('close', function(had_error) {

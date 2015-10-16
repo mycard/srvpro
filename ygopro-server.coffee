@@ -45,6 +45,8 @@ else
 net.createServer (client) ->
   server = new net.Socket()
   client.server = server
+  
+  client.setTimeout(300000) #5分钟
 
   #释放处理
   client.on 'close', (had_error) ->
@@ -62,6 +64,11 @@ net.createServer (client) ->
     unless client.closed
       client.closed = error
       client.room.disconnect(client, error) if client.room
+    server.end()
+    return
+    
+  client.on 'timeout', ()->
+    log.info "client timeout", client.name
     server.end()
     return
 
