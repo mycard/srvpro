@@ -109,7 +109,7 @@
         client.room.disconnector = 'server';
       }
       if (!client.closed) {
-        ygopro.stoc_send_chat(client, "服务器关闭了连接");
+        ygopro.stoc_send_chat(client, "服务器关闭了连接", 11);
         client.end();
       }
     });
@@ -120,7 +120,7 @@
         client.room.disconnector = 'server';
       }
       if (!client.closed) {
-        ygopro.stoc_send_chat(client, "服务器错误: " + error);
+        ygopro.stoc_send_chat(client, "服务器错误: " + error, 11);
         client.end();
       }
     });
@@ -231,14 +231,14 @@
       });
       client.end();
     } else if (!info.pass.length) {
-      ygopro.stoc_send_chat(client, "房间为空，请修改房间名");
+      ygopro.stoc_send_chat(client, "房间名为空，请填写主机密码", 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
       client.end();
     } else if (!Room.validate(info.pass)) {
-      ygopro.stoc_send_chat(client, "房间密码不正确");
+      ygopro.stoc_send_chat(client, "房间密码不正确", 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
@@ -254,7 +254,7 @@
       log.info('join_game', info.pass, client.name);
       client.room = Room.find_or_create_by_name(info.pass);
       if (!client.room) {
-        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试");
+        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", 11);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
@@ -270,9 +270,9 @@
             buffer = ref[j];
             client.write(buffer);
           }
-          ygopro.stoc_send_chat(client, "观战中.");
+          ygopro.stoc_send_chat(client, "观战中", 14);
         } else {
-          ygopro.stoc_send_chat(client, "决斗已开始");
+          ygopro.stoc_send_chat(client, "决斗已开始，不允许观战", 11);
           ygopro.stoc_send(client, 'ERROR_MSG', {
             msg: 1,
             code: 2
@@ -309,7 +309,7 @@
           }, function(err, count) {
             var rank;
             rank = count + 1;
-            ygopro.stoc_send_chat(client, "积分系统测试中，你现在有" + user.points + "点积分，排名" + rank + "，这些积分以后正式使用时会重置");
+            ygopro.stoc_send_chat(client, "积分系统测试中，你现在有" + user.points + "点积分，排名" + rank + "，这些积分以后正式使用时会重置", 14);
           });
         });
       }
@@ -429,7 +429,7 @@
       val = buffer.readInt32LE(2);
       client.room.dueling_players[pos].lp -= val;
       if ((0 < (ref = client.room.dueling_players[pos].lp) && ref <= 100)) {
-        ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！");
+        ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！", 15);
       }
     }
     if (ygopro.constants.MSG[msg] === 'RECOVER' && client.is_host) {
@@ -456,7 +456,7 @@
       val = buffer.readInt32LE(2);
       client.room.dueling_players[pos].lp -= val;
       if ((0 < (ref1 = client.room.dueling_players[pos].lp) && ref1 <= 100)) {
-        ygopro.stoc_send_chat_to_room(client.room, "背水一战！");
+        ygopro.stoc_send_chat_to_room(client.room, "背水一战！", 15);
       }
     }
     if (settings.modules.dialogues) {
@@ -466,7 +466,7 @@
           ref2 = _.lines(dialogues[card][Math.floor(Math.random() * dialogues[card].length)]);
           for (j = 0, len = ref2.length; j < len; j++) {
             line = ref2[j];
-            ygopro.stoc_send_chat(client, line);
+            ygopro.stoc_send_chat(client, line, 15);
           }
         }
       }
@@ -576,7 +576,7 @@
             }
             for (index in users) {
               user = users[index];
-              ygopro.stoc_send_chat(client, [parseInt(index) + 1, user.points, user.name].join(' '));
+              ygopro.stoc_send_chat(client, [parseInt(index) + 1, user.points, user.name].join(' '), 14);
             }
           });
         }
@@ -596,12 +596,12 @@
         break;
       case '/senddeck':
         if (client.deck != null) {
-          ygopro.stoc_send_chat(client, "正在读取卡组信息... ");
+          ygopro.stoc_send_chat(client, "正在读取卡组信息... ", 14);
           mycard.deck_url_short(client.name, client.deck, function(url) {
-            return ygopro.stoc_send_chat_to_room(client.room, "卡组链接: " + url);
+            return ygopro.stoc_send_chat_to_room(client.room, "卡组链接: " + url, 14);
           });
         } else {
-          ygopro.stoc_send_chat_to_room(client.room, "读取卡组信息失败");
+          ygopro.stoc_send_chat_to_room(client.room, "读取卡组信息失败", 11);
         }
         break;
       case '/admin showroom':

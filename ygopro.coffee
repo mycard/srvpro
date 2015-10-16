@@ -111,6 +111,8 @@ for name, declaration of structs_declaration
 #util
 @stoc_send_chat = (client, msg, player = 8)->
   for line in _.lines(msg)
+    if player>=10
+      line="[System]: "+line
     @stoc_send client, 'CHAT', {
       player: player
       msg: line

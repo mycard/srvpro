@@ -77,7 +77,7 @@ net.createServer (client) ->
     server.closed = true unless server.closed
     client.room.disconnector = 'server' if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
-      ygopro.stoc_send_chat(client, "服务器关闭了连接")
+      ygopro.stoc_send_chat(client, "服务器关闭了连接", 11)
       client.end()
     return
 
@@ -86,7 +86,7 @@ net.createServer (client) ->
     server.closed = error
     client.room.disconnector = 'server' if client.room and client.room.started and client in client.room.dueling_players and !client.room.disconnector
     unless client.closed
-      ygopro.stoc_send_chat(client, "服务器错误: #{error}")
+      ygopro.stoc_send_chat(client, "服务器错误: #{error}", 11)
       client.end()
     return
 
@@ -199,7 +199,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
   else if !info.pass.length
-    ygopro.stoc_send_chat(client,"房间为空，请修改房间名")
+    ygopro.stoc_send_chat(client,"房间名为空，请填写主机密码", 11)
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
       code: 2
@@ -210,7 +210,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     #  msg: 1
     #  code: 1 #这返错有问题，直接双ygopro直连怎么都正常，在这里就经常弹不出提示
     #}
-    ygopro.stoc_send_chat(client,"房间密码不正确")
+    ygopro.stoc_send_chat(client,"房间密码不正确", 11)
     ygopro.stoc_send client, 'ERROR_MSG',{
       msg: 1
       code: 2
@@ -227,7 +227,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     log.info 'join_game',info.pass, client.name
     client.room = Room.find_or_create_by_name(info.pass)
     if !client.room
-      ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试")
+      ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试", 11)
       ygopro.stoc_send client, 'ERROR_MSG',{
         msg: 1
         code: 2
@@ -240,9 +240,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         client.room.watchers.push client
         for buffer in client.room.watcher_buffers
           client.write buffer
-        ygopro.stoc_send_chat client, "观战中."
+        ygopro.stoc_send_chat client, "观战中", 14
       else
-        ygopro.stoc_send_chat(client,"决斗已开始")
+        ygopro.stoc_send_chat(client,"决斗已开始，不允许观战", 11)
         ygopro.stoc_send client, 'ERROR_MSG',{
           msg: 1
           code: 2
@@ -264,7 +264,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           user.save()
         User.count {points:{$gt:user.points}}, (err, count)->
           rank = count + 1
-          ygopro.stoc_send_chat(client, "积分系统测试中，你现在有#{user.points}点积分，排名#{rank}，这些积分以后正式使用时会重置")
+          ygopro.stoc_send_chat(client, "积分系统测试中，你现在有#{user.points}点积分，排名#{rank}，这些积分以后正式使用时会重置", 14)
           return
         return
 
@@ -361,7 +361,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
 
     #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 受到伤害 #{val}，现在的LP为 #{client.room.dueling_players[pos].lp}")
     if 0 < client.room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！")
+      ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！", 15)
 
   if ygopro.constants.MSG[msg] == 'RECOVER' and client.is_host
     pos = buffer.readUInt8(1)
@@ -388,7 +388,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.room.dueling_players[pos].name} 支付 #{val}，现在的LP为 #{client.room.dueling_players[pos].lp}")
 
     if 0 < client.room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(client.room, "背水一战！")
+      ygopro.stoc_send_chat_to_room(client.room, "背水一战！", 15)
 
 
 
@@ -398,7 +398,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       card = buffer.readUInt32LE(1)
       if dialogues[card]
         for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
-          ygopro.stoc_send_chat client, line
+          ygopro.stoc_send_chat client, line, 15
   return
 
 
@@ -484,7 +484,7 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
           if err
             return log.error 'ranktop', err
           for index, user of users
-            ygopro.stoc_send_chat client, [parseInt(index)+1, user.points, user.name].join(' ')
+            ygopro.stoc_send_chat client, [parseInt(index)+1, user.points, user.name].join(' '), 14
           return
 
     when '/help'
@@ -497,11 +497,11 @@ ygopro.ctos_follow 'CHAT', false, (buffer, info, client, server)->
 #发送卡组
     when '/senddeck'
       if client.deck?
-        ygopro.stoc_send_chat(client, "正在读取卡组信息... ")
+        ygopro.stoc_send_chat(client, "正在读取卡组信息... ", 14)
         mycard.deck_url_short client.name, client.deck, (url)->
-          ygopro.stoc_send_chat_to_room(client.room, "卡组链接: " + url)
+          ygopro.stoc_send_chat_to_room(client.room, "卡组链接: " + url, 14)
       else
-        ygopro.stoc_send_chat_to_room(client.room, "读取卡组信息失败")
+        ygopro.stoc_send_chat_to_room(client.room, "读取卡组信息失败", 11)
     when '/admin showroom'
       log.info client.room
   return
