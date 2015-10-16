@@ -108,6 +108,8 @@ net.createServer (client) ->
         server.write data
       else
         client.pre_establish_buffers.push data
+        
+      looplimit = 0
 
       while true
         if ctos_message_length == 0
@@ -136,6 +138,13 @@ net.createServer (client) ->
             ctos_proto = 0
           else
             break
+        
+        looplimit++
+        #log.info(looplimit)
+        if looplimit>800
+          log.info("error ctos",client.name)
+          server.end()
+          break
     return
 
   #服务端到客户端(stoc)
@@ -148,7 +157,9 @@ net.createServer (client) ->
 
     #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
     client.write data
-
+    
+    looplimit = 0
+    
     while true
       if stoc_message_length == 0
         if stoc_buffer.length >= 2
@@ -177,6 +188,13 @@ net.createServer (client) ->
           stoc_proto = 0
         else
           break
+      
+      looplimit++
+      #log.info(looplimit)
+      if looplimit>800
+        log.info("error stoc",client.name)
+        server.end()
+        break
     return
   return
 
