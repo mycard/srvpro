@@ -9,6 +9,7 @@
         "database": false,
         "post_start_watching": true,
         "skip_empty_side": true,
+        "enable_TCG_as_default": false,
         "http": {
             "port": 7922,
             "match": true
