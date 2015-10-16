@@ -248,7 +248,14 @@
     } else {
       log.info('join_game', info.pass, client.name);
       client.room = Room.find_or_create_by_name(info.pass);
-      if (client.room.started) {
+      if (!client.room) {
+        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试");
+        ygopro.stoc_send(client, 'ERROR_MSG', {
+          msg: 1,
+          code: 2
+        });
+        client.end();
+      } else if (client.room.started) {
         if (settings.modules.post_start_watching) {
           client.is_post_watcher = true;
           ygopro.stoc_send_chat_to_room(client.room, client.name + " 加入了观战");
