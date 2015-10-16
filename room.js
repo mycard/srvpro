@@ -156,7 +156,8 @@
                 buffer = ref[i];
                 player.server.write(buffer);
               }
-              return player.established = true;
+              player.established = true;
+              return player.pre_establish_buffers = [];
             });
           });
         };
@@ -171,6 +172,8 @@
       if (_.startsWith(this.name, 'M#') && this.started && settings.modules.database) {
         this.save_match();
       }
+      this.watcher_buffers = [];
+      this.players = [];
       index = _.indexOf(Room.all, this);
       if (index !== -1) {
         Room.all.splice(index, 1);
@@ -346,6 +349,7 @@
             client.server.write(buffer);
           }
           client.established = true;
+          client.pre_establish_buffers = [];
         });
       }
     };

@@ -124,6 +124,7 @@ class Room
         player.server.connect @port, '127.0.0.1',=>
           player.server.write buffer for buffer in player.pre_establish_buffers
           player.established = true
+          player.pre_establish_buffers = []
         return
       return
 
@@ -131,7 +132,8 @@ class Room
     #积分
     return if @deleted
     @save_match() if _.startsWith(@name, 'M#') and @started and settings.modules.database
-
+    @watcher_buffers = []
+    @players = []
     index = _.indexOf(Room.all, this)
     Room.all.splice(index, 1) unless index == -1
     @deleted = true
@@ -231,6 +233,7 @@ class Room
       client.server.connect @port, '127.0.0.1', ->
         client.server.write buffer for buffer in client.pre_establish_buffers
         client.established = true
+        client.pre_establish_buffers = []
         return
     return
 
