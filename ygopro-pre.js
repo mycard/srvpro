@@ -77,7 +77,7 @@ var loadDb = function(db_file) {
             if (result.type & constants.TYPES.TYPE_COUNTER) {cardTypes.push("反击");}
             if (result.type & constants.TYPES.TYPE_FLIP) {cardTypes.push("反转");}
             if (result.type & constants.TYPES.TYPE_TOON) {cardTypes.push("卡通");}
-            if (result.type & constants.TYPES.TYPE_XYZ) {cardTypes.push("超量");}
+            if (result.type & constants.TYPES.TYPE_XYZ) {cardTypes.push("超维");}
             if (result.type & constants.TYPES.TYPE_PENDULUM) {cardTypes.push("灵摆");}
             cardText+="["+ cardTypes.join('|') +"]";
             
