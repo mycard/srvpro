@@ -1,5 +1,6 @@
 ## ygopro-server-lite
 一个YGOPRO服务器，基于mycard代码修改。
+
 现用于[YGOPRO 233服](http://mercury233.me/ygosrv233/)。
 
 ###支持功能
@@ -18,9 +19,9 @@
 
 ###使用方法
 * 安装修改后的mycard版ygopro服务端：https://github.com/mercury233/ygopro/tree/server
-* ``git clone https://github.com/mercury233/ygopro-server.git
-cd ygopro-server
-npm install``
+* `git clone https://github.com/mercury233/ygopro-server.git`
+* `cd ygopro-server`
+* `npm install`
 * 修改`config.json`
  * `port`为你想要的端口
  * `version`为ygopro的十进制版本号（例如，0x1336=4918）
