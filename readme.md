@@ -29,7 +29,7 @@
  * `modules.stop`为文本时，表示服务器关闭
  * `modules.TCG_banlist_id`为lflist中正在使用的TCG禁卡表的编号，0开始
 * `node ygopro-server.js`即可运行
-* 简易的控制台在http://mercury233.me/ygosrv233/dashboard.html（我没有开发给用户使用的大厅的打算。）
+* 简易的控制台在http://mercury233.me/ygosrv233/dashboard.html （我没有开发给用户使用的大厅的打算。）
 * 简易的先行卡更新控制台在http://mercury233.me/ygosrv233/pre-dashboard.html
 
 ###开发计划
