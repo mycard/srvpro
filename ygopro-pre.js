@@ -77,7 +77,7 @@ var loadDb = function(db_file) {
             if (result.type & constants.TYPES.TYPE_COUNTER) {cardTypes.push("反击");}
             if (result.type & constants.TYPES.TYPE_FLIP) {cardTypes.push("反转");}
             if (result.type & constants.TYPES.TYPE_TOON) {cardTypes.push("卡通");}
-            if (result.type & constants.TYPES.TYPE_XYZ) {cardTypes.push("超维");}
+            if (result.type & constants.TYPES.TYPE_XYZ) {cardTypes.push("超量");}
             if (result.type & constants.TYPES.TYPE_PENDULUM) {cardTypes.push("灵摆");}
             cardText+="["+ cardTypes.join('|') +"]";
             
@@ -131,9 +131,9 @@ var loadDb = function(db_file) {
                     cardLScale=parseInt(levelHex.slice(-8,-6), 16);
                     cardRScale=parseInt(levelHex.slice(-6,-4), 16);
                 }
-                cardText+="[" + (new Array(cardLevel + 1)).join("★") + "]";
+                cardText+="[" + ((result.type & constants.TYPES.TYPE_XYZ) ? "☆" : "★") + cardLevel + "]";
                 
-                cardText+=" " + result.atk + "/" + result.def;
+                cardText+=" " + (result.atk < 0 ? "?" : result.atk) + "/" + (result.def < 0 ? "?" : result.def);
                 
                 if (cardLScale) {
                     cardText+="  " + cardLScale + "/" +cardRScale;
