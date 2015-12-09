@@ -28,6 +28,10 @@
 
   settings = require('./config.json');
 
+  settings.BANNED_user = [];
+
+  settings.BANNED_IP = [];
+
   ygopro = require('./ygopro.js');
 
   Room = require('./room.js');
@@ -286,6 +290,24 @@
       });
       client.end();
     } else if (client.name === '[INCORRECT]') {
+      ygopro.stoc_send(client, 'ERROR_MSG', {
+        msg: 1,
+        code: 2
+      });
+      client.end();
+    } else if (_.indexOf(settings.BANNED_user, client.name) > -1) {
+      settings.BANNED_IP.push(client.remoteAddress);
+      log.info("BANNED USER LOGIN", client.name, client.remoteAddress);
+      ygopro.stoc_send_chat(client, "您的账号已被封禁", 11);
+      ygopro.stoc_send(client, 'ERROR_MSG', {
+        msg: 1,
+        code: 2
+      });
+      client.end();
+    } else if (_.indexOf(settings.BANNED_IP, client.remoteAddress) > -1) {
+      settings.BANNED_user.push(client.name);
+      log.info("BANNED IP LOGIN", client.name, client.remoteAddress);
+      ygopro.stoc_send_chat(client, "您的账号已被封禁", 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
@@ -582,6 +604,7 @@
                 room = ref[k];
                 if (room.established) {
                   results.push({
+                    pid: room.process.pid.toString(),
                     roomid: room.port.toString(),
                     roomname: pass_validated ? room.name : room.name.split('$', 2)[0],
                     needpass: (room.name.indexOf('$') !== -1).toString(),
@@ -635,6 +658,10 @@
           settings.modules.welcome = u.query.welcome;
           response.writeHead(200);
           response.end(u.query.callback + "( 'welcome ok', '" + u.query.welcome + "' );");
+        } else if (u.query.ban) {
+          settings.BANNED_user.push(u.query.ban);
+          response.writeHead(200);
+          response.end(u.query.callback + "( 'ban ok', '" + u.query.ban + "' );");
         } else {
           response.writeHead(404);
           response.end();

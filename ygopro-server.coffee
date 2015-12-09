@@ -20,6 +20,8 @@ bunyan = require 'bunyan'
 
 #配置文件
 settings = require './config.json'
+settings.BANNED_user = []
+settings.BANNED_IP = []
 
 #组件
 ygopro = require './ygopro.js'
@@ -274,6 +276,26 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
+
+  else if _.indexOf(settings.BANNED_user, client.name) > -1 #账号被封
+    settings.BANNED_IP.push(client.remoteAddress)
+    log.info("BANNED USER LOGIN", client.name, client.remoteAddress)
+    ygopro.stoc_send_chat(client,"您的账号已被封禁", 11)
+    ygopro.stoc_send client, 'ERROR_MSG',{
+      msg: 1
+      code: 2
+    }
+    client.end()
+
+  else if _.indexOf(settings.BANNED_IP, client.remoteAddress) > -1 #IP被封
+    settings.BANNED_user.push(client.name)
+    log.info("BANNED IP LOGIN", client.name, client.remoteAddress)
+    ygopro.stoc_send_chat(client,"您的账号已被封禁", 11)
+    ygopro.stoc_send client, 'ERROR_MSG',{
+      msg: 1
+      code: 2
+    }
+    client.end()
   
   else
     #log.info 'join_game',info.pass, client.name
@@ -501,6 +523,7 @@ if settings.modules.http
         else 
           response.writeHead(200);
           roomsjson = JSON.stringify rooms: (for room in Room.all when room.established
+            pid: room.process.pid.toString(),
             roomid: room.port.toString(),
             roomname: if pass_validated then room.name else room.name.split('$',2)[0],
             needpass: (room.name.indexOf('$') != -1).toString(),
@@ -536,6 +559,11 @@ if settings.modules.http
           settings.modules.welcome = u.query.welcome
           response.writeHead(200)
           response.end(u.query.callback+"( 'welcome ok', '" + u.query.welcome + "' );")
+        
+        else if u.query.ban
+          settings.BANNED_user.push(u.query.ban)
+          response.writeHead(200)
+          response.end(u.query.callback+"( 'ban ok', '" + u.query.ban + "' );")
         
         else
           response.writeHead(404);
