@@ -292,7 +292,7 @@
       });
       client.end();
     } else {
-      client.room = Room.find_or_create_by_name(info.pass, client.name);
+      client.room = Room.find_or_create_by_name(info.pass, client.remoteAddress);
       if (!client.room) {
         ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", 11);
         ygopro.stoc_send(client, 'ERROR_MSG', {

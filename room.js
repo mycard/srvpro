@@ -45,10 +45,10 @@
 
     Room.players_oppentlist = {};
 
-    Room.find_or_create_by_name = function(name, player_name) {
+    Room.find_or_create_by_name = function(name, player_ip) {
       var room;
       if (settings.modules.enable_random_duel && (name === '' || name.toUpperCase() === 'S' || name.toUpperCase() === 'M')) {
-        return this.find_or_create_random(name.toUpperCase(), player_name);
+        return this.find_or_create_random(name.toUpperCase(), player_ip);
       }
       if (room = this.find_by_name(name)) {
         return room;
@@ -59,10 +59,10 @@
       }
     };
 
-    Room.find_or_create_random = function(type, player_name) {
+    Room.find_or_create_random = function(type, player_ip) {
       var name, result;
       result = _.find(this.all, function(room) {
-        return room.random_type !== '' && !room.started && (type === '' || room.random_type === type) && room.get_playing_player().length === 1 && room.get_playing_player()[0].name !== Room.players_oppentlist[player_name];
+        return room.random_type !== '' && !room.started && (type === '' || room.random_type === type) && room.get_playing_player().length === 1 && room.get_playing_player()[0].remoteAddress !== Room.players_oppentlist[player_ip];
       });
       if (result) {
         result.welcome = '对手已经在等你了，开始决斗吧！';
@@ -366,10 +366,10 @@
       if (this.random_type) {
         playing_players = this.get_playing_player();
         if (playing_players.length) {
-          Room.players_oppentlist[playing_players[0].name] = client.name;
-          Room.players_oppentlist[client.name] = playing_players[0].name;
+          Room.players_oppentlist[playing_players[0].remoteAddress] = client.remoteAddress;
+          Room.players_oppentlist[client.remoteAddress] = playing_players[0].remoteAddress;
         } else {
-          Room.players_oppentlist[client.name] = null;
+          Room.players_oppentlist[client.remoteAddress] = null;
         }
       }
       if (this.established) {

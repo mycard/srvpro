@@ -36,9 +36,9 @@ class Room
   @all = []
   @players_oppentlist = {}
 
-  @find_or_create_by_name: (name, player_name)->
+  @find_or_create_by_name: (name, player_ip)->
     if settings.modules.enable_random_duel and (name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M')
-      return @find_or_create_random(name.toUpperCase(), player_name)
+      return @find_or_create_random(name.toUpperCase(), player_ip)
     if room = @find_by_name(name)
       return room
     else if get_memory_usage()>=90
@@ -46,9 +46,9 @@ class Room
     else 
       return new Room(name)
   
-  @find_or_create_random: (type, player_name)->
+  @find_or_create_random: (type, player_ip)->
     result = _.find @all, (room)->
-      room.random_type != '' and !room.started and (type == '' or room.random_type == type) and room.get_playing_player().length == 1 and room.get_playing_player()[0].name != Room.players_oppentlist[player_name]
+      room.random_type != '' and !room.started and (type == '' or room.random_type == type) and room.get_playing_player().length == 1 and room.get_playing_player()[0].remoteAddress != Room.players_oppentlist[player_ip]
     if result
       result.welcome = '对手已经在等你了，开始决斗吧！'
       #log.info 'found room', player_name
@@ -289,11 +289,11 @@ class Room
       playing_players=@get_playing_player()
       if playing_players.length
         #进来时已经有人在等待了，互相记录为匹配过
-        Room.players_oppentlist[playing_players[0].name] = client.name
-        Room.players_oppentlist[client.name] = playing_players[0].name
+        Room.players_oppentlist[playing_players[0].remoteAddress] = client.remoteAddress
+        Room.players_oppentlist[client.remoteAddress] = playing_players[0].remoteAddress
       else
         #第一个玩家刚进来，还没就位
-        Room.players_oppentlist[client.name] = null
+        Room.players_oppentlist[client.remoteAddress] = null
 
     if @established
       client.server.connect @port, '127.0.0.1', ->
