@@ -288,7 +288,6 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.end()
 
   else if _.indexOf(settings.BANNED_IP, client.remoteAddress) > -1 #IP被封
-    settings.BANNED_user.push(client.name)
     log.info("BANNED IP LOGIN", client.name, client.remoteAddress)
     ygopro.stoc_send_chat(client,"您的账号已被封禁", 11)
     ygopro.stoc_send client, 'ERROR_MSG',{
