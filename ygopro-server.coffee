@@ -459,7 +459,7 @@ ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
   return
 
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
-  return unless client.room and client.room.max_player
+  return unless client.room and client.room.max_player and client.is_host
   pos = info.status >> 4;
   is_ready = (info.status & 0xf) == 9;
   if pos < client.room.max_player
@@ -469,7 +469,7 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
         player.is_ready = is_ready
       unless player.is_host
         client.room.ready_player_count_without_host+=player.is_ready
-    if client.is_host and client.room.ready_player_count_without_host >= client.room.max_player - 1
+    if client.room.ready_player_count_without_host >= client.room.max_player - 1
       #log.info "all ready"
       setTimeout (()->wait_room_start(client.room,20);return), 1000
   return
@@ -479,13 +479,13 @@ wait_room_start = (room,time)->
     time-=1
     if time
       unless time % 5
-        ygopro.stoc_send_chat_to_room room, "#{if time <= 9 then ' ' else ''}#{time}秒后若房主不开始游戏将被请出房间", if time <= 9 then 11 else 8
+        ygopro.stoc_send_chat_to_room room, "#{if time <= 9 then ' ' else ''}#{time}秒后房主若不开始游戏将被请出房间", if time <= 9 then 11 else 8
       setTimeout (()->wait_room_start(room,time);return), 1000
     else
       for player in room.players
         if player.is_host
           Room.ban_player(player.name, player.ip, "挂机")
-          ygopro.stoc_send_chat_to_room room, "#{player.name} 被请出了房间", 11
+          ygopro.stoc_send_chat_to_room room, "#{player.name} 被系统请出了房间", 11
           player.end()
   return
 

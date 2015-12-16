@@ -509,7 +509,7 @@
 
   ygopro.stoc_follow('HS_PLAYER_CHANGE', false, function(buffer, info, client, server) {
     var is_ready, k, len, player, pos, ref;
-    if (!(client.room && client.room.max_player)) {
+    if (!(client.room && client.room.max_player && client.is_host)) {
       return;
     }
     pos = info.status >> 4;
@@ -526,7 +526,7 @@
           client.room.ready_player_count_without_host += player.is_ready;
         }
       }
-      if (client.is_host && client.room.ready_player_count_without_host >= client.room.max_player - 1) {
+      if (client.room.ready_player_count_without_host >= client.room.max_player - 1) {
         setTimeout((function() {
           wait_room_start(client.room, 20);
         }), 1000);
@@ -540,7 +540,7 @@
       time -= 1;
       if (time) {
         if (!(time % 5)) {
-          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后若房主不开始游戏将被请出房间", time <= 9 ? 11 : 8);
+          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后房主若不开始游戏将被请出房间", time <= 9 ? 11 : 8);
         }
         setTimeout((function() {
           wait_room_start(room, time);
@@ -551,7 +551,7 @@
           player = ref[k];
           if (player.is_host) {
             Room.ban_player(player.name, player.ip, "挂机");
-            ygopro.stoc_send_chat_to_room(room, player.name + " 被请出了房间", 11);
+            ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", 11);
             player.end();
           }
         }
