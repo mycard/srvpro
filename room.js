@@ -47,7 +47,7 @@
 
     Room.find_or_create_by_name = function(name, player_ip) {
       var room;
-      if (settings.modules.enable_random_duel && (name === '' || name.toUpperCase() === 'S' || name.toUpperCase() === 'M')) {
+      if (settings.modules.enable_random_duel && (name === '' || name.toUpperCase() === 'S' || name.toUpperCase() === 'M' || name.toUpperCase() === 'T')) {
         return this.find_or_create_random(name.toUpperCase(), player_ip);
       }
       if (room = this.find_by_name(name)) {
@@ -60,9 +60,10 @@
     };
 
     Room.find_or_create_random = function(type, player_ip) {
-      var name, result;
+      var max_player, name, result;
+      max_player = type === 'T' ? 4 : 2;
       result = _.find(this.all, function(room) {
-        return room.random_type !== '' && !room.started && (type === '' || room.random_type === type) && room.get_playing_player().length === 1 && room.get_playing_player()[0].remoteAddress !== Room.players_oppentlist[player_ip];
+        return room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && room.get_host().remoteAddress !== Room.players_oppentlist[player_ip];
       });
       if (result) {
         result.welcome = '对手已经在等你了，开始决斗吧！';
@@ -360,14 +361,27 @@
       return playing_player;
     };
 
+    Room.prototype.get_host = function() {
+      var host_player;
+      host_player = null;
+      _.each(this.players, (function(_this) {
+        return function(player) {
+          if (player.is_host) {
+            host_player = player;
+          }
+        };
+      })(this));
+      return host_player;
+    };
+
     Room.prototype.connect = function(client) {
-      var playing_players;
+      var host_player;
       this.players.push(client);
       if (this.random_type) {
-        playing_players = this.get_playing_player();
-        if (playing_players.length) {
-          Room.players_oppentlist[playing_players[0].remoteAddress] = client.remoteAddress;
-          Room.players_oppentlist[client.remoteAddress] = playing_players[0].remoteAddress;
+        host_player = this.get_host();
+        if (host_player && (host_player !== client)) {
+          Room.players_oppentlist[host_player.remoteAddress] = client.remoteAddress;
+          Room.players_oppentlist[client.remoteAddress] = host_player.remoteAddress;
         } else {
           Room.players_oppentlist[client.remoteAddress] = null;
         }
