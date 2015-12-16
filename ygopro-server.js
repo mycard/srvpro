@@ -109,6 +109,7 @@
     });
     server.on('close', function(had_error) {
       tribute(server);
+      client.room.disconnector = 'server';
       if (!server.closed) {
         server.closed = true;
       }
@@ -119,6 +120,7 @@
     });
     server.on('error', function(error) {
       tribute(server);
+      client.room.disconnector = 'server';
       server.closed = error;
       if (!client.closed) {
         ygopro.stoc_send_chat(client, "服务器错误: " + error, 11);
@@ -260,7 +262,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
-    var k, len, ref;
+    var k, len, ref, room;
     if (settings.modules.stop) {
       ygopro.stoc_send_chat(client, settings.modules.stop, 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
@@ -313,23 +315,24 @@
       });
       client.end();
     } else {
-      client.room = Room.find_or_create_by_name(info.pass, client.remoteAddress);
-      if (!client.room) {
+      room = Room.find_or_create_by_name(info.pass, client.remoteAddress);
+      if (!room) {
         ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", 11);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
         });
         client.end();
-      } else if (client.room.error) {
-        ygopro.stoc_send_chat(client, client.room.error, 11);
+      } else if (room.error) {
+        ygopro.stoc_send_chat(client, room.error, 11);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
         });
         client.end();
-      } else if (client.room.started) {
+      } else if (room.started) {
         if (settings.modules.post_start_watching) {
+          client.room = room;
           client.is_post_watcher = true;
           ygopro.stoc_send_chat_to_room(client.room, client.name + " 加入了观战");
           client.room.watchers.push(client);
@@ -348,6 +351,7 @@
           client.end();
         }
       } else {
+        client.room = room;
         client.room.connect(client);
       }
     }

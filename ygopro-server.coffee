@@ -88,6 +88,7 @@ net.createServer (client) ->
   server.on 'close', (had_error) ->
     #log.info "server closed", client.name, had_error
     tribute(server)
+    client.room.disconnector = 'server'
     server.closed = true unless server.closed
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接", 11)
@@ -97,6 +98,7 @@ net.createServer (client) ->
   server.on 'error', (error)->
     #log.info "server error", client.name, error
     tribute(server)
+    client.room.disconnector = 'server'
     server.closed = error
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}", 11)
@@ -298,23 +300,24 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   
   else
     #log.info 'join_game',info.pass, client.name
-    client.room = Room.find_or_create_by_name(info.pass, client.remoteAddress)
-    if !client.room
+    room = Room.find_or_create_by_name(info.pass, client.remoteAddress)
+    if !room
       ygopro.stoc_send_chat(client,"服务器已经爆满，请稍候再试", 11)
       ygopro.stoc_send client, 'ERROR_MSG',{
         msg: 1
         code: 2
       }
       client.end()
-    else if client.room.error
-      ygopro.stoc_send_chat(client,client.room.error,11)
+    else if room.error
+      ygopro.stoc_send_chat(client, room.error, 11)
       ygopro.stoc_send client, 'ERROR_MSG',{
         msg: 1
         code: 2
       }
       client.end()
-    else if client.room.started
+    else if room.started
       if settings.modules.post_start_watching
+        client.room=room
         client.is_post_watcher = true
         ygopro.stoc_send_chat_to_room client.room, "#{client.name} 加入了观战"
         client.room.watchers.push client
@@ -329,6 +332,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         }
         client.end()
     else
+      client.room=room
       client.room.connect(client)
   return
 

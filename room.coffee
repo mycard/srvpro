@@ -5,6 +5,22 @@ spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
 ygopro = require './ygopro.js'
 bunyan = require 'bunyan'
+moment = require 'moment'
+moment.locale('zh-cn', { relativeTime : {
+            future : '%s内',
+            past : '%s前',
+            s : '%d秒',
+            m : '1分钟',
+            mm : '%d分钟',
+            h : '1小时',
+            hh : '%d小时',
+            d : '1天',
+            dd : '%d天',
+            M : '1个月',
+            MM : '%d个月',
+            y : '1年',
+            yy : '%d年'
+  }})
 settings = require './config.json'
 
 log = bunyan.createLogger name: "mycard-room"
@@ -35,6 +51,18 @@ class Room
 
   @all = []
   @players_oppentlist = {}
+  @players_banned = []
+
+  @ban_player: (name, ip, reason)->
+    log.info("banned", name, ip, reason)
+    bannedplayer = _.find Room.players_banned, (bannedplayer)->
+      ip==bannedplayer.ip
+    if bannedplayer
+      bannedplayer.time=moment(bannedplayer.time).add(Math.pow(2,bannedplayer.count)*30,'s')
+      bannedplayer.count=bannedplayer.count+1
+      bannedplayer.reason=reason
+    else 
+      Room.players_banned.push {"ip": ip, "time": moment().add(30, 's'), "count": 1, "reason": reason}
 
   @find_or_create_by_name: (name, player_ip)->
     if settings.modules.enable_random_duel and (name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M' or name.toUpperCase() == 'T')
@@ -47,6 +75,10 @@ class Room
       return new Room(name)
   
   @find_or_create_random: (type, player_ip)->
+    bannedplayer = _.find Room.players_banned, (bannedplayer)->
+      return player_ip==bannedplayer.ip
+    if bannedplayer and moment()<bannedplayer.time
+      return {"error":"因为您在近期游戏中#{bannedplayer.reason}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
     max_player = if type == 'T' then 4 else 2
     result = _.find @all, (room)->
       room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and room.get_host().remoteAddress != Room.players_oppentlist[player_ip]
@@ -293,6 +325,7 @@ class Room
 
   connect: (client)->
     @players.push client
+    client.ip=client.remoteAddress
     if @random_type
       host_player=@get_host()
       if host_player && (host_player != client)
@@ -320,6 +353,9 @@ class Room
     else
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
+      #log.info(@started,@disconnector,client.room.random_type)
+      if @started and @disconnector!='server' and client.room.random_type
+        Room.ban_player(client.name, client.ip, "强退")
       if @players.length
         ygopro.stoc_send_chat_to_room this, "#{client.name} #{'离开了游戏'}#{if error then ": #{error}" else ''}"
         #client.room = null
