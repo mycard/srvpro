@@ -68,13 +68,14 @@
     Room.players_banned = [];
 
     Room.ban_player = function(name, ip, reason) {
-      var bannedplayer;
+      var bannedplayer, bantime;
       log.info("banned", name, ip, reason);
       bannedplayer = _.find(Room.players_banned, function(bannedplayer) {
         return ip === bannedplayer.ip;
       });
       if (bannedplayer) {
-        bannedplayer.time = moment(bannedplayer.time).add(Math.pow(2, bannedplayer.count) * 30, 's');
+        bantime = Math.pow(2, bannedplayer.count) * 30;
+        bannedplayer.time = moment() < bannedplayer.time ? moment(bannedplayer.time).add(bantime, 's') : moment().add(bantime, 's');
         bannedplayer.count = bannedplayer.count + 1;
         return bannedplayer.reason = reason;
       } else {

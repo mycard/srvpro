@@ -58,7 +58,8 @@ class Room
     bannedplayer = _.find Room.players_banned, (bannedplayer)->
       ip==bannedplayer.ip
     if bannedplayer
-      bannedplayer.time=moment(bannedplayer.time).add(Math.pow(2,bannedplayer.count)*30,'s')
+      bantime=Math.pow(2,bannedplayer.count)*30
+      bannedplayer.time=if moment()<bannedplayer.time then moment(bannedplayer.time).add(bantime,'s') else moment().add(bantime,'s')
       bannedplayer.count=bannedplayer.count+1
       bannedplayer.reason=reason
     else 
