@@ -2,6 +2,7 @@
     "CTOS":{
         "PLAYER_INFO": "CTOS_PlayerInfo",
         "JOIN_GAME":"CTOS_JoinGame",
+        "HS_KICK":"CTOS_Kick",
         "UPDATE_DECK": "deck",
         "CHANGE_SIDE":"",
         "CHAT": "chat"

@@ -109,7 +109,7 @@
       });
       if (bannedplayer && moment() < bannedplayer.time) {
         return {
-          "error": "因为您在近期游戏中" + bannedplayer.reason + "，您已被禁止使用随机对战功能，将在" + (moment(bannedplayer.time).fromNow(true)) + "后解封"
+          "error": "因为您近期在游戏中" + bannedplayer.reason + "，您已被禁止使用随机对战功能，将在" + (moment(bannedplayer.time).fromNow(true)) + "后解封"
         };
       }
       max_player = type === 'T' ? 4 : 2;
@@ -123,6 +123,7 @@
         name = type + ',RANDOM#' + Math.floor(Math.random() * 100000);
         result = new Room(name);
         result.random_type = type;
+        result.max_player = max_player;
         result.welcome = '已建立随机对战房间，正在等待对手！';
       }
       return result;

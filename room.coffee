@@ -79,7 +79,7 @@ class Room
     bannedplayer = _.find Room.players_banned, (bannedplayer)->
       return player_ip==bannedplayer.ip
     if bannedplayer and moment()<bannedplayer.time
-      return {"error":"因为您在近期游戏中#{bannedplayer.reason}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
+      return {"error":"因为您近期在游戏中#{bannedplayer.reason}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
     max_player = if type == 'T' then 4 else 2
     result = _.find @all, (room)->
       room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and room.get_host().remoteAddress != Room.players_oppentlist[player_ip]
@@ -91,6 +91,7 @@ class Room
       name = type + ',RANDOM#' + Math.floor(Math.random()*100000)
       result = new Room(name)
       result.random_type = type
+      result.max_player = max_player
       result.welcome = '已建立随机对战房间，正在等待对手！'
       #log.info 'create room', player_name, name
     return result
