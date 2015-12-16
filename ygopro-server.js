@@ -494,6 +494,23 @@
     }
   };
 
+  ygopro.stoc_send_random_tip_to_room = function(room) {
+    if (tips) {
+      ygopro.stoc_send_chat_to_room(room, "Tip: " + tips[Math.floor(Math.random() * tips.length)]);
+    }
+  };
+
+  setInterval(function() {
+    var k, len, ref, room;
+    ref = Room.all;
+    for (k = 0, len = ref.length; k < len; k++) {
+      room = ref[k];
+      if (!room.started) {
+        ygopro.stoc_send_random_tip_to_room(room);
+      }
+    }
+  }, 30000);
+
   tips = null;
 
   if (settings.modules.tips) {

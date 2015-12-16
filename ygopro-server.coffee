@@ -451,6 +451,15 @@ ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
 ygopro.stoc_send_random_tip = (client)->
   ygopro.stoc_send_chat client, "Tip: " + tips[Math.floor(Math.random() * tips.length)] if tips
   return
+ygopro.stoc_send_random_tip_to_room = (room)->
+  ygopro.stoc_send_chat_to_room room, "Tip: " + tips[Math.floor(Math.random() * tips.length)] if tips
+  return
+
+setInterval ()->
+  for room in Room.all
+    ygopro.stoc_send_random_tip_to_room(room) unless room.started
+  return
+, 30000
 
 tips = null
 if settings.modules.tips
