@@ -576,7 +576,7 @@
     ref = Room.all;
     for (k = 0, len = ref.length; k < len; k++) {
       room = ref[k];
-      if (!room.started) {
+      if (!(room && room.started)) {
         ygopro.stoc_send_random_tip_to_room(room);
       }
     }

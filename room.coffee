@@ -82,7 +82,7 @@ class Room
       return {"error":"因为您近期在游戏中#{bannedplayer.reason}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
     max_player = if type == 'T' then 4 else 2
     result = _.find @all, (room)->
-      room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and room.get_host().remoteAddress != Room.players_oppentlist[player_ip]
+      room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and (room.get_host()==null or room.get_host().remoteAddress != Room.players_oppentlist[player_ip])
     if result
       result.welcome = '对手已经在等你了，开始决斗吧！'
       #log.info 'found room', player_name

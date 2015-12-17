@@ -114,7 +114,7 @@
       }
       max_player = type === 'T' ? 4 : 2;
       result = _.find(this.all, function(room) {
-        return room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && room.get_host().remoteAddress !== Room.players_oppentlist[player_ip];
+        return room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().remoteAddress !== Room.players_oppentlist[player_ip]);
       });
       if (result) {
         result.welcome = '对手已经在等你了，开始决斗吧！';

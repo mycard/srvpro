@@ -499,7 +499,7 @@ ygopro.stoc_send_random_tip_to_room = (room)->
 
 setInterval ()->
   for room in Room.all
-    ygopro.stoc_send_random_tip_to_room(room) unless room.started
+    ygopro.stoc_send_random_tip_to_room(room) unless room and room.started
   return
 , 30000
 
