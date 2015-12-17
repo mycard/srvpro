@@ -549,7 +549,7 @@
         ref = room.players;
         for (k = 0, len = ref.length; k < len; k++) {
           player = ref[k];
-          if (player.is_host) {
+          if (player && player.is_host) {
             Room.ban_player(player.name, player.ip, "挂机");
             ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", 11);
             player.end();
