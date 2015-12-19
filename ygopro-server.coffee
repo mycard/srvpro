@@ -544,10 +544,14 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     when '/help'
       ygopro.stoc_send_chat(client,"YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client,"/help 显示这个帮助信息")
+      ygopro.stoc_send_chat(client,"/roomname 显示当前房间的名字")
       ygopro.stoc_send_chat(client,"/tip 显示一条提示") if settings.modules.tips
     
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
+    
+    when '/roomname'
+      ygopro.stoc_send_chat(client,"您当前的房间名是 " + client.room.name) if client.room
     
   return cancel
 

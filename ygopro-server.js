@@ -644,6 +644,11 @@
         if (settings.modules.tips) {
           ygopro.stoc_send_random_tip(client);
         }
+        break;
+      case '/roomname':
+        if (client.room) {
+          ygopro.stoc_send_chat(client, "您当前的房间名是" + client.room.name);
+        }
     }
     return cancel;
   });
