@@ -13,6 +13,8 @@ var fs = require('fs');
 var execSync = require('child_process').execSync;
 var spawn = require('child_process').spawn;
 var url = require('url');
+var moment = require('moment');
+moment.locale('zh-cn');
 
 var constants = require('./constants.json');
 var config = require('./config.pre.json');
@@ -162,10 +164,14 @@ var loadDb = function(db_file) {
 }
 
 //将cardHTMLs中内容更新到指定列表页，同步
-var writeToFile = function() {
+var writeToFile = function(message) {
     var fileContent=fs.readFileSync(config.html_path+config.html_filename, {"encoding":"utf-8"});
     var newContent=cardHTMLs.join("\r\n");
     fileContent=fileContent.replace(/<tbody class="auto-generated">[\w\W]*<\/tbody>/,'<tbody class="auto-generated">\r\n'+newContent+'\r\n</tbody>');
+    if (message) {
+        message="<li>"+moment().format('L HH:mm')+"<ul><li>"+message.split("！换行符！").join("</li><li>")+"</li></ul></li>";
+        fileContent=fileContent.replace(/<ul class="auto-generated">/,'<ul class="auto-generated">\r\n'+message);
+    }
     fs.writeFileSync(config.html_path+config.html_filename, fileContent);
     sendResponse("列表更新完成。");
     copyImages();
@@ -253,7 +259,7 @@ var packDatas = function() {
     var proc = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "ygosrv233-pre.zip", "*"], { cwd: config.db_path, env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
-        sendResponse("7z: "+data);
+        //sendResponse("7z: "+data);
     });
     proc.stderr.setEncoding('utf8');
     proc.stderr.on('data', function(data) {
@@ -263,10 +269,10 @@ var packDatas = function() {
         execSync('mv -f "' + config.db_path +'ygosrv233-pre.zip" "'+ config.html_path +'"');
         sendResponse("电脑更新包打包完成。");
     });
-    var proc2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path, env: process.env });
+    var proc2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "-x!pics/thumbnail", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path, env: process.env });
     proc2.stdout.setEncoding('utf8');
     proc2.stdout.on('data', function(data) {
-        sendResponse("7z: "+data);
+        //sendResponse("7z: "+data);
     });
     proc2.stderr.setEncoding('utf8');
     proc2.stderr.on('data', function(data) {
@@ -322,7 +328,7 @@ http.createServer(function (req, res) {
     else if (u.pathname === '/api/write_to_file') {
         res.writeHead(200);
         res.end(u.query.callback+'({"message":"开始写列表页。"});');
-        writeToFile();
+        writeToFile(u.query.message);
     }
     else if (u.pathname === '/api/copy_to_ygopro') {
         res.writeHead(200);
