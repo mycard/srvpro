@@ -16,6 +16,8 @@
     "underscore": "*",
     "underscore.string": "*",
     "request": "*",
+    "moment": "*",
+    "sqlite3": "*",
     "bunyan": "*"
   },
   "license": "GPL-3.0",

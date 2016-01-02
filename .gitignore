@@ -11,6 +11,7 @@ node_modules/request/
 node_modules/underscore/
 node_modules/underscore.string/
 node_modules/sqlite3/
+node_modules/moment/
 
 *.heapsnapshot
 *.tmp
