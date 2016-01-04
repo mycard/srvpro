@@ -58,12 +58,14 @@ class Room
     bannedplayer = _.find Room.players_banned, (bannedplayer)->
       ip==bannedplayer.ip
     if bannedplayer
-      bantime=Math.pow(2,bannedplayer.count)*30
-      bannedplayer.time=if moment()<bannedplayer.time then moment(bannedplayer.time).add(bantime,'s') else moment().add(bantime,'s')
       bannedplayer.count=bannedplayer.count+1
-      bannedplayer.reason=reason
+      bantime=if bannedplayer.count > 3 then Math.pow(2,bannedplayer.count-3)*2 else 0
+      bannedplayer.time=if moment()<bannedplayer.time then moment(bannedplayer.time).add(bantime,'m') else moment().add(bantime,'m')
+      bannedplayer.reasons.push(reason) if not _.find bannedplayer.reasons, (bannedreason)->
+        bannedreason==reason
+      bannedplayer.need_tip=true;
     else 
-      Room.players_banned.push {"ip": ip, "time": moment().add(30, 's'), "count": 1, "reason": reason}
+      Room.players_banned.push {"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
 
   @find_or_create_by_name: (name, player_ip)->
     if settings.modules.enable_random_duel and (name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M' or name.toUpperCase() == 'T')
@@ -78,11 +80,21 @@ class Room
   @find_or_create_random: (type, player_ip)->
     bannedplayer = _.find Room.players_banned, (bannedplayer)->
       return player_ip==bannedplayer.ip
-    if bannedplayer and moment()<bannedplayer.time
-      return {"error":"因为您近期在游戏中#{bannedplayer.reason}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
+    if bannedplayer
+      if bannedplayer.count > 6 and moment()<bannedplayer.time
+        return {"error":"因为您近期在游戏中多次#{bannedplayer.reasons.join('、')}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
+      if bannedplayer.count > 3 and moment()<bannedplayer.time and bannedplayer.need_tip
+        bannedplayer.need_tip=false
+        return {"error":"因为您近期在游戏中#{bannedplayer.reasons.join('、')}，在#{moment(bannedplayer.time).fromNow(true)}内您随机对战时只能遇到其他违规玩家"}
+      else if bannedplayer.need_tip
+        bannedplayer.need_tip=false
+        return {"error":"系统检测到您近期在游戏中#{bannedplayer.reasons.join('、')}，若您违规超过3次，将受到惩罚"}
+      else if bannedplayer.count > 2
+        bannedplayer.need_tip=true
     max_player = if type == 'T' then 4 else 2
+    playerbanned=(bannedplayer and bannedplayer.count > 3 and moment()<bannedplayer.time)
     result = _.find @all, (room)->
-      room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and (room.get_host()==null or room.get_host().remoteAddress != Room.players_oppentlist[player_ip])
+      return room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and (room.get_host()==null or room.get_host().remoteAddress != Room.players_oppentlist[player_ip]) and (playerbanned == room.deprecated)
     if result
       result.welcome = '对手已经在等你了，开始决斗吧！'
       #log.info 'found room', player_name
@@ -93,6 +105,7 @@ class Room
       result.random_type = type
       result.max_player = max_player
       result.welcome = '已建立随机对战房间，正在等待对手！'
+      result.deprecated=playerbanned
       #log.info 'create room', player_name, name
     return result
 

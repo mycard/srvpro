@@ -74,16 +74,23 @@
         return ip === bannedplayer.ip;
       });
       if (bannedplayer) {
-        bantime = Math.pow(2, bannedplayer.count) * 30;
-        bannedplayer.time = moment() < bannedplayer.time ? moment(bannedplayer.time).add(bantime, 's') : moment().add(bantime, 's');
         bannedplayer.count = bannedplayer.count + 1;
-        return bannedplayer.reason = reason;
+        bantime = bannedplayer.count > 3 ? Math.pow(2, bannedplayer.count - 3) * 5 : 0;
+        bannedplayer.time = moment() < bannedplayer.time ? moment(bannedplayer.time).add(bantime, 's') : moment().add(bantime, 's');
+        console.log(moment(bannedplayer.time).format());
+        if (!_.find(bannedplayer.reasons, function(bannedreason) {
+          return bannedreason === reason;
+        })) {
+          bannedplayer.reasons.push(reason);
+        }
+        return bannedplayer.need_tip = true;
       } else {
         return Room.players_banned.push({
           "ip": ip,
-          "time": moment().add(30, 's'),
+          "time": moment(),
           "count": 1,
-          "reason": reason
+          "reasons": [reason],
+          "need_tip": true
         });
       }
     };
@@ -103,18 +110,34 @@
     };
 
     Room.find_or_create_random = function(type, player_ip) {
-      var bannedplayer, max_player, name, result;
+      var bannedplayer, max_player, name, playerbanned, result;
       bannedplayer = _.find(Room.players_banned, function(bannedplayer) {
         return player_ip === bannedplayer.ip;
       });
-      if (bannedplayer && moment() < bannedplayer.time) {
-        return {
-          "error": "因为您近期在游戏中" + bannedplayer.reason + "，您已被禁止使用随机对战功能，将在" + (moment(bannedplayer.time).fromNow(true)) + "后解封"
-        };
+      if (bannedplayer) {
+        if (bannedplayer.count > 5 && moment() < bannedplayer.time) {
+          return {
+            "error": "因为您近期在游戏中多次" + (bannedplayer.reasons.join('、')) + "，您已被禁止使用随机对战功能，将在" + (moment(bannedplayer.time).fromNow(true)) + "后解封"
+          };
+        }
+        if (bannedplayer.count > 3 && moment() < bannedplayer.time && bannedplayer.need_tip) {
+          bannedplayer.need_tip = false;
+          return {
+            "error": "因为您近期在游戏中" + (bannedplayer.reasons.join('、')) + "，在" + (moment(bannedplayer.time).fromNow(true)) + "内您随机对战时只能遇到其他违规玩家"
+          };
+        } else if (bannedplayer.need_tip) {
+          bannedplayer.need_tip = false;
+          return {
+            "error": "系统检测到您近期在游戏中" + (bannedplayer.reasons.join('、')) + "，若您违规超过3次，将受到惩罚"
+          };
+        } else if (bannedplayer.count > 2) {
+          bannedplayer.need_tip = true;
+        }
       }
       max_player = type === 'T' ? 4 : 2;
+      playerbanned = bannedplayer && bannedplayer.count > 3 && moment() < bannedplayer.time;
       result = _.find(this.all, function(room) {
-        return room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().remoteAddress !== Room.players_oppentlist[player_ip]);
+        return room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().remoteAddress !== Room.players_oppentlist[player_ip]) && (playerbanned === room.deprecated);
       });
       if (result) {
         result.welcome = '对手已经在等你了，开始决斗吧！';
@@ -125,6 +148,7 @@
         result.random_type = type;
         result.max_player = max_player;
         result.welcome = '已建立随机对战房间，正在等待对手！';
+        result.deprecated = playerbanned;
       }
       return result;
     };
