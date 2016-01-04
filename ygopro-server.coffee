@@ -16,12 +16,15 @@ request = require 'request'
 
 bunyan = require 'bunyan'
 
+moment = require 'moment'
+
 #heapdump = require 'heapdump'
 
 #配置文件
 settings = require './config.json'
 settings.BANNED_user = []
 settings.BANNED_IP = []
+settings.modules.hang_timeout=90
 
 #组件
 ygopro = require './ygopro.js'
@@ -388,6 +391,12 @@ if settings.modules.dialogues
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   msg = buffer.readInt8(0)
+  
+  if msg>=10 and msg<30 #SELECT开头的消息
+    client.room.waiting_for_player=client
+    client.room.last_active_time=moment()
+    #log.info("#{ygopro.constants.MSG[msg]}等待#{client.room.waiting_for_player.name}")
+  
   #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
@@ -527,6 +536,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
 
 ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   cancel = _.startsWith(_.trim(info.msg),"/")
+  client.room.last_active_time=moment() unless cancel or not client.room.random_type
   switch _.trim(info.msg)
     when '/ping'
       execFile 'ss', ['-it', "dst #{client.remoteAddress}:#{client.remotePort}"], (error, stdout, stderr)->
@@ -565,6 +575,53 @@ ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   client.main = main
   client.side = side
   return
+
+ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
+  return unless client.room and client.room.random_type
+  client.room.last_active_time=moment()
+  return
+
+ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
+  return unless client.room and client.room.random_type
+  if client.is_host
+    client.room.waiting_for_player=client.room.waiting_for_player2
+  client.room.last_active_time=moment().subtract(settings.modules.hang_timeout-19, 's')
+  return
+
+ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server)->
+  return unless client.room and client.room.random_type
+  client.room.last_active_time=moment()
+  return
+
+ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->
+  return unless client.room and client.room.random_type
+  if client.is_host
+    client.room.waiting_for_player=client
+  else
+    client.room.waiting_for_player2=client
+  client.room.last_active_time=moment().subtract(settings.modules.hang_timeout-19, 's')
+  return
+ 
+ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
+  return unless client.room and client.room.random_type
+  client.room.waiting_for_player=client
+  client.room.last_active_time=moment()
+  return
+
+setInterval ()->
+  for room in Room.all when room.started and room.random_type
+    continue unless room and room.last_active_time
+    time_passed=Math.floor((moment()-room.last_active_time) / 1000)
+    #log.info time_passed
+    if time_passed >= settings.modules.hang_timeout
+      room.last_active_time=moment()
+      Room.ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机")
+      ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 被系统请出了房间", 11)
+      room.waiting_for_player.server.end()
+    else if time_passed >= (settings.modules.hang_timeout-20) and not (time_passed % 10)
+      ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 已经很久没有操作了，若继续挂机，将于#{settings.modules.hang_timeout-time_passed}秒后被请出房间", 11)
+  return
+,1000
 
 #http
 if settings.modules.http

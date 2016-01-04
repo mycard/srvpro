@@ -1,5 +1,8 @@
 {
     "CTOS":{
+        "RESPONSE": "",
+        "HAND_RESULT": "",
+        "TP_RESULT": "",
         "PLAYER_INFO": "CTOS_PlayerInfo",
         "JOIN_GAME":"CTOS_JoinGame",
         "HS_KICK":"CTOS_Kick",
@@ -15,6 +18,8 @@
         "HS_PLAYER_ENTER":"STOC_HS_PlayerEnter",
         "ERROR_MSG": "STOC_ErrorMsg",
         "GAME_MSG": "GameMsg_Hint_Card_only",
+        "SELECT_HAND": "",
+        "SELECT_TP": "",
         "CHAT": "STOC_Chat"
     }
 }
