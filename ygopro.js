@@ -213,4 +213,36 @@
     }
   };
 
+  this.stoc_send_hint_card_to_room = function(room, card) {
+    var client, j, k, len1, len2, ref, ref1;
+    if (!room) {
+      console.log("err stoc_send_hint_card_to_room");
+      return;
+    }
+    ref = room.players;
+    for (j = 0, len1 = ref.length; j < len1; j++) {
+      client = ref[j];
+      if (client) {
+        this.stoc_send(client, 'GAME_MSG', {
+          curmsg: 2,
+          type: 10,
+          player: 0,
+          data: card
+        });
+      }
+    }
+    ref1 = room.watchers;
+    for (k = 0, len2 = ref1.length; k < len2; k++) {
+      client = ref1[k];
+      if (client) {
+        this.stoc_send(client, 'GAME_MSG', {
+          curmsg: 2,
+          type: 10,
+          player: 0,
+          data: card
+        });
+      }
+    }
+  };
+
 }).call(this);

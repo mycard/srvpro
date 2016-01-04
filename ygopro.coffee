@@ -131,3 +131,23 @@ for name, declaration of structs_declaration
   for client in room.watchers
     @stoc_send_chat(client, msg, player) if client
   return
+
+@stoc_send_hint_card_to_room = (room, card)->
+  if !room
+    console.log "err stoc_send_hint_card_to_room"
+    return
+  for client in room.players
+    @stoc_send client, 'GAME_MSG',{
+          curmsg: 2,
+          type: 10,
+          player: 0,
+          data: card
+      } if client
+  for client in room.watchers
+    @stoc_send client, 'GAME_MSG',{
+          curmsg: 2,
+          type: 10,
+          player: 0,
+          data: card
+      } if client
+  return

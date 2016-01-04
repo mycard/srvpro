@@ -83,7 +83,12 @@
     "STOC_HS_WatchChange": [
         {"name": "watch_count", "type": "unsigned short"}
     ],
-
+    "GameMsg_Hint_Card_only": [
+        {"name": "curmsg", "type": "word8Ule"},
+        {"name": "type", "type": "word8"},
+        {"name": "player", "type": "word8"},
+        {"name": "data", "type": "word32Ule"}
+    ],
     "deck": [
         {"name": "mainc", "type": "unsigned int"},
         {"name": "sidec", "type": "unsigned int"},

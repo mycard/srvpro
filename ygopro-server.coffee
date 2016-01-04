@@ -552,6 +552,9 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     
     when '/roomname'
       ygopro.stoc_send_chat(client,"您当前的房间名是 " + client.room.name) if client.room
+      
+    when '/test'     
+      ygopro.stoc_send_hint_card_to_room(client.room, 2333365)
     
   return cancel
 

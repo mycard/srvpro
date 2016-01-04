@@ -14,6 +14,7 @@
         "HS_PLAYER_CHANGE":"STOC_HS_PlayerChange",
         "HS_PLAYER_ENTER":"STOC_HS_PlayerEnter",
         "ERROR_MSG": "STOC_ErrorMsg",
+        "GAME_MSG": "GameMsg_Hint_Card_only",
         "CHAT": "STOC_Chat"
     }
 }

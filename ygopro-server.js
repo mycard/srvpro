@@ -636,6 +636,7 @@
       case '/help':
         ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助");
         ygopro.stoc_send_chat(client, "/help 显示这个帮助信息");
+        ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字");
         if (settings.modules.tips) {
           ygopro.stoc_send_chat(client, "/tip 显示一条提示");
         }
@@ -647,8 +648,11 @@
         break;
       case '/roomname':
         if (client.room) {
-          ygopro.stoc_send_chat(client, "您当前的房间名是" + client.room.name);
+          ygopro.stoc_send_chat(client, "您当前的房间名是 " + client.room.name);
         }
+        break;
+      case '/test':
+        ygopro.stoc_send_hint_card_to_room(client.room, 2333365);
     }
     return cancel;
   });
