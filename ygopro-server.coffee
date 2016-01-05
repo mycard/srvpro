@@ -493,7 +493,7 @@ wait_room_start = (room,time)->
     else
       for player in room.players
         if player and player.is_host
-          Room.ban_player(player.name, player.ip, "挂机")
+          Room.ban_player(player.name, player.ip, "挂房间")
           ygopro.stoc_send_chat_to_room room, "#{player.name} 被系统请出了房间", 11
           player.end()
   return
