@@ -54,7 +54,6 @@ class Room
   @players_banned = []
 
   @ban_player: (name, ip, reason)->
-    log.info("banned", name, ip, reason)
     bannedplayer = _.find Room.players_banned, (bannedplayer)->
       ip==bannedplayer.ip
     if bannedplayer
@@ -65,7 +64,10 @@ class Room
         bannedreason==reason
       bannedplayer.need_tip=true;
     else 
-      Room.players_banned.push {"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
+      bannedplayer={"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
+      Room.players_banned.push(bannedplayer)
+    log.info("banned", name, ip, reason, bannedplayer.count)
+    return
 
   @find_or_create_by_name: (name, player_ip)->
     if settings.modules.enable_random_duel and (name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M' or name.toUpperCase() == 'T')

@@ -69,7 +69,6 @@
 
     Room.ban_player = function(name, ip, reason) {
       var bannedplayer, bantime;
-      log.info("banned", name, ip, reason);
       bannedplayer = _.find(Room.players_banned, function(bannedplayer) {
         return ip === bannedplayer.ip;
       });
@@ -82,16 +81,18 @@
         })) {
           bannedplayer.reasons.push(reason);
         }
-        return bannedplayer.need_tip = true;
+        bannedplayer.need_tip = true;
       } else {
-        return Room.players_banned.push({
+        bannedplayer = {
           "ip": ip,
           "time": moment(),
           "count": 1,
           "reasons": [reason],
           "need_tip": true
-        });
+        };
+        Room.players_banned.push(bannedplayer);
       }
+      log.info("banned", name, ip, reason, bannedplayer.count);
     };
 
     Room.find_or_create_by_name = function(name, player_ip) {
