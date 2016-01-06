@@ -609,8 +609,7 @@ ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
   return
 
 setInterval ()->
-  for room in Room.all when room.started and room.random_type
-    continue unless room and room.last_active_time
+  for room in Room.all when room and room.started and room.random_type and room.last_active_time
     time_passed=Math.floor((moment()-room.last_active_time) / 1000)
     #log.info time_passed
     if time_passed >= settings.modules.hang_timeout

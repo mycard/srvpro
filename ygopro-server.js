@@ -739,10 +739,7 @@
     ref = Room.all;
     for (k = 0, len = ref.length; k < len; k++) {
       room = ref[k];
-      if (!(room.started && room.random_type)) {
-        continue;
-      }
-      if (!(room && room.last_active_time)) {
+      if (!(room && room.started && room.random_type && room.last_active_time)) {
         continue;
       }
       time_passed = Math.floor((moment() - room.last_active_time) / 1000);
