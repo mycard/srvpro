@@ -307,6 +307,9 @@
           this.hostinfo.rule = 1;
           this.hostinfo.lflist = settings.modules.TCG_banlist_id;
         }
+        if (rule.match(/(^|，|,)(OCGONLY|OO)(，|,|$)/)) {
+          this.hostinfo.rule = 0;
+        }
         if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/)) {
           this.hostinfo.rule = 2;
         }

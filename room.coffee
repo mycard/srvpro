@@ -245,6 +245,9 @@ class Room
         @hostinfo.rule = 1
         @hostinfo.lflist = settings.modules.TCG_banlist_id
       
+      if (rule.match /(^|，|,)(OCGONLY|OO)(，|,|$)/)
+        @hostinfo.rule = 0
+      
       if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/)
         @hostinfo.rule = 2
       
