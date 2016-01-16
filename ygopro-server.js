@@ -500,7 +500,7 @@
     ref = client.room.players;
     for (k = 0, len = ref.length; k < len; k++) {
       player = ref[k];
-      if (player.pos === info.pos && player !== client) {
+      if (player && player.pos === info.pos && player !== client) {
         ygopro.stoc_send_chat_to_room(client.room, player.name + " 被请出了房间", 11);
       }
     }
@@ -739,7 +739,7 @@
     ref = Room.all;
     for (k = 0, len = ref.length; k < len; k++) {
       room = ref[k];
-      if (!(room && room.started && room.random_type && room.last_active_time)) {
+      if (!(room && room.started && room.random_type && room.last_active_time && room.waiting_for_player)) {
         continue;
       }
       time_passed = Math.floor((moment() - room.last_active_time) / 1000);

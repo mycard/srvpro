@@ -455,7 +455,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
 ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
   return unless client.room
   for player in client.room.players
-    if player.pos==info.pos and player != client
+    if player and player.pos==info.pos and player != client
       ygopro.stoc_send_chat_to_room client.room, "#{player.name} 被请出了房间", 11
   return false
 
@@ -609,7 +609,7 @@ ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
   return
 
 setInterval ()->
-  for room in Room.all when room and room.started and room.random_type and room.last_active_time
+  for room in Room.all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player
     time_passed=Math.floor((moment()-room.last_active_time) / 1000)
     #log.info time_passed
     if time_passed >= settings.modules.hang_timeout
