@@ -1,13 +1,14 @@
 {
     "port": 233,
-    "version": 4918,
-    "ygopro_path": "ygocore",
+    "version": 4920,
+    "ygopro_path": "ygopro",
     "modules": {
         "welcome": "YGOPRO Server",
         "update": "请更新游戏版本",
         "stop": false,
         "tips": "http://mercury233.me/ygosrv233/tips.json",
         "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
+        "redis_port": 6379,
         "enable_random_duel": false,
         "post_start_watching": true,
         "TCG_banlist_id": 8,

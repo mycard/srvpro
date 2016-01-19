@@ -18,6 +18,9 @@ bunyan = require 'bunyan'
 
 moment = require 'moment'
 
+redis = require 'redis'
+redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
+
 #heapdump = require 'heapdump'
 
 #配置文件
@@ -107,7 +110,22 @@ net.createServer (client) ->
       ygopro.stoc_send_chat(client, "服务器错误: #{error}", 11)
       client.end()
     return
-
+  
+  client.open_cloud_replay= (err, replay)->
+    if err or !replay
+      ygopro.stoc_send_chat(client,"没有找到录像", 11)
+      ygopro.stoc_send client, 'ERROR_MSG',{
+        msg: 1
+        code: 2
+      }
+      client.end()
+      return
+    replay_buffer=new Buffer(replay.replay_buffer,'binary')
+    ygopro.stoc_send_chat(client,"正在观看云录像：R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", 14)
+    client.write replay_buffer
+    client.end()
+    return
+  
   #需要重构
   #客户端到服务端(ctos)协议分析
   ctos_buffer = new Buffer(0)
@@ -245,7 +263,41 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       msg: 1
       code: 2
     }
-    client.end()  
+    client.end()
+  
+  else if info.pass.toUpperCase()=="R"
+    ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", 14)
+    redisdb.lrange client.remoteAddress+":replays", 0, 2, (err, result)=>
+      _.each result, (replay_id,id)=>
+        redisdb.hgetall "replay:"+replay_id, (err, replay)=>
+          ygopro.stoc_send_chat(client,"<#{id-0+1}> R##{replay_id} #{replay.player_names} #{replay.date_time}", 14)
+          return
+        return
+      return
+    #强行等待异步执行完毕_(:з」∠)_
+    setTimeout (()=> 
+      ygopro.stoc_send client, 'ERROR_MSG',{
+        msg: 1
+        code: 2
+      }
+      client.end()), 500
+  
+  else if info.pass[0...2].toUpperCase()=="R#"
+    replay_id=info.pass.split("#")[1]
+    if (replay_id>0 and replay_id<=3)
+      redisdb.lindex client.remoteAddress+":replays", replay_id-1, (err, replay_id)=>
+        redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
+        return
+    else if replay_id
+      redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
+    else
+      ygopro.stoc_send_chat(client,"没有找到录像", 11)
+      ygopro.stoc_send client, 'ERROR_MSG',{
+        msg: 1
+        code: 2
+      }
+      client.end()
+      
   
   else if info.version != settings.version
     ygopro.stoc_send_chat(client,settings.modules.update, 11)
@@ -530,6 +582,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     client.room.dueling_players = []
     for player in client.room.players when player.pos != 7
       client.room.dueling_players[player.pos] = player
+      client.room.player_datas.push ip:player.remoteAddress, name:player.name
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
   return
@@ -562,7 +615,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     
     when '/roomname'
       ygopro.stoc_send_chat(client,"您当前的房间名是 " + client.room.name) if client.room
-      
+
     when '/test'     
       ygopro.stoc_send_hint_card_to_room(client.room, 2333365)
     
