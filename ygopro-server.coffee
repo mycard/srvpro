@@ -18,8 +18,8 @@ bunyan = require 'bunyan'
 
 moment = require 'moment'
 
-redis = require 'redis'
-redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
+#redis = require 'redis'
+#redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
 
 #heapdump = require 'heapdump'
 
@@ -110,7 +110,7 @@ net.createServer (client) ->
       ygopro.stoc_send_chat(client, "服务器错误: #{error}", 11)
       client.end()
     return
-  
+  ###
   client.open_cloud_replay= (err, replay)->
     if err or !replay
       ygopro.stoc_send_chat(client,"没有找到录像", 11)
@@ -125,7 +125,7 @@ net.createServer (client) ->
     client.write replay_buffer
     client.end()
     return
-  
+  ###
   #需要重构
   #客户端到服务端(ctos)协议分析
   ctos_buffer = new Buffer(0)
@@ -264,7 +264,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
-  
+    
+    ###
   else if info.pass.toUpperCase()=="R"
     ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", 14)
     redisdb.lrange client.remoteAddress+":replays", 0, 2, (err, result)=>
@@ -281,7 +282,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         code: 2
       }
       client.end()), 500
-  
+      
   else if info.pass[0...2].toUpperCase()=="R#"
     replay_id=info.pass.split("#")[1]
     if (replay_id>0 and replay_id<=3)
@@ -297,8 +298,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         code: 2
       }
       client.end()
-      
-  
+    ###
+
   else if info.version != settings.version
     ygopro.stoc_send_chat(client,settings.modules.update, 11)
     ygopro.stoc_send client, 'ERROR_MSG',{

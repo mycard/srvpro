@@ -6,7 +6,7 @@ spawnSync = require('child_process').spawnSync
 ygopro = require './ygopro.js'
 bunyan = require 'bunyan'
 moment = require 'moment'
-redis = require 'redis'
+#redis = require 'redis'
 moment.locale('zh-cn', { relativeTime : {
             future : '%s内',
             past : '%s前',
@@ -25,7 +25,7 @@ moment.locale('zh-cn', { relativeTime : {
 settings = require './config.json'
 
 log = bunyan.createLogger name: "mycard-room"
-redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
+#redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
 
 #获取可用内存
 get_memory_usage = ()->
@@ -323,6 +323,7 @@ class Room
     #积分
     return if @deleted
     #log.info 'room-delete', this.name, Room.all.length
+    ###
     if @player_datas.length
       replay_buffer = Buffer.concat(@watcher_buffers).toString('binary')
       player_names=@player_datas[0].name + (if @player_datas[2] then "+" + @player_datas[2].name else "") +
@@ -341,6 +342,7 @@ class Room
         recorded_ip.push player.ip
         redisdb.lpush(player.ip+":replays", replay_id)
         return
+    ###
     @watcher_buffers = []
     @players = []
     @watcher.end() if @watcher
