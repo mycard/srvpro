@@ -1,9 +1,5 @@
 # ignore
 test*
-/ygocore/
-/ygocore
-/ygopro/
-/ygopro
 
 node_modules/.bin/
 node_modules/bunyan/
