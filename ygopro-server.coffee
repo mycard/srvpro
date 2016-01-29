@@ -28,6 +28,7 @@ settings = require './config.json'
 settings.BANNED_user = []
 settings.BANNED_IP = []
 settings.modules.hang_timeout=90
+settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
 
 #组件
 ygopro = require './ygopro.js'

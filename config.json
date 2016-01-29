@@ -1,6 +1,5 @@
 {
-    "port": 233,
-    "version": 4920,
+    "port": 7911,
     "ygopro_path": "ygopro",
     "modules": {
         "welcome": "YGOPRO Server",
