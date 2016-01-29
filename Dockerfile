@@ -10,9 +10,10 @@ COPY . /usr/src/app
 WORKDIR /usr/src/app/ygopro
 RUN premake4 --os=linux --platform=x64 gmake
 RUN ln -s /usr/lib/x86_64-linux-gnu/liblua5.2.so /usr/lib/liblua.so
-WORKDIR /usr/src/app/build
+WORKDIR /usr/src/app/ygopro/build
 RUN make config=release ygopro
-RUN ln -s ../bin/release/ygopro ../ygopro
-RUN strip ../ygopro
+WORKDIR /usr/src/app/ygopro
+RUN ln -s bin/release/ygopro ygopro
+RUN strip ygopro
 WORKDIR /usr/src/app
 CMD [ "npm", "start" ]
