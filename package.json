@@ -2,10 +2,7 @@
   "name": "ygopro-server",
   "version": "2.3.3",
   "description": "a server for ygopro",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mercury233/ygopro-server.git"
-  },
+  "repository": "github:mycard/ygopro-server",
   "keywords": [
     "mycard",
     "ygopro",
@@ -13,19 +10,15 @@
   ],
   "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>",
   "dependencies": {
-    "underscore": "*",
-    "underscore.string": "*",
-    "request": "*",
-    "moment": "*",
-    "sqlite3": "*",
-    "bunyan": "*"
+    "underscore": "latest",
+    "underscore.string": "latest",
+    "request": "latest",
+    "moment": "latest",
+    "sqlite3": "latest",
+    "bunyan": "latest"
   },
-  "license": "GPL-3.0",
-  "main": "ygopro-server.js",
+  "license": "AGPL-3.0",
   "scripts": {
-    "start": "forever start ygopro-server.js"
-  },
-  "engines": {
-    "node": "*"
+    "start": "node ygopro-server.js"
   }
 }
