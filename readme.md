@@ -34,3 +34,22 @@
 
 ###开发计划
 * 重写全部代码，与SalvationServer合并，或作为分支版本
+
+## Install Docker
+```bash
+wget -qO- https://get.docker.com/ | sh
+```
+see https://docs.docker.com/linux/step_one/ for more information.
+
+## Deploy from DockerHub
+
+```bash
+under construction
+```
+
+## Build
+```bash
+git clone --recursive https://github.com/mycard/ygopro-server.git
+cd ygopro-server
+docker build -t ygopro-server .
+```
