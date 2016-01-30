@@ -422,7 +422,7 @@
               return;
             }
             opt1 = buffer.readUInt8(2);
-            opt2 = buffer.readUInt8(3);
+            opt2 = buffer.readUInt16LE(3);
             opt3 = buffer.readUInt8(5);
             options = {
               lflist: 0,
@@ -788,8 +788,8 @@
     }
     if (!client.room.started) {
       client.room.started = true;
-      if (!room["private"]) {
-        roomlist["delete"](room.name);
+      if (!client.room["private"]) {
+        roomlist["delete"](client.room.name);
       }
       client.room.dueling_players = [];
       ref = client.room.players;

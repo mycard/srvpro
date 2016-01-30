@@ -393,7 +393,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               return
 
             opt1 = buffer.readUInt8(2)
-            opt2 = buffer.readUInt8(3)
+            opt2 = buffer.readUInt16LE(3)
             opt3 = buffer.readUInt8(5)
             options = {
               lflist: 0
@@ -697,7 +697,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   return unless client.room
   unless client.room.started #first start
     client.room.started = true
-    roomlist.delete room.name unless room.private
+    roomlist.delete client.room.name unless client.room.private
     #client.room.duels = []
     client.room.dueling_players = []
     for player in client.room.players when player.pos != 7
