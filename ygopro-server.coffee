@@ -34,7 +34,7 @@ settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').ma
 #组件
 ygopro = require './ygopro.js'
 Room = require './room.js'
-
+roomlist = require './roomlist.js'
 
 #debug模式 端口号+1
 debug = false
@@ -398,8 +398,6 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             options = {
               lflist: 0
               time_limit: 180
-              title: info.pass.slice(8)
-              private: action == 2
               rule: (opt1 >> 5) & 3
               mode: (opt1 >> 3) & 3
               enable_priority: !!((opt1 >> 2) & 1)
@@ -410,6 +408,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               draw_count: opt3 & 0xF
             }
             room = new Room(name, options)
+            room.title = info.pass.slice(8)
+            room.private = action == 2
           when 3
             name = info.pass.slice(8)
             room = Room.find_by_name(name)
@@ -697,6 +697,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   return unless client.room
   unless client.room.started #first start
     client.room.started = true
+    roomlist.delete room.name unless room.private
     #client.room.duels = []
     client.room.dueling_players = []
     for player in client.room.players when player.pos != 7
@@ -869,10 +870,5 @@ if settings.modules.http
       cert: fs.readFileSync(settings.modules.http.ssl.cert)
       key: fs.readFileSync(settings.modules.http.ssl.key)
     https_server = https.createServer(options, requestListener)
-    WebSocketServer = require('ws').Server
-    websocket_server = new WebSocketServer
-      server: https_server
-    websocket_server.on 'connection', (connection) ->
-      console.log(room for room in Room.all when room.established)
-
+    roomlist.init https_server, Room
     https_server.listen settings.modules.http.ssl.port
