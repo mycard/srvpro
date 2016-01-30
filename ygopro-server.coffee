@@ -5,6 +5,7 @@ url = require 'url'
 path = require 'path'
 fs = require 'fs'
 os = require 'os'
+crypto = require 'crypto'
 execFile = require('child_process').execFile
 
 #三方库
@@ -46,7 +47,7 @@ else
   log = bunyan.createLogger name: "mycard"
 
 #定时清理关闭的连接
-Graveyard = [] 
+Graveyard = []
 
 tribute = (socket) ->
   setTimeout ((socket)-> Graveyard.push(socket);return)(socket), 3000
@@ -66,7 +67,7 @@ setInterval ()->
 net.createServer (client) ->
   server = new net.Socket()
   client.server = server
-  
+
   client.setTimeout(300000) #5分钟
 
   #释放处理
@@ -140,9 +141,9 @@ net.createServer (client) ->
       client.room.watcher.write data
     else
       ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
-      
+
       datas = []
-      
+
       looplimit = 0
 
       while true
@@ -176,7 +177,7 @@ net.createServer (client) ->
             ctos_proto = 0
           else
             break
-      
+
         looplimit++
         #log.info(looplimit)
         if looplimit>800
@@ -201,7 +202,7 @@ net.createServer (client) ->
 
     #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
     client.write data
-    
+
     looplimit = 0
 
     while true
@@ -232,7 +233,7 @@ net.createServer (client) ->
           stoc_proto = 0
         else
           break
-      
+
       looplimit++
       #log.info(looplimit)
       if looplimit>800
@@ -265,7 +266,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
-    
+
     ###
   else if info.pass.toUpperCase()=="R"
     ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", 14)
@@ -316,7 +317,123 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
-    
+
+  else if info.pass.length and settings.modules.mycard_auth
+    ygopro.stoc_send_chat(client,'正在读取用户信息...', 11)
+    request
+      baseUrl: settings.modules.mycard_auth,
+      url: '/users/' + client.name + '.json'
+      qs:
+        api_key: '69675c315dfae3d7224688f2c56cf7d3f5016e7cf63f289d945709f11528b02e',
+        api_username: client.name,
+        skip_track_visit: true
+      json: true
+      , (error, response, body)->
+        if info.pass.length <= 8
+          ygopro.stoc_send_chat(client,'主机密码不正确 (Invalid Length)', 11)
+          ygopro.stoc_send client, 'ERROR_MSG',{
+            msg: 1
+            code: 2
+          }
+          client.end()
+          return
+
+        buffer = new Buffer(info.pass[0...8], 'base64')
+
+        check = (buf)->
+          checksum = 0
+          for i in [0...buf.length]
+            checksum += buf.readUInt8(i)
+          (checksum & 0xFF) == 0
+
+        if body and body.user
+          secret = body.user.id % 65535 + 1;
+          decrypted_buffer = new Buffer(6)
+          for i in [0,2,4]
+            decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
+          if check(decrypted_buffer)
+            buffer = decrypted_buffer
+
+        # buffer != decrypted_buffer  ==> auth failed
+
+        if !check(buffer)
+          ygopro.stoc_send_chat(client,'主机密码不正确 (Checksum Failed)', 11)
+          ygopro.stoc_send client, 'ERROR_MSG',{
+            msg: 1
+            code: 2
+          }
+          client.end()
+          return
+
+
+        action = buffer.readUInt8(1) >> 4
+        if buffer != decrypted_buffer and action in [1,2,4]
+          ygopro.stoc_send_chat(client,'主机密码不正确 (Unauthorized)', 11)
+          ygopro.stoc_send client, 'ERROR_MSG',{
+            msg: 1
+            code: 2
+          }
+          client.end()
+          return
+
+        # 1 create public room
+        # 2 create private room
+        # 3 join room
+        # 4 join match
+        switch action
+          when 1,2
+            name = crypto.createHash('md5').update(info.pass + client.name).digest('base64')[0...10].replace('+','-').replace('/', '_');
+            if Room.find_by_name(name)
+              ygopro.stoc_send_chat(client,'主机密码不正确 (Already Existed)', 11)
+              ygopro.stoc_send client, 'ERROR_MSG',{
+                msg: 1
+                code: 2
+              }
+              client.end()
+              return
+
+            opt1 = buffer.readUInt8(2)
+            opt2 = buffer.readUInt8(3)
+            opt3 = buffer.readUInt8(5)
+            options = {
+              lflist: 0
+              time_limit: 180
+              title: info.pass.slice(8)
+              private: action == 2
+              rule: (opt1 >> 5) & 3
+              mode: (opt1 >> 3) & 3
+              enable_priority: !!((opt1 >> 2) & 1)
+              no_check_deck: !!((opt1 >> 1) & 1)
+              no_shuffle_deck: !!(opt1 & 1)
+              start_lp: opt2
+              start_hand: opt3 >> 4
+              draw_count: opt3 & 0xF
+            }
+            room = new Room(name, options)
+          when 3
+            name = info.pass.slice(8)
+            room = Room.find_by_name(name)
+            if(!room)
+              ygopro.stoc_send_chat(client,'主机密码不正确 (Not Found)', 11)
+              ygopro.stoc_send client, 'ERROR_MSG',{
+                msg: 1
+                code: 2
+              }
+              client.end()
+              return
+          when 4
+            room = Room.find_or_create_by_name('M#' + info.pass.slice(8))
+          else
+            ygopro.stoc_send_chat(client,'主机密码不正确 (Invalid Action)', 11)
+            ygopro.stoc_send client, 'ERROR_MSG',{
+              msg: 1
+              code: 2
+            }
+            client.end()
+            return
+        client.room = room
+        client.room.connect(client)
+
   else if info.pass.length && !Room.validate(info.pass)
     #ygopro.stoc_send client, 'ERROR_MSG',{
     #  msg: 1
@@ -354,7 +471,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
-  
+
   else
     #log.info 'join_game',info.pass, client.name
     room = Room.find_or_create_by_name(info.pass, client.remoteAddress)
@@ -414,7 +531,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       ygopro.ctos_send watcher, 'HS_TOOBSERVER'
       return
-    
+
     watcher.on 'data', (data)->
       return unless client.room
       client.room.watcher_buffers.push data
@@ -445,12 +562,12 @@ if settings.modules.dialogues
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   msg = buffer.readInt8(0)
-  
+
   if msg>=10 and msg<30 #SELECT开头的消息
     client.room.waiting_for_player=client
     client.room.last_active_time=moment()
     #log.info("#{ygopro.constants.MSG[msg]}等待#{client.room.waiting_for_player.name}")
-  
+
   #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
@@ -466,7 +583,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     #log.info {winner: pos, reason: reason}
     client.room.duels.push {winner: pos, reason: reason}
   ###
-  
+
   #lp跟踪
   if ygopro.constants.MSG[msg] == 'DAMAGE' and client.is_host
     pos = buffer.readUInt8(1)
@@ -605,22 +722,22 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
             #log.warn 'ping', stdout
             ygopro.stoc_send_chat_to_room client.room, stdout
         return
-    
+
     when '/help'
       ygopro.stoc_send_chat(client,"YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client,"/help 显示这个帮助信息")
       ygopro.stoc_send_chat(client,"/roomname 显示当前房间的名字")
       ygopro.stoc_send_chat(client,"/tip 显示一条提示") if settings.modules.tips
-    
+
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
-    
+
     when '/roomname'
       ygopro.stoc_send_chat(client,"您当前的房间名是 " + client.room.name) if client.room
 
-    when '/test'     
+    when '/test'
       ygopro.stoc_send_hint_card_to_room(client.room, 2333365)
-    
+
   return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
@@ -656,7 +773,7 @@ ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->
     client.room.waiting_for_player2=client
   client.room.last_active_time=moment().subtract(settings.modules.hang_timeout-19, 's')
   return
- 
+
 ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
   return unless client.room and client.room.random_type
   client.room.waiting_for_player=client
@@ -679,66 +796,83 @@ setInterval ()->
 
 #http
 if settings.modules.http
-  http_server = http.createServer (request, response)->
-      parseQueryString = true
-      u = url.parse(request.url, parseQueryString)
-      pass_validated = u.query.pass == settings.modules.http.password
-      
-      if u.pathname == '/api/getrooms'
-        if u.query.pass and !pass_validated
-          response.writeHead(200);
-          response.end(u.query.callback+'( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );')
-        else 
-          response.writeHead(200);
-          roomsjson = JSON.stringify rooms: (for room in Room.all when room.established
-            pid: room.process.pid.toString(),
-            roomid: room.port.toString(),
-            roomname: if pass_validated then room.name else room.name.split('$',2)[0],
-            needpass: (room.name.indexOf('$') != -1).toString(),
-            users: (for player in room.players when player.pos?
-              id: (-1).toString(),
-              name: player.name,
-              pos: player.pos
-            ),
-            istart: if room.started then 'start' else 'wait'
-          )
-          response.end(u.query.callback+"( " + roomsjson + " );")
 
-      else if u.pathname == '/api/message'
-        if !pass_validated
-          response.writeHead(200);
-          response.end(u.query.callback+"( '密码错误', 0 );");
-          return
+  requestListener = (request, response)->
+    parseQueryString = true
+    u = url.parse(request.url, parseQueryString)
+    pass_validated = u.query.pass == settings.modules.http.password
 
-        if u.query.shout
-          for room in Room.all
-            ygopro.stoc_send_chat_to_room(room, u.query.shout, 16)
-          response.writeHead(200)
-          response.end(u.query.callback+"( 'shout ok', '" + u.query.shout + "' );")
+    if u.pathname == '/api/getrooms'
+      if u.query.pass and !pass_validated
+        response.writeHead(200);
+        response.end(u.query.callback+'( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );')
+      else
+        response.writeHead(200);
+        roomsjson = JSON.stringify rooms: (for room in Room.all when room.established
+          pid: room.process.pid.toString(),
+          roomid: room.port.toString(),
+          roomname: if pass_validated then room.name else room.name.split('$',2)[0],
+          needpass: (room.name.indexOf('$') != -1).toString(),
+          users: (for player in room.players when player.pos?
+            id: (-1).toString(),
+            name: player.name,
+            pos: player.pos
+          ),
+          istart: if room.started then 'start' else 'wait'
+        )
+        response.end(u.query.callback+"( " + roomsjson + " );")
 
-        else if u.query.stop
-          if u.query.stop == 'false'
-            u.query.stop=false
-          settings.modules.stop = u.query.stop
-          response.writeHead(200)
-          response.end(u.query.callback+"( 'stop ok', '" + u.query.stop + "' );")
+    else if u.pathname == '/api/message'
+      if !pass_validated
+        response.writeHead(200);
+        response.end(u.query.callback+"( '密码错误', 0 );");
+        return
 
-        else if u.query.welcome
-          settings.modules.welcome = u.query.welcome
-          response.writeHead(200)
-          response.end(u.query.callback+"( 'welcome ok', '" + u.query.welcome + "' );")
-        
-        else if u.query.ban
-          settings.BANNED_user.push(u.query.ban)
-          response.writeHead(200)
-          response.end(u.query.callback+"( 'ban ok', '" + u.query.ban + "' );")
-        
-        else
-          response.writeHead(404);
-          response.end();
+      if u.query.shout
+        for room in Room.all
+          ygopro.stoc_send_chat_to_room(room, u.query.shout, 16)
+        response.writeHead(200)
+        response.end(u.query.callback+"( 'shout ok', '" + u.query.shout + "' );")
+
+      else if u.query.stop
+        if u.query.stop == 'false'
+          u.query.stop=false
+        settings.modules.stop = u.query.stop
+        response.writeHead(200)
+        response.end(u.query.callback+"( 'stop ok', '" + u.query.stop + "' );")
+
+      else if u.query.welcome
+        settings.modules.welcome = u.query.welcome
+        response.writeHead(200)
+        response.end(u.query.callback+"( 'welcome ok', '" + u.query.welcome + "' );")
+
+      else if u.query.ban
+        settings.BANNED_user.push(u.query.ban)
+        response.writeHead(200)
+        response.end(u.query.callback+"( 'ban ok', '" + u.query.ban + "' );")
 
       else
         response.writeHead(404);
         response.end();
-      return
+
+    else
+      response.writeHead(404);
+      response.end();
+    return
+
+  http_server = http.createServer(requestListener)
   http_server.listen settings.modules.http.port
+
+  if settings.modules.http.ssl
+    https = require 'https'
+    options =
+      cert: fs.readFileSync(settings.modules.http.ssl.cert)
+      key: fs.readFileSync(settings.modules.http.ssl.key)
+    https_server = https.createServer(options, requestListener)
+    WebSocketServer = require('ws').Server
+    websocket_server = new WebSocketServer
+      server: https_server
+    websocket_server.on 'connection', (connection) ->
+      console.log(room for room in Room.all when room.established)
+
+    https_server.listen settings.modules.http.ssl.port

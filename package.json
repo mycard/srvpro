@@ -15,7 +15,8 @@
     "request": "latest",
     "moment": "latest",
     "sqlite3": "latest",
-    "bunyan": "latest"
+    "bunyan": "latest",
+    "ws": "latest"
   },
   "license": "AGPL-3.0",
   "scripts": {
