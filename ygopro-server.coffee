@@ -322,7 +322,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client,'正在读取用户信息...', 11)
     request
       baseUrl: settings.modules.mycard_auth,
-      url: '/users/' + client.name + '.json'
+      url: '/users/' + encodeURIComponent(client.name) + '.json'
       qs:
         api_key: '69675c315dfae3d7224688f2c56cf7d3f5016e7cf63f289d945709f11528b02e',
         api_username: client.name,
@@ -408,7 +408,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               draw_count: opt3 & 0xF
             }
             room = new Room(name, options)
-            room.title = info.pass.slice(8)
+            room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
             room.private = action == 2
           when 3
             name = info.pass.slice(8)
@@ -423,6 +423,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               return
           when 4
             room = Room.find_or_create_by_name('M#' + info.pass.slice(8))
+            room.private = true
           else
             ygopro.stoc_send_chat(client,'主机密码不正确 (Invalid Action)', 11)
             ygopro.stoc_send client, 'ERROR_MSG',{
