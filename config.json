@@ -9,7 +9,7 @@
         "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
         "redis_port": 6379,
         "enable_random_duel": false,
-        "mycard_auth": "https://forum.touhou.cc",
+        "mycard_auth": "https://ygobbs.com",
         "post_start_watching": true,
         "TCG_banlist_id": 8,
         "enable_TCG_as_default": false,
