@@ -383,7 +383,7 @@ class Room
         Room.players_oppentlist[client.remoteAddress] = null
 
     if @established
-      roomlist.update(this) unless @started
+      roomlist.update(this) if !@private and !@started
       client.server.connect @port, '127.0.0.1', ->
         client.server.write buffer for buffer in client.pre_establish_buffers
         client.established = true
@@ -405,7 +405,7 @@ class Room
         Room.ban_player(client.name, client.ip, "强退")
       if @players.length
         ygopro.stoc_send_chat_to_room this, "#{client.name} #{'离开了游戏'}#{if error then ": #{error}" else ''}"
-        roomlist.update(this) unless @started
+        roomlist.update(this) if !@private and !@started
         #client.room = null
       else
         @process.kill()

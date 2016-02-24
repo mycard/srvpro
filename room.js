@@ -496,7 +496,7 @@
         }
       }
       if (this.established) {
-        if (!this.started) {
+        if (!this["private"] && !this.started) {
           roomlist.update(this);
         }
         client.server.connect(this.port, '127.0.0.1', function() {
@@ -530,7 +530,7 @@
         }
         if (this.players.length) {
           ygopro.stoc_send_chat_to_room(this, client.name + " " + '离开了游戏' + (error ? ": " + error : ''));
-          if (!this.started) {
+          if (!this["private"] && !this.started) {
             roomlist.update(this);
           }
         } else {
