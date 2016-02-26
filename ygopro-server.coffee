@@ -333,6 +333,15 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
     buffer = new Buffer(info.pass[0...8], 'base64')
 
+    if buffer.length != 6
+      ygopro.stoc_send_chat(client,'主机密码不正确 (Invalid Payload Length)', 11)
+      ygopro.stoc_send client, 'ERROR_MSG',{
+        msg: 1
+        code: 2
+      }
+      client.end()
+      return
+
     check = (buf)->
       checksum = 0
       for i in [0...buf.length]

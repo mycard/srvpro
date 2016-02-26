@@ -360,6 +360,15 @@
         return;
       }
       buffer = new Buffer(info.pass.slice(0, 8), 'base64');
+      if (buffer.length !== 6) {
+        ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Payload Length)', 11);
+        ygopro.stoc_send(client, 'ERROR_MSG', {
+          msg: 1,
+          code: 2
+        });
+        client.end();
+        return;
+      }
       check = function(buf) {
         var checksum, i, k, ref;
         checksum = 0;
