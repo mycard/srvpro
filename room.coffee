@@ -309,7 +309,7 @@ class Room
       @process.stdout.setEncoding('utf8')
       @process.stdout.once 'data', (data)=>
         @established = true
-        roomlist.create(this)
+        roomlist.create(this) if !@private
         @port = parseInt data
         _.each @players, (player)=>
           player.server.connect @port, '127.0.0.1',=>
