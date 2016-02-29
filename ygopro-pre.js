@@ -225,6 +225,18 @@ var pushDatas = function() {
     } catch (error) {
         sendResponse("git error: "+error.stdout);
     }
+    var proc2 = spawn("git", ["push", "gitcafe", "master:gitcafe-pages"], { cwd: config.git_html_path, env: process.env });
+    proc2.stdout.setEncoding('utf8');
+    proc2.stdout.on('data', function(data) {
+        sendResponse("git push: "+data);
+    });
+    proc2.stderr.setEncoding('utf8');
+    proc2.stderr.on('data', function(data) {
+        sendResponse("git push error: "+data);
+    });
+    proc2.on('close', function (code) {
+        sendResponse("gitcafe上传完成。");
+    });
     var proc = spawn("git", ["push"], { cwd: config.git_html_path, env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
@@ -235,7 +247,7 @@ var pushDatas = function() {
         sendResponse("git push: "+data);
     });
     proc.on('close', function (code) {
-        sendResponse("命令执行完成。");
+        sendResponse("github上传完成。");
     });
 }
 
