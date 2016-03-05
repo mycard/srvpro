@@ -17,13 +17,12 @@
     "underscore.string": "*",
     "request": "*",
     "moment": "*",
-    "sqlite3": "*",
     "bunyan": "*"
   },
   "license": "GPL-3.0",
   "main": "ygopro-server.js",
   "scripts": {
-    "start": "forever start ygopro-server.js"
+    "start": "pm2 start ygopro-server.js"
   },
   "engines": {
     "node": "*"
