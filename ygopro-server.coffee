@@ -34,7 +34,7 @@ settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').ma
 #组件
 ygopro = require './ygopro.js'
 Room = require './room.js'
-roomlist = require './roomlist.js'
+roomlist = require './roomlist.js' if settings.modules.enable_websocket_roomlist
 
 users_cache = {}
 
@@ -643,6 +643,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       if dialogues[card]
         for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
           ygopro.stoc_send_chat client, line, 15
+  return
 
 #房间管理
 ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
@@ -730,7 +731,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   return unless client.room
   unless client.room.started #first start
     client.room.started = true
-    roomlist.delete client.room.name unless client.room.private
+    roomlist.delete client.room.name if settings.modules.enable_websocket_roomlist and not client.room.private
     #client.room.duels = []
     client.room.dueling_players = []
     for player in client.room.players when player.pos != 7
@@ -897,7 +898,7 @@ if settings.modules.http
   http_server = http.createServer(requestListener)
   http_server.listen settings.modules.http.port
 
-  if settings.modules.http.ssl
+  if settings.modules.http.ssl.enabled
     https = require 'https'
     options =
       cert: fs.readFileSync(settings.modules.http.ssl.cert)

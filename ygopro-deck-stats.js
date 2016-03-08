@@ -10,7 +10,7 @@ var sqlite3 = require('sqlite3').verbose();
 var fs = require('fs');
 var constants = require('./constants.json');
 
-var DECKPATH="S:\\deck\\replays"
+var DECKPATH="C:\\deck\\deck"
 var DBFILE="F:\\Works\\deck\\cards.cdb"
 
 var ALL_MAIN_CARDS={};
@@ -47,12 +47,12 @@ function add_to_all_list(LIST,id,use) {
 function read_deck_file(filename) {
     console.log("reading "+filename);
     var deck_text=fs.readFileSync(DECKPATH+"\\"+filename,{encoding:"ASCII"})
-    var deck_array=deck_text.split("\r\n");
+    var deck_array=deck_text.split("\n");
     var deck_main={};
     var deck_side={};
     var current_deck=deck_main;
     for (var i in deck_array) {
-        if (deck_array[i]=="!side")
+        if (deck_array[i].indexOf("!side")>=0)
             current_deck=deck_side;
         var card=parseInt(deck_array[i]);
         if (!isNaN(card)) {
@@ -150,7 +150,9 @@ function read_decks() {
         }
     }
     output_csv(ALL_MAIN_CARDS,"main.csv");
-    //output_csv(ALL_SIDE_CARDS,"side.csv");
+    if (ALL_SIDE_CARDS.length) {
+        output_csv(ALL_SIDE_CARDS,"side.csv");
+    }
 }
 
 function output_csv(list,filename) {

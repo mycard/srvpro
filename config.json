@@ -8,6 +8,7 @@
         "tips": "http://mycard.moe/ygopro/tips.json",
         "dialogues": "http://mycard.moe/ygopro/dialogues.json",
         "redis_port": 6379,
+        "enable_websocket_roomlist": true,
         "enable_random_duel": false,
         "mycard_auth": "https://ygobbs.com",
         "post_start_watching": true,
@@ -17,6 +18,7 @@
             "port": 7922,
             "password": "123456",
             "ssl": {
+                "enabled": true,
                 "port": 7923,
                 "cert": "ssl/ygopro-server.crt",
                 "key": "ssl/ygopro-server.key"
