@@ -65,7 +65,7 @@ class Room
       bannedplayer.reasons.push(reason) if not _.find bannedplayer.reasons, (bannedreason)->
         bannedreason==reason
       bannedplayer.need_tip=true;
-    else 
+    else
       bannedplayer={"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
       Room.players_banned.push(bannedplayer)
     log.info("banned", name, ip, reason, bannedplayer.count)
@@ -78,9 +78,9 @@ class Room
       return room
     else if get_memory_usage()>=90
       return null
-    else 
+    else
       return new Room(name)
-  
+
   @find_or_create_random: (type, player_ip)->
     bannedplayer = _.find Room.players_banned, (bannedplayer)->
       return player_ip==bannedplayer.ip
@@ -165,7 +165,7 @@ class Room
     else if name[0...2] == 'T#'
       @hostinfo.mode = 2
       @hostinfo.start_lp = 16000
-    
+
     else if (param = name.match /^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i)
       @hostinfo.rule = parseInt(param[1])
       @hostinfo.mode = parseInt(param[2])
@@ -175,11 +175,11 @@ class Room
       @hostinfo.start_lp = parseInt(param[6])
       @hostinfo.start_hand = parseInt(param[7])
       @hostinfo.draw_count = parseInt(param[8])
-    
+
     else if (((param = name.match /(.+)#/) != null) and ( (param[1].length<=2 and param[1].match(/(S|N|M|T)(0|1|2|T|A)/i)) or (param[1].match(/^(S|N|M|T)(0|1|2|O|T|A)(0|1|O|T)/i)) ) )
       rule=param[1].toUpperCase()
       #log.info "C", rule
-      
+
       switch rule.charAt(0)
         when "M","1"
           @hostinfo.mode = 1
@@ -188,7 +188,7 @@ class Room
           @hostinfo.start_lp = 16000
         else
           @hostinfo.mode = 0
-     
+
       switch rule.charAt(1)
         when "0","O"
           @hostinfo.rule = 0
@@ -196,104 +196,104 @@ class Room
           @hostinfo.rule = 1
         else
           @hostinfo.rule = 2
-      
+
       switch rule.charAt(2)
         when "1","T"
           @hostinfo.lflist = settings.modules.TCG_banlist_id
         else
           @hostinfo.lflist = 0
-      
+
       if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0)
         @hostinfo.time_limit=param*60
-      
+
       switch rule.charAt(4)
         when "T","1"
           @hostinfo.enable_priority = true
         else
           @hostinfo.enable_priority = false
-    
+
       switch rule.charAt(5)
         when "T","1"
           @hostinfo.no_check_deck = true
         else
           @hostinfo.no_check_deck = false
-    
+
       switch rule.charAt(6)
         when "T","1"
           @hostinfo.no_shuffle_deck = true
         else
           @hostinfo.no_shuffle_deck = false
-    
+
       if ((param = parseInt(rule.charAt(7).match(/\d/))) > 0)
         @hostinfo.start_lp=param*4000
-    
+
       if ((param = parseInt(rule.charAt(8).match(/\d/))) > 0)
         @hostinfo.start_hand=param
-    
+
       if ((param = parseInt(rule.charAt(9).match(/\d/))) >= 0)
         @hostinfo.draw_count=param
-    
+
     else if ((param = name.match /(.+)#/) != null)
       rule=param[1].toUpperCase()
       #log.info "233", rule
-      
+
       if (rule.match /(^|，|,)(M|MATCH)(，|,|$)/)
         @hostinfo.mode = 1
-      
+
       if (rule.match /(^|，|,)(T|TAG)(，|,|$)/)
         @hostinfo.mode = 2
         @hostinfo.start_lp = 16000
-      
+
       if (rule.match /(^|，|,)(TCGONLY|TO)(，|,|$)/)
         @hostinfo.rule = 1
         @hostinfo.lflist = settings.modules.TCG_banlist_id
-      
+
       if (rule.match /(^|，|,)(OCGONLY|OO)(，|,|$)/)
         @hostinfo.rule = 0
-      
+
       if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/)
         @hostinfo.rule = 2
-      
+
       if (param = rule.match /(^|，|,)LP(\d+)(，|,|$)/)
         start_lp = parseInt(param[2])
         if (start_lp <= 0) then start_lp = 1
         if (start_lp >= 99999) then start_lp = 99999
         @hostinfo.start_lp = start_lp
-      
+
       if (param = rule.match /(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/)
         time_limit = parseInt(param[3])
         if (time_limit < 0) then time_limit = 180
         if (time_limit >= 1 and time_limit <= 60) then time_limit = time_limit*60
         if (time_limit >= 999) then time_limit = 999
         @hostinfo.time_limit = time_limit
-      
+
       if (param = rule.match /(^|，|,)(START|ST)(\d+)(，|,|$)/)
         start_hand = parseInt(param[3])
         if (start_hand <= 0) then start_hand = 1
         if (start_hand >= 40) then start_hand = 40
         @hostinfo.start_hand = start_hand
-      
+
       if (param = rule.match /(^|，|,)(DRAW|DR)(\d+)(，|,|$)/)
         draw_count = parseInt(param[3])
         if (draw_count >= 35) then draw_count = 35
         @hostinfo.draw_count = draw_count
-      
+
       if (param = rule.match /(^|，|,)(LFLIST|LF)(\d+)(，|,|$)/)
         lflist = parseInt(param[3])-1
         @hostinfo.lflist = lflist
-      
+
       if (rule.match /(^|，|,)(NOLFLIST|NF)(，|,|$)/)
         @hostinfo.lflist = -1
-      
+
       if (rule.match /(^|，|,)(NOUNIQUE|NU)(，|,|$)/)
         @hostinfo.rule = 3
-      
+
       if (rule.match /(^|，|,)(NOCHECK|NC)(，|,|$)/)
         @hostinfo.no_check_deck = true
-      
+
       if (rule.match /(^|，|,)(NOSHUFFLE|NS)(，|,|$)/)
         @hostinfo.no_shuffle_deck = true
-      
+
       if (rule.match /(^|，|,)(IGPRIORITY|PR)(，|,|$)/)
         @hostinfo.enable_priority = true
 
@@ -351,7 +351,7 @@ class Room
     #Room.all[index] = null unless index == -1
     Room.all.splice(index, 1) unless index == -1
     return
-    
+
   get_playing_player: ->
     playing_player=[]
     _.each @players, (player)=>

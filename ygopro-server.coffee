@@ -45,7 +45,7 @@ else
   log = bunyan.createLogger name: "mycard"
 
 #定时清理关闭的连接
-Graveyard = [] 
+Graveyard = []
 
 tribute = (socket) ->
   setTimeout ((socket)-> Graveyard.push(socket);return)(socket), 3000
@@ -65,7 +65,7 @@ setInterval ()->
 net.createServer (client) ->
   server = new net.Socket()
   client.server = server
-  
+
   client.setTimeout(300000) #5分钟
 
   #释放处理
@@ -139,9 +139,9 @@ net.createServer (client) ->
       client.room.watcher.write data
     else
       ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
-      
+
       datas = []
-      
+
       looplimit = 0
 
       while true
@@ -175,7 +175,7 @@ net.createServer (client) ->
             ctos_proto = 0
           else
             break
-      
+
         looplimit++
         #log.info(looplimit)
         if looplimit>800
@@ -200,7 +200,7 @@ net.createServer (client) ->
 
     #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
     client.write data
-    
+
     looplimit = 0
 
     while true
@@ -231,7 +231,7 @@ net.createServer (client) ->
           stoc_proto = 0
         else
           break
-      
+
       looplimit++
       #log.info(looplimit)
       if looplimit>800
@@ -264,7 +264,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
-    
+
     ###
   else if info.pass.toUpperCase()=="R"
     ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", 14)
@@ -353,7 +353,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       code: 2
     }
     client.end()
-  
+
   else
     #log.info 'join_game',info.pass, client.name
     room = Room.find_or_create_by_name(info.pass, client.remoteAddress)
@@ -413,7 +413,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       ygopro.ctos_send watcher, 'HS_TOOBSERVER'
       return
-    
+
     watcher.on 'data', (data)->
       return unless client.room
       client.room.watcher_buffers.push data
@@ -444,12 +444,12 @@ if settings.modules.dialogues
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   msg = buffer.readInt8(0)
-  
+
   if msg>=10 and msg<30 #SELECT开头的消息
     client.room.waiting_for_player=client
     client.room.last_active_time=moment()
     #log.info("#{ygopro.constants.MSG[msg]}等待#{client.room.waiting_for_player.name}")
-  
+
   #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
@@ -465,7 +465,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     #log.info {winner: pos, reason: reason}
     client.room.duels.push {winner: pos, reason: reason}
   ###
-  
+
   #lp跟踪
   if ygopro.constants.MSG[msg] == 'DAMAGE' and client.is_host
     pos = buffer.readUInt8(1)
@@ -604,22 +604,22 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
             #log.warn 'ping', stdout
             ygopro.stoc_send_chat_to_room client.room, stdout
         return
-    
+
     when '/help'
       ygopro.stoc_send_chat(client,"YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client,"/help 显示这个帮助信息")
       ygopro.stoc_send_chat(client,"/roomname 显示当前房间的名字")
       ygopro.stoc_send_chat(client,"/tip 显示一条提示") if settings.modules.tips
-    
+
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
-    
+
     when '/roomname'
       ygopro.stoc_send_chat(client,"您当前的房间名是 " + client.room.name) if client.room
 
-    when '/test'     
+    when '/test'
       ygopro.stoc_send_hint_card_to_room(client.room, 2333365)
-    
+
   return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
@@ -655,7 +655,7 @@ ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->
     client.room.waiting_for_player2=client
   client.room.last_active_time=moment().subtract(settings.modules.hang_timeout-19, 's')
   return
- 
+
 ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
   return unless client.room and client.room.random_type
   client.room.waiting_for_player=client
