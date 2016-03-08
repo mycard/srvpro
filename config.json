@@ -1,6 +1,5 @@
 {
-    "port": 2333,
-    "version": 4921,
+    "port": 7911,
     "ygopro_path": "ygopro",
     "modules": {
         "welcome": "YGOPRO Server",
@@ -9,13 +8,21 @@
         "tips": "http://mercury233.me/ygosrv233/tips.json",
         "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
         "redis_port": 6379,
+        "enable_websocket_roomlist": false,
         "enable_random_duel": false,
+        "mycard_auth": false,
         "post_start_watching": true,
         "TCG_banlist_id": 8,
         "enable_TCG_as_default": false,
         "http": {
             "port": 7922,
-            "password": "123456"
+            "password": "123456",
+            "ssl": {
+                "enabled": false,
+                "port": 7923,
+                "cert": "ssl/ygopro-server.crt",
+                "key": "ssl/ygopro-server.key"
+            }
         }
     }
 }

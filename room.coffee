@@ -4,6 +4,7 @@ _.mixin(_.str.exports());
 spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
 ygopro = require './ygopro.js'
+roomlist = require './roomlist' if settings.modules.enable_websocket_roomlist
 bunyan = require 'bunyan'
 moment = require 'moment'
 #redis = require 'redis'
@@ -134,7 +135,7 @@ class Room
       room_pass = room_name_and_pass[1]
       client_name == room_name and client_pass != room_pass
 
-  constructor: (name) ->
+  constructor: (name, @hostinfo) ->
     @name = name
     @alive = true
     @players = []
@@ -148,7 +149,7 @@ class Room
     @welcome = ''
     Room.all.push this
 
-    @hostinfo =
+    @hostinfo ||=
       lflist: 0
       rule: if settings.modules.enable_TCG_as_default then 2 else 0
       mode: 0
@@ -308,6 +309,7 @@ class Room
       @process.stdout.setEncoding('utf8')
       @process.stdout.once 'data', (data)=>
         @established = true
+        roomlist.create(this) if !@private and settings.modules.enable_websocket_roomlist
         @port = parseInt data
         _.each @players, (player)=>
           player.server.connect @port, '127.0.0.1',=>
@@ -350,6 +352,7 @@ class Room
     index = _.indexOf(Room.all, this)
     #Room.all[index] = null unless index == -1
     Room.all.splice(index, 1) unless index == -1
+    roomlist.delete @name if !@private and !@started and @established and settings.modules.enable_websocket_roomlist
     return
 
   get_playing_player: ->
@@ -380,6 +383,7 @@ class Room
         Room.players_oppentlist[client.remoteAddress] = null
 
     if @established
+      roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
       client.server.connect @port, '127.0.0.1', ->
         client.server.write buffer for buffer in client.pre_establish_buffers
         client.established = true
@@ -401,6 +405,7 @@ class Room
         Room.ban_player(client.name, client.ip, "强退")
       if @players.length
         ygopro.stoc_send_chat_to_room this, "#{client.name} #{'离开了游戏'}#{if error then ": #{error}" else ''}"
+        roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
         #client.room = null
       else
         @process.kill()
