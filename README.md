@@ -1,4 +1,4 @@
-## ygopro-server-lite
+## ygopro-server
 一个YGOPRO服务器，基于mycard代码修改。
 
 现用于[YGOPRO 233服](http://mercury233.me/ygosrv233/)。
@@ -34,3 +34,22 @@
 
 ###开发计划
 * 重写全部代码，与SalvationServer合并，或作为分支版本
+
+## Install Docker
+```bash
+wget -qO- https://get.docker.com/ | sh
+```
+see https://docs.docker.com/linux/step_one/ for more information.
+
+## Deploy from DockerHub
+
+```bash
+docker run --name ygopro -p 7911:7911 -p 7922:7922 --restart=on-failure -d mycard/ygopro-server
+```
+
+## Build
+```bash
+git clone --recursive https://github.com/mycard/ygopro-server.git
+cd ygopro-server
+docker build -t ygopro-server .
+```
