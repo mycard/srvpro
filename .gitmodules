@@ -1,4 +1,0 @@
-[submodule "ygopro"]
-	path = ygopro
-	url = https://github.com/mycard/ygopro.git
-	branch = server
