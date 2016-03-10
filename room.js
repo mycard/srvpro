@@ -12,6 +12,8 @@
 
   spawnSync = require('child_process').spawnSync;
 
+  settings = require('./config.json');
+
   ygopro = require('./ygopro.js');
 
   if (settings.modules.enable_websocket_roomlist) {
@@ -39,8 +41,6 @@
       yy: '%d年'
     }
   });
-
-  settings = require('./config.json');
 
   log = bunyan.createLogger({
     name: "mycard-room"

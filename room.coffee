@@ -3,6 +3,7 @@ _.str = require 'underscore.string'
 _.mixin(_.str.exports());
 spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
+settings = require './config.json'
 ygopro = require './ygopro.js'
 roomlist = require './roomlist' if settings.modules.enable_websocket_roomlist
 bunyan = require 'bunyan'
@@ -23,7 +24,6 @@ moment.locale('zh-cn', { relativeTime : {
             y : '1年',
             yy : '%d年'
   }})
-settings = require './config.json'
 
 log = bunyan.createLogger name: "mycard-room"
 #redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
