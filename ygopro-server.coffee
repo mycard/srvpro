@@ -321,15 +321,29 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.end()
 
   else if settings.modules.windbot and info.pass[0...2] == 'AI'
-    room = Room.find_or_create_by_name('M#AI' + Math.random().toString())
-    room.windbot = _.sample settings.modules.windbot
+
+    if info.pass.length > 3 and info.pass[0...3] == 'AI#'
+      name = info.pass.slice(3)
+      windbot = _.sample _.filter settings.modules.windbot, (w)->
+        w.name == name or w.deck == name
+      if !windbot
+        ygopro.stoc_send_chat(client,'主机密码不正确 (Invalid Windbot Name)', 11)
+        ygopro.stoc_send client, 'ERROR_MSG',{
+          msg: 1
+          code: 2
+        }
+        client.end()
+        return
+    else
+      windbot = _.sample settings.modules.windbot
+
+    room = Room.find_or_create_by_name('AI#' + Math.random().toString()) # 这个 AI# 没有特殊作用, 仅作为标记
+    room.windbot = windbot
     room.private = true
     client.room = room
     client.room.connect(client)
 
-
   else if info.pass.length and settings.modules.mycard_auth
-    console.log settings.modules.windbot
     ygopro.stoc_send_chat(client,'正在读取用户信息...', 11)
     if info.pass.length <= 8
       ygopro.stoc_send_chat(client,'主机密码不正确 (Invalid Length)', 11)

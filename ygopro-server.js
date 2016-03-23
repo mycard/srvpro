@@ -293,7 +293,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
-    var check, decrypted_buffer, finish, i, id, k, l, len, len1, ref, ref1, room, secret;
+    var check, decrypted_buffer, finish, i, id, k, l, len, len1, name, ref, ref1, room, secret, windbot;
     if (settings.modules.stop) {
       ygopro.stoc_send_chat(client, settings.modules.stop, 11);
       ygopro.stoc_send(client, 'ERROR_MSG', {
@@ -351,13 +351,29 @@
       });
       client.end();
     } else if (settings.modules.windbot && info.pass.slice(0, 2) === 'AI') {
-      room = Room.find_or_create_by_name('M#AI' + Math.random().toString());
-      room.windbot = _.sample(settings.modules.windbot);
+      if (info.pass.length > 3 && info.pass.slice(0, 3) === 'AI#') {
+        name = info.pass.slice(3);
+        windbot = _.sample(_.filter(settings.modules.windbot, function(w) {
+          return w.name === name || w.deck === name;
+        }));
+        if (!windbot) {
+          ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Windbot Name)', 11);
+          ygopro.stoc_send(client, 'ERROR_MSG', {
+            msg: 1,
+            code: 2
+          });
+          client.end();
+          return;
+        }
+      } else {
+        windbot = _.sample(settings.modules.windbot);
+      }
+      room = Room.find_or_create_by_name('AI#' + Math.random().toString());
+      room.windbot = windbot;
       room["private"] = true;
       client.room = room;
       client.room.connect(client);
     } else if (info.pass.length && settings.modules.mycard_auth) {
-      console.log(settings.modules.windbot);
       ygopro.stoc_send_chat(client, '正在读取用户信息...', 11);
       if (info.pass.length <= 8) {
         ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Length)', 11);
@@ -387,7 +403,7 @@
         return (checksum & 0xFF) === 0;
       };
       finish = function(buffer) {
-        var action, name, opt1, opt2, opt3, options;
+        var action, opt1, opt2, opt3, options;
         action = buffer.readUInt8(1) >> 4;
         if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
           ygopro.stoc_send_chat(client, '主机密码不正确 (Unauthorized)', 11);
