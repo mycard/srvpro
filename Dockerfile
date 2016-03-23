@@ -20,7 +20,9 @@ RUN strip ygopro
 RUN mv /usr/src/app/windbot /usr/src/app/windbot-source
 WORKDIR /usr/src/app/windbot-source
 RUN xbuild /property:Configuration=Release /property:OutDir=/usr/src/app/windbot/
+WORKDIR /usr/src/app
 RUN rm -rf /usr/src/app/windbot-source
+RUN ln -s /usr/src/app/ygopro/cards.cdb /usr/src/app/windbot/cards.cdb
 
 WORKDIR /usr/src/app
 CMD [ "npm", "start" ]

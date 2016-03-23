@@ -320,7 +320,16 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
 
+  else if settings.modules.windbot and info.pass[0...2] == 'AI'
+    room = Room.find_or_create_by_name('M#AI' + Math.random().toString())
+    room.windbot = _.sample settings.modules.windbot
+    room.private = true
+    client.room = room
+    client.room.connect(client)
+
+
   else if info.pass.length and settings.modules.mycard_auth
+    console.log settings.modules.windbot
     ygopro.stoc_send_chat(client,'正在读取用户信息...', 11)
     if info.pass.length <= 8
       ygopro.stoc_send_chat(client,'主机密码不正确 (Invalid Length)', 11)
@@ -737,6 +746,8 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     for player in client.room.players when player.pos != 7
       client.room.dueling_players[player.pos] = player
       client.room.player_datas.push ip:player.remoteAddress, name:player.name
+      if client.room.windbot
+        client.room.dueling_players[1 - player.pos] = {}
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
   return

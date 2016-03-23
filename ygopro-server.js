@@ -350,7 +350,14 @@
         code: 2
       });
       client.end();
+    } else if (settings.modules.windbot && info.pass.slice(0, 2) === 'AI') {
+      room = Room.find_or_create_by_name('M#AI' + Math.random().toString());
+      room.windbot = _.sample(settings.modules.windbot);
+      room["private"] = true;
+      client.room = room;
+      client.room.connect(client);
     } else if (info.pass.length && settings.modules.mycard_auth) {
+      console.log(settings.modules.windbot);
       ygopro.stoc_send_chat(client, '正在读取用户信息...', 11);
       if (info.pass.length <= 8) {
         ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Length)', 11);
@@ -380,7 +387,7 @@
         return (checksum & 0xFF) === 0;
       };
       finish = function(buffer) {
-        var action, name, opt1, opt2, opt3, options, room;
+        var action, name, opt1, opt2, opt3, options;
         action = buffer.readUInt8(1) >> 4;
         if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
           ygopro.stoc_send_chat(client, '主机密码不正确 (Unauthorized)', 11);
@@ -853,6 +860,9 @@
           ip: player.remoteAddress,
           name: player.name
         });
+        if (client.room.windbot) {
+          client.room.dueling_players[1 - player.pos] = {};
+        }
       }
     }
     if (settings.modules.tips) {

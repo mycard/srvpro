@@ -1,28 +1,34 @@
 {
-    "port": 7911,
-    "ygopro_path": "ygopro",
-    "modules": {
-        "welcome": "YGOPRO Server",
-        "update": "请更新游戏版本",
-        "stop": false,
-        "tips": "http://mycard.moe/ygopro/tips.json",
-        "dialogues": "http://mycard.moe/ygopro/dialogues.json",
-        "redis_port": 6379,
-        "enable_websocket_roomlist": true,
-        "enable_random_duel": false,
-        "mycard_auth": "https://ygobbs.com",
-        "post_start_watching": true,
-        "TCG_banlist_id": 8,
-        "enable_TCG_as_default": false,
-        "http": {
-            "port": 7922,
-            "password": "123456",
-            "ssl": {
-                "enabled": true,
-                "port": 7923,
-                "cert": "ssl/ygopro-server.crt",
-                "key": "ssl/ygopro-server.key"
-            }
-        }
-    }
+  "port": 7911,
+  "ygopro_path": "ygopro",
+  "modules": {
+    "welcome": "YGOPRO Server",
+    "update": "请更新游戏版本",
+    "stop": false,
+    "tips": "http://mycard.moe/ygopro/tips.json",
+    "dialogues": "http://mycard.moe/ygopro/dialogues.json",
+    "redis_port": 6379,
+    "enable_websocket_roomlist": true,
+    "enable_random_duel": false,
+    "mycard_auth": "https://ygobbs.com",
+    "post_start_watching": true,
+    "TCG_banlist_id": 8,
+    "enable_TCG_as_default": false,
+    "http": {
+      "port": 7922,
+      "password": "123456",
+      "ssl": {
+        "enabled": true,
+        "port": 7923,
+        "cert": "ssl/ygopro-server.crt",
+        "key": "ssl/ygopro-server.key"
+      }
+    },
+    "windbot": [
+      {
+        "name": "啪啪尼",
+        "deck": "Dragunity"
+      }
+    ]
+  }
 }
