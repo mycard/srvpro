@@ -1,6 +1,6 @@
 FROM node
 RUN apt-get update
-RUN apt-get install -y git build-essential premake4 libfreetype6-dev libevent-dev libsqlite3-dev liblua5.2-dev libglu-dev libirrlicht-dev
+RUN apt-get install -y git build-essential premake4 libfreetype6-dev libevent-dev libsqlite3-dev liblua5.2-dev libglu-dev libirrlicht-dev mono-complete
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
@@ -16,5 +16,11 @@ RUN make config=release ygopro
 WORKDIR /usr/src/app/ygopro
 RUN ln -s bin/release/ygopro ygopro
 RUN strip ygopro
+
+RUN mv /usr/src/app/windbot /usr/src/app/windbot-source
+WORKDIR /usr/src/app/windbot-source
+RUN xbuild /property:Configuration=Release /property:OutDir=/usr/src/app/windbot/
+RUN rm -rf /usr/src/app/windbot-source
+
 WORKDIR /usr/src/app
 CMD [ "npm", "start" ]

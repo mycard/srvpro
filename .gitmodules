@@ -2,3 +2,6 @@
 	path = ygopro
 	url = https://github.com/mycard/ygopro.git
 	branch = server
+[submodule "windbot"]
+	path = windbot
+	url = https://github.com/mycard/windbot.git
