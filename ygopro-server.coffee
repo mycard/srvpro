@@ -742,9 +742,9 @@ if settings.modules.tips
 if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
   pg = require('pg');
   pg.connect process.env.MYCARD_AUTH_DATABASE, (error, client, done)->
-    if(error)
-      return console.error('error fetching client from pool', err);
+    throw error if error
     client.query 'SELECT username, id from users', (error, result)->
+      throw error if error
       done();
       for row in result.rows
         users_cache[row.username] = row.id

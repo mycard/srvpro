@@ -839,10 +839,13 @@
     pg = require('pg');
     pg.connect(process.env.MYCARD_AUTH_DATABASE, function(error, client, done) {
       if (error) {
-        return console.error('error fetching client from pool', err);
+        throw error;
       }
       return client.query('SELECT username, id from users', function(error, result) {
         var k, len, ref, row;
+        if (error) {
+          throw error;
+        }
         done();
         ref = result.rows;
         for (k = 0, len = ref.length; k < len; k++) {

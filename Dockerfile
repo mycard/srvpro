@@ -1,6 +1,6 @@
 FROM node
 RUN apt-get update
-RUN apt-get install -y git build-essential premake4 libfreetype6-dev libevent-dev libsqlite3-dev liblua5.2-dev libglu-dev libirrlicht-dev mono-complete
+RUN apt-get install -y git build-essential premake4 libfreetype6-dev libevent-dev libsqlite3-dev liblua5.2-dev mono-complete
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
