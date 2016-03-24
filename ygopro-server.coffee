@@ -322,7 +322,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
   else if settings.modules.windbot and info.pass[0...2] == 'AI'
 
-    if info.pass.length > 3 and info.pass[0...3] == 'AI#'
+    if info.pass.length > 3 and info.pass[0...3] == 'AI#' or info.pass[0...3] == 'AI_'
       name = info.pass.slice(3)
       windbot = _.sample _.filter settings.modules.windbot, (w)->
         w.name == name or w.deck == name
