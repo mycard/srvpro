@@ -320,6 +320,29 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
 
+  else if settings.modules.windbot and info.pass[0...2] == 'AI'
+
+    if info.pass.length > 3 and info.pass[0...3] == 'AI#'
+      name = info.pass.slice(3)
+      windbot = _.sample _.filter settings.modules.windbot, (w)->
+        w.name == name or w.deck == name
+      if !windbot
+        ygopro.stoc_send_chat(client,'主机密码不正确 (Invalid Windbot Name)', 11)
+        ygopro.stoc_send client, 'ERROR_MSG',{
+          msg: 1
+          code: 2
+        }
+        client.end()
+        return
+    else
+      windbot = _.sample settings.modules.windbot
+
+    room = Room.find_or_create_by_name('AI#' + Math.random().toString()) # 这个 AI# 没有特殊作用, 仅作为标记
+    room.windbot = windbot
+    room.private = true
+    client.room = room
+    client.room.connect(client)
+
   else if info.pass.length and settings.modules.mycard_auth
     ygopro.stoc_send_chat(client,'正在读取用户信息...', 11)
     if info.pass.length <= 8
@@ -719,9 +742,9 @@ if settings.modules.tips
 if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
   pg = require('pg');
   pg.connect process.env.MYCARD_AUTH_DATABASE, (error, client, done)->
-    if(error)
-      return console.error('error fetching client from pool', err);
+    throw error if error
     client.query 'SELECT username, id from users', (error, result)->
+      throw error if error
       done();
       for row in result.rows
         users_cache[row.username] = row.id
@@ -737,6 +760,8 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     for player in client.room.players when player.pos != 7
       client.room.dueling_players[player.pos] = player
       client.room.player_datas.push ip:player.remoteAddress, name:player.name
+      if client.room.windbot
+        client.room.dueling_players[1 - player.pos] = {}
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
   return

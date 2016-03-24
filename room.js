@@ -12,6 +12,8 @@
 
   spawnSync = require('child_process').spawnSync;
 
+  settings = require('./config.json');
+
   ygopro = require('./ygopro.js');
 
   if (settings.modules.enable_websocket_roomlist) {
@@ -39,8 +41,6 @@
       yy: '%d年'
     }
   });
-
-  settings = require('./config.json');
 
   log = bunyan.createLogger({
     name: "mycard-room"
@@ -412,6 +412,20 @@
                 player.pre_establish_buffers = [];
               });
             });
+            console.log(_this.windbot);
+            if (_this.windbot) {
+              spawn('mono', ['WindBot.exe'], {
+                cwd: 'windbot',
+                env: {
+                  YGOPRO_VERSION: settings.version,
+                  YGOPRO_HOST: '127.0.0.1',
+                  YGOPRO_PORT: _this.port,
+                  YGOPRO_NAME: _this.windbot.name,
+                  YGOPRO_DECK: _this.windbot.deck,
+                  YGOPRO_DIALOG: _this.windbot.dialog
+                }
+              });
+            }
           };
         })(this));
       } catch (error1) {

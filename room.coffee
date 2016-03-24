@@ -3,6 +3,7 @@ _.str = require 'underscore.string'
 _.mixin(_.str.exports());
 spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
+settings = require './config.json'
 ygopro = require './ygopro.js'
 roomlist = require './roomlist' if settings.modules.enable_websocket_roomlist
 bunyan = require 'bunyan'
@@ -23,7 +24,6 @@ moment.locale('zh-cn', { relativeTime : {
             y : '1年',
             yy : '%d年'
   }})
-settings = require './config.json'
 
 log = bunyan.createLogger name: "mycard-room"
 #redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
@@ -318,6 +318,16 @@ class Room
             player.pre_establish_buffers = []
             return
           return
+        console.log @windbot
+        if @windbot
+          spawn 'mono', ['WindBot.exe'], {cwd: 'windbot', env: {
+            YGOPRO_VERSION: settings.version
+            YGOPRO_HOST: '127.0.0.1'
+            YGOPRO_PORT: @port
+            YGOPRO_NAME: @windbot.name
+            YGOPRO_DECK: @windbot.deck
+            YGOPRO_DIALOG: @windbot.dialog
+          }}
         return
     catch
       @error = "建立房间失败，请重试"
