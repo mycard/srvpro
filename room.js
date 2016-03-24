@@ -421,7 +421,8 @@
                   YGOPRO_HOST: '127.0.0.1',
                   YGOPRO_PORT: _this.port,
                   YGOPRO_NAME: _this.windbot.name,
-                  YGOPRO_DECK: _this.windbot.deck
+                  YGOPRO_DECK: _this.windbot.deck,
+                  YGOPRO_DIALOG: _this.windbot.dialog
                 }
               });
             }

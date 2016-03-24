@@ -27,7 +27,8 @@
     "windbot": [
       {
         "name": "啪啪尼",
-        "deck": "Dragunity"
+        "deck": "Dragunity",
+        "dialog": "zh-CN"
       }
     ]
   }

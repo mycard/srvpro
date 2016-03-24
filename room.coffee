@@ -326,6 +326,7 @@ class Room
             YGOPRO_PORT: @port
             YGOPRO_NAME: @windbot.name
             YGOPRO_DECK: @windbot.deck
+            YGOPRO_DIALOG: @windbot.dialog
           }}
         return
     catch
