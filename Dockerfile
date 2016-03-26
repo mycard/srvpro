@@ -21,7 +21,6 @@ WORKDIR /usr/src/app/ygosharp
 RUN xbuild /property:Configuration=Release /property:OutDir=/usr/src/app/windbot/
 
 RUN mv /usr/src/app/windbot /usr/src/app/windbot-source
-RUN nuget restore -NonInteractive
 WORKDIR /usr/src/app/windbot-source/NLua/Core/KeraLua
 ENV CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64
 RUN make -f Makefile.Linux
