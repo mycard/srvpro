@@ -32,7 +32,7 @@ settings.modules.hang_timeout = 90
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
 lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/![\d\.]+(?: TCG)?/g)
   matched = list.match(/!([\d\.]+)(?: (TCG))?/)
-  {date: moment(matched[1]), tcg: !!matched[2]})
+  {date: moment(matched[1], 'YYYY.MM.DD'), tcg: !!matched[2]})
 
 #组件
 ygopro = require './ygopro.js'

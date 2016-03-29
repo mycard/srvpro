@@ -48,7 +48,7 @@
       list = ref[k];
       matched = list.match(/!([\d\.]+)(?: (TCG))?/);
       results.push({
-        date: moment(matched[1]),
+        date: moment(matched[1], 'YYYY.MM.DD'),
         tcg: !!matched[2]
       });
     }
