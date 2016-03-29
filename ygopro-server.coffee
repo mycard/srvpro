@@ -30,9 +30,8 @@ settings.BANNED_user = []
 settings.BANNED_IP = []
 settings.modules.hang_timeout = 90
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
-lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/![\d\.]+(?: TCG)?/g)
-  matched = list.match(/!([\d\.]+)(?: (TCG))?/)
-  {date: moment(matched[1], 'YYYY.MM.DD'), tcg: !!matched[2]})
+settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
+  {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD'), tcg: list.indexOf('TCG') != -1})
 
 #组件
 ygopro = require './ygopro.js'
@@ -416,7 +415,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             start_hand: opt3 >> 4
             draw_count: opt3 & 0xF
           }
-          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> ((rule == 1) == list.tcg) and list.date.isBefore()
+          options.lflist = _.findIndex settings.lflist, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room = new Room(name, options)
           room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room.private = action == 2
