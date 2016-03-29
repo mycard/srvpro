@@ -8,10 +8,8 @@
 */
 var sqlite3 = require('sqlite3').verbose();
 var fs = require('fs');
+var config = require('./config.deckstats.json'); //{ "deckpath": "../decks", "dbfile": "cards.cdb" }
 var constants = require('./constants.json');
-
-var DECKPATH="C:\\deck\\deck"
-var DBFILE="F:\\Works\\deck\\cards.cdb"
 
 var ALL_MAIN_CARDS={};
 var ALL_SIDE_CARDS={};
@@ -46,7 +44,7 @@ function add_to_all_list(LIST,id,use) {
 
 function read_deck_file(filename) {
     console.log("reading "+filename);
-    var deck_text=fs.readFileSync(DECKPATH+"\\"+filename,{encoding:"ASCII"})
+    var deck_text=fs.readFileSync(config.deckpath+"\\"+filename,{encoding:"ASCII"})
     var deck_array=deck_text.split("\n");
     var deck_main={};
     var deck_side={};
@@ -68,10 +66,10 @@ function read_deck_file(filename) {
 }
 
 function load_database(callback) {
-    var db=new sqlite3.Database(DBFILE);
+    var db=new sqlite3.Database(config.dbfile);
     db.each("select * from datas,texts where datas.id=texts.id", function (err,result) {
         if (err) {
-            console.log(DBFILE + ":" + err);
+            console.log(config.dbfile + ":" + err);
             return;
         }
         else {
@@ -141,7 +139,7 @@ function load_database(callback) {
 }
 
 function read_decks() {
-    var ALL_DECKS=fs.readdirSync(DECKPATH);
+    var ALL_DECKS=fs.readdirSync(config.deckpath);
 
     for (var i in ALL_DECKS) {
         var filename=ALL_DECKS[i];
