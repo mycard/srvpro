@@ -9,21 +9,23 @@ roomlist = require './roomlist' if settings.modules.enable_websocket_roomlist
 bunyan = require 'bunyan'
 moment = require 'moment'
 #redis = require 'redis'
-moment.locale('zh-cn', { relativeTime : {
-            future : '%s内',
-            past : '%s前',
-            s : '%d秒',
-            m : '1分钟',
-            mm : '%d分钟',
-            h : '1小时',
-            hh : '%d小时',
-            d : '1天',
-            dd : '%d天',
-            M : '1个月',
-            MM : '%d个月',
-            y : '1年',
-            yy : '%d年'
-  }})
+moment.locale('zh-cn', {
+  relativeTime: {
+    future: '%s内',
+    past: '%s前',
+    s: '%d秒',
+    m: '1分钟',
+    mm: '%d分钟',
+    h: '1小时',
+    hh: '%d小时',
+    d: '1天',
+    dd: '%d天',
+    M: '1个月',
+    MM: '%d个月',
+    y: '1年',
+    yy: '%d年'
+  }
+})
 
 log = bunyan.createLogger name: "mycard-room"
 #redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
@@ -58,16 +60,16 @@ class Room
 
   @ban_player: (name, ip, reason)->
     bannedplayer = _.find Room.players_banned, (bannedplayer)->
-      ip==bannedplayer.ip
+      ip == bannedplayer.ip
     if bannedplayer
-      bannedplayer.count=bannedplayer.count+1
-      bantime=if bannedplayer.count > 3 then Math.pow(2,bannedplayer.count-3)*2 else 0
-      bannedplayer.time=if moment()<bannedplayer.time then moment(bannedplayer.time).add(bantime,'m') else moment().add(bantime,'m')
+      bannedplayer.count = bannedplayer.count + 1
+      bantime = if bannedplayer.count > 3 then Math.pow(2, bannedplayer.count - 3) * 2 else 0
+      bannedplayer.time = if moment() < bannedplayer.time then moment(bannedplayer.time).add(bantime, 'm') else moment().add(bantime, 'm')
       bannedplayer.reasons.push(reason) if not _.find bannedplayer.reasons, (bannedreason)->
-        bannedreason==reason
-      bannedplayer.need_tip=true;
+        bannedreason == reason
+      bannedplayer.need_tip = true;
     else
-      bannedplayer={"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
+      bannedplayer = {"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
       Room.players_banned.push(bannedplayer)
     log.info("banned", name, ip, reason, bannedplayer.count)
     return
@@ -77,41 +79,41 @@ class Room
       return @find_or_create_random(name.toUpperCase(), player_ip)
     if room = @find_by_name(name)
       return room
-    else if get_memory_usage()>=90
+    else if get_memory_usage() >= 90
       return null
     else
       return new Room(name)
 
   @find_or_create_random: (type, player_ip)->
     bannedplayer = _.find Room.players_banned, (bannedplayer)->
-      return player_ip==bannedplayer.ip
+      return player_ip == bannedplayer.ip
     if bannedplayer
-      if bannedplayer.count > 6 and moment()<bannedplayer.time
-        return {"error":"因为您近期在游戏中多次#{bannedplayer.reasons.join('、')}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
-      if bannedplayer.count > 3 and moment()<bannedplayer.time and bannedplayer.need_tip
-        bannedplayer.need_tip=false
-        return {"error":"因为您近期在游戏中#{bannedplayer.reasons.join('、')}，在#{moment(bannedplayer.time).fromNow(true)}内您随机对战时只能遇到其他违规玩家"}
+      if bannedplayer.count > 6 and moment() < bannedplayer.time
+        return {"error": "因为您近期在游戏中多次#{bannedplayer.reasons.join('、')}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
+      if bannedplayer.count > 3 and moment() < bannedplayer.time and bannedplayer.need_tip
+        bannedplayer.need_tip = false
+        return {"error": "因为您近期在游戏中#{bannedplayer.reasons.join('、')}，在#{moment(bannedplayer.time).fromNow(true)}内您随机对战时只能遇到其他违规玩家"}
       else if bannedplayer.need_tip
-        bannedplayer.need_tip=false
-        return {"error":"系统检测到您近期在游戏中#{bannedplayer.reasons.join('、')}，若您违规超过3次，将受到惩罚"}
+        bannedplayer.need_tip = false
+        return {"error": "系统检测到您近期在游戏中#{bannedplayer.reasons.join('、')}，若您违规超过3次，将受到惩罚"}
       else if bannedplayer.count > 2
-        bannedplayer.need_tip=true
+        bannedplayer.need_tip = true
     max_player = if type == 'T' then 4 else 2
-    playerbanned=(bannedplayer and bannedplayer.count > 3 and moment()<bannedplayer.time)
+    playerbanned = (bannedplayer and bannedplayer.count > 3 and moment() < bannedplayer.time)
     result = _.find @all, (room)->
-      return room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and (room.get_host()==null or room.get_host().remoteAddress != Room.players_oppentlist[player_ip]) and (playerbanned == room.deprecated)
+      return room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and (room.get_host() == null or room.get_host().remoteAddress != Room.players_oppentlist[player_ip]) and (playerbanned == room.deprecated)
     if result
       result.welcome = '对手已经在等你了，开始决斗吧！'
-      #log.info 'found room', player_name
+#log.info 'found room', player_name
     else
       type = if type then type else 'S'
-      name = type + ',RANDOM#' + Math.floor(Math.random()*100000)
+      name = type + ',RANDOM#' + Math.floor(Math.random() * 100000)
       result = new Room(name)
       result.random_type = type
       result.max_player = max_player
       result.welcome = '已建立随机对战房间，正在等待对手！'
-      result.deprecated=playerbanned
-      #log.info 'create room', player_name, name
+      result.deprecated = playerbanned
+    #log.info 'create room', player_name, name
     return result
 
   @find_by_name: (name)->
@@ -125,12 +127,12 @@ class Room
       room.port == port
 
   @validate: (name)->
-    client_name_and_pass = name.split('$',2)
+    client_name_and_pass = name.split('$', 2)
     client_name = client_name_and_pass[0]
     client_pass = client_name_and_pass[1]
     return true if !client_pass
     !_.find Room.all, (room)->
-      room_name_and_pass = room.name.split('$',2)
+      room_name_and_pass = room.name.split('$', 2)
       room_name = room_name_and_pass[0]
       room_pass = room_name_and_pass[1]
       client_name == room_name and client_pass != room_pass
@@ -150,7 +152,7 @@ class Room
     Room.all.push this
 
     @hostinfo ||=
-      lflist: 0
+      lflist: (list)-> !list.tcg and list.date.isBefore()
       rule: if settings.modules.enable_TCG_as_default then 2 else 0
       mode: 0
       enable_priority: false
@@ -177,8 +179,8 @@ class Room
       @hostinfo.start_hand = parseInt(param[7])
       @hostinfo.draw_count = parseInt(param[8])
 
-    else if (((param = name.match /(.+)#/) != null) and ( (param[1].length<=2 and param[1].match(/(S|N|M|T)(0|1|2|T|A)/i)) or (param[1].match(/^(S|N|M|T)(0|1|2|O|T|A)(0|1|O|T)/i)) ) )
-      rule=param[1].toUpperCase()
+    else if (((param = name.match /(.+)#/) != null) and ( (param[1].length <= 2 and param[1].match(/(S|N|M|T)(0|1|2|T|A)/i)) or (param[1].match(/^(S|N|M|T)(0|1|2|O|T|A)(0|1|O|T)/i)) ) )
+      rule = param[1].toUpperCase()
       #log.info "C", rule
 
       switch rule.charAt(0)
@@ -200,12 +202,12 @@ class Room
 
       switch rule.charAt(2)
         when "1","T"
-          @hostinfo.lflist = settings.modules.TCG_banlist_id
+          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg and list.date.isBefore()
         else
-          @hostinfo.lflist = 0
+          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> !list.tcg and list.date.isBefore()
 
       if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0)
-        @hostinfo.time_limit=param*60
+        @hostinfo.time_limit = param * 60
 
       switch rule.charAt(4)
         when "T","1"
@@ -226,16 +228,16 @@ class Room
           @hostinfo.no_shuffle_deck = false
 
       if ((param = parseInt(rule.charAt(7).match(/\d/))) > 0)
-        @hostinfo.start_lp=param*4000
+        @hostinfo.start_lp = param * 4000
 
       if ((param = parseInt(rule.charAt(8).match(/\d/))) > 0)
-        @hostinfo.start_hand=param
+        @hostinfo.start_hand = param
 
       if ((param = parseInt(rule.charAt(9).match(/\d/))) >= 0)
-        @hostinfo.draw_count=param
+        @hostinfo.draw_count = param
 
     else if ((param = name.match /(.+)#/) != null)
-      rule=param[1].toUpperCase()
+      rule = param[1].toUpperCase()
       #log.info "233", rule
 
       if (rule.match /(^|，|,)(M|MATCH)(，|,|$)/)
@@ -247,7 +249,7 @@ class Room
 
       if (rule.match /(^|，|,)(TCGONLY|TO)(，|,|$)/)
         @hostinfo.rule = 1
-        @hostinfo.lflist = settings.modules.TCG_banlist_id
+        @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg and list.date.isBefore()
 
       if (rule.match /(^|，|,)(OCGONLY|OO)(，|,|$)/)
         @hostinfo.rule = 0
@@ -264,7 +266,7 @@ class Room
       if (param = rule.match /(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/)
         time_limit = parseInt(param[3])
         if (time_limit < 0) then time_limit = 180
-        if (time_limit >= 1 and time_limit <= 60) then time_limit = time_limit*60
+        if (time_limit >= 1 and time_limit <= 60) then time_limit = time_limit * 60
         if (time_limit >= 999) then time_limit = 999
         @hostinfo.time_limit = time_limit
 
@@ -280,7 +282,7 @@ class Room
         @hostinfo.draw_count = draw_count
 
       if (param = rule.match /(^|，|,)(LFLIST|LF)(\d+)(，|,|$)/)
-        lflist = parseInt(param[3])-1
+        lflist = parseInt(param[3]) - 1
         @hostinfo.lflist = lflist
 
       if (rule.match /(^|，|,)(NOLFLIST|NF)(，|,|$)/)
@@ -298,7 +300,9 @@ class Room
       if (rule.match /(^|，|,)(IGPRIORITY|PR)(，|,|$)/)
         @hostinfo.enable_priority = true
 
-    param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'), (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'), @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit]
+    param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'),
+      (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'),
+      @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit]
 
     try
       @process = spawn './ygopro', param, {cwd: settings.ygopro_path}
@@ -312,7 +316,7 @@ class Room
         roomlist.create(this) if !@private and settings.modules.enable_websocket_roomlist
         @port = parseInt data
         _.each @players, (player)=>
-          player.server.connect @port, '127.0.0.1',=>
+          player.server.connect @port, '127.0.0.1', =>
             player.server.write buffer for buffer in player.pre_establish_buffers
             player.established = true
             player.pre_establish_buffers = []
@@ -320,19 +324,21 @@ class Room
           return
         console.log @windbot
         if @windbot
-          spawn 'mono', ['WindBot.exe'], {cwd: 'windbot', env: {
-            YGOPRO_VERSION: settings.version
-            YGOPRO_HOST: '127.0.0.1'
-            YGOPRO_PORT: @port
-            YGOPRO_NAME: @windbot.name
-            YGOPRO_DECK: @windbot.deck
-            YGOPRO_DIALOG: @windbot.dialog
-          }}
+          spawn 'mono', ['WindBot.exe'], {
+            cwd: 'windbot', env: {
+              YGOPRO_VERSION: settings.version
+              YGOPRO_HOST: '127.0.0.1'
+              YGOPRO_PORT: @port
+              YGOPRO_NAME: @windbot.name
+              YGOPRO_DECK: @windbot.deck
+              YGOPRO_DIALOG: @windbot.dialog
+            }
+          }
         return
     catch
       @error = "建立房间失败，请重试"
   delete: ->
-    #积分
+#积分
     return if @deleted
     #log.info 'room-delete', this.name, Room.all.length
     ###
@@ -366,30 +372,30 @@ class Room
     return
 
   get_playing_player: ->
-    playing_player=[]
+    playing_player = []
     _.each @players, (player)=>
       if player.pos < 4 then playing_player.push player
       return
     return playing_player
 
   get_host: ->
-    host_player=null
+    host_player = null
     _.each @players, (player)=>
-      if player.is_host then host_player=player
+      if player.is_host then host_player = player
       return
     return host_player
 
   connect: (client)->
     @players.push client
-    client.ip=client.remoteAddress
+    client.ip = client.remoteAddress
     if @random_type
-      host_player=@get_host()
+      host_player = @get_host()
       if host_player && (host_player != client)
-        #进来时已经有人在等待了，互相记录为匹配过
+#进来时已经有人在等待了，互相记录为匹配过
         Room.players_oppentlist[host_player.remoteAddress] = client.remoteAddress
         Room.players_oppentlist[client.remoteAddress] = host_player.remoteAddress
       else
-        #第一个玩家刚进来，还没就位
+#第一个玩家刚进来，还没就位
         Room.players_oppentlist[client.remoteAddress] = null
 
     if @established
@@ -406,17 +412,17 @@ class Room
       ygopro.stoc_send_chat_to_room this, "#{client.name} #{'退出了观战'}#{if error then ": #{error}" else ''}"
       index = _.indexOf(@watchers, client)
       @watchers.splice(index, 1) unless index == -1
-      #client.room = null
+#client.room = null
     else
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       #log.info(@started,@disconnector,client.room.random_type)
-      if @started and @disconnector!='server' and client.room.random_type
+      if @started and @disconnector != 'server' and client.room.random_type
         Room.ban_player(client.name, client.ip, "强退")
       if @players.length
         ygopro.stoc_send_chat_to_room this, "#{client.name} #{'离开了游戏'}#{if error then ": #{error}" else ''}"
         roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
-        #client.room = null
+#client.room = null
       else
         @process.kill()
         #client.room = null

@@ -204,7 +204,9 @@
       this.welcome = '';
       Room.all.push(this);
       this.hostinfo || (this.hostinfo = {
-        lflist: 0,
+        lflist: function(list) {
+          return !list.tcg && list.date.isBefore();
+        },
         rule: settings.modules.enable_TCG_as_default ? 2 : 0,
         mode: 0,
         enable_priority: false,
@@ -259,10 +261,14 @@
         switch (rule.charAt(2)) {
           case "1":
           case "T":
-            this.hostinfo.lflist = settings.modules.TCG_banlist_id;
+            this.hostinfo.lflist = _.findIndex(settings.lflist, function(list) {
+              return list.tcg && list.date.isBefore();
+            });
             break;
           default:
-            this.hostinfo.lflist = 0;
+            this.hostinfo.lflist = _.findIndex(settings.lflist, function(list) {
+              return !list.tcg && list.date.isBefore();
+            });
         }
         if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0) {
           this.hostinfo.time_limit = param * 60;
@@ -311,7 +317,9 @@
         }
         if (rule.match(/(^|，|,)(TCGONLY|TO)(，|,|$)/)) {
           this.hostinfo.rule = 1;
-          this.hostinfo.lflist = settings.modules.TCG_banlist_id;
+          this.hostinfo.lflist = _.findIndex(settings.lflist, function(list) {
+            return list.tcg && list.date.isBefore();
+          });
         }
         if (rule.match(/(^|，|,)(OCGONLY|OO)(，|,|$)/)) {
           this.hostinfo.rule = 0;

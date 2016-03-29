@@ -12,7 +12,6 @@
     "enable_random_duel": false,
     "mycard_auth": false,
     "post_start_watching": true,
-    "TCG_banlist_id": 8,
     "enable_TCG_as_default": false,
     "http": {
       "port": 7922,
