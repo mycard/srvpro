@@ -420,9 +420,9 @@
                 player.pre_establish_buffers = [];
               });
             });
-            console.log(_this.windbot);
             if (_this.windbot) {
-              spawn('mono', ['WindBot.exe'], {
+              log.info(_this.windbot);
+              _this.ai_process = spawn('mono', ['WindBot.exe'], {
                 cwd: 'windbot',
                 env: {
                   YGOPRO_VERSION: settings.version,
@@ -432,6 +432,12 @@
                   YGOPRO_DECK: _this.windbot.deck,
                   YGOPRO_DIALOG: _this.windbot.dialog
                 }
+              });
+              _this.ai_process.stdout.on('data', function(data) {
+                log.info("AI stdout: " + data);
+              });
+              _this.ai_process.stderr.on('data', function(data) {
+                log.info("AI stderr: " + data);
               });
             }
           };

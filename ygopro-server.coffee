@@ -31,6 +31,8 @@ settings.BANNED_IP = []
 settings.modules.hang_timeout = 90
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
+  date=list.match(/!([\d\.]+)/)
+  continue unless date
   {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD'), tcg: list.indexOf('TCG') != -1})
 
 #组件
@@ -339,7 +341,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       windbot = _.sample settings.modules.windbot
 
-    room = Room.find_or_create_by_name('AI#' + Math.random().toString()) # 这个 AI# 没有特殊作用, 仅作为标记
+    room = Room.find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000)) # 这个 AI# 没有特殊作用, 仅作为标记
     room.windbot = windbot
     room.private = true
     client.room = room

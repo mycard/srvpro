@@ -322,9 +322,9 @@ class Room
             player.pre_establish_buffers = []
             return
           return
-        console.log @windbot
         if @windbot
-          spawn 'mono', ['WindBot.exe'], {
+          log.info @windbot
+          @ai_process = spawn 'mono', ['WindBot.exe'], {
             cwd: 'windbot', env: {
               YGOPRO_VERSION: settings.version
               YGOPRO_HOST: '127.0.0.1'
@@ -334,6 +334,12 @@ class Room
               YGOPRO_DIALOG: @windbot.dialog
             }
           }
+          @ai_process.stdout.on 'data', (data)=>
+            log.info "AI stdout: " + data
+            return
+          @ai_process.stderr.on 'data', (data)=>
+            log.info "AI stderr: " + data
+            return
         return
     catch
       @error = "建立房间失败，请重试"
