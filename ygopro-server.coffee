@@ -577,7 +577,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   if client.room.welcome
     ygopro.stoc_send_chat client, client.room.welcome, 14
 
-  if settings.modules.enable_cloud_replay and !client.room.recorder
+  if !client.room.recorder
     client.room.recorder = recorder = net.connect client.room.port, ->
       ygopro.ctos_send recorder, 'PLAYER_INFO', {
         name: "Marshtomp"
@@ -592,7 +592,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       return
 
     recorder.on 'data', (data)->
-      return unless client.room
+      return unless client.room and settings.modules.enable_cloud_replay
       client.room.recorder_buffers.push data
 
     recorder.on 'error', (error)->

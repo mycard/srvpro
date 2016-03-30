@@ -327,7 +327,7 @@ class Room
             return
           return
         if @windbot
-          log.info @windbot
+          #log.info @windbot
           @ai_process = spawn 'mono', ['WindBot.exe'], {
             cwd: 'windbot', env: {
               YGOPRO_VERSION: settings.version
@@ -339,7 +339,7 @@ class Room
             }
           }
           @ai_process.stdout.on 'data', (data)=>
-            log.info "AI stdout: " + data
+            #log.info "AI stdout: " + data
             return
           @ai_process.stderr.on 'data', (data)=>
             log.info "AI stderr: " + data

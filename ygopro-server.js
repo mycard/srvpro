@@ -647,7 +647,7 @@
     if (client.room.welcome) {
       ygopro.stoc_send_chat(client, client.room.welcome, 14);
     }
-    if (settings.modules.enable_cloud_replay && !client.room.recorder) {
+    if (!client.room.recorder) {
       client.room.recorder = recorder = net.connect(client.room.port, function() {
         ygopro.ctos_send(recorder, 'PLAYER_INFO', {
           name: "Marshtomp"
@@ -661,7 +661,7 @@
         ygopro.ctos_send(recorder, 'HS_TOOBSERVER');
       });
       recorder.on('data', function(data) {
-        if (!client.room) {
+        if (!(client.room && settings.modules.enable_cloud_replay)) {
           return;
         }
         return client.room.recorder_buffers.push(data);
