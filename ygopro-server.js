@@ -637,7 +637,7 @@
   });
 
   ygopro.stoc_follow('JOIN_GAME', false, function(buffer, info, client, server) {
-    var watcher;
+    var recorder, watcher;
     if (!client.room) {
       return;
     }
@@ -646,6 +646,27 @@
     }
     if (client.room.welcome) {
       ygopro.stoc_send_chat(client, client.room.welcome, 14);
+    }
+    if (settings.modules.enable_cloud_replay && !client.room.recorder) {
+      client.room.recorder = recorder = net.connect(client.room.port, function() {
+        ygopro.ctos_send(recorder, 'PLAYER_INFO', {
+          name: "Marshtomp"
+        });
+        ygopro.ctos_send(recorder, 'JOIN_GAME', {
+          version: settings.version,
+          gameid: 2577,
+          some_unknown_mysterious_fucking_thing: 0,
+          pass: ""
+        });
+        ygopro.ctos_send(recorder, 'HS_TOOBSERVER');
+      });
+      recorder.on('data', function(data) {
+        if (!client.room) {
+          return;
+        }
+        return client.room.recorder_buffers.push(data);
+      });
+      recorder.on('error', function(error) {});
     }
     if (settings.modules.enable_halfway_watch && !client.room.watcher) {
       client.room.watcher = watcher = net.connect(client.room.port, function() {
@@ -932,6 +953,9 @@
 
   ygopro.ctos_follow('CHAT', true, function(buffer, info, client, server) {
     var cancel;
+    if (!client.room) {
+      return;
+    }
     cancel = _.startsWith(_.trim(info.msg), "/");
     if (!(cancel || !client.room.random_type)) {
       client.room.last_active_time = moment();

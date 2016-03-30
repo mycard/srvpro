@@ -577,6 +577,27 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   if client.room.welcome
     ygopro.stoc_send_chat client, client.room.welcome, 14
 
+  if settings.modules.enable_cloud_replay and !client.room.recorder
+    client.room.recorder = recorder = net.connect client.room.port, ->
+      ygopro.ctos_send recorder, 'PLAYER_INFO', {
+        name: "Marshtomp"
+      }
+      ygopro.ctos_send recorder, 'JOIN_GAME', {
+        version: settings.version,
+        gameid: 2577,
+        some_unknown_mysterious_fucking_thing: 0
+        pass: ""
+      }
+      ygopro.ctos_send recorder, 'HS_TOOBSERVER'
+      return
+
+    recorder.on 'data', (data)->
+      return unless client.room
+      client.room.recorder_buffers.push data
+
+    recorder.on 'error', (error)->
+      return
+
   if settings.modules.enable_halfway_watch and !client.room.watcher
     client.room.watcher = watcher = net.connect client.room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
@@ -780,6 +801,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   return
 
 ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
+  return unless client.room
   cancel = _.startsWith(_.trim(info.msg), "/")
   client.room.last_active_time = moment() unless cancel or not client.room.random_type
   switch _.trim(info.msg)

@@ -208,6 +208,7 @@
       this.started = false;
       this.established = false;
       this.watcher_buffers = [];
+      this.recorder_buffers = [];
       this.watchers = [];
       this.random_type = '';
       this.welcome = '';
@@ -457,7 +458,7 @@
     }
 
     Room.prototype["delete"] = function() {
-      var index, player_ips, player_names, watcher_buffer;
+      var index, player_ips, player_names, recorder_buffer;
       if (this.deleted) {
         return;
       }
@@ -469,8 +470,8 @@
             player_ips.push(player.ip);
           };
         })(this));
-        watcher_buffer = Buffer.concat(this.watcher_buffers);
-        zlib.deflate(watcher_buffer, (function(_this) {
+        recorder_buffer = Buffer.concat(this.recorder_buffers);
+        zlib.deflate(recorder_buffer, (function(_this) {
           return function(err, replay_buffer) {
             var date_time, recorded_ip, replay_id;
             replay_buffer = replay_buffer.toString('binary');
@@ -490,6 +491,7 @@
         })(this));
       }
       this.watcher_buffers = [];
+      this.recorder_buffers = [];
       this.players = [];
       if (this.watcher) {
         this.watcher.end();

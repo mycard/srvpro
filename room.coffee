@@ -149,6 +149,7 @@ class Room
     @started = false
     @established = false
     @watcher_buffers = []
+    @recorder_buffers = []
     @watchers = []
     @random_type = ''
     @welcome = ''
@@ -359,8 +360,8 @@ class Room
       _.each @player_datas, (player)=>
         player_ips.push(player.ip)
         return
-      watcher_buffer=Buffer.concat(@watcher_buffers)
-      zlib.deflate watcher_buffer, (err, replay_buffer) =>
+      recorder_buffer=Buffer.concat(@recorder_buffers)
+      zlib.deflate recorder_buffer, (err, replay_buffer) =>
         replay_buffer=replay_buffer.toString('binary')
         #log.info err, replay_buffer
         date_time=moment().format('YYYY-MM-DD HH:mm:ss')
@@ -379,6 +380,7 @@ class Room
           return
         return
     @watcher_buffers = []
+    @recorder_buffers = []
     @players = []
     @watcher.end() if @watcher
     @deleted = true
