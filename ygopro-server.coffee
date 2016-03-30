@@ -19,9 +19,6 @@ bunyan = require 'bunyan'
 
 moment = require 'moment'
 
-#redis = require 'redis'
-#redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
-
 #heapdump = require 'heapdump'
 
 #配置文件
@@ -34,6 +31,11 @@ settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').mat
   date=list.match(/!([\d\.]+)/)
   continue unless date
   {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD'), tcg: list.indexOf('TCG') != -1})
+
+if settings.modules.enable_cloud_replay
+  redis = require 'redis'
+  zlib = require 'zlib'
+  redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
 
 #组件
 ygopro = require './ygopro.js'
@@ -118,22 +120,26 @@ net.createServer (client) ->
       ygopro.stoc_send_chat(client, "服务器错误: #{error}", 11)
       client.end()
     return
-  ###
-  client.open_cloud_replay= (err, replay)->
-    if err or !replay
-      ygopro.stoc_send_chat(client,"没有找到录像", 11)
-      ygopro.stoc_send client, 'ERROR_MSG',{
-        msg: 1
-        code: 2
-      }
-      client.end()
+  
+  if settings.modules.enable_cloud_replay
+    client.open_cloud_replay= (err, replay)->
+      if err or !replay
+        ygopro.stoc_send_chat(client,"没有找到录像", 11)
+        ygopro.stoc_send client, 'ERROR_MSG',{
+          msg: 1
+          code: 2
+        }
+        client.end()
+        return
+      redisdb.expire("replay:"+replay.replay_id, 60*60*48)
+      buffer=new Buffer(replay.replay_buffer,'binary')
+      zlib.unzip buffer, (err, replay_buffer) =>
+        ygopro.stoc_send_chat(client,"正在观看云录像：R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", 14)
+        client.write replay_buffer
+        client.end()
+        return
       return
-    replay_buffer=new Buffer(replay.replay_buffer,'binary')
-    ygopro.stoc_send_chat(client,"正在观看云录像：R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", 14)
-    client.write replay_buffer
-    client.end()
-    return
-  ###
+    
   #需要重构
   #客户端到服务端(ctos)协议分析
   ctos_buffer = new Buffer(0)
@@ -273,8 +279,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
 
-    ###
-  else if info.pass.toUpperCase()=="R"
+    
+  else if info.pass.toUpperCase()=="R" and settings.modules.enable_cloud_replay
     ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", 14)
     redisdb.lrange client.remoteAddress+":replays", 0, 2, (err, result)=>
       _.each result, (replay_id,id)=>
@@ -291,7 +297,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       client.end()), 500
       
-  else if info.pass[0...2].toUpperCase()=="R#"
+  else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.enable_cloud_replay
     replay_id=info.pass.split("#")[1]
     if (replay_id>0 and replay_id<=3)
       redisdb.lindex client.remoteAddress+":replays", replay_id-1, (err, replay_id)=>
@@ -306,7 +312,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         code: 2
       }
       client.end()
-    ###
+    
 
   else if info.version != settings.version
     ygopro.stoc_send_chat(client, settings.modules.update, 11)
@@ -541,7 +547,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       client.end()
     else if room.started
-      if settings.modules.post_start_watching
+      if settings.modules.enable_halfway_watch
         client.room = room
         client.is_post_watcher = true
         ygopro.stoc_send_chat_to_room client.room, "#{client.name} 加入了观战"
@@ -569,7 +575,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   if client.room.welcome
     ygopro.stoc_send_chat client, client.room.welcome, 14
 
-  if settings.modules.post_start_watching and !client.room.watcher
+  if settings.modules.enable_halfway_watch and !client.room.watcher
     client.room.watcher = watcher = net.connect client.room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
         name: "the Big Brother"

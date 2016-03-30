@@ -8,7 +8,6 @@ ygopro = require './ygopro.js'
 roomlist = require './roomlist' if settings.modules.enable_websocket_roomlist
 bunyan = require 'bunyan'
 moment = require 'moment'
-#redis = require 'redis'
 moment.locale('zh-cn', {
   relativeTime: {
     future: '%s内',
@@ -28,7 +27,11 @@ moment.locale('zh-cn', {
 })
 
 log = bunyan.createLogger name: "mycard-room"
-#redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
+
+if settings.modules.enable_cloud_replay
+  redis = require 'redis'
+  zlib = require 'zlib'
+  redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
 
 #获取可用内存
 get_memory_usage = ()->
@@ -347,26 +350,34 @@ class Room
 #积分
     return if @deleted
     #log.info 'room-delete', this.name, Room.all.length
-    ###
-    if @player_datas.length
-      replay_buffer = Buffer.concat(@watcher_buffers).toString('binary')
+    if @player_datas.length and settings.modules.enable_cloud_replay
       player_names=@player_datas[0].name + (if @player_datas[2] then "+" + @player_datas[2].name else "") +
                     " VS " +
-                   @player_datas[1].name + (if @player_datas[3] then "+" + @player_datas[3].name else "")
-      date_time=moment().format('YYYY-MM-DD HH:mm:ss')
-      replay_id=Math.floor(Math.random()*100000000)
-      redisdb.hmset("replay:"+replay_id, 
-                    "replay_id", replay_id,
-                    "replay_buffer", replay_buffer,
-                    "player_names", player_names,
-                    "date_time", date_time)
-      recorded_ip=[]
+                   (if @player_datas[1] then @player_datas[1].name else "AI") + 
+                   (if @player_datas[3] then "+" + @player_datas[3].name else "")
+      player_ips=[]
       _.each @player_datas, (player)=>
-        return if _.contains(recorded_ip, player.ip)
-        recorded_ip.push player.ip
-        redisdb.lpush(player.ip+":replays", replay_id)
+        player_ips.push(player.ip)
         return
-    ###
+      watcher_buffer=Buffer.concat(@watcher_buffers)
+      zlib.deflate watcher_buffer, (err, replay_buffer) =>
+        replay_buffer=replay_buffer.toString('binary')
+        #log.info err, replay_buffer
+        date_time=moment().format('YYYY-MM-DD HH:mm:ss')
+        replay_id=Math.floor(Math.random()*100000000)
+        redisdb.hmset("replay:"+replay_id, 
+                      "replay_id", replay_id,
+                      "replay_buffer", replay_buffer,
+                      "player_names", player_names,
+                      "date_time", date_time)
+        redisdb.expire("replay:"+replay_id, 60*60*24)
+        recorded_ip=[]
+        _.each player_ips, (player_ip)=>
+          return if _.contains(recorded_ip, player_ip)
+          recorded_ip.push player_ip
+          redisdb.lpush(player_ip+":replays", replay_id)
+          return
+        return
     @watcher_buffers = []
     @players = []
     @watcher.end() if @watcher
