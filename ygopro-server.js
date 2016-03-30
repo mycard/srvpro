@@ -36,8 +36,6 @@
 
   settings.BANNED_IP = [];
 
-  settings.modules.hang_timeout = 90;
-
   settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16');
 
   settings.lflist = (function() {
@@ -65,6 +63,10 @@
       host: "127.0.0.1",
       port: settings.modules.redis_port
     });
+  }
+
+  if (settings.modules.enable_windbot) {
+    settings.modules.windbots = require('./config.bot.json').windbots;
   }
 
   ygopro = require('./ygopro.js');
@@ -386,10 +388,10 @@
         code: 2
       });
       client.end();
-    } else if (settings.modules.windbot && info.pass.slice(0, 2) === 'AI') {
+    } else if (settings.modules.enable_windbot && info.pass.slice(0, 2) === 'AI') {
       if (info.pass.length > 3 && info.pass.slice(0, 3) === 'AI#' || info.pass.slice(0, 3) === 'AI_') {
         name = info.pass.slice(3);
-        windbot = _.sample(_.filter(settings.modules.windbot, function(w) {
+        windbot = _.sample(_.filter(settings.modules.windbots, function(w) {
           return w.name === name || w.deck === name;
         }));
         if (!windbot) {
@@ -402,7 +404,7 @@
           return;
         }
       } else {
-        windbot = _.sample(settings.modules.windbot);
+        windbot = _.sample(settings.modules.windbots);
       }
       room = Room.find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000));
       room.windbot = windbot;

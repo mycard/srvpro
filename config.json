@@ -5,58 +5,26 @@
     "welcome": "YGOPRO Server",
     "update": "请更新游戏版本",
     "stop": false,
-    "tips": "http://mercury233.me/ygosrv233tips.json",
+    "tips": "http://mercury233.me/ygosrv233/tips.json",
     "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
-    "enable_websocket_roomlist": false,
     "enable_random_duel": false,
     "enable_halfway_watch": true,
     "enable_TCG_as_default": false,
     "enable_cloud_replay": false,
+    "enable_windbot": false,
+    "enable_websocket_roomlist": false,
     "redis_port": 6379,
     "mycard_auth": false,
+    "hang_timeout": 90,
     "http": {
       "port": 7922,
       "password": "123456",
       "ssl": {
-        "enabled": false
+        "enabled": false,
+        "port": 7923,
+        "cert": "ssl/ygopro-server.crt",
+        "key": "ssl/ygopro-server.key"
       }
-    },
-    "windbot": [
-      {
-        "name": "琪露诺",
-        "deck": "Burn",
-        "dialog": "zh-CN"
-      },
-      {
-        "name": "琪露诺",
-        "deck": "Frog",
-        "dialog": "zh-CN"
-      },
-      {
-        "name": "琪露诺",
-        "deck": "Horus",
-        "dialog": "zh-CN"
-      },
-      {
-        "name": "琪露诺",
-        "deck": "OldSchool",
-        "dialog": "zh-CN"
-      },
-      {
-        "name": "谜之剑士LV4",
-        "deck": "Dragunity",
-        "dialog": "zh-CN"
-      },
-      {
-        "name": "谜之剑士LV4",
-        "deck": "Rank V",
-        "dialog": "zh-CN"
-      },
-      {
-        "name": "谜之剑士LV4",
-        "deck": "Zexal Weapons",
-        "dialog": "zh-CN"
-      }
-    ]
+    }
   }
 }

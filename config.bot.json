@@ -1,0 +1,39 @@
+{
+    "windbots": [
+      {
+        "name": "琪露诺",
+        "deck": "Burn",
+        "dialog": "zh-CN"
+      },
+      {
+        "name": "琪露诺",
+        "deck": "Frog",
+        "dialog": "zh-CN"
+      },
+      {
+        "name": "琪露诺",
+        "deck": "Horus",
+        "dialog": "zh-CN"
+      },
+      {
+        "name": "琪露诺",
+        "deck": "OldSchool",
+        "dialog": "zh-CN"
+      },
+      {
+        "name": "谜之剑士LV4",
+        "deck": "Dragunity",
+        "dialog": "zh-CN"
+      },
+      {
+        "name": "谜之剑士LV4",
+        "deck": "Rank V",
+        "dialog": "zh-CN"
+      },
+      {
+        "name": "谜之剑士LV4",
+        "deck": "Zexal Weapons",
+        "dialog": "zh-CN"
+      }
+    ]
+}

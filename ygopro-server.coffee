@@ -25,7 +25,6 @@ moment = require 'moment'
 settings = require './config.json'
 settings.BANNED_user = []
 settings.BANNED_IP = []
-settings.modules.hang_timeout = 90
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   date=list.match(/!([\d\.]+)/)
@@ -36,6 +35,9 @@ if settings.modules.enable_cloud_replay
   redis = require 'redis'
   zlib = require 'zlib'
   redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
+
+if settings.modules.enable_windbot
+  settings.modules.windbots = require('./config.bot.json').windbots
 
 #组件
 ygopro = require './ygopro.js'
@@ -330,11 +332,11 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
 
-  else if settings.modules.windbot and info.pass[0...2] == 'AI'
+  else if settings.modules.enable_windbot and info.pass[0...2] == 'AI'
 
     if info.pass.length > 3 and info.pass[0...3] == 'AI#' or info.pass[0...3] == 'AI_'
       name = info.pass.slice(3)
-      windbot = _.sample _.filter settings.modules.windbot, (w)->
+      windbot = _.sample _.filter settings.modules.windbots, (w)->
         w.name == name or w.deck == name
       if !windbot
         ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Windbot Name)', 11)
@@ -345,7 +347,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         client.end()
         return
     else
-      windbot = _.sample settings.modules.windbot
+      windbot = _.sample settings.modules.windbots
 
     room = Room.find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000)) # 这个 AI# 没有特殊作用, 仅作为标记
     room.windbot = windbot
