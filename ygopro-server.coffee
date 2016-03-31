@@ -136,6 +136,11 @@ net.createServer (client) ->
       redisdb.expire("replay:"+replay.replay_id, 60*60*48)
       buffer=new Buffer(replay.replay_buffer,'binary')
       zlib.unzip buffer, (err, replay_buffer) =>
+        if err
+          log.info err
+          ygopro.stoc_send_chat(client,"播放录像出错", 11)
+          client.end()
+          return
         ygopro.stoc_send_chat(client,"正在观看云录像：R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", 14)
         client.write replay_buffer
         client.end()
@@ -287,6 +292,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     redisdb.lrange client.remoteAddress+":replays", 0, 2, (err, result)=>
       _.each result, (replay_id,id)=>
         redisdb.hgetall "replay:"+replay_id, (err, replay)=>
+          if err or !replay
+            log.info err
+            return
           ygopro.stoc_send_chat(client,"<#{id-0+1}> R##{replay_id} #{replay.player_names} #{replay.date_time}", 14)
           return
         return
@@ -301,8 +309,17 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       
   else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.enable_cloud_replay
     replay_id=info.pass.split("#")[1]
-    if (replay_id>0 and replay_id<=3)
+    if (replay_id>0 and replay_id<=9)
       redisdb.lindex client.remoteAddress+":replays", replay_id-1, (err, replay_id)=>
+        if err or !replay_id
+          log.info err
+          ygopro.stoc_send_chat(client,"没有找到录像", 11)
+          ygopro.stoc_send client, 'ERROR_MSG',{
+            msg: 1
+            code: 2
+          }
+          client.end()
+          return
         redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
         return
     else if replay_id
