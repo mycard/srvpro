@@ -214,9 +214,9 @@
       this.welcome = '';
       Room.all.push(this);
       this.hostinfo || (this.hostinfo = {
-        lflist: function(list) {
+        lflist: _.findIndex(settings.lflist, function(list) {
           return !list.tcg && list.date.isBefore();
-        },
+        }),
         rule: settings.modules.enable_TCG_as_default ? 2 : 0,
         mode: 0,
         enable_priority: false,

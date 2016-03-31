@@ -29,7 +29,7 @@ settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').ma
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   date=list.match(/!([\d\.]+)/)
   continue unless date
-  {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD'), tcg: list.indexOf('TCG') != -1})
+  {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
 
 if settings.modules.enable_cloud_replay
   redis = require 'redis'

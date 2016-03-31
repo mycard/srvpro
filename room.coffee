@@ -156,7 +156,7 @@ class Room
     Room.all.push this
 
     @hostinfo ||=
-      lflist: (list)-> !list.tcg and list.date.isBefore()
+      lflist: _.findIndex settings.lflist, (list)-> !list.tcg and list.date.isBefore()
       rule: if settings.modules.enable_TCG_as_default then 2 else 0
       mode: 0
       enable_priority: false
