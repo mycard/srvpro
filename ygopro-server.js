@@ -47,7 +47,7 @@
     for (k = 0, len = ref.length; k < len; k++) {
       list = ref[k];
       results.push({
-        date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD'),
+        date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"),
         tcg: list.indexOf('TCG') !== -1
       });
     }
