@@ -157,7 +157,7 @@
         server.closed = true;
       }
       if (!client.closed) {
-        ygopro.stoc_send_chat(client, "服务器关闭了连接", 11);
+        ygopro.stoc_send_chat(client, "服务器关闭了连接", ygopro.constants.COLORS.RED);
         client.end();
       }
     });
@@ -166,7 +166,7 @@
       client.room.disconnector = 'server';
       server.closed = error;
       if (!client.closed) {
-        ygopro.stoc_send_chat(client, "服务器错误: " + error, 11);
+        ygopro.stoc_send_chat(client, "服务器错误: " + error, ygopro.constants.COLORS.RED);
         client.end();
       }
     });
@@ -174,7 +174,7 @@
       client.open_cloud_replay = function(err, replay) {
         var buffer;
         if (err || !replay) {
-          ygopro.stoc_send_chat(client, "没有找到录像", 11);
+          ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED);
           ygopro.stoc_send(client, 'ERROR_MSG', {
             msg: 1,
             code: 2
@@ -188,11 +188,11 @@
           return function(err, replay_buffer) {
             if (err) {
               log.info(err);
-              ygopro.stoc_send_chat(client, "播放录像出错", 11);
+              ygopro.stoc_send_chat(client, "播放录像出错", ygopro.constants.COLORS.RED);
               client.end();
               return;
             }
-            ygopro.stoc_send_chat(client, "正在观看云录像：R#" + replay.replay_id + " " + replay.player_names + " " + replay.date_time, 14);
+            ygopro.stoc_send_chat(client, "正在观看云录像：R#" + replay.replay_id + " " + replay.player_names + " " + replay.date_time, ygopro.constants.COLORS.BABYBLUE);
             client.write(replay_buffer);
             client.end();
           };
@@ -336,14 +336,14 @@
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
     var check, decrypted_buffer, finish, i, id, k, l, len, len1, name, ref, ref1, replay_id, room, secret, windbot;
     if (settings.modules.stop) {
-      ygopro.stoc_send_chat(client, settings.modules.stop, 11);
+      ygopro.stoc_send_chat(client, settings.modules.stop, ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
       });
       client.end();
     } else if (info.pass.toUpperCase() === "R" && settings.modules.enable_cloud_replay) {
-      ygopro.stoc_send_chat(client, "以下是您近期的云录像，密码处输入 R#录像编号 即可观看", 14);
+      ygopro.stoc_send_chat(client, "以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE);
       redisdb.lrange(client.remoteAddress + ":replays", 0, 2, (function(_this) {
         return function(err, result) {
           _.each(result, function(replay_id, id) {
@@ -352,7 +352,7 @@
                 log.info(err);
                 return;
               }
-              ygopro.stoc_send_chat(client, "<" + (id - 0 + 1) + "> R#" + replay_id + " " + replay.player_names + " " + replay.date_time, 14);
+              ygopro.stoc_send_chat(client, "<" + (id - 0 + 1) + "> R#" + replay_id + " " + replay.player_names + " " + replay.date_time, ygopro.constants.COLORS.BABYBLUE);
             });
           });
         };
@@ -373,7 +373,7 @@
           return function(err, replay_id) {
             if (err || !replay_id) {
               log.info(err);
-              ygopro.stoc_send_chat(client, "没有找到录像", 11);
+              ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED);
               ygopro.stoc_send(client, 'ERROR_MSG', {
                 msg: 1,
                 code: 2
@@ -387,7 +387,7 @@
       } else if (replay_id) {
         redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
       } else {
-        ygopro.stoc_send_chat(client, "没有找到录像", 11);
+        ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
@@ -395,14 +395,14 @@
         client.end();
       }
     } else if (info.version !== settings.version) {
-      ygopro.stoc_send_chat(client, settings.modules.update, 11);
+      ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
         code: settings.version
       });
       client.end();
     } else if (!info.pass.length && !settings.modules.enable_random_duel) {
-      ygopro.stoc_send_chat(client, "房间名为空，请填写主机密码", 11);
+      ygopro.stoc_send_chat(client, "房间名为空，请填写主机密码", ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
@@ -415,7 +415,7 @@
           return w.name === name || w.deck === name;
         }));
         if (!windbot) {
-          ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Windbot Name)', 11);
+          ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Windbot Name)', ygopro.constants.COLORS.RED);
           ygopro.stoc_send(client, 'ERROR_MSG', {
             msg: 1,
             code: 2
@@ -432,9 +432,9 @@
       client.room = room;
       client.room.connect(client);
     } else if (info.pass.length && settings.modules.mycard_auth) {
-      ygopro.stoc_send_chat(client, '正在读取用户信息...', 11);
+      ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.RED);
       if (info.pass.length <= 8) {
-        ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Length)', 11);
+        ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Length)', ygopro.constants.COLORS.RED);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
@@ -444,7 +444,7 @@
       }
       buffer = new Buffer(info.pass.slice(0, 8), 'base64');
       if (buffer.length !== 6) {
-        ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Payload Length)', 11);
+        ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Payload Length)', ygopro.constants.COLORS.RED);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
@@ -464,7 +464,7 @@
         var action, opt1, opt2, opt3, options;
         action = buffer.readUInt8(1) >> 4;
         if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
-          ygopro.stoc_send_chat(client, '主机密码不正确 (Unauthorized)', 11);
+          ygopro.stoc_send_chat(client, '主机密码不正确 (Unauthorized)', ygopro.constants.COLORS.RED);
           ygopro.stoc_send(client, 'ERROR_MSG', {
             msg: 1,
             code: 2
@@ -477,7 +477,7 @@
           case 2:
             name = crypto.createHash('md5').update(info.pass + client.name).digest('base64').slice(0, 10).replace('+', '-').replace('/', '_');
             if (Room.find_by_name(name)) {
-              ygopro.stoc_send_chat(client, '主机密码不正确 (Already Existed)', 11);
+              ygopro.stoc_send_chat(client, '主机密码不正确 (Already Existed)', ygopro.constants.COLORS.RED);
               ygopro.stoc_send(client, 'ERROR_MSG', {
                 msg: 1,
                 code: 2
@@ -511,7 +511,7 @@
             name = info.pass.slice(8);
             room = Room.find_by_name(name);
             if (!room) {
-              ygopro.stoc_send_chat(client, '主机密码不正确 (Not Found)', 11);
+              ygopro.stoc_send_chat(client, '主机密码不正确 (Not Found)', ygopro.constants.COLORS.RED);
               ygopro.stoc_send(client, 'ERROR_MSG', {
                 msg: 1,
                 code: 2
@@ -525,7 +525,7 @@
             room["private"] = true;
             break;
           default:
-            ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Action)', 11);
+            ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Action)', ygopro.constants.COLORS.RED);
             ygopro.stoc_send(client, 'ERROR_MSG', {
               msg: 1,
               code: 2
@@ -572,7 +572,7 @@
           }
         }
         if (!check(buffer)) {
-          ygopro.stoc_send_chat(client, '主机密码不正确 (Checksum Failed)', 11);
+          ygopro.stoc_send_chat(client, '主机密码不正确 (Checksum Failed)', ygopro.constants.COLORS.RED);
           ygopro.stoc_send(client, 'ERROR_MSG', {
             msg: 1,
             code: 2
@@ -584,7 +584,7 @@
         return finish(buffer);
       });
     } else if (info.pass.length && !Room.validate(info.pass)) {
-      ygopro.stoc_send_chat(client, "房间密码不正确", 11);
+      ygopro.stoc_send_chat(client, "房间密码不正确", ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
@@ -599,7 +599,7 @@
     } else if (_.indexOf(settings.BANNED_user, client.name) > -1) {
       settings.BANNED_IP.push(client.remoteAddress);
       log.info("BANNED USER LOGIN", client.name, client.remoteAddress);
-      ygopro.stoc_send_chat(client, "您的账号已被封禁", 11);
+      ygopro.stoc_send_chat(client, "您的账号已被封禁", ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
@@ -607,7 +607,7 @@
       client.end();
     } else if (_.indexOf(settings.BANNED_IP, client.remoteAddress) > -1) {
       log.info("BANNED IP LOGIN", client.name, client.remoteAddress);
-      ygopro.stoc_send_chat(client, "您的账号已被封禁", 11);
+      ygopro.stoc_send_chat(client, "您的账号已被封禁", ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
         code: 2
@@ -616,14 +616,14 @@
     } else {
       room = Room.find_or_create_by_name(info.pass, client.remoteAddress);
       if (!room) {
-        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", 11);
+        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
         });
         client.end();
       } else if (room.error) {
-        ygopro.stoc_send_chat(client, room.error, 11);
+        ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED);
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
           code: 2
@@ -635,14 +635,14 @@
           client.is_post_watcher = true;
           ygopro.stoc_send_chat_to_room(client.room, client.name + " 加入了观战");
           client.room.watchers.push(client);
-          ygopro.stoc_send_chat(client, "观战中", 14);
+          ygopro.stoc_send_chat(client, "观战中", ygopro.constants.COLORS.BABYBLUE);
           ref1 = client.room.watcher_buffers;
           for (l = 0, len1 = ref1.length; l < len1; l++) {
             buffer = ref1[l];
             client.write(buffer);
           }
         } else {
-          ygopro.stoc_send_chat(client, "决斗已开始，不允许观战", 11);
+          ygopro.stoc_send_chat(client, "决斗已开始，不允许观战", ygopro.constants.COLORS.RED);
           ygopro.stoc_send(client, 'ERROR_MSG', {
             msg: 1,
             code: 2
@@ -662,10 +662,10 @@
       return;
     }
     if (settings.modules.welcome) {
-      ygopro.stoc_send_chat(client, settings.modules.welcome);
+      ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN);
     }
     if (client.room.welcome) {
-      ygopro.stoc_send_chat(client, client.room.welcome, 14);
+      ygopro.stoc_send_chat(client, client.room.welcome, ygopro.constants.COLORS.BABYBLUE);
     }
     if (!client.room.recorder) {
       client.room.recorder = recorder = net.connect(client.room.port, function() {
@@ -764,7 +764,7 @@
       val = buffer.readInt32LE(2);
       client.room.dueling_players[pos].lp -= val;
       if ((0 < (ref = client.room.dueling_players[pos].lp) && ref <= 100)) {
-        ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！", 15);
+        ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！", ygopro.constants.COLORS.PINK);
       }
     }
     if (ygopro.constants.MSG[msg] === 'RECOVER' && client.is_host) {
@@ -791,7 +791,7 @@
       val = buffer.readInt32LE(2);
       client.room.dueling_players[pos].lp -= val;
       if ((0 < (ref1 = client.room.dueling_players[pos].lp) && ref1 <= 100)) {
-        ygopro.stoc_send_chat_to_room(client.room, "背水一战！", 15);
+        ygopro.stoc_send_chat_to_room(client.room, "背水一战！", ygopro.constants.COLORS.PINK);
       }
     }
     if (settings.modules.dialogues) {
@@ -801,7 +801,7 @@
           ref2 = _.lines(dialogues[card][Math.floor(Math.random() * dialogues[card].length)]);
           for (k = 0, len = ref2.length; k < len; k++) {
             line = ref2[k];
-            ygopro.stoc_send_chat(client, line, 15);
+            ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK);
           }
         }
       }
@@ -817,7 +817,7 @@
     for (k = 0, len = ref.length; k < len; k++) {
       player = ref[k];
       if (player && player.pos === info.pos && player !== client) {
-        ygopro.stoc_send_chat_to_room(client.room, player.name + " 被请出了房间", 11);
+        ygopro.stoc_send_chat_to_room(client.room, player.name + " 被请出了房间", ygopro.constants.COLORS.RED);
       }
     }
     return false;
@@ -864,7 +864,7 @@
       time -= 1;
       if (time) {
         if (!(time % 5)) {
-          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后房主若不开始游戏将被请出房间", time <= 9 ? 11 : 8);
+          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后房主若不开始游戏将被请出房间", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.BLUE);
         }
         setTimeout((function() {
           wait_room_start(room, time);
@@ -875,7 +875,7 @@
           player = ref[k];
           if (player && player.is_host) {
             Room.ban_player(player.name, player.ip, "挂房间");
-            ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", 11);
+            ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
             player.end();
           }
         }
@@ -895,17 +895,6 @@
     }
   };
 
-  setInterval(function() {
-    var k, len, ref, room;
-    ref = Room.all;
-    for (k = 0, len = ref.length; k < len; k++) {
-      room = ref[k];
-      if (!(room && room.started)) {
-        ygopro.stoc_send_random_tip_to_room(room);
-      }
-    }
-  }, 30000);
-
   tips = null;
 
   if (settings.modules.tips) {
@@ -914,6 +903,18 @@
       json: true
     }, function(error, response, body) {
       tips = body;
+      if (tips) {
+        setInterval(function() {
+          var k, len, ref, room;
+          ref = Room.all;
+          for (k = 0, len = ref.length; k < len; k++) {
+            room = ref[k];
+            if (!(room && room.started)) {
+              ygopro.stoc_send_random_tip_to_room(room);
+            }
+          }
+        }, 30000);
+      }
     });
   }
 
@@ -1011,7 +1012,7 @@
         break;
       case '/roomname':
         if (client.room) {
-          ygopro.stoc_send_chat(client, "您当前的房间名是 " + client.room.name);
+          ygopro.stoc_send_chat(client, "您当前的房间名是 " + client.room.name, ygopro.constants.COLORS.BABYBLUE);
         }
         break;
       case '/test':
@@ -1098,10 +1099,10 @@
       if (time_passed >= settings.modules.hang_timeout) {
         room.last_active_time = moment();
         Room.ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机");
-        ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " 被系统请出了房间", 11);
+        ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
         room.waiting_for_player.server.end();
       } else if (time_passed >= (settings.modules.hang_timeout - 20) && !(time_passed % 10)) {
-        ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " 已经很久没有操作了，若继续挂机，将于" + (settings.modules.hang_timeout - time_passed) + "秒后被请出房间", 11);
+        ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " 已经很久没有操作了，若继续挂机，将于" + (settings.modules.hang_timeout - time_passed) + "秒后被请出房间", ygopro.constants.COLORS.RED);
       }
     }
   }, 1000);
@@ -1166,7 +1167,7 @@
           ref = Room.all;
           for (k = 0, len = ref.length; k < len; k++) {
             room = ref[k];
-            ygopro.stoc_send_chat_to_room(room, u.query.shout, 16);
+            ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW);
           }
           response.writeHead(200);
           response.end(u.query.callback + "( 'shout ok', '" + u.query.shout + "' );");
