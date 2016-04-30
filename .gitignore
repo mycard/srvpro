@@ -1,6 +1,7 @@
 # ignore
 test*
 config.deckstats.json
+jsconfig.json
 
 node_modules/.bin/
 node_modules/bunyan/
