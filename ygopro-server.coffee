@@ -756,7 +756,7 @@ wait_room_start = (room, time)->
     time -= 1
     if time
       unless time % 5
-        ygopro.stoc_send_chat_to_room(room, "#{if time <= 9 then ' ' else ''}#{time}秒后房主若不开始游戏将被请出房间", if time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.BLUE)
+        ygopro.stoc_send_chat_to_room(room, "#{if time <= 9 then ' ' else ''}#{time}秒后房主若不开始游戏将被请出房间", if time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.BABYBLUE)
       setTimeout (()-> wait_room_start(room, time);return), 1000
     else
       for player in room.players
@@ -857,6 +857,10 @@ ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   side = (info.deckbuf[i] for i in [info.mainc...info.mainc + info.sidec])
   client.main = main
   client.side = side
+  return unless client.room and client.room.random_type
+  if client.is_host
+    client.room.waiting_for_player = client.room.waiting_for_player2
+  client.room.last_active_time = moment()
   return
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
@@ -888,6 +892,15 @@ ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
   return unless client.room and client.room.random_type
   client.room.waiting_for_player = client
+  client.room.last_active_time = moment()
+  return
+
+ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
+  return unless client.room and client.room.random_type
+  if client.is_host
+    client.room.waiting_for_player = client
+  else
+    client.room.waiting_for_player2 = client
   client.room.last_active_time = moment()
   return
 

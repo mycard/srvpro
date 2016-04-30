@@ -864,7 +864,7 @@
       time -= 1;
       if (time) {
         if (!(time % 5)) {
-          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后房主若不开始游戏将被请出房间", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.BLUE);
+          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后房主若不开始游戏将被请出房间", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.BABYBLUE);
         }
         setTimeout((function() {
           wait_room_start(room, time);
@@ -1041,6 +1041,13 @@
     })();
     client.main = main;
     client.side = side;
+    if (!(client.room && client.room.random_type)) {
+      return;
+    }
+    if (client.is_host) {
+      client.room.waiting_for_player = client.room.waiting_for_player2;
+    }
+    client.room.last_active_time = moment();
   });
 
   ygopro.ctos_follow('RESPONSE', false, function(buffer, info, client, server) {
@@ -1084,6 +1091,18 @@
       return;
     }
     client.room.waiting_for_player = client;
+    client.room.last_active_time = moment();
+  });
+
+  ygopro.stoc_follow('CHANGE_SIDE', false, function(buffer, info, client, server) {
+    if (!(client.room && client.room.random_type)) {
+      return;
+    }
+    if (client.is_host) {
+      client.room.waiting_for_player = client;
+    } else {
+      client.room.waiting_for_player2 = client;
+    }
     client.room.last_active_time = moment();
   });
 
