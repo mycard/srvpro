@@ -249,6 +249,7 @@
         "ATTRIBUTE_DEVINE": 64
     },
     "COLORS": {
+        "LIGHTBLUE": 8,
         "RED": 11,
         "GREEN": 12,
         "BLUE": 13,
@@ -256,7 +257,8 @@
         "PINK": 15,
         "YELLOW": 16,
         "WHITE": 17,
-        "GRAY": 18
+        "GRAY": 18,
+        "DARKGRAY": 19
     }
 }
 

@@ -864,7 +864,7 @@
       time -= 1;
       if (time) {
         if (!(time % 5)) {
-          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后房主若不开始游戏将被请出房间", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后房主若不开始游戏将被请出房间", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.LIGHTBLUE);
         }
         setTimeout((function() {
           wait_room_start(room, time);

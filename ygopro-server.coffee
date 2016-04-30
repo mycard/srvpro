@@ -756,7 +756,7 @@ wait_room_start = (room, time)->
     time -= 1
     if time
       unless time % 5
-        ygopro.stoc_send_chat_to_room(room, "#{if time <= 9 then ' ' else ''}#{time}秒后房主若不开始游戏将被请出房间", if time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.BABYBLUE)
+        ygopro.stoc_send_chat_to_room(room, "#{if time <= 9 then ' ' else ''}#{time}秒后房主若不开始游戏将被请出房间", if time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
       setTimeout (()-> wait_room_start(room, time);return), 1000
     else
       for player in room.players
