@@ -163,6 +163,9 @@
         result.welcome = '已建立随机对战房间，正在等待对手！';
         result.deprecated = playerbanned;
       }
+      if (result.random_type === 'M') {
+        result.welcome = result.welcome + '\n您进入了比赛模式的房间，我们推荐使用竞技卡组！';
+      }
       return result;
     };
 

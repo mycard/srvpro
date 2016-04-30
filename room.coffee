@@ -117,6 +117,7 @@ class Room
       result.welcome = '已建立随机对战房间，正在等待对手！'
       result.deprecated = playerbanned
     #log.info 'create room', player_name, name
+    if result.random_type=='M' then result.welcome = result.welcome + '\n您进入了比赛模式的房间，我们推荐使用竞技卡组！'
     return result
 
   @find_by_name: (name)->
