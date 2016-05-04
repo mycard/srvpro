@@ -16,13 +16,34 @@ _.mixin(_.str.exports())
 request = require 'request'
 
 bunyan = require 'bunyan'
+log = bunyan.createLogger name: "mycard"
 
 moment = require 'moment'
 
 #heapdump = require 'heapdump'
 
-#配置文件
-settings = require './config.json'
+#配置
+nconf = require 'nconf'
+nconf.file('./config.user.json')
+defaultconfig = require('./config.json')
+nconf.defaults(defaultconfig)
+settings = global.settings = nconf.get()
+nconf.myset = (settings, path, val) ->
+  nconf.set(path, val)
+  nconf.save()
+  log.info("setting changed", path, val)
+  path=path.split(':')
+  if path.length == 0
+    settings[path[0]]=val
+  else
+    target=settings
+    while path.length > 1
+      key=path.shift()
+      target=target[key]
+    key = path.shift()
+    target[key] = val
+  return
+
 settings.BANNED_user = []
 settings.BANNED_IP = []
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
@@ -45,16 +66,6 @@ Room = require './room.js'
 roomlist = require './roomlist.js' if settings.modules.enable_websocket_roomlist
 
 users_cache = {}
-
-#debug模式 端口号+1
-debug = false
-log = null
-if process.argv[2] == '--debug'
-  settings.port++
-  settings.modules.http.port++ if settings.modules.http
-  log = bunyan.createLogger name: "mycard-debug"
-else
-  log = bunyan.createLogger name: "mycard"
 
 #定时清理关闭的连接
 Graveyard = []
@@ -949,31 +960,35 @@ if settings.modules.http
     else if u.pathname == '/api/message'
       if !pass_validated
         response.writeHead(200)
-        response.end(u.query.callback + "( '密码错误', 0 );")
+        response.end(u.query.callback + "( ['密码错误', 0] );")
         return
 
       if u.query.shout
         for room in Room.all
           ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
         response.writeHead(200)
-        response.end(u.query.callback + "( 'shout ok', '" + u.query.shout + "' );")
+        response.end(u.query.callback + "( ['shout ok', '" + u.query.shout + "'] );")
 
       else if u.query.stop
         if u.query.stop == 'false'
           u.query.stop = false
         settings.modules.stop = u.query.stop
         response.writeHead(200)
-        response.end(u.query.callback + "( 'stop ok', '" + u.query.stop + "' );")
+        response.end(u.query.callback + "( ['stop ok', '" + u.query.stop + "'] );")
 
       else if u.query.welcome
-        settings.modules.welcome = u.query.welcome
+        nconf.myset(settings, 'modules:welcome', u.query.welcome)
         response.writeHead(200)
-        response.end(u.query.callback + "( 'welcome ok', '" + u.query.welcome + "' );")
+        response.end(u.query.callback + "( ['welcome ok', '" + u.query.welcome + "'] );")
+
+      else if u.query.getwelcome
+        response.writeHead(200)
+        response.end(u.query.callback + "( ['get ok', '" + settings.modules.welcome + "'] );")
 
       else if u.query.ban
         settings.BANNED_user.push(u.query.ban)
         response.writeHead(200)
-        response.end(u.query.callback + "( 'ban ok', '" + u.query.ban + "' );")
+        response.end(u.query.callback + "( ['ban ok', '" + u.query.ban + "'] );")
 
       else
         response.writeHead(404)

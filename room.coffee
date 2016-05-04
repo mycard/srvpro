@@ -3,7 +3,7 @@ _.str = require 'underscore.string'
 _.mixin(_.str.exports())
 spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
-settings = require './config.json'
+settings = global.settings
 ygopro = require './ygopro.js'
 roomlist = require './roomlist' if settings.modules.enable_websocket_roomlist
 bunyan = require 'bunyan'

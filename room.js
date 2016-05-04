@@ -12,7 +12,7 @@
 
   spawnSync = require('child_process').spawnSync;
 
-  settings = require('./config.json');
+  settings = global.settings;
 
   ygopro = require('./ygopro.js');
 
