@@ -1,6 +1,6 @@
 _ = require 'underscore'
 _.str = require 'underscore.string'
-_.mixin(_.str.exports());
+_.mixin(_.str.exports())
 spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
 settings = require './config.json'
@@ -70,7 +70,7 @@ class Room
       bannedplayer.time = if moment() < bannedplayer.time then moment(bannedplayer.time).add(bantime, 'm') else moment().add(bantime, 'm')
       bannedplayer.reasons.push(reason) if not _.find bannedplayer.reasons, (bannedreason)->
         bannedreason == reason
-      bannedplayer.need_tip = true;
+      bannedplayer.need_tip = true
     else
       bannedplayer = {"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
       Room.players_banned.push(bannedplayer)
@@ -104,7 +104,11 @@ class Room
     max_player = if type == 'T' then 4 else 2
     playerbanned = (bannedplayer and bannedplayer.count > 3 and moment() < bannedplayer.time)
     result = _.find @all, (room)->
-      return room.random_type != '' and !room.started and ((type == '' and room.random_type != 'T') or room.random_type == type) and room.get_playing_player().length < max_player and (room.get_host() == null or room.get_host().remoteAddress != Room.players_oppentlist[player_ip]) and (playerbanned == room.deprecated)
+      return room.random_type != '' and !room.started and
+      ((type == '' and room.random_type != 'T') or room.random_type == type) and
+      room.get_playing_player().length < max_player and
+      (room.get_host() == null or room.get_host().remoteAddress != Room.players_oppentlist[player_ip]) and
+      (playerbanned == room.deprecated)
     if result
       result.welcome = '对手已经在等你了，开始决斗吧！'
 #log.info 'found room', player_name
@@ -321,7 +325,7 @@ class Room
         roomlist.create(this) if !@private and settings.modules.enable_websocket_roomlist
         @port = parseInt data
         _.each @players, (player)=>
-          player.server.connect @port, '127.0.0.1', =>
+          player.server.connect @port, '127.0.0.1', ->
             player.server.write buffer for buffer in player.pre_establish_buffers
             player.established = true
             player.pre_establish_buffers = []
@@ -339,10 +343,10 @@ class Room
               YGOPRO_DIALOG: @windbot.dialog
             }
           }
-          @ai_process.stdout.on 'data', (data)=>
+          @ai_process.stdout.on 'data', (data)->
             #log.info "AI stdout: " + data
             return
-          @ai_process.stderr.on 'data', (data)=>
+          @ai_process.stderr.on 'data', (data)->
             log.info "AI stderr: " + data
             return
         return
@@ -355,26 +359,26 @@ class Room
     if @player_datas.length and settings.modules.enable_cloud_replay
       player_names=@player_datas[0].name + (if @player_datas[2] then "+" + @player_datas[2].name else "") +
                     " VS " +
-                   (if @player_datas[1] then @player_datas[1].name else "AI") + 
+                   (if @player_datas[1] then @player_datas[1].name else "AI") +
                    (if @player_datas[3] then "+" + @player_datas[3].name else "")
       player_ips=[]
-      _.each @player_datas, (player)=>
+      _.each @player_datas, (player)->
         player_ips.push(player.ip)
         return
       recorder_buffer=Buffer.concat(@recorder_buffers)
-      zlib.deflate recorder_buffer, (err, replay_buffer) =>
+      zlib.deflate recorder_buffer, (err, replay_buffer) ->
         replay_buffer=replay_buffer.toString('binary')
         #log.info err, replay_buffer
         date_time=moment().format('YYYY-MM-DD HH:mm:ss')
         replay_id=Math.floor(Math.random()*100000000)
-        redisdb.hmset("replay:"+replay_id, 
+        redisdb.hmset("replay:"+replay_id,
                       "replay_id", replay_id,
                       "replay_buffer", replay_buffer,
                       "player_names", player_names,
                       "date_time", date_time)
         redisdb.expire("replay:"+replay_id, 60*60*24)
         recorded_ip=[]
-        _.each player_ips, (player_ip)=>
+        _.each player_ips, (player_ip)->
           return if _.contains(recorded_ip, player_ip)
           recorded_ip.push player_ip
           redisdb.lpush(player_ip+":replays", replay_id)
@@ -393,14 +397,14 @@ class Room
 
   get_playing_player: ->
     playing_player = []
-    _.each @players, (player)=>
+    _.each @players, (player)->
       if player.pos < 4 then playing_player.push player
       return
     return playing_player
 
   get_host: ->
     host_player = null
-    _.each @players, (player)=>
+    _.each @players, (player)->
       if player.is_host then host_player = player
       return
     return host_player
@@ -429,7 +433,7 @@ class Room
 
   disconnect: (client, error)->
     if client.is_post_watcher
-      ygopro.stoc_send_chat_to_room this, "#{client.name} #{'退出了观战'}#{if error then ": #{error}" else ''}"
+      ygopro.stoc_send_chat_to_room this, "#{client.name} 退出了观战" + if error then ": #{error}" else ''
       index = _.indexOf(@watchers, client)
       @watchers.splice(index, 1) unless index == -1
 #client.room = null
@@ -440,7 +444,7 @@ class Room
       if @started and @disconnector != 'server' and client.room.random_type
         Room.ban_player(client.name, client.ip, "强退")
       if @players.length
-        ygopro.stoc_send_chat_to_room this, "#{client.name} #{'离开了游戏'}#{if error then ": #{error}" else ''}"
+        ygopro.stoc_send_chat_to_room this, "#{client.name} 离开了游戏" + if error then ": #{error}" else ''
         roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
 #client.room = null
       else

@@ -465,30 +465,26 @@
       if (this.player_datas.length && settings.modules.enable_cloud_replay) {
         player_names = this.player_datas[0].name + (this.player_datas[2] ? "+" + this.player_datas[2].name : "") + " VS " + (this.player_datas[1] ? this.player_datas[1].name : "AI") + (this.player_datas[3] ? "+" + this.player_datas[3].name : "");
         player_ips = [];
-        _.each(this.player_datas, (function(_this) {
-          return function(player) {
-            player_ips.push(player.ip);
-          };
-        })(this));
+        _.each(this.player_datas, function(player) {
+          player_ips.push(player.ip);
+        });
         recorder_buffer = Buffer.concat(this.recorder_buffers);
-        zlib.deflate(recorder_buffer, (function(_this) {
-          return function(err, replay_buffer) {
-            var date_time, recorded_ip, replay_id;
-            replay_buffer = replay_buffer.toString('binary');
-            date_time = moment().format('YYYY-MM-DD HH:mm:ss');
-            replay_id = Math.floor(Math.random() * 100000000);
-            redisdb.hmset("replay:" + replay_id, "replay_id", replay_id, "replay_buffer", replay_buffer, "player_names", player_names, "date_time", date_time);
-            redisdb.expire("replay:" + replay_id, 60 * 60 * 24);
-            recorded_ip = [];
-            _.each(player_ips, function(player_ip) {
-              if (_.contains(recorded_ip, player_ip)) {
-                return;
-              }
-              recorded_ip.push(player_ip);
-              redisdb.lpush(player_ip + ":replays", replay_id);
-            });
-          };
-        })(this));
+        zlib.deflate(recorder_buffer, function(err, replay_buffer) {
+          var date_time, recorded_ip, replay_id;
+          replay_buffer = replay_buffer.toString('binary');
+          date_time = moment().format('YYYY-MM-DD HH:mm:ss');
+          replay_id = Math.floor(Math.random() * 100000000);
+          redisdb.hmset("replay:" + replay_id, "replay_id", replay_id, "replay_buffer", replay_buffer, "player_names", player_names, "date_time", date_time);
+          redisdb.expire("replay:" + replay_id, 60 * 60 * 24);
+          recorded_ip = [];
+          _.each(player_ips, function(player_ip) {
+            if (_.contains(recorded_ip, player_ip)) {
+              return;
+            }
+            recorded_ip.push(player_ip);
+            redisdb.lpush(player_ip + ":replays", replay_id);
+          });
+        });
       }
       this.watcher_buffers = [];
       this.recorder_buffers = [];
@@ -509,26 +505,22 @@
     Room.prototype.get_playing_player = function() {
       var playing_player;
       playing_player = [];
-      _.each(this.players, (function(_this) {
-        return function(player) {
-          if (player.pos < 4) {
-            playing_player.push(player);
-          }
-        };
-      })(this));
+      _.each(this.players, function(player) {
+        if (player.pos < 4) {
+          playing_player.push(player);
+        }
+      });
       return playing_player;
     };
 
     Room.prototype.get_host = function() {
       var host_player;
       host_player = null;
-      _.each(this.players, (function(_this) {
-        return function(player) {
-          if (player.is_host) {
-            host_player = player;
-          }
-        };
-      })(this));
+      _.each(this.players, function(player) {
+        if (player.is_host) {
+          host_player = player;
+        }
+      });
       return host_player;
     };
 
@@ -565,7 +557,7 @@
     Room.prototype.disconnect = function(client, error) {
       var index;
       if (client.is_post_watcher) {
-        ygopro.stoc_send_chat_to_room(this, client.name + " " + '退出了观战' + (error ? ": " + error : ''));
+        ygopro.stoc_send_chat_to_room(this, (client.name + " 退出了观战") + (error ? ": " + error : ''));
         index = _.indexOf(this.watchers, client);
         if (index !== -1) {
           this.watchers.splice(index, 1);
@@ -579,7 +571,7 @@
           Room.ban_player(client.name, client.ip, "强退");
         }
         if (this.players.length) {
-          ygopro.stoc_send_chat_to_room(this, client.name + " " + '离开了游戏' + (error ? ": " + error : ''));
+          ygopro.stoc_send_chat_to_room(this, (client.name + " 离开了游戏") + (error ? ": " + error : ''));
           if (!this["private"] && !this.started && settings.modules.enable_websocket_roomlist) {
             roomlist.update(this);
           }

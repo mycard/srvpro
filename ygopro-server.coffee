@@ -11,7 +11,7 @@ execFile = require('child_process').execFile
 #三方库
 _ = require 'underscore'
 _.str = require 'underscore.string'
-_.mixin(_.str.exports());
+_.mixin(_.str.exports())
 
 request = require 'request'
 
@@ -135,7 +135,7 @@ net.createServer (client) ->
         return
       redisdb.expire("replay:"+replay.replay_id, 60*60*48)
       buffer=new Buffer(replay.replay_buffer,'binary')
-      zlib.unzip buffer, (err, replay_buffer) =>
+      zlib.unzip buffer, (err, replay_buffer) ->
         if err
           log.info err
           ygopro.stoc_send_chat(client, "播放录像出错", ygopro.constants.COLORS.RED)
@@ -268,7 +268,7 @@ net.createServer (client) ->
 #功能模块
 
 ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
-  name = info.name.split("$")[0];
+  name = info.name.split("$")[0]
   struct = ygopro.structs["CTOS_PlayerInfo"]
   struct._setBuff(buffer)
   struct.set("name", name)
@@ -289,9 +289,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     
   else if info.pass.toUpperCase()=="R" and settings.modules.enable_cloud_replay
     ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE)
-    redisdb.lrange client.remoteAddress+":replays", 0, 2, (err, result)=>
-      _.each result, (replay_id,id)=>
-        redisdb.hgetall "replay:"+replay_id, (err, replay)=>
+    redisdb.lrange client.remoteAddress+":replays", 0, 2, (err, result)->
+      _.each result, (replay_id,id)->
+        redisdb.hgetall "replay:"+replay_id, (err, replay)->
           if err or !replay
             log.info err
             return
@@ -300,7 +300,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         return
       return
     #强行等待异步执行完毕_(:з」∠)_
-    setTimeout (()=> 
+    setTimeout (()->
       ygopro.stoc_send client, 'ERROR_MSG',{
         msg: 1
         code: 2
@@ -310,7 +310,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.enable_cloud_replay
     replay_id=info.pass.split("#")[1]
     if (replay_id>0 and replay_id<=9)
-      redisdb.lindex client.remoteAddress+":replays", replay_id-1, (err, replay_id)=>
+      redisdb.lindex client.remoteAddress+":replays", replay_id-1, (err, replay_id)->
         if err or !replay_id
           log.info err
           ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED)
@@ -417,7 +417,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       # 4 join match
       switch action
         when 1,2
-          name = crypto.createHash('md5').update(info.pass + client.name).digest('base64')[0...10].replace('+', '-').replace('/', '_');
+          name = crypto.createHash('md5').update(info.pass + client.name).digest('base64')[0...10].replace('+', '-').replace('/', '_')
           if Room.find_by_name(name)
             ygopro.stoc_send_chat(client, '主机密码不正确 (Already Existed)', ygopro.constants.COLORS.RED)
             ygopro.stoc_send client, 'ERROR_MSG', {
@@ -472,7 +472,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       client.room.connect(client)
 
     if id = users_cache[client.name]
-      secret = id % 65535 + 1;
+      secret = id % 65535 + 1
       decrypted_buffer = new Buffer(6)
       for i in [0, 2, 4]
         decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
@@ -490,7 +490,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       json: true
     , (error, response, body)->
       if body and body.user
-        secret = body.user.id % 65535 + 1;
+        secret = body.user.id % 65535 + 1
         decrypted_buffer = new Buffer(6)
         for i in [0, 2, 4]
           decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
@@ -668,7 +668,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
-    client.is_first = !(playertype & 0xf);
+    client.is_first = !(playertype & 0xf)
     client.lp = client.room.hostinfo.start_lp
 
   #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
@@ -728,8 +728,8 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
   return false
 
 ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
-  selftype = info.type & 0xf;
-  is_host = ((info.type >> 4) & 0xf) != 0;
+  selftype = info.type & 0xf
+  is_host = ((info.type >> 4) & 0xf) != 0
   client.is_host = is_host
   client.pos = selftype
   #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
@@ -737,8 +737,8 @@ ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
   return unless client.room and client.room.max_player and client.is_host
-  pos = info.status >> 4;
-  is_ready = (info.status & 0xf) == 9;
+  pos = info.status >> 4
+  is_ready = (info.status & 0xf) == 9
   if pos < client.room.max_player
     client.room.ready_player_count_without_host = 0
     for player in client.room.players
@@ -790,12 +790,12 @@ if settings.modules.tips
     return
 
 if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
-  pg = require('pg');
+  pg = require('pg')
   pg.connect process.env.MYCARD_AUTH_DATABASE, (error, client, done)->
     throw error if error
     client.query 'SELECT username, id from users', (error, result)->
       throw error if error
-      done();
+      done()
       for row in result.rows
         users_cache[row.username] = row.id
       console.log("users loaded", _.keys(users_cache).length)
@@ -928,10 +928,10 @@ if settings.modules.http
 
     if u.pathname == '/api/getrooms'
       if !pass_validated
-        response.writeHead(200);
+        response.writeHead(200)
         response.end(u.query.callback + '( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );')
       else
-        response.writeHead(200);
+        response.writeHead(200)
         roomsjson = JSON.stringify rooms: (for room in Room.all when room.established
           pid: room.process.pid.toString(),
           roomid: room.port.toString(),
@@ -948,8 +948,8 @@ if settings.modules.http
 
     else if u.pathname == '/api/message'
       if !pass_validated
-        response.writeHead(200);
-        response.end(u.query.callback + "( '密码错误', 0 );");
+        response.writeHead(200)
+        response.end(u.query.callback + "( '密码错误', 0 );")
         return
 
       if u.query.shout
@@ -976,12 +976,12 @@ if settings.modules.http
         response.end(u.query.callback + "( 'ban ok', '" + u.query.ban + "' );")
 
       else
-        response.writeHead(404);
-        response.end();
+        response.writeHead(404)
+        response.end()
 
     else
-      response.writeHead(404);
-      response.end();
+      response.writeHead(404)
+      response.end()
     return
 
   http_server = http.createServer(requestListener)
