@@ -379,10 +379,25 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       windbot = _.sample settings.modules.windbots
 
     room = Room.find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000)) # 这个 AI# 没有特殊作用, 仅作为标记
-    room.windbot = windbot
-    room.private = true
-    client.room = room
-    client.room.connect(client)
+    if !room
+      ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send client, 'ERROR_MSG', {
+        msg: 1
+        code: 2
+      }
+      client.end()
+    else if room.error
+      ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED)
+      ygopro.stoc_send client, 'ERROR_MSG', {
+        msg: 1
+        code: 2
+      }
+      client.end()
+    else
+      room.windbot = windbot
+      room.private = true
+      client.room = room
+      client.room.connect(client)
 
   else if info.pass.length and settings.modules.mycard_auth
     ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.RED)
@@ -480,8 +495,23 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           }
           client.end()
           return
-      client.room = room
-      client.room.connect(client)
+      if !room
+        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED)
+        ygopro.stoc_send client, 'ERROR_MSG', {
+          msg: 1
+          code: 2
+        }
+        client.end()
+      else if room.error
+        ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED)
+        ygopro.stoc_send client, 'ERROR_MSG', {
+          msg: 1
+          code: 2
+        }
+        client.end()
+      else
+        client.room = room
+        client.room.connect(client)
 
     if id = users_cache[client.name]
       secret = id % 65535 + 1
