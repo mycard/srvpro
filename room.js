@@ -105,7 +105,6 @@
         };
         Room.players_banned.push(bannedplayer);
       }
-      log.info("banned", name, ip, reason, bannedplayer.count);
     };
 
     Room.find_or_create_by_name = function(name, player_ip) {

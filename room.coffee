@@ -74,7 +74,7 @@ class Room
     else
       bannedplayer = {"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
       Room.players_banned.push(bannedplayer)
-    log.info("banned", name, ip, reason, bannedplayer.count)
+    #log.info("banned", name, ip, reason, bannedplayer.count)
     return
 
   @find_or_create_by_name: (name, player_ip)->
