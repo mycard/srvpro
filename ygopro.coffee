@@ -1,6 +1,6 @@
 _ = require 'underscore'
 _.str = require 'underscore.string'
-_.mixin(_.str.exports());
+_.mixin(_.str.exports())
 
 Struct = require('struct').Struct
 
@@ -137,17 +137,26 @@ for name, declaration of structs_declaration
     console.log "err stoc_send_hint_card_to_room"
     return
   for client in room.players
-    @stoc_send client, 'GAME_MSG',{
-          curmsg: 2,
-          type: 10,
-          player: 0,
-          data: card
-      } if client
+    @stoc_send client, 'GAME_MSG', {
+      curmsg: 2,
+      type: 10,
+      player: 0,
+      data: card
+    } if client
   for client in room.watchers
-    @stoc_send client, 'GAME_MSG',{
-          curmsg: 2,
-          type: 10,
-          player: 0,
-          data: card
-      } if client
+    @stoc_send client, 'GAME_MSG', {
+      curmsg: 2,
+      type: 10,
+      player: 0,
+      data: card
+    } if client
+  return
+
+@stoc_die = (client, msg)->
+  @stoc_send_chat(client, msg, @constants.COLORS.RED)
+  @stoc_send client, 'ERROR_MSG', {
+    msg: 1
+    code: 2
+  } if client
+  client.end() if client
   return

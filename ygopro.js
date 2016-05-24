@@ -245,4 +245,17 @@
     }
   };
 
+  this.stoc_die = function(client, msg) {
+    this.stoc_send_chat(client, msg, this.constants.COLORS.RED);
+    if (client) {
+      this.stoc_send(client, 'ERROR_MSG', {
+        msg: 1,
+        code: 2
+      });
+    }
+    if (client) {
+      client.end();
+    }
+  };
+
 }).call(this);

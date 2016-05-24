@@ -138,12 +138,7 @@ net.createServer (client) ->
   if settings.modules.enable_cloud_replay
     client.open_cloud_replay= (err, replay)->
       if err or !replay
-        ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED)
-        ygopro.stoc_send client, 'ERROR_MSG',{
-          msg: 1
-          code: 2
-        }
-        client.end()
+        ygopro.stoc_die(client, "没有找到录像")
         return
       redisdb.expire("replay:"+replay.replay_id, 60*60*48)
       buffer=new Buffer(replay.replay_buffer,'binary')
@@ -291,13 +286,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 #log.info info
   if settings.modules.stop
-    ygopro.stoc_send_chat(client, settings.modules.stop, ygopro.constants.COLORS.RED)
-    ygopro.stoc_send client, 'ERROR_MSG', {
-      msg: 1
-      code: 2
-    }
-    client.end()
-
+    ygopro.stoc_die(client, settings.modules.stop)
     
   else if info.pass.toUpperCase()=="R" and settings.modules.enable_cloud_replay
     ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE)
@@ -325,25 +314,14 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       redisdb.lindex client.remoteAddress+":replays", replay_id-1, (err, replay_id)->
         if err or !replay_id
           log.info err
-          ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED)
-          ygopro.stoc_send client, 'ERROR_MSG',{
-            msg: 1
-            code: 2
-          }
-          client.end()
+          ygopro.stoc_die(client, "没有找到录像")
           return
         redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
         return
     else if replay_id
       redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
     else
-      ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED)
-      ygopro.stoc_send client, 'ERROR_MSG',{
-        msg: 1
-        code: 2
-      }
-      client.end()
-    
+      ygopro.stoc_die(client, "没有找到录像")
 
   else if info.version != settings.version
     ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED)
@@ -354,12 +332,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.end()
 
   else if !info.pass.length and !settings.modules.enable_random_duel
-    ygopro.stoc_send_chat(client, "房间名为空，请填写主机密码", ygopro.constants.COLORS.RED)
-    ygopro.stoc_send client, 'ERROR_MSG', {
-      msg: 1
-      code: 2
-    }
-    client.end()
+    ygopro.stoc_die(client, "房间名为空，请填写主机密码")
 
   else if settings.modules.enable_windbot and info.pass[0...2] == 'AI'
 
@@ -368,31 +341,16 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       windbot = _.sample _.filter settings.modules.windbots, (w)->
         w.name == name or w.deck == name
       if !windbot
-        ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Windbot Name)', ygopro.constants.COLORS.RED)
-        ygopro.stoc_send client, 'ERROR_MSG', {
-          msg: 1
-          code: 2
-        }
-        client.end()
+        ygopro.stoc_die(client, '主机密码不正确 (Invalid Windbot Name)')
         return
     else
       windbot = _.sample settings.modules.windbots
 
     room = Room.find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000)) # 这个 AI# 没有特殊作用, 仅作为标记
     if !room
-      ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED)
-      ygopro.stoc_send client, 'ERROR_MSG', {
-        msg: 1
-        code: 2
-      }
-      client.end()
+      ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
     else if room.error
-      ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED)
-      ygopro.stoc_send client, 'ERROR_MSG', {
-        msg: 1
-        code: 2
-      }
-      client.end()
+      ygopro.stoc_die(client, room.error)
     else
       room.windbot = windbot
       room.private = true
@@ -400,25 +358,15 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       client.room.connect(client)
 
   else if info.pass.length and settings.modules.mycard_auth
-    ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE)
     if info.pass.length <= 8
-      ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Length)', ygopro.constants.COLORS.RED)
-      ygopro.stoc_send client, 'ERROR_MSG', {
-        msg: 1
-        code: 2
-      }
-      client.end()
+      ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)')
       return
 
     buffer = new Buffer(info.pass[0...8], 'base64')
 
     if buffer.length != 6
-      ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Payload Length)', ygopro.constants.COLORS.RED)
-      ygopro.stoc_send client, 'ERROR_MSG', {
-        msg: 1
-        code: 2
-      }
-      client.end()
+      ygopro.stoc_die(client, '主机密码不正确 (Invalid Payload Length)')
       return
 
     check = (buf)->
@@ -430,12 +378,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     finish = (buffer)->
       action = buffer.readUInt8(1) >> 4
       if buffer != decrypted_buffer and action in [1, 2, 4]
-        ygopro.stoc_send_chat(client, '主机密码不正确 (Unauthorized)', ygopro.constants.COLORS.RED)
-        ygopro.stoc_send client, 'ERROR_MSG', {
-          msg: 1
-          code: 2
-        }
-        client.end()
+        ygopro.stoc_die(client, '主机密码不正确 (Unauthorized)')
         return
 
       # 1 create public room
@@ -446,12 +389,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         when 1,2
           name = crypto.createHash('md5').update(info.pass + client.name).digest('base64')[0...10].replace('+', '-').replace('/', '_')
           if Room.find_by_name(name)
-            ygopro.stoc_send_chat(client, '主机密码不正确 (Already Existed)', ygopro.constants.COLORS.RED)
-            ygopro.stoc_send client, 'ERROR_MSG', {
-              msg: 1
-              code: 2
-            }
-            client.end()
+            ygopro.stoc_die(client, '主机密码不正确 (Already Existed)')
             return
 
           opt1 = buffer.readUInt8(2)
@@ -477,41 +415,23 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           name = info.pass.slice(8)
           room = Room.find_by_name(name)
           if(!room)
-            ygopro.stoc_send_chat(client, '主机密码不正确 (Not Found)', ygopro.constants.COLORS.RED)
-            ygopro.stoc_send client, 'ERROR_MSG', {
-              msg: 1
-              code: 2
-            }
-            client.end()
+            ygopro.stoc_die(client, '主机密码不正确 (Not Found)')
             return
         when 4
           room = Room.find_or_create_by_name('M#' + info.pass.slice(8))
           room.private = true
         else
-          ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Action)', ygopro.constants.COLORS.RED)
-          ygopro.stoc_send client, 'ERROR_MSG', {
-            msg: 1
-            code: 2
-          }
-          client.end()
+          ygopro.stoc_die(client, '主机密码不正确 (Invalid Action)')
           return
+      
       if !room
-        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED)
-        ygopro.stoc_send client, 'ERROR_MSG', {
-          msg: 1
-          code: 2
-        }
-        client.end()
+        ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
       else if room.error
-        ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED)
-        ygopro.stoc_send client, 'ERROR_MSG', {
-          msg: 1
-          code: 2
-        }
-        client.end()
+        ygopro.stoc_die(client, room.error)
       else
         client.room = room
         client.room.connect(client)
+      return
 
     if id = users_cache[client.name]
       secret = id % 65535 + 1
@@ -542,71 +462,30 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       # buffer != decrypted_buffer  ==> auth failed
 
       if !check(buffer)
-        ygopro.stoc_send_chat(client, '主机密码不正确 (Checksum Failed)', ygopro.constants.COLORS.RED)
-        ygopro.stoc_send client, 'ERROR_MSG', {
-          msg: 1
-          code: 2
-        }
-        client.end()
+        ygopro.stoc_die(client, '主机密码不正确 (Checksum Failed)')
         return
       users_cache[client.name] = body.user.id
       finish(buffer)
 
   else if info.pass.length && !Room.validate(info.pass)
-#ygopro.stoc_send client, 'ERROR_MSG',{
-#  msg: 1
-#  code: 1 #这返错有问题，直接双ygopro直连怎么都正常，在这里就经常弹不出提示
-#}
-    ygopro.stoc_send_chat(client, "房间密码不正确", ygopro.constants.COLORS.RED)
-    ygopro.stoc_send client, 'ERROR_MSG', {
-      msg: 1
-      code: 2
-    }
-    client.end()
-
-  else if client.name == '[INCORRECT]' #模拟用户验证
-    ygopro.stoc_send client, 'ERROR_MSG', {
-      msg: 1
-      code: 2
-    }
-    client.end()
+    ygopro.stoc_die(client, "房间密码不正确")
 
   else if _.indexOf(settings.BANNED_user, client.name) > -1 #账号被封
     settings.BANNED_IP.push(client.remoteAddress)
     log.info("BANNED USER LOGIN", client.name, client.remoteAddress)
-    ygopro.stoc_send_chat(client, "您的账号已被封禁", ygopro.constants.COLORS.RED)
-    ygopro.stoc_send client, 'ERROR_MSG', {
-      msg: 1
-      code: 2
-    }
-    client.end()
+    ygopro.stoc_die(client, "您的账号已被封禁")
 
   else if _.indexOf(settings.BANNED_IP, client.remoteAddress) > -1 #IP被封
     log.info("BANNED IP LOGIN", client.name, client.remoteAddress)
-    ygopro.stoc_send_chat(client, "您的账号已被封禁", ygopro.constants.COLORS.RED)
-    ygopro.stoc_send client, 'ERROR_MSG', {
-      msg: 1
-      code: 2
-    }
-    client.end()
+    ygopro.stoc_die(client, "您的账号已被封禁")
 
   else
 #log.info 'join_game',info.pass, client.name
     room = Room.find_or_create_by_name(info.pass, client.remoteAddress)
     if !room
-      ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED)
-      ygopro.stoc_send client, 'ERROR_MSG', {
-        msg: 1
-        code: 2
-      }
-      client.end()
+      ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
     else if room.error
-      ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED)
-      ygopro.stoc_send client, 'ERROR_MSG', {
-        msg: 1
-        code: 2
-      }
-      client.end()
+      ygopro.stoc_die(client, room.error)
     else if room.started
       if settings.modules.enable_halfway_watch
         client.room = room
@@ -617,12 +496,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         for buffer in client.room.watcher_buffers
           client.write buffer
       else
-        ygopro.stoc_send_chat(client, "决斗已开始，不允许观战", ygopro.constants.COLORS.RED)
-        ygopro.stoc_send client, 'ERROR_MSG', {
-          msg: 1
-          code: 2
-        }
-        client.end()
+        ygopro.stoc_die(client, "决斗已开始，不允许观战")
     else
       client.room = room
       client.room.connect(client)
@@ -863,19 +737,6 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   cancel = _.startsWith(_.trim(info.msg), "/")
   client.room.last_active_time = moment() unless cancel or not client.room.random_type
   switch _.trim(info.msg)
-    when '/ping'
-      execFile 'ss', ['-it', "dst #{client.remoteAddress}:#{client.remotePort}"], (error, stdout, stderr)->
-        if error
-          ygopro.stoc_send_chat_to_room client.room, error
-        else
-          line = _.lines(stdout)[2]
-          if line.indexOf('rtt') != -1
-            ygopro.stoc_send_chat_to_room client.room, line
-          else
-#log.warn 'ping', stdout
-            ygopro.stoc_send_chat_to_room client.room, stdout
-        return
-
     when '/help'
       ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client, "/help 显示这个帮助信息")
@@ -888,8 +749,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     when '/roomname'
       ygopro.stoc_send_chat(client, "您当前的房间名是 " + client.room.name, ygopro.constants.COLORS.BABYBLUE) if client.room
 
-    when '/test'
-      ygopro.stoc_send_hint_card_to_room(client.room, 2333365)
+    #when '/test'
+    #  ygopro.stoc_send_hint_card_to_room(client.room, 2333365)
 
   return cancel
 

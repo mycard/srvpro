@@ -187,12 +187,7 @@
       client.open_cloud_replay = function(err, replay) {
         var buffer;
         if (err || !replay) {
-          ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED);
-          ygopro.stoc_send(client, 'ERROR_MSG', {
-            msg: 1,
-            code: 2
-          });
-          client.end();
+          ygopro.stoc_die(client, "没有找到录像");
           return;
         }
         redisdb.expire("replay:" + replay.replay_id, 60 * 60 * 48);
@@ -347,12 +342,7 @@
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
     var check, decrypted_buffer, finish, i, id, k, l, len, len1, name, ref, ref1, replay_id, room, secret, windbot;
     if (settings.modules.stop) {
-      ygopro.stoc_send_chat(client, settings.modules.stop, ygopro.constants.COLORS.RED);
-      ygopro.stoc_send(client, 'ERROR_MSG', {
-        msg: 1,
-        code: 2
-      });
-      client.end();
+      ygopro.stoc_die(client, settings.modules.stop);
     } else if (info.pass.toUpperCase() === "R" && settings.modules.enable_cloud_replay) {
       ygopro.stoc_send_chat(client, "以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE);
       redisdb.lrange(client.remoteAddress + ":replays", 0, 2, function(err, result) {
@@ -379,12 +369,7 @@
         redisdb.lindex(client.remoteAddress + ":replays", replay_id - 1, function(err, replay_id) {
           if (err || !replay_id) {
             log.info(err);
-            ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED);
-            ygopro.stoc_send(client, 'ERROR_MSG', {
-              msg: 1,
-              code: 2
-            });
-            client.end();
+            ygopro.stoc_die(client, "没有找到录像");
             return;
           }
           redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
@@ -392,12 +377,7 @@
       } else if (replay_id) {
         redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
       } else {
-        ygopro.stoc_send_chat(client, "没有找到录像", ygopro.constants.COLORS.RED);
-        ygopro.stoc_send(client, 'ERROR_MSG', {
-          msg: 1,
-          code: 2
-        });
-        client.end();
+        ygopro.stoc_die(client, "没有找到录像");
       }
     } else if (info.version !== settings.version) {
       ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
@@ -407,12 +387,7 @@
       });
       client.end();
     } else if (!info.pass.length && !settings.modules.enable_random_duel) {
-      ygopro.stoc_send_chat(client, "房间名为空，请填写主机密码", ygopro.constants.COLORS.RED);
-      ygopro.stoc_send(client, 'ERROR_MSG', {
-        msg: 1,
-        code: 2
-      });
-      client.end();
+      ygopro.stoc_die(client, "房间名为空，请填写主机密码");
     } else if (settings.modules.enable_windbot && info.pass.slice(0, 2) === 'AI') {
       if (info.pass.length > 3 && info.pass.slice(0, 3) === 'AI#' || info.pass.slice(0, 3) === 'AI_') {
         name = info.pass.slice(3);
@@ -420,12 +395,7 @@
           return w.name === name || w.deck === name;
         }));
         if (!windbot) {
-          ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Windbot Name)', ygopro.constants.COLORS.RED);
-          ygopro.stoc_send(client, 'ERROR_MSG', {
-            msg: 1,
-            code: 2
-          });
-          client.end();
+          ygopro.stoc_die(client, '主机密码不正确 (Invalid Windbot Name)');
           return;
         }
       } else {
@@ -433,19 +403,9 @@
       }
       room = Room.find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000));
       if (!room) {
-        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED);
-        ygopro.stoc_send(client, 'ERROR_MSG', {
-          msg: 1,
-          code: 2
-        });
-        client.end();
+        ygopro.stoc_die(client, "服务器已经爆满，请稍候再试");
       } else if (room.error) {
-        ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED);
-        ygopro.stoc_send(client, 'ERROR_MSG', {
-          msg: 1,
-          code: 2
-        });
-        client.end();
+        ygopro.stoc_die(client, room.error);
       } else {
         room.windbot = windbot;
         room["private"] = true;
@@ -453,24 +413,14 @@
         client.room.connect(client);
       }
     } else if (info.pass.length && settings.modules.mycard_auth) {
-      ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {
-        ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Length)', ygopro.constants.COLORS.RED);
-        ygopro.stoc_send(client, 'ERROR_MSG', {
-          msg: 1,
-          code: 2
-        });
-        client.end();
+        ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)');
         return;
       }
       buffer = new Buffer(info.pass.slice(0, 8), 'base64');
       if (buffer.length !== 6) {
-        ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Payload Length)', ygopro.constants.COLORS.RED);
-        ygopro.stoc_send(client, 'ERROR_MSG', {
-          msg: 1,
-          code: 2
-        });
-        client.end();
+        ygopro.stoc_die(client, '主机密码不正确 (Invalid Payload Length)');
         return;
       }
       check = function(buf) {
@@ -485,12 +435,7 @@
         var action, opt1, opt2, opt3, options;
         action = buffer.readUInt8(1) >> 4;
         if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
-          ygopro.stoc_send_chat(client, '主机密码不正确 (Unauthorized)', ygopro.constants.COLORS.RED);
-          ygopro.stoc_send(client, 'ERROR_MSG', {
-            msg: 1,
-            code: 2
-          });
-          client.end();
+          ygopro.stoc_die(client, '主机密码不正确 (Unauthorized)');
           return;
         }
         switch (action) {
@@ -498,12 +443,7 @@
           case 2:
             name = crypto.createHash('md5').update(info.pass + client.name).digest('base64').slice(0, 10).replace('+', '-').replace('/', '_');
             if (Room.find_by_name(name)) {
-              ygopro.stoc_send_chat(client, '主机密码不正确 (Already Existed)', ygopro.constants.COLORS.RED);
-              ygopro.stoc_send(client, 'ERROR_MSG', {
-                msg: 1,
-                code: 2
-              });
-              client.end();
+              ygopro.stoc_die(client, '主机密码不正确 (Already Existed)');
               return;
             }
             opt1 = buffer.readUInt8(2);
@@ -532,12 +472,7 @@
             name = info.pass.slice(8);
             room = Room.find_by_name(name);
             if (!room) {
-              ygopro.stoc_send_chat(client, '主机密码不正确 (Not Found)', ygopro.constants.COLORS.RED);
-              ygopro.stoc_send(client, 'ERROR_MSG', {
-                msg: 1,
-                code: 2
-              });
-              client.end();
+              ygopro.stoc_die(client, '主机密码不正确 (Not Found)');
               return;
             }
             break;
@@ -546,31 +481,16 @@
             room["private"] = true;
             break;
           default:
-            ygopro.stoc_send_chat(client, '主机密码不正确 (Invalid Action)', ygopro.constants.COLORS.RED);
-            ygopro.stoc_send(client, 'ERROR_MSG', {
-              msg: 1,
-              code: 2
-            });
-            client.end();
+            ygopro.stoc_die(client, '主机密码不正确 (Invalid Action)');
             return;
         }
         if (!room) {
-          ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED);
-          ygopro.stoc_send(client, 'ERROR_MSG', {
-            msg: 1,
-            code: 2
-          });
-          return client.end();
+          ygopro.stoc_die(client, "服务器已经爆满，请稍候再试");
         } else if (room.error) {
-          ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED);
-          ygopro.stoc_send(client, 'ERROR_MSG', {
-            msg: 1,
-            code: 2
-          });
-          return client.end();
+          ygopro.stoc_die(client, room.error);
         } else {
           client.room = room;
-          return client.room.connect(client);
+          client.room.connect(client);
         }
       };
       if (id = users_cache[client.name]) {
@@ -609,63 +529,27 @@
           }
         }
         if (!check(buffer)) {
-          ygopro.stoc_send_chat(client, '主机密码不正确 (Checksum Failed)', ygopro.constants.COLORS.RED);
-          ygopro.stoc_send(client, 'ERROR_MSG', {
-            msg: 1,
-            code: 2
-          });
-          client.end();
+          ygopro.stoc_die(client, '主机密码不正确 (Checksum Failed)');
           return;
         }
         users_cache[client.name] = body.user.id;
         return finish(buffer);
       });
     } else if (info.pass.length && !Room.validate(info.pass)) {
-      ygopro.stoc_send_chat(client, "房间密码不正确", ygopro.constants.COLORS.RED);
-      ygopro.stoc_send(client, 'ERROR_MSG', {
-        msg: 1,
-        code: 2
-      });
-      client.end();
-    } else if (client.name === '[INCORRECT]') {
-      ygopro.stoc_send(client, 'ERROR_MSG', {
-        msg: 1,
-        code: 2
-      });
-      client.end();
+      ygopro.stoc_die(client, "房间密码不正确");
     } else if (_.indexOf(settings.BANNED_user, client.name) > -1) {
       settings.BANNED_IP.push(client.remoteAddress);
       log.info("BANNED USER LOGIN", client.name, client.remoteAddress);
-      ygopro.stoc_send_chat(client, "您的账号已被封禁", ygopro.constants.COLORS.RED);
-      ygopro.stoc_send(client, 'ERROR_MSG', {
-        msg: 1,
-        code: 2
-      });
-      client.end();
+      ygopro.stoc_die(client, "您的账号已被封禁");
     } else if (_.indexOf(settings.BANNED_IP, client.remoteAddress) > -1) {
       log.info("BANNED IP LOGIN", client.name, client.remoteAddress);
-      ygopro.stoc_send_chat(client, "您的账号已被封禁", ygopro.constants.COLORS.RED);
-      ygopro.stoc_send(client, 'ERROR_MSG', {
-        msg: 1,
-        code: 2
-      });
-      client.end();
+      ygopro.stoc_die(client, "您的账号已被封禁");
     } else {
       room = Room.find_or_create_by_name(info.pass, client.remoteAddress);
       if (!room) {
-        ygopro.stoc_send_chat(client, "服务器已经爆满，请稍候再试", ygopro.constants.COLORS.RED);
-        ygopro.stoc_send(client, 'ERROR_MSG', {
-          msg: 1,
-          code: 2
-        });
-        client.end();
+        ygopro.stoc_die(client, "服务器已经爆满，请稍候再试");
       } else if (room.error) {
-        ygopro.stoc_send_chat(client, room.error, ygopro.constants.COLORS.RED);
-        ygopro.stoc_send(client, 'ERROR_MSG', {
-          msg: 1,
-          code: 2
-        });
-        client.end();
+        ygopro.stoc_die(client, room.error);
       } else if (room.started) {
         if (settings.modules.enable_halfway_watch) {
           client.room = room;
@@ -679,12 +563,7 @@
             client.write(buffer);
           }
         } else {
-          ygopro.stoc_send_chat(client, "决斗已开始，不允许观战", ygopro.constants.COLORS.RED);
-          ygopro.stoc_send(client, 'ERROR_MSG', {
-            msg: 1,
-            code: 2
-          });
-          client.end();
+          ygopro.stoc_die(client, "决斗已开始，不允许观战");
         }
       } else {
         client.room = room;
@@ -1019,21 +898,6 @@
       client.room.last_active_time = moment();
     }
     switch (_.trim(info.msg)) {
-      case '/ping':
-        execFile('ss', ['-it', "dst " + client.remoteAddress + ":" + client.remotePort], function(error, stdout, stderr) {
-          var line;
-          if (error) {
-            ygopro.stoc_send_chat_to_room(client.room, error);
-          } else {
-            line = _.lines(stdout)[2];
-            if (line.indexOf('rtt') !== -1) {
-              ygopro.stoc_send_chat_to_room(client.room, line);
-            } else {
-              ygopro.stoc_send_chat_to_room(client.room, stdout);
-            }
-          }
-        });
-        break;
       case '/help':
         ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助");
         ygopro.stoc_send_chat(client, "/help 显示这个帮助信息");
@@ -1051,9 +915,6 @@
         if (client.room) {
           ygopro.stoc_send_chat(client, "您当前的房间名是 " + client.room.name, ygopro.constants.COLORS.BABYBLUE);
         }
-        break;
-      case '/test':
-        ygopro.stoc_send_hint_card_to_room(client.room, 2333365);
     }
     return cancel;
   });
