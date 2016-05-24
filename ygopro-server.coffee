@@ -24,15 +24,14 @@ moment = require 'moment'
 
 #配置
 nconf = require 'nconf'
-nconf.file('user', './config.user.json')
-#nconf.file('user2', './config.user2.json')
+nconf.file('./config.user.json')
 defaultconfig = require('./config.json')
 nconf.defaults(defaultconfig)
 settings = global.settings = nconf.get()
 nconf.myset = (settings, path, val) ->
   nconf.set(path, val)
-  nconf.save('user')
-  log.info("setting changed", path, val)
+  nconf.save()
+  log.info("setting changed", path, val) if _.isString(val)
   path=path.split(':')
   if path.length == 0
     settings[path[0]]=val
@@ -47,6 +46,7 @@ nconf.myset = (settings, path, val) ->
 
 settings.BANNED_user = []
 settings.BANNED_IP = []
+
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   date=list.match(/!([\d\.]+)/)
@@ -558,8 +558,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   return
 
 #登场台词
-if settings.modules.dialogues
-  dialogues = {}
+load_dialogues = () ->
   request
     url: settings.modules.dialogues
     json: true
@@ -569,9 +568,13 @@ if settings.modules.dialogues
     else if error or !body
       log.warn 'dialogues error', error, response
     else
-#log.info "dialogues loaded", _.size body
-      dialogues = body
+      nconf.myset(settings, "dialogues", body)
+      log.info "dialogues loaded", _.size body
     return
+  return
+
+if settings.modules.dialogues
+  load_dialogues()
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   msg = buffer.readInt8(0)
@@ -630,8 +633,8 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   if settings.modules.dialogues
     if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING'
       card = buffer.readUInt32LE(1)
-      if dialogues[card]
-        for line in _.lines dialogues[card][Math.floor(Math.random() * dialogues[card].length)]
+      if settings.dialogues[card]
+        for line in _.lines settings.dialogues[card][Math.floor(Math.random() * settings.dialogues[card].length)]
           ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK)
   return
 
@@ -684,26 +687,34 @@ wait_room_start = (room, time)->
 
 #tip
 ygopro.stoc_send_random_tip = (client)->
-  ygopro.stoc_send_chat(client, "Tip: " + tips[Math.floor(Math.random() * tips.length)]) if tips
+  ygopro.stoc_send_chat(client, "Tip: " + settings.tips[Math.floor(Math.random() * settings.tips.length)]) if settings.modules.tips
   return
 ygopro.stoc_send_random_tip_to_room = (room)->
-  ygopro.stoc_send_chat_to_room(room, "Tip: " + tips[Math.floor(Math.random() * tips.length)]) if tips
+  ygopro.stoc_send_chat_to_room(room, "Tip: " + settings.tips[Math.floor(Math.random() * settings.tips.length)]) if settings.modules.tips
   return
 
-tips = null
-if settings.modules.tips
+load_tips = ()->
   request
     url: settings.modules.tips
     json: true
   , (error, response, body)->
-    tips = body
-    #log.info "tips loaded", tips.length
-    if tips then setInterval ()->
-      for room in Room.all
-        ygopro.stoc_send_random_tip_to_room(room) unless room and room.started
-      return
-    , 30000
+    if _.isString body
+      log.warn "tips bad json", body
+    else if error or !body
+      log.warn 'tips error', error, response
+    else
+      nconf.myset(settings, "tips", body)
+      log.info "tips loaded", settings.tips.length
     return
+  return
+
+if settings.modules.tips
+  load_tips()
+  setInterval ()->
+    for room in Room.all
+      ygopro.stoc_send_random_tip_to_room(room) unless room and room.started
+    return
+  , 30000
 
 if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
   pg = require('pg')

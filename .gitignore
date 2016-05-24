@@ -2,9 +2,8 @@
 jsconfig.json
 coffeelint.json
 
-config.deckstats.json
 password.json
-config.user.json
+config.*.json
 
 /node_modules/
 !/node_modules/struct/
