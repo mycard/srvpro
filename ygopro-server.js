@@ -36,7 +36,7 @@
 
   nconf = require('nconf');
 
-  nconf.file('./config.user.json');
+  nconf.file('user', './config.user.json');
 
   defaultconfig = require('./config.json');
 
@@ -47,7 +47,7 @@
   nconf.myset = function(settings, path, val) {
     var key, target;
     nconf.set(path, val);
-    nconf.save();
+    nconf.save('user');
     log.info("setting changed", path, val);
     path = path.split(':');
     if (path.length === 0) {

@@ -24,13 +24,14 @@ moment = require 'moment'
 
 #配置
 nconf = require 'nconf'
-nconf.file('./config.user.json')
+nconf.file('user', './config.user.json')
+#nconf.file('user2', './config.user2.json')
 defaultconfig = require('./config.json')
 nconf.defaults(defaultconfig)
 settings = global.settings = nconf.get()
 nconf.myset = (settings, path, val) ->
   nconf.set(path, val)
-  nconf.save()
+  nconf.save('user')
   log.info("setting changed", path, val)
   path=path.split(':')
   if path.length == 0
