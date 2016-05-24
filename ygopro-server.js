@@ -1115,6 +1115,14 @@
         } else if (u.query.getwelcome) {
           response.writeHead(200);
           response.end(u.query.callback + "( ['get ok', '" + settings.modules.welcome + "'] );");
+        } else if (u.query.loadtips) {
+          load_tips();
+          response.writeHead(200);
+          response.end(u.query.callback + "( ['loading tip', '" + settings.modules.tips + "'] );");
+        } else if (u.query.loaddialogues) {
+          load_dialogues();
+          response.writeHead(200);
+          response.end(u.query.callback + "( ['loading dialogues', '" + settings.modules.dialogues + "'] );");
         } else if (u.query.ban) {
           settings.BANNED_user.push(u.query.ban);
           response.writeHead(200);
