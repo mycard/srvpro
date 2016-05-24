@@ -25,6 +25,9 @@ function add_to_deck(deck,id) {
 }
 
 function add_to_all_list(LIST,id,use) {
+	if (!ALL_CARD_DATAS[id]) {
+		return;
+	}
     if (ALL_CARD_DATAS[id].alias) {
         id=ALL_CARD_DATAS[id].alias;
     }
