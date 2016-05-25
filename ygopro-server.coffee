@@ -82,6 +82,7 @@ setInterval ()->
       Graveyard[i][j] = null
     Graveyard[i] = null
   Graveyard = []
+  #global.gc()
   return
 , 3000
 
@@ -156,16 +157,16 @@ net.createServer (client) ->
     
   #需要重构
   #客户端到服务端(ctos)协议分析
-  ctos_buffer = new Buffer(0)
-  ctos_message_length = 0
-  ctos_proto = 0
-
+  
   client.pre_establish_buffers = new Array()
 
   client.on 'data', (data) ->
     if client.is_post_watcher
       client.room.watcher.write data
     else
+      ctos_buffer = new Buffer(0)
+      ctos_message_length = 0
+      ctos_proto = 0
       ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
       datas = []
@@ -185,7 +186,7 @@ net.createServer (client) ->
             break
         else
           if ctos_buffer.length >= 2 + ctos_message_length
-#console.log "CTOS", ygopro.constants.CTOS[ctos_proto]
+            #console.log "CTOS", ygopro.constants.CTOS[ctos_proto]
             cancel = false
             if ygopro.ctos_follows[ctos_proto]
               b = ctos_buffer.slice(3, ctos_message_length - 1 + 3)
@@ -219,11 +220,10 @@ net.createServer (client) ->
     return
 
   #服务端到客户端(stoc)
-  stoc_buffer = new Buffer(0)
-  stoc_message_length = 0
-  stoc_proto = 0
-
   server.on 'data', (data)->
+    stoc_buffer = new Buffer(0)
+    stoc_message_length = 0
+    stoc_proto = 0
     stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
     #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
@@ -244,7 +244,7 @@ net.createServer (client) ->
           break
       else
         if stoc_buffer.length >= 2 + stoc_message_length
-#console.log "STOC", ygopro.constants.STOC[stoc_proto]
+          #console.log "STOC", ygopro.constants.STOC[stoc_proto]
           stanzas = stoc_proto
           if ygopro.stoc_follows[stoc_proto]
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
@@ -509,6 +509,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if client.room.welcome
     ygopro.stoc_send_chat(client, client.room.welcome, ygopro.constants.COLORS.BABYBLUE)
+  #log.info (client.room)
 
   if !client.room.recorder
     client.room.recorder = recorder = net.connect client.room.port, ->

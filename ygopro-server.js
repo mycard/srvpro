@@ -138,7 +138,7 @@
   }, 3000);
 
   net.createServer(function(client) {
-    var ctos_buffer, ctos_message_length, ctos_proto, server, stoc_buffer, stoc_message_length, stoc_proto;
+    var server;
     server = new net.Socket();
     client.server = server;
     client.setTimeout(300000);
@@ -207,15 +207,15 @@
         });
       };
     }
-    ctos_buffer = new Buffer(0);
-    ctos_message_length = 0;
-    ctos_proto = 0;
     client.pre_establish_buffers = new Array();
     client.on('data', function(data) {
-      var b, buffer, cancel, datas, k, l, len, len1, looplimit, struct;
+      var b, buffer, cancel, ctos_buffer, ctos_message_length, ctos_proto, datas, k, l, len, len1, looplimit, struct;
       if (client.is_post_watcher) {
         client.room.watcher.write(data);
       } else {
+        ctos_buffer = new Buffer(0);
+        ctos_message_length = 0;
+        ctos_proto = 0;
         ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length);
         datas = [];
         looplimit = 0;
@@ -278,11 +278,11 @@
         }
       }
     });
-    stoc_buffer = new Buffer(0);
-    stoc_message_length = 0;
-    stoc_proto = 0;
     server.on('data', function(data) {
-      var b, looplimit, stanzas, struct;
+      var b, looplimit, stanzas, stoc_buffer, stoc_message_length, stoc_proto, struct;
+      stoc_buffer = new Buffer(0);
+      stoc_message_length = 0;
+      stoc_proto = 0;
       stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length);
       client.write(data);
       looplimit = 0;
