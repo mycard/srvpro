@@ -250,7 +250,7 @@
     max_player = type === 'T' ? 4 : 2;
     playerbanned = bannedplayer && bannedplayer.count > 3 && moment() < bannedplayer.time;
     result = _.find(ROOM_all, function(room) {
-      return room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().remoteAddress !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated);
+      return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().remoteAddress !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated);
     });
     if (result) {
       result.welcome = '对手已经在等你了，开始决斗吧！';
@@ -272,14 +272,14 @@
   ROOM_find_by_name = function(name) {
     var result;
     result = _.find(ROOM_all, function(room) {
-      return room.name === name;
+      return room && room.name === name;
     });
     return result;
   };
 
   ROOM_find_by_port = function(port) {
     return _.find(ROOM_all, function(room) {
-      return room.port === port;
+      return room && room.port === port;
     });
   };
 
@@ -293,6 +293,9 @@
     }
     return !_.find(ROOM_all, function(room) {
       var room_name, room_name_and_pass, room_pass;
+      if (!room) {
+        return false;
+      }
       room_name_and_pass = room.name.split('$', 2);
       room_name = room_name_and_pass[0];
       room_pass = room_name_and_pass[1];
@@ -596,7 +599,7 @@
       this.deleted = true;
       index = _.indexOf(ROOM_all, this);
       if (index !== -1) {
-        ROOM_all.splice(index, 1);
+        ROOM_all[index] = null;
       }
       if (!this["private"] && !this.started && this.established && settings.modules.enable_websocket_roomlist) {
         roomlist["delete"](this.name);
@@ -668,7 +671,7 @@
         if (index !== -1) {
           this.players.splice(index, 1);
         }
-        if (this.started && this.disconnector !== 'server' && client.room.random_type) {
+        if (this.started && this.disconnector !== 'server' && this.random_type) {
           ROOM_ban_player(client.name, client.ip, "强退");
         }
         if (this.players.length) {
@@ -693,21 +696,25 @@
     client.server = server;
     client.setTimeout(300000);
     client.on('close', function(had_error) {
+      var room;
+      room = ROOM_all[client.rid];
       tribute(client);
       if (!client.closed) {
         client.closed = true;
-        if (client.room) {
-          client.room.disconnect(client);
+        if (room) {
+          room.disconnect(client);
         }
       }
       server.end();
     });
     client.on('error', function(error) {
+      var room;
+      room = ROOM_all[client.rid];
       tribute(client);
       if (!client.closed) {
         client.closed = error;
-        if (client.room) {
-          client.room.disconnect(client, error);
+        if (room) {
+          room.disconnect(client, error);
         }
       }
       server.end();
@@ -716,8 +723,12 @@
       server.end();
     });
     server.on('close', function(had_error) {
+      var room;
+      room = ROOM_all[client.rid];
       tribute(server);
-      client.room.disconnector = 'server';
+      if (room) {
+        room.disconnector = 'server';
+      }
       if (!server.closed) {
         server.closed = true;
       }
@@ -727,8 +738,12 @@
       }
     });
     server.on('error', function(error) {
+      var room;
+      room = ROOM_all[client.rid];
       tribute(server);
-      client.room.disconnector = 'server';
+      if (room) {
+        room.disconnector = 'server';
+      }
       server.closed = error;
       if (!client.closed) {
         ygopro.stoc_send_chat(client, "服务器错误: " + error, ygopro.constants.COLORS.RED);
@@ -759,9 +774,12 @@
     }
     client.pre_establish_buffers = new Array();
     client.on('data', function(data) {
-      var b, buffer, cancel, ctos_buffer, ctos_message_length, ctos_proto, datas, k, l, len, len1, looplimit, struct;
+      var b, buffer, cancel, ctos_buffer, ctos_message_length, ctos_proto, datas, k, l, len, len1, looplimit, room, struct;
       if (client.is_post_watcher) {
-        client.room.watcher.write(data);
+        room = ROOM_all[client.rid];
+        if (room) {
+          room.watcher.write(data);
+        }
       } else {
         ctos_buffer = new Buffer(0);
         ctos_message_length = 0;
@@ -961,8 +979,8 @@
       } else {
         room.windbot = windbot;
         room["private"] = true;
-        client.room = room;
-        client.room.connect(client);
+        client.rid = _.indexOf(ROOM_all, room);
+        room.connect(client);
       }
     } else if (info.pass.length && settings.modules.mycard_auth) {
       ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
@@ -1041,8 +1059,8 @@
         } else if (room.error) {
           ygopro.stoc_die(client, room.error);
         } else {
-          client.room = room;
-          client.room.connect(client);
+          client.rid = _.indexOf(ROOM_all, room);
+          room.connect(client);
         }
       };
       if (id = users_cache[client.name]) {
@@ -1104,12 +1122,12 @@
         ygopro.stoc_die(client, room.error);
       } else if (room.started) {
         if (settings.modules.enable_halfway_watch) {
-          client.room = room;
+          client.rid = _.indexOf(ROOM_all, room);
           client.is_post_watcher = true;
-          ygopro.stoc_send_chat_to_room(client.room, client.name + " 加入了观战");
-          client.room.watchers.push(client);
+          ygopro.stoc_send_chat_to_room(room, client.name + " 加入了观战");
+          room.watchers.push(client);
           ygopro.stoc_send_chat(client, "观战中", ygopro.constants.COLORS.BABYBLUE);
-          ref1 = client.room.watcher_buffers;
+          ref1 = room.watcher_buffers;
           for (l = 0, len1 = ref1.length; l < len1; l++) {
             buffer = ref1[l];
             client.write(buffer);
@@ -1118,25 +1136,26 @@
           ygopro.stoc_die(client, "决斗已开始，不允许观战");
         }
       } else {
-        client.room = room;
-        client.room.connect(client);
+        client.rid = _.indexOf(ROOM_all, room);
+        room.connect(client);
       }
     }
   });
 
   ygopro.stoc_follow('JOIN_GAME', false, function(buffer, info, client, server) {
-    var recorder, watcher;
-    if (!client.room) {
+    var recorder, room, watcher;
+    room = ROOM_all[client.rid];
+    if (!room) {
       return;
     }
     if (settings.modules.welcome) {
       ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN);
     }
-    if (client.room.welcome) {
-      ygopro.stoc_send_chat(client, client.room.welcome, ygopro.constants.COLORS.BABYBLUE);
+    if (room.welcome) {
+      ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE);
     }
-    if (!client.room.recorder) {
-      client.room.recorder = recorder = net.connect(client.room.port, function() {
+    if (!room.recorder) {
+      room.recorder = recorder = net.connect(room.port, function() {
         ygopro.ctos_send(recorder, 'PLAYER_INFO', {
           name: "Marshtomp"
         });
@@ -1149,15 +1168,16 @@
         ygopro.ctos_send(recorder, 'HS_TOOBSERVER');
       });
       recorder.on('data', function(data) {
-        if (!(client.room && settings.modules.enable_cloud_replay)) {
+        room = ROOM_all[client.rid];
+        if (!(room && settings.modules.enable_cloud_replay)) {
           return;
         }
-        return client.room.recorder_buffers.push(data);
+        return room.recorder_buffers.push(data);
       });
       recorder.on('error', function(error) {});
     }
-    if (settings.modules.enable_halfway_watch && !client.room.watcher) {
-      client.room.watcher = watcher = net.connect(client.room.port, function() {
+    if (settings.modules.enable_halfway_watch && !room.watcher) {
+      room.watcher = watcher = net.connect(room.port, function() {
         ygopro.ctos_send(watcher, 'PLAYER_INFO', {
           name: "the Big Brother"
         });
@@ -1171,11 +1191,12 @@
       });
       watcher.on('data', function(data) {
         var k, len, ref, w;
-        if (!client.room) {
+        room = ROOM_all[client.rid];
+        if (!room) {
           return;
         }
-        client.room.watcher_buffers.push(data);
-        ref = client.room.watchers;
+        room.watcher_buffers.push(data);
+        ref = room.watchers;
         for (k = 0, len = ref.length; k < len; k++) {
           w = ref[k];
           if (w) {
@@ -1208,25 +1229,29 @@
   }
 
   ygopro.stoc_follow('GAME_MSG', false, function(buffer, info, client, server) {
-    var card, k, len, line, msg, playertype, pos, ref, ref1, ref2, val;
+    var card, k, len, line, msg, playertype, pos, ref, ref1, ref2, room, val;
+    room = ROOM_all[client.rid];
+    if (!room) {
+      return;
+    }
     msg = buffer.readInt8(0);
     if (msg >= 10 && msg < 30) {
-      client.room.waiting_for_player = client;
-      client.room.last_active_time = moment();
+      room.waiting_for_player = client;
+      room.last_active_time = moment();
     }
     if (ygopro.constants.MSG[msg] === 'START') {
       playertype = buffer.readUInt8(1);
       client.is_first = !(playertype & 0xf);
-      client.lp = client.room.hostinfo.start_lp;
+      client.lp = room.hostinfo.start_lp;
     }
 
     /*
-    if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(client.room.name, 'M#') and client.is_host
+    if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(room.name, 'M#') and client.is_host
       pos = buffer.readUInt8(1)
       pos = 1 - pos unless client.is_first or pos == 2
       reason = buffer.readUInt8(2)
       #log.info {winner: pos, reason: reason}
-      client.room.duels.push {winner: pos, reason: reason}
+      room.duels.push {winner: pos, reason: reason}
      */
     if (ygopro.constants.MSG[msg] === 'DAMAGE' && client.is_host) {
       pos = buffer.readUInt8(1);
@@ -1234,9 +1259,9 @@
         pos = 1 - pos;
       }
       val = buffer.readInt32LE(2);
-      client.room.dueling_players[pos].lp -= val;
-      if ((0 < (ref = client.room.dueling_players[pos].lp) && ref <= 100)) {
-        ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！", ygopro.constants.COLORS.PINK);
+      room.dueling_players[pos].lp -= val;
+      if ((0 < (ref = room.dueling_players[pos].lp) && ref <= 100)) {
+        ygopro.stoc_send_chat_to_room(room, "你的生命已经如风中残烛了！", ygopro.constants.COLORS.PINK);
       }
     }
     if (ygopro.constants.MSG[msg] === 'RECOVER' && client.is_host) {
@@ -1245,7 +1270,7 @@
         pos = 1 - pos;
       }
       val = buffer.readInt32LE(2);
-      client.room.dueling_players[pos].lp += val;
+      room.dueling_players[pos].lp += val;
     }
     if (ygopro.constants.MSG[msg] === 'LPUPDATE' && client.is_host) {
       pos = buffer.readUInt8(1);
@@ -1253,7 +1278,7 @@
         pos = 1 - pos;
       }
       val = buffer.readInt32LE(2);
-      client.room.dueling_players[pos].lp = val;
+      room.dueling_players[pos].lp = val;
     }
     if (ygopro.constants.MSG[msg] === 'PAY_LPCOST' && client.is_host) {
       pos = buffer.readUInt8(1);
@@ -1261,9 +1286,9 @@
         pos = 1 - pos;
       }
       val = buffer.readInt32LE(2);
-      client.room.dueling_players[pos].lp -= val;
-      if ((0 < (ref1 = client.room.dueling_players[pos].lp) && ref1 <= 100)) {
-        ygopro.stoc_send_chat_to_room(client.room, "背水一战！", ygopro.constants.COLORS.PINK);
+      room.dueling_players[pos].lp -= val;
+      if ((0 < (ref1 = room.dueling_players[pos].lp) && ref1 <= 100)) {
+        ygopro.stoc_send_chat_to_room(room, "背水一战！", ygopro.constants.COLORS.PINK);
       }
     }
     if (settings.modules.dialogues) {
@@ -1281,15 +1306,16 @@
   });
 
   ygopro.ctos_follow('HS_KICK', true, function(buffer, info, client, server) {
-    var k, len, player, ref;
-    if (!client.room) {
+    var k, len, player, ref, room;
+    room = ROOM_all[client.rid];
+    if (!room) {
       return;
     }
-    ref = client.room.players;
+    ref = room.players;
     for (k = 0, len = ref.length; k < len; k++) {
       player = ref[k];
       if (player && player.pos === info.pos && player !== client) {
-        ygopro.stoc_send_chat_to_room(client.room, player.name + " 被请出了房间", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat_to_room(room, player.name + " 被请出了房间", ygopro.constants.COLORS.RED);
       }
     }
     return false;
@@ -1304,27 +1330,28 @@
   });
 
   ygopro.stoc_follow('HS_PLAYER_CHANGE', false, function(buffer, info, client, server) {
-    var is_ready, k, len, player, pos, ref;
-    if (!(client.room && client.room.max_player && client.is_host)) {
+    var is_ready, k, len, player, pos, ref, room;
+    room = ROOM_all[client.rid];
+    if (!(room && room.max_player && client.is_host)) {
       return;
     }
     pos = info.status >> 4;
     is_ready = (info.status & 0xf) === 9;
-    if (pos < client.room.max_player) {
-      client.room.ready_player_count_without_host = 0;
-      ref = client.room.players;
+    if (pos < room.max_player) {
+      room.ready_player_count_without_host = 0;
+      ref = room.players;
       for (k = 0, len = ref.length; k < len; k++) {
         player = ref[k];
         if (player.pos === pos) {
           player.is_ready = is_ready;
         }
         if (!player.is_host) {
-          client.room.ready_player_count_without_host += player.is_ready;
+          room.ready_player_count_without_host += player.is_ready;
         }
       }
-      if (client.room.ready_player_count_without_host >= client.room.max_player - 1) {
+      if (room.ready_player_count_without_host >= room.max_player - 1) {
         setTimeout((function() {
-          wait_room_start(client.room, 20);
+          wait_room_start(ROOM_all[client.rid], 20);
         }), 1000);
       }
     }
@@ -1389,8 +1416,10 @@
       var k, len, room;
       for (k = 0, len = ROOM_all.length; k < len; k++) {
         room = ROOM_all[k];
-        if (!(room && room.started)) {
-          ygopro.stoc_send_random_tip_to_room(room);
+        if (room && room.established) {
+          if (!(room && room.started)) {
+            ygopro.stoc_send_random_tip_to_room(room);
+          }
         }
       }
     }, 30000);
@@ -1419,29 +1448,30 @@
   }
 
   ygopro.stoc_follow('DUEL_START', false, function(buffer, info, client, server) {
-    var k, len, player, ref;
-    if (!client.room) {
+    var k, len, player, ref, room;
+    room = ROOM_all[client.rid];
+    if (!room) {
       return;
     }
-    if (!client.room.started) {
-      client.room.started = true;
-      if (settings.modules.enable_websocket_roomlist && !client.room["private"]) {
-        roomlist["delete"](client.room.name);
+    if (!room.started) {
+      room.started = true;
+      if (settings.modules.enable_websocket_roomlist && !room["private"]) {
+        roomlist["delete"](room.name);
       }
-      client.room.dueling_players = [];
-      ref = client.room.players;
+      room.dueling_players = [];
+      ref = room.players;
       for (k = 0, len = ref.length; k < len; k++) {
         player = ref[k];
         if (!(player.pos !== 7)) {
           continue;
         }
-        client.room.dueling_players[player.pos] = player;
-        client.room.player_datas.push({
+        room.dueling_players[player.pos] = player;
+        room.player_datas.push({
           ip: player.remoteAddress,
           name: player.name
         });
-        if (client.room.windbot) {
-          client.room.dueling_players[1 - player.pos] = {};
+        if (room.windbot) {
+          room.dueling_players[1 - player.pos] = {};
         }
       }
     }
@@ -1451,13 +1481,14 @@
   });
 
   ygopro.ctos_follow('CHAT', true, function(buffer, info, client, server) {
-    var cancel;
-    if (!client.room) {
+    var cancel, room;
+    room = ROOM_all[client.rid];
+    if (!room) {
       return;
     }
     cancel = _.startsWith(_.trim(info.msg), "/");
-    if (!(cancel || !client.room.random_type)) {
-      client.room.last_active_time = moment();
+    if (!(cancel || !room.random_type)) {
+      room.last_active_time = moment();
     }
     switch (_.trim(info.msg)) {
       case '/help':
@@ -1474,15 +1505,15 @@
         }
         break;
       case '/roomname':
-        if (client.room) {
-          ygopro.stoc_send_chat(client, "您当前的房间名是 " + client.room.name, ygopro.constants.COLORS.BABYBLUE);
+        if (room) {
+          ygopro.stoc_send_chat(client, "您当前的房间名是 " + room.name, ygopro.constants.COLORS.BABYBLUE);
         }
     }
     return cancel;
   });
 
   ygopro.ctos_follow('UPDATE_DECK', false, function(buffer, info, client, server) {
-    var i, main, side;
+    var i, main, room, side;
     main = (function() {
       var k, ref, results;
       results = [];
@@ -1501,69 +1532,82 @@
     })();
     client.main = main;
     client.side = side;
-    if (!(client.room && client.room.random_type)) {
+    room = ROOM_all[client.rid];
+    if (!(room && room.random_type)) {
       return;
     }
     if (client.is_host) {
-      client.room.waiting_for_player = client.room.waiting_for_player2;
+      room.waiting_for_player = room.waiting_for_player2;
     }
-    client.room.last_active_time = moment();
+    room.last_active_time = moment();
   });
 
   ygopro.ctos_follow('RESPONSE', false, function(buffer, info, client, server) {
-    if (!(client.room && client.room.random_type)) {
+    var room;
+    room = ROOM_all[client.rid];
+    if (!(room && room.random_type)) {
       return;
     }
-    client.room.last_active_time = moment();
+    room.last_active_time = moment();
   });
 
   ygopro.ctos_follow('HAND_RESULT', false, function(buffer, info, client, server) {
-    if (!(client.room && client.room.random_type)) {
+    var room;
+    room = ROOM_all[client.rid];
+    if (!(room && room.random_type)) {
       return;
     }
     if (client.is_host) {
-      client.room.waiting_for_player = client.room.waiting_for_player2;
+      room.waiting_for_player = room.waiting_for_player2;
     }
-    client.room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's');
+    room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's');
   });
 
   ygopro.ctos_follow('TP_RESULT', false, function(buffer, info, client, server) {
-    if (!(client.room && client.room.random_type)) {
+    var room;
+    room = ROOM_all[client.rid];
+    if (!(room && room.random_type)) {
       return;
     }
-    client.room.last_active_time = moment();
+    room.last_active_time = moment();
   });
 
   ygopro.stoc_follow('SELECT_HAND', false, function(buffer, info, client, server) {
-    if (!(client.room && client.room.random_type)) {
+    var room;
+    room = ROOM_all[client.rid];
+    if (!(room && room.random_type)) {
       return;
     }
     if (client.is_host) {
-      client.room.waiting_for_player = client;
+      room.waiting_for_player = client;
     } else {
-      client.room.waiting_for_player2 = client;
+      room.waiting_for_player2 = client;
     }
-    client.room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's');
+    room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's');
   });
 
   ygopro.stoc_follow('SELECT_TP', false, function(buffer, info, client, server) {
-    if (!(client.room && client.room.random_type)) {
+    var room;
+    room = ROOM_all[client.rid];
+    if (!(room && room.random_type)) {
       return;
     }
-    client.room.waiting_for_player = client;
-    client.room.last_active_time = moment();
+    room.waiting_for_player = client;
+    room.last_active_time = moment();
   });
 
   ygopro.stoc_follow('CHANGE_SIDE', false, function(buffer, info, client, server) {
-    if (!(client.room && client.room.random_type)) {
+    var room;
+    room = ROOM_all[client.rid];
+    if (!(room && room.random_type)) {
       return;
     }
     if (client.is_host) {
-      client.room.waiting_for_player = client;
+      room.waiting_for_player = client;
     } else {
-      client.room.waiting_for_player2 = client;
+      room.waiting_for_player2 = client;
     }
-    client.room.last_active_time = moment();
+    room.last_active_time = moment();
   });
 
   setInterval(function() {
@@ -1603,7 +1647,7 @@
               results = [];
               for (k = 0, len = ROOM_all.length; k < len; k++) {
                 room = ROOM_all[k];
-                if (room.established) {
+                if (room && room.established) {
                   results.push({
                     pid: room.process.pid.toString(),
                     roomid: room.port.toString(),
@@ -1643,7 +1687,9 @@
         if (u.query.shout) {
           for (k = 0, len = ROOM_all.length; k < len; k++) {
             room = ROOM_all[k];
-            ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW);
+            if (room && room.established) {
+              ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW);
+            }
           }
           response.writeHead(200);
           response.end(u.query.callback + "( ['shout ok', '" + u.query.shout + "'] );");

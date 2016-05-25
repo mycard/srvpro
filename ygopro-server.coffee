@@ -168,7 +168,7 @@ ROOM_find_or_create_random = (type, player_ip)->
   max_player = if type == 'T' then 4 else 2
   playerbanned = (bannedplayer and bannedplayer.count > 3 and moment() < bannedplayer.time)
   result = _.find ROOM_all, (room)->
-    return room.random_type != '' and !room.started and
+    return room and room.random_type != '' and !room.started and
     ((type == '' and room.random_type != 'T') or room.random_type == type) and
     room.get_playing_player().length < max_player and
     (room.get_host() == null or room.get_host().remoteAddress != ROOM_players_oppentlist[player_ip]) and
@@ -190,13 +190,13 @@ ROOM_find_or_create_random = (type, player_ip)->
 
 ROOM_find_by_name = (name)->
   result = _.find ROOM_all, (room)->
-    room.name == name
+    return room and room.name == name
   #log.info 'find_by_name', name, result
   return result
 
 ROOM_find_by_port = (port)->
   _.find ROOM_all, (room)->
-    room.port == port
+    return room and room.port == port
 
 ROOM_validate = (name)->
   client_name_and_pass = name.split('$', 2)
@@ -204,6 +204,7 @@ ROOM_validate = (name)->
   client_pass = client_name_and_pass[1]
   return true if !client_pass
   !_.find ROOM_all, (room)->
+    return false unless room
     room_name_and_pass = room.name.split('$', 2)
     room_name = room_name_and_pass[0]
     room_pass = room_name_and_pass[1]
@@ -454,8 +455,8 @@ class Room
     @watcher.end() if @watcher
     @deleted = true
     index = _.indexOf(ROOM_all, this)
-    #ROOM_all[index] = null unless index == -1
-    ROOM_all.splice(index, 1) unless index == -1
+    ROOM_all[index] = null unless index == -1
+    #ROOM_all.splice(index, 1) unless index == -1
     roomlist.delete @name if !@private and !@started and @established and settings.modules.enable_websocket_roomlist
     return
 
@@ -504,8 +505,8 @@ class Room
     else
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
-      #log.info(@started,@disconnector,client.room.random_type)
-      if @started and @disconnector != 'server' and client.room.random_type
+      #log.info(@started,@disconnector,@random_type)
+      if @started and @disconnector != 'server' and @random_type
         ROOM_ban_player(client.name, client.ip, "强退")
       if @players.length
         ygopro.stoc_send_chat_to_room this, "#{client.name} 离开了游戏" + if error then ": #{error}" else ''
@@ -528,19 +529,21 @@ net.createServer (client) ->
   #释放处理
   client.on 'close', (had_error) ->
     #log.info "client closed", client.name, had_error
+    room=ROOM_all[client.rid]
     tribute(client)
     unless client.closed
       client.closed = true
-      client.room.disconnect(client) if client.room
+      room.disconnect(client) if room
     server.end()
     return
 
   client.on 'error', (error)->
     #log.info "client error", client.name, error
+    room=ROOM_all[client.rid]
     tribute(client)
     unless client.closed
       client.closed = error
-      client.room.disconnect(client, error) if client.room
+      room.disconnect(client, error) if room
     server.end()
     return
 
@@ -550,8 +553,9 @@ net.createServer (client) ->
 
   server.on 'close', (had_error) ->
     #log.info "server closed", client.name, had_error
+    room=ROOM_all[client.rid]
     tribute(server)
-    client.room.disconnector = 'server'
+    room.disconnector = 'server' if room
     server.closed = true unless server.closed
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接", ygopro.constants.COLORS.RED)
@@ -560,8 +564,9 @@ net.createServer (client) ->
 
   server.on 'error', (error)->
     #log.info "server error", client.name, error
+    room=ROOM_all[client.rid]
     tribute(server)
-    client.room.disconnector = 'server'
+    room.disconnector = 'server' if room
     server.closed = error
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}", ygopro.constants.COLORS.RED)
@@ -594,7 +599,8 @@ net.createServer (client) ->
 
   client.on 'data', (data) ->
     if client.is_post_watcher
-      client.room.watcher.write data
+      room=ROOM_all[client.rid]
+      room.watcher.write data if room
     else
       ctos_buffer = new Buffer(0)
       ctos_message_length = 0
@@ -786,8 +792,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       room.windbot = windbot
       room.private = true
-      client.room = room
-      client.room.connect(client)
+      #client.room = room
+      client.rid = _.indexOf(ROOM_all, room)
+      room.connect(client)
 
   else if info.pass.length and settings.modules.mycard_auth
     ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE)
@@ -861,8 +868,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       else if room.error
         ygopro.stoc_die(client, room.error)
       else
-        client.room = room
-        client.room.connect(client)
+        #client.room = room
+        client.rid = _.indexOf(ROOM_all, room)
+        room.connect(client)
       return
 
     if id = users_cache[client.name]
@@ -920,31 +928,34 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       ygopro.stoc_die(client, room.error)
     else if room.started
       if settings.modules.enable_halfway_watch
-        client.room = room
+        #client.room = room
+        client.rid = _.indexOf(ROOM_all, room)
         client.is_post_watcher = true
-        ygopro.stoc_send_chat_to_room(client.room, "#{client.name} 加入了观战")
-        client.room.watchers.push client
+        ygopro.stoc_send_chat_to_room(room, "#{client.name} 加入了观战")
+        room.watchers.push client
         ygopro.stoc_send_chat(client, "观战中", ygopro.constants.COLORS.BABYBLUE)
-        for buffer in client.room.watcher_buffers
+        for buffer in room.watcher_buffers
           client.write buffer
       else
         ygopro.stoc_die(client, "决斗已开始，不允许观战")
     else
-      client.room = room
-      client.room.connect(client)
+      #client.room = room
+      client.rid = _.indexOf(ROOM_all, room)
+      room.connect(client)
   return
 
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #欢迎信息
-  return unless client.room
+  room=ROOM_all[client.rid]
+  return unless room
   if settings.modules.welcome
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
-  if client.room.welcome
-    ygopro.stoc_send_chat(client, client.room.welcome, ygopro.constants.COLORS.BABYBLUE)
-  #log.info (client.room)
+  if room.welcome
+    ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
+    #log.info(ROOM_all)
 
-  if !client.room.recorder
-    client.room.recorder = recorder = net.connect client.room.port, ->
+  if !room.recorder
+    room.recorder = recorder = net.connect room.port, ->
       ygopro.ctos_send recorder, 'PLAYER_INFO', {
         name: "Marshtomp"
       }
@@ -958,14 +969,15 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       return
 
     recorder.on 'data', (data)->
-      return unless client.room and settings.modules.enable_cloud_replay
-      client.room.recorder_buffers.push data
+      room=ROOM_all[client.rid]
+      return unless room and settings.modules.enable_cloud_replay
+      room.recorder_buffers.push data
 
     recorder.on 'error', (error)->
       return
 
-  if settings.modules.enable_halfway_watch and !client.room.watcher
-    client.room.watcher = watcher = net.connect client.room.port, ->
+  if settings.modules.enable_halfway_watch and !room.watcher
+    room.watcher = watcher = net.connect room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
         name: "the Big Brother"
       }
@@ -979,9 +991,10 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       return
 
     watcher.on 'data', (data)->
-      return unless client.room
-      client.room.watcher_buffers.push data
-      for w in client.room.watchers
+      room=ROOM_all[client.rid]
+      return unless room
+      room.watcher_buffers.push data
+      for w in room.watchers
         w.write data if w #a WTF fix
       return
 
@@ -1010,27 +1023,29 @@ if settings.modules.dialogues
   load_dialogues()
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room
   msg = buffer.readInt8(0)
 
   if msg >= 10 and msg < 30 #SELECT开头的消息
-    client.room.waiting_for_player = client
-    client.room.last_active_time = moment()
-  #log.info("#{ygopro.constants.MSG[msg]}等待#{client.room.waiting_for_player.name}")
+    room.waiting_for_player = client
+    room.last_active_time = moment()
+  #log.info("#{ygopro.constants.MSG[msg]}等待#{room.waiting_for_player.name}")
 
   #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf)
-    client.lp = client.room.hostinfo.start_lp
+    client.lp = room.hostinfo.start_lp
 
-  #ygopro.stoc_send_chat_to_room(client.room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
+  #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
   ###
-  if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(client.room.name, 'M#') and client.is_host
+  if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(room.name, 'M#') and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2
     reason = buffer.readUInt8(2)
     #log.info {winner: pos, reason: reason}
-    client.room.duels.push {winner: pos, reason: reason}
+    room.duels.push {winner: pos, reason: reason}
   ###
 
   #lp跟踪
@@ -1038,29 +1053,29 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
-    client.room.dueling_players[pos].lp -= val
-    if 0 < client.room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(client.room, "你的生命已经如风中残烛了！", ygopro.constants.COLORS.PINK)
+    room.dueling_players[pos].lp -= val
+    if 0 < room.dueling_players[pos].lp <= 100
+      ygopro.stoc_send_chat_to_room(room, "你的生命已经如风中残烛了！", ygopro.constants.COLORS.PINK)
 
   if ygopro.constants.MSG[msg] == 'RECOVER' and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
-    client.room.dueling_players[pos].lp += val
+    room.dueling_players[pos].lp += val
 
   if ygopro.constants.MSG[msg] == 'LPUPDATE' and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
-    client.room.dueling_players[pos].lp = val
+    room.dueling_players[pos].lp = val
 
   if ygopro.constants.MSG[msg] == 'PAY_LPCOST' and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
-    client.room.dueling_players[pos].lp -= val
-    if 0 < client.room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(client.room, "背水一战！", ygopro.constants.COLORS.PINK)
+    room.dueling_players[pos].lp -= val
+    if 0 < room.dueling_players[pos].lp <= 100
+      ygopro.stoc_send_chat_to_room(room, "背水一战！", ygopro.constants.COLORS.PINK)
 
   #登场台词
   if settings.modules.dialogues
@@ -1073,10 +1088,11 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
 
 #房间管理
 ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
-  return unless client.room
-  for player in client.room.players
+  room=ROOM_all[client.rid]
+  return unless room
+  for player in room.players
     if player and player.pos == info.pos and player != client
-      ygopro.stoc_send_chat_to_room(client.room, "#{player.name} 被请出了房间", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send_chat_to_room(room, "#{player.name} 被请出了房间", ygopro.constants.COLORS.RED)
   return false
 
 ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
@@ -1088,19 +1104,20 @@ ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
   return
 
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
-  return unless client.room and client.room.max_player and client.is_host
+  room=ROOM_all[client.rid]
+  return unless room and room.max_player and client.is_host
   pos = info.status >> 4
   is_ready = (info.status & 0xf) == 9
-  if pos < client.room.max_player
-    client.room.ready_player_count_without_host = 0
-    for player in client.room.players
+  if pos < room.max_player
+    room.ready_player_count_without_host = 0
+    for player in room.players
       if player.pos == pos
         player.is_ready = is_ready
       unless player.is_host
-        client.room.ready_player_count_without_host += player.is_ready
-    if client.room.ready_player_count_without_host >= client.room.max_player - 1
-#log.info "all ready"
-      setTimeout (()-> wait_room_start(client.room, 20);return), 1000
+        room.ready_player_count_without_host += player.is_ready
+    if room.ready_player_count_without_host >= room.max_player - 1
+      #log.info "all ready"
+      setTimeout (()-> wait_room_start(ROOM_all[client.rid], 20);return), 1000
   return
 
 wait_room_start = (room, time)->
@@ -1144,7 +1161,7 @@ load_tips = ()->
 if settings.modules.tips
   load_tips()
   setInterval ()->
-    for room in ROOM_all
+    for room in ROOM_all when room and room.established
       ygopro.stoc_send_random_tip_to_room(room) unless room and room.started
     return
   , 30000
@@ -1161,25 +1178,27 @@ if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
       console.log("users loaded", _.keys(users_cache).length)
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
-  return unless client.room
-  unless client.room.started #first start
-    client.room.started = true
-    roomlist.delete client.room.name if settings.modules.enable_websocket_roomlist and not client.room.private
-    #client.room.duels = []
-    client.room.dueling_players = []
-    for player in client.room.players when player.pos != 7
-      client.room.dueling_players[player.pos] = player
-      client.room.player_datas.push ip: player.remoteAddress, name: player.name
-      if client.room.windbot
-        client.room.dueling_players[1 - player.pos] = {}
+  room=ROOM_all[client.rid]
+  return unless room
+  unless room.started #first start
+    room.started = true
+    roomlist.delete room.name if settings.modules.enable_websocket_roomlist and not room.private
+    #room.duels = []
+    room.dueling_players = []
+    for player in room.players when player.pos != 7
+      room.dueling_players[player.pos] = player
+      room.player_datas.push ip: player.remoteAddress, name: player.name
+      if room.windbot
+        room.dueling_players[1 - player.pos] = {}
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
   return
 
 ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
-  return unless client.room
+  room=ROOM_all[client.rid]
+  return unless room
   cancel = _.startsWith(_.trim(info.msg), "/")
-  client.room.last_active_time = moment() unless cancel or not client.room.random_type
+  room.last_active_time = moment() unless cancel or not room.random_type
   switch _.trim(info.msg)
     when '/help'
       ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助")
@@ -1191,10 +1210,10 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
 
     when '/roomname'
-      ygopro.stoc_send_chat(client, "您当前的房间名是 " + client.room.name, ygopro.constants.COLORS.BABYBLUE) if client.room
+      ygopro.stoc_send_chat(client, "您当前的房间名是 " + room.name, ygopro.constants.COLORS.BABYBLUE) if room
 
     #when '/test'
-    #  ygopro.stoc_send_hint_card_to_room(client.room, 2333365)
+    #  ygopro.stoc_send_hint_card_to_room(room, 2333365)
 
   return cancel
 
@@ -1204,51 +1223,58 @@ ygopro.ctos_follow 'UPDATE_DECK', false, (buffer, info, client, server)->
   side = (info.deckbuf[i] for i in [info.mainc...info.mainc + info.sidec])
   client.main = main
   client.side = side
-  return unless client.room and client.room.random_type
+  room=ROOM_all[client.rid]
+  return unless room and room.random_type
   if client.is_host
-    client.room.waiting_for_player = client.room.waiting_for_player2
-  client.room.last_active_time = moment()
+    room.waiting_for_player = room.waiting_for_player2
+  room.last_active_time = moment()
   return
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
-  return unless client.room and client.room.random_type
-  client.room.last_active_time = moment()
+  room=ROOM_all[client.rid]
+  return unless room and room.random_type
+  room.last_active_time = moment()
   return
 
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
-  return unless client.room and client.room.random_type
+  room=ROOM_all[client.rid]
+  return unless room and room.random_type
   if client.is_host
-    client.room.waiting_for_player = client.room.waiting_for_player2
-  client.room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's')
+    room.waiting_for_player = room.waiting_for_player2
+  room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's')
   return
 
 ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server)->
-  return unless client.room and client.room.random_type
-  client.room.last_active_time = moment()
+  room=ROOM_all[client.rid]
+  return unless room and room.random_type
+  room.last_active_time = moment()
   return
 
 ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->
-  return unless client.room and client.room.random_type
+  room=ROOM_all[client.rid]
+  return unless room and room.random_type
   if client.is_host
-    client.room.waiting_for_player = client
+    room.waiting_for_player = client
   else
-    client.room.waiting_for_player2 = client
-  client.room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's')
+    room.waiting_for_player2 = client
+  room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's')
   return
 
 ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
-  return unless client.room and client.room.random_type
-  client.room.waiting_for_player = client
-  client.room.last_active_time = moment()
+  room=ROOM_all[client.rid]
+  return unless room and room.random_type
+  room.waiting_for_player = client
+  room.last_active_time = moment()
   return
 
 ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
-  return unless client.room and client.room.random_type
+  room=ROOM_all[client.rid]
+  return unless room and room.random_type
   if client.is_host
-    client.room.waiting_for_player = client
+    room.waiting_for_player = client
   else
-    client.room.waiting_for_player2 = client
-  client.room.last_active_time = moment()
+    room.waiting_for_player2 = client
+  room.last_active_time = moment()
   return
 
 setInterval ()->
@@ -1279,7 +1305,7 @@ if settings.modules.http
         response.end(u.query.callback + '( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );')
       else
         response.writeHead(200)
-        roomsjson = JSON.stringify rooms: (for room in ROOM_all when room.established
+        roomsjson = JSON.stringify rooms: (for room in ROOM_all when room and room.established
           pid: room.process.pid.toString(),
           roomid: room.port.toString(),
           roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
@@ -1300,7 +1326,7 @@ if settings.modules.http
         return
 
       if u.query.shout
-        for room in ROOM_all
+        for room in ROOM_all when room and room.established
           ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
         response.writeHead(200)
         response.end(u.query.callback + "( ['shout ok', '" + u.query.shout + "'] );")
