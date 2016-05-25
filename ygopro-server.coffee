@@ -7,6 +7,8 @@ fs = require 'fs'
 os = require 'os'
 crypto = require 'crypto'
 execFile = require('child_process').execFile
+spawn = require('child_process').spawn
+spawnSync = require('child_process').spawnSync
 
 #三方库
 _ = require 'underscore'
@@ -19,6 +21,23 @@ bunyan = require 'bunyan'
 log = bunyan.createLogger name: "mycard"
 
 moment = require 'moment'
+moment.locale('zh-cn', {
+  relativeTime: {
+    future: '%s内',
+    past: '%s前',
+    s: '%d秒',
+    m: '1分钟',
+    mm: '%d分钟',
+    h: '1小时',
+    hh: '%d小时',
+    d: '1天',
+    dd: '%d天',
+    M: '1个月',
+    MM: '%d个月',
+    y: '1年',
+    yy: '%d年'
+  }
+})
 
 #heapdump = require 'heapdump'
 
@@ -63,10 +82,26 @@ if settings.modules.enable_windbot
 
 #组件
 ygopro = require './ygopro.js'
-Room = require './room.js'
+#Room = require './room.js'
 roomlist = require './roomlist.js' if settings.modules.enable_websocket_roomlist
 
 users_cache = {}
+
+#获取可用内存
+get_memory_usage = ()->
+  prc_free = spawnSync("free", [])
+  if (prc_free.stdout)
+    lines = prc_free.stdout.toString().split(/\n/g)
+    line = lines[1].split(/\s+/)
+    total = parseInt(line[1], 10)
+    free = parseInt(line[3], 10)
+    buffers = parseInt(line[5], 10)
+    cached = parseInt(line[6], 10)
+    actualFree = free + buffers + cached
+    percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2))
+  else
+    percentUsed = 0
+  return percentUsed
 
 #定时清理关闭的连接
 Graveyard = []
@@ -86,6 +121,403 @@ setInterval ()->
   return
 , 3000
 
+ROOM_all = []
+ROOM_players_oppentlist = {}
+ROOM_players_banned = []
+
+ROOM_ban_player = (name, ip, reason)->
+  bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
+    ip == bannedplayer.ip
+  if bannedplayer
+    bannedplayer.count = bannedplayer.count + 1
+    bantime = if bannedplayer.count > 3 then Math.pow(2, bannedplayer.count - 3) * 2 else 0
+    bannedplayer.time = if moment() < bannedplayer.time then moment(bannedplayer.time).add(bantime, 'm') else moment().add(bantime, 'm')
+    bannedplayer.reasons.push(reason) if not _.find bannedplayer.reasons, (bannedreason)->
+      bannedreason == reason
+    bannedplayer.need_tip = true
+  else
+    bannedplayer = {"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
+    ROOM_players_banned.push(bannedplayer)
+  #log.info("banned", name, ip, reason, bannedplayer.count)
+  return
+
+ROOM_find_or_create_by_name = (name, player_ip)->
+  if settings.modules.enable_random_duel and (name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M' or name.toUpperCase() == 'T')
+    return ROOM_find_or_create_random(name.toUpperCase(), player_ip)
+  if room = ROOM_find_by_name(name)
+    return room
+  else if get_memory_usage() >= 90
+    return null
+  else
+    return new Room(name)
+
+ROOM_find_or_create_random = (type, player_ip)->
+  bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
+    return player_ip == bannedplayer.ip
+  if bannedplayer
+    if bannedplayer.count > 6 and moment() < bannedplayer.time
+      return {"error": "因为您近期在游戏中多次#{bannedplayer.reasons.join('、')}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
+    if bannedplayer.count > 3 and moment() < bannedplayer.time and bannedplayer.need_tip
+      bannedplayer.need_tip = false
+      return {"error": "因为您近期在游戏中#{bannedplayer.reasons.join('、')}，在#{moment(bannedplayer.time).fromNow(true)}内您随机对战时只能遇到其他违规玩家"}
+    else if bannedplayer.need_tip
+      bannedplayer.need_tip = false
+      return {"error": "系统检测到您近期在游戏中#{bannedplayer.reasons.join('、')}，若您违规超过3次，将受到惩罚"}
+    else if bannedplayer.count > 2
+      bannedplayer.need_tip = true
+  max_player = if type == 'T' then 4 else 2
+  playerbanned = (bannedplayer and bannedplayer.count > 3 and moment() < bannedplayer.time)
+  result = _.find ROOM_all, (room)->
+    return room.random_type != '' and !room.started and
+    ((type == '' and room.random_type != 'T') or room.random_type == type) and
+    room.get_playing_player().length < max_player and
+    (room.get_host() == null or room.get_host().remoteAddress != ROOM_players_oppentlist[player_ip]) and
+    (playerbanned == room.deprecated)
+  if result
+    result.welcome = '对手已经在等你了，开始决斗吧！'
+    #log.info 'found room', player_name
+  else
+    type = if type then type else 'S'
+    name = type + ',RANDOM#' + Math.floor(Math.random() * 100000)
+    result = new Room(name)
+    result.random_type = type
+    result.max_player = max_player
+    result.welcome = '已建立随机对战房间，正在等待对手！'
+    result.deprecated = playerbanned
+    #log.info 'create room', player_name, name
+  if result.random_type=='M' then result.welcome = result.welcome + '\n您进入了比赛模式的房间，我们推荐使用竞技卡组！'
+  return result
+
+ROOM_find_by_name = (name)->
+  result = _.find ROOM_all, (room)->
+    room.name == name
+  #log.info 'find_by_name', name, result
+  return result
+
+ROOM_find_by_port = (port)->
+  _.find ROOM_all, (room)->
+    room.port == port
+
+ROOM_validate = (name)->
+  client_name_and_pass = name.split('$', 2)
+  client_name = client_name_and_pass[0]
+  client_pass = client_name_and_pass[1]
+  return true if !client_pass
+  !_.find ROOM_all, (room)->
+    room_name_and_pass = room.name.split('$', 2)
+    room_name = room_name_and_pass[0]
+    room_pass = room_name_and_pass[1]
+    client_name == room_name and client_pass != room_pass
+
+class Room
+  constructor: (name, @hostinfo) ->
+    @name = name
+    @alive = true
+    @players = []
+    @player_datas = []
+    @status = 'starting'
+    @started = false
+    @established = false
+    @watcher_buffers = []
+    @recorder_buffers = []
+    @watchers = []
+    @random_type = ''
+    @welcome = ''
+    ROOM_all.push this
+
+    @hostinfo ||=
+      lflist: _.findIndex settings.lflist, (list)-> !list.tcg and list.date.isBefore()
+      rule: if settings.modules.enable_TCG_as_default then 2 else 0
+      mode: 0
+      enable_priority: false
+      no_check_deck: false
+      no_shuffle_deck: false
+      start_lp: 8000
+      start_hand: 5
+      draw_count: 1
+      time_limit: 180
+
+    if name[0...2] == 'M#'
+      @hostinfo.mode = 1
+    else if name[0...2] == 'T#'
+      @hostinfo.mode = 2
+      @hostinfo.start_lp = 16000
+
+    else if (param = name.match /^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i)
+      @hostinfo.rule = parseInt(param[1])
+      @hostinfo.mode = parseInt(param[2])
+      @hostinfo.enable_priority = param[3] == 'T'
+      @hostinfo.no_check_deck = param[4] == 'T'
+      @hostinfo.no_shuffle_deck = param[5] == 'T'
+      @hostinfo.start_lp = parseInt(param[6])
+      @hostinfo.start_hand = parseInt(param[7])
+      @hostinfo.draw_count = parseInt(param[8])
+
+    else if (((param = name.match /(.+)#/) != null) and ( (param[1].length <= 2 and param[1].match(/(S|N|M|T)(0|1|2|T|A)/i)) or (param[1].match(/^(S|N|M|T)(0|1|2|O|T|A)(0|1|O|T)/i)) ) )
+      rule = param[1].toUpperCase()
+      #log.info "C", rule
+
+      switch rule.charAt(0)
+        when "M","1"
+          @hostinfo.mode = 1
+        when "T","2"
+          @hostinfo.mode = 2
+          @hostinfo.start_lp = 16000
+        else
+          @hostinfo.mode = 0
+
+      switch rule.charAt(1)
+        when "0","O"
+          @hostinfo.rule = 0
+        when "1","T"
+          @hostinfo.rule = 1
+        else
+          @hostinfo.rule = 2
+
+      switch rule.charAt(2)
+        when "1","T"
+          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg and list.date.isBefore()
+        else
+          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> !list.tcg and list.date.isBefore()
+
+      if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0)
+        @hostinfo.time_limit = param * 60
+
+      switch rule.charAt(4)
+        when "T","1"
+          @hostinfo.enable_priority = true
+        else
+          @hostinfo.enable_priority = false
+
+      switch rule.charAt(5)
+        when "T","1"
+          @hostinfo.no_check_deck = true
+        else
+          @hostinfo.no_check_deck = false
+
+      switch rule.charAt(6)
+        when "T","1"
+          @hostinfo.no_shuffle_deck = true
+        else
+          @hostinfo.no_shuffle_deck = false
+
+      if ((param = parseInt(rule.charAt(7).match(/\d/))) > 0)
+        @hostinfo.start_lp = param * 4000
+
+      if ((param = parseInt(rule.charAt(8).match(/\d/))) > 0)
+        @hostinfo.start_hand = param
+
+      if ((param = parseInt(rule.charAt(9).match(/\d/))) >= 0)
+        @hostinfo.draw_count = param
+
+    else if ((param = name.match /(.+)#/) != null)
+      rule = param[1].toUpperCase()
+      #log.info "233", rule
+
+      if (rule.match /(^|，|,)(M|MATCH)(，|,|$)/)
+        @hostinfo.mode = 1
+
+      if (rule.match /(^|，|,)(T|TAG)(，|,|$)/)
+        @hostinfo.mode = 2
+        @hostinfo.start_lp = 16000
+
+      if (rule.match /(^|，|,)(TCGONLY|TO)(，|,|$)/)
+        @hostinfo.rule = 1
+        @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg and list.date.isBefore()
+
+      if (rule.match /(^|，|,)(OCGONLY|OO)(，|,|$)/)
+        @hostinfo.rule = 0
+
+      if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/)
+        @hostinfo.rule = 2
+
+      if (param = rule.match /(^|，|,)LP(\d+)(，|,|$)/)
+        start_lp = parseInt(param[2])
+        if (start_lp <= 0) then start_lp = 1
+        if (start_lp >= 99999) then start_lp = 99999
+        @hostinfo.start_lp = start_lp
+
+      if (param = rule.match /(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/)
+        time_limit = parseInt(param[3])
+        if (time_limit < 0) then time_limit = 180
+        if (time_limit >= 1 and time_limit <= 60) then time_limit = time_limit * 60
+        if (time_limit >= 999) then time_limit = 999
+        @hostinfo.time_limit = time_limit
+
+      if (param = rule.match /(^|，|,)(START|ST)(\d+)(，|,|$)/)
+        start_hand = parseInt(param[3])
+        if (start_hand <= 0) then start_hand = 1
+        if (start_hand >= 40) then start_hand = 40
+        @hostinfo.start_hand = start_hand
+
+      if (param = rule.match /(^|，|,)(DRAW|DR)(\d+)(，|,|$)/)
+        draw_count = parseInt(param[3])
+        if (draw_count >= 35) then draw_count = 35
+        @hostinfo.draw_count = draw_count
+
+      if (param = rule.match /(^|，|,)(LFLIST|LF)(\d+)(，|,|$)/)
+        lflist = parseInt(param[3]) - 1
+        @hostinfo.lflist = lflist
+
+      if (rule.match /(^|，|,)(NOLFLIST|NF)(，|,|$)/)
+        @hostinfo.lflist = -1
+
+      if (rule.match /(^|，|,)(NOUNIQUE|NU)(，|,|$)/)
+        @hostinfo.rule = 3
+
+      if (rule.match /(^|，|,)(NOCHECK|NC)(，|,|$)/)
+        @hostinfo.no_check_deck = true
+
+      if (rule.match /(^|，|,)(NOSHUFFLE|NS)(，|,|$)/)
+        @hostinfo.no_shuffle_deck = true
+
+      if (rule.match /(^|，|,)(IGPRIORITY|PR)(，|,|$)/)
+        @hostinfo.enable_priority = true
+
+    param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'),
+      (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'),
+      @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit]
+
+    try
+      @process = spawn './ygopro', param, {cwd: settings.ygopro_path}
+      @process.on 'exit', (code)=>
+        @disconnector = 'server' unless @disconnector
+        this.delete()
+        return
+      @process.stdout.setEncoding('utf8')
+      @process.stdout.once 'data', (data)=>
+        @established = true
+        roomlist.create(this) if !@private and settings.modules.enable_websocket_roomlist
+        @port = parseInt data
+        _.each @players, (player)=>
+          player.server.connect @port, '127.0.0.1', ->
+            player.server.write buffer for buffer in player.pre_establish_buffers
+            player.established = true
+            player.pre_establish_buffers = []
+            return
+          return
+        if @windbot
+          #log.info @windbot
+          @ai_process = spawn 'mono', ['WindBot.exe'], {
+            cwd: 'windbot', env: {
+              YGOPRO_VERSION: settings.version
+              YGOPRO_HOST: '127.0.0.1'
+              YGOPRO_PORT: @port
+              YGOPRO_NAME: @windbot.name
+              YGOPRO_DECK: @windbot.deck
+              YGOPRO_DIALOG: @windbot.dialog
+            }
+          }
+          @ai_process.stdout.on 'data', (data)->
+            #log.info "AI stdout: " + data
+            return
+          @ai_process.stderr.on 'data', (data)->
+            log.info "AI stderr: " + data
+            return
+        return
+    catch
+      @error = "建立房间失败，请重试"
+  delete: ->
+    return if @deleted
+    #log.info 'room-delete', this.name, ROOM_all.length
+    if @player_datas.length and settings.modules.enable_cloud_replay
+      player_names=@player_datas[0].name + (if @player_datas[2] then "+" + @player_datas[2].name else "") +
+                    " VS " +
+                   (if @player_datas[1] then @player_datas[1].name else "AI") +
+                   (if @player_datas[3] then "+" + @player_datas[3].name else "")
+      player_ips=[]
+      _.each @player_datas, (player)->
+        player_ips.push(player.ip)
+        return
+      recorder_buffer=Buffer.concat(@recorder_buffers)
+      zlib.deflate recorder_buffer, (err, replay_buffer) ->
+        replay_buffer=replay_buffer.toString('binary')
+        #log.info err, replay_buffer
+        date_time=moment().format('YYYY-MM-DD HH:mm:ss')
+        replay_id=Math.floor(Math.random()*100000000)
+        redisdb.hmset("replay:"+replay_id,
+                      "replay_id", replay_id,
+                      "replay_buffer", replay_buffer,
+                      "player_names", player_names,
+                      "date_time", date_time)
+        redisdb.expire("replay:"+replay_id, 60*60*24)
+        recorded_ip=[]
+        _.each player_ips, (player_ip)->
+          return if _.contains(recorded_ip, player_ip)
+          recorded_ip.push player_ip
+          redisdb.lpush(player_ip+":replays", replay_id)
+          return
+        return
+    @watcher_buffers = []
+    @recorder_buffers = []
+    @players = []
+    @watcher.end() if @watcher
+    @deleted = true
+    index = _.indexOf(ROOM_all, this)
+    #ROOM_all[index] = null unless index == -1
+    ROOM_all.splice(index, 1) unless index == -1
+    roomlist.delete @name if !@private and !@started and @established and settings.modules.enable_websocket_roomlist
+    return
+
+  get_playing_player: ->
+    playing_player = []
+    _.each @players, (player)->
+      if player.pos < 4 then playing_player.push player
+      return
+    return playing_player
+
+  get_host: ->
+    host_player = null
+    _.each @players, (player)->
+      if player.is_host then host_player = player
+      return
+    return host_player
+
+  connect: (client)->
+    @players.push client
+    client.ip = client.remoteAddress
+    if @random_type
+      host_player = @get_host()
+      if host_player && (host_player != client)
+        #进来时已经有人在等待了，互相记录为匹配过
+        ROOM_players_oppentlist[host_player.remoteAddress] = client.remoteAddress
+        ROOM_players_oppentlist[client.remoteAddress] = host_player.remoteAddress
+      else
+        #第一个玩家刚进来，还没就位
+        ROOM_players_oppentlist[client.remoteAddress] = null
+
+    if @established
+      roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
+      client.server.connect @port, '127.0.0.1', ->
+        client.server.write buffer for buffer in client.pre_establish_buffers
+        client.established = true
+        client.pre_establish_buffers = []
+        return
+    return
+
+  disconnect: (client, error)->
+    if client.is_post_watcher
+      ygopro.stoc_send_chat_to_room this, "#{client.name} 退出了观战" + if error then ": #{error}" else ''
+      index = _.indexOf(@watchers, client)
+      @watchers.splice(index, 1) unless index == -1
+      #client.room = null
+    else
+      index = _.indexOf(@players, client)
+      @players.splice(index, 1) unless index == -1
+      #log.info(@started,@disconnector,client.room.random_type)
+      if @started and @disconnector != 'server' and client.room.random_type
+        ROOM_ban_player(client.name, client.ip, "强退")
+      if @players.length
+        ygopro.stoc_send_chat_to_room this, "#{client.name} 离开了游戏" + if error then ": #{error}" else ''
+        roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
+        #client.room = null
+      else
+        @process.kill()
+        #client.room = null
+        this.delete()
+    return
+
+
 #网络连接
 net.createServer (client) ->
   server = new net.Socket()
@@ -95,7 +527,7 @@ net.createServer (client) ->
 
   #释放处理
   client.on 'close', (had_error) ->
-#log.info "client closed", client.name, had_error
+    #log.info "client closed", client.name, had_error
     tribute(client)
     unless client.closed
       client.closed = true
@@ -104,7 +536,7 @@ net.createServer (client) ->
     return
 
   client.on 'error', (error)->
-#log.info "client error", client.name, error
+    #log.info "client error", client.name, error
     tribute(client)
     unless client.closed
       client.closed = error
@@ -117,7 +549,7 @@ net.createServer (client) ->
     return
 
   server.on 'close', (had_error) ->
-#log.info "server closed", client.name, had_error
+    #log.info "server closed", client.name, had_error
     tribute(server)
     client.room.disconnector = 'server'
     server.closed = true unless server.closed
@@ -127,7 +559,7 @@ net.createServer (client) ->
     return
 
   server.on 'error', (error)->
-#log.info "server error", client.name, error
+    #log.info "server error", client.name, error
     tribute(server)
     client.room.disconnector = 'server'
     server.closed = error
@@ -346,7 +778,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       windbot = _.sample settings.modules.windbots
 
-    room = Room.find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000)) # 这个 AI# 没有特殊作用, 仅作为标记
+    room = ROOM_find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000)) # 这个 AI# 没有特殊作用, 仅作为标记
     if !room
       ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
     else if room.error
@@ -388,7 +820,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       switch action
         when 1,2
           name = crypto.createHash('md5').update(info.pass + client.name).digest('base64')[0...10].replace('+', '-').replace('/', '_')
-          if Room.find_by_name(name)
+          if ROOM_find_by_name(name)
             ygopro.stoc_die(client, '主机密码不正确 (Already Existed)')
             return
 
@@ -413,12 +845,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           room.private = action == 2
         when 3
           name = info.pass.slice(8)
-          room = Room.find_by_name(name)
+          room = ROOM_find_by_name(name)
           if(!room)
             ygopro.stoc_die(client, '主机密码不正确 (Not Found)')
             return
         when 4
-          room = Room.find_or_create_by_name('M#' + info.pass.slice(8))
+          room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           room.private = true
         else
           ygopro.stoc_die(client, '主机密码不正确 (Invalid Action)')
@@ -467,7 +899,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       users_cache[client.name] = body.user.id
       finish(buffer)
 
-  else if info.pass.length && !Room.validate(info.pass)
+  else if info.pass.length && !ROOM_validate(info.pass)
     ygopro.stoc_die(client, "房间密码不正确")
 
   else if _.indexOf(settings.BANNED_user, client.name) > -1 #账号被封
@@ -480,8 +912,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_die(client, "您的账号已被封禁")
 
   else
-#log.info 'join_game',info.pass, client.name
-    room = Room.find_or_create_by_name(info.pass, client.remoteAddress)
+    #log.info 'join_game',info.pass, client.name
+    room = ROOM_find_or_create_by_name(info.pass, client.remoteAddress)
     if !room
       ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
     else if room.error
@@ -503,7 +935,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   return
 
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
-#欢迎信息
+  #欢迎信息
   return unless client.room
   if settings.modules.welcome
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
@@ -681,7 +1113,7 @@ wait_room_start = (room, time)->
     else
       for player in room.players
         if player and player.is_host
-          Room.ban_player(player.name, player.ip, "挂房间")
+          ROOM_ban_player(player.name, player.ip, "挂房间")
           ygopro.stoc_send_chat_to_room(room, "#{player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
           player.end()
   return
@@ -712,7 +1144,7 @@ load_tips = ()->
 if settings.modules.tips
   load_tips()
   setInterval ()->
-    for room in Room.all
+    for room in ROOM_all
       ygopro.stoc_send_random_tip_to_room(room) unless room and room.started
     return
   , 30000
@@ -820,12 +1252,12 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
   return
 
 setInterval ()->
-  for room in Room.all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player
+  for room in ROOM_all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player
     time_passed = Math.floor((moment() - room.last_active_time) / 1000)
     #log.info time_passed
     if time_passed >= settings.modules.hang_timeout
       room.last_active_time = moment()
-      Room.ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机")
+      ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机")
       ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
       room.waiting_for_player.server.end()
     else if time_passed >= (settings.modules.hang_timeout - 20) and not (time_passed % 10)
@@ -847,7 +1279,7 @@ if settings.modules.http
         response.end(u.query.callback + '( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );')
       else
         response.writeHead(200)
-        roomsjson = JSON.stringify rooms: (for room in Room.all when room.established
+        roomsjson = JSON.stringify rooms: (for room in ROOM_all when room.established
           pid: room.process.pid.toString(),
           roomid: room.port.toString(),
           roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
@@ -868,7 +1300,7 @@ if settings.modules.http
         return
 
       if u.query.shout
-        for room in Room.all
+        for room in ROOM_all
           ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
         response.writeHead(200)
         response.end(u.query.callback + "( ['shout ok', '" + u.query.shout + "'] );")
