@@ -5,6 +5,7 @@ coffeelint.json
 password.json
 config.*.json
 
+ygopro
 /node_modules/
 !/node_modules/struct/
 
