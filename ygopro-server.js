@@ -761,7 +761,7 @@
         buffer = new Buffer(replay.replay_buffer, 'binary');
         zlib.unzip(buffer, function(err, replay_buffer) {
           if (err) {
-            log.info(err);
+            log.info("cloud replay unzip error: " + err);
             ygopro.stoc_send_chat(client, "播放录像出错", ygopro.constants.COLORS.RED);
             client.end();
             return;
@@ -919,7 +919,7 @@
         _.each(result, function(replay_id, id) {
           redisdb.hgetall("replay:" + replay_id, function(err, replay) {
             if (err || !replay) {
-              log.info(err);
+              log.info("cloud replay getall error: " + err);
               return;
             }
             ygopro.stoc_send_chat(client, "<" + (id - 0 + 1) + "> R#" + replay_id + " " + replay.player_names + " " + replay.date_time, ygopro.constants.COLORS.BABYBLUE);
@@ -938,7 +938,7 @@
       if (replay_id > 0 && replay_id <= 9) {
         redisdb.lindex(client.remoteAddress + ":replays", replay_id - 1, function(err, replay_id) {
           if (err || !replay_id) {
-            log.info(err);
+            log.info("cloud replay replayid error: " + err);
             ygopro.stoc_die(client, "没有找到录像");
             return;
           }
