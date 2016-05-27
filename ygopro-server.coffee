@@ -744,7 +744,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         msg: 1
         code: 2
       }
-      client.end()), 500
+      client.end()
+      return), 500
       
   else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.enable_cloud_replay
     replay_id=info.pass.split("#")[1]
@@ -972,6 +973,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       room=ROOM_all[client.rid]
       return unless room and settings.modules.enable_cloud_replay
       room.recorder_buffers.push data
+      return
 
     recorder.on 'error', (error)->
       return
@@ -1176,6 +1178,8 @@ if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
       for row in result.rows
         users_cache[row.username] = row.id
       console.log("users loaded", _.keys(users_cache).length)
+      return
+    return
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]

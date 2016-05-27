@@ -931,7 +931,7 @@
           msg: 1,
           code: 2
         });
-        return client.end();
+        client.end();
       }), 500);
     } else if (info.pass.slice(0, 2).toUpperCase() === "R#" && settings.modules.enable_cloud_replay) {
       replay_id = info.pass.split("#")[1];
@@ -1172,7 +1172,7 @@
         if (!(room && settings.modules.enable_cloud_replay)) {
           return;
         }
-        return room.recorder_buffers.push(data);
+        room.recorder_buffers.push(data);
       });
       recorder.on('error', function(error) {});
     }
@@ -1431,7 +1431,7 @@
       if (error) {
         throw error;
       }
-      return client.query('SELECT username, id from users', function(error, result) {
+      client.query('SELECT username, id from users', function(error, result) {
         var k, len, ref, row;
         if (error) {
           throw error;
@@ -1442,7 +1442,7 @@
           row = ref[k];
           users_cache[row.username] = row.id;
         }
-        return console.log("users loaded", _.keys(users_cache).length);
+        console.log("users loaded", _.keys(users_cache).length);
       });
     });
   }

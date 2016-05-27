@@ -6,6 +6,7 @@ password.json
 config.*.json
 
 ygopro
+windbot
 /node_modules/
 !/node_modules/struct/
 
