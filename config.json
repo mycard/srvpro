@@ -16,6 +16,10 @@
     "redis_port": 6379,
     "mycard_auth": false,
     "hang_timeout": 90,
+    "tournament_mode": {
+      "enabled": false,
+      "deck_path": "./decks"
+    },
     "http": {
       "port": 7922,
       "password": "123456",

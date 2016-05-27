@@ -1512,9 +1512,13 @@
     return cancel;
   });
 
-  ygopro.ctos_follow('UPDATE_DECK', false, function(buffer, info, client, server) {
-    var i, main, room, side;
-    main = (function() {
+  ygopro.ctos_follow('UPDATE_DECK', true, function(buffer, info, client, server) {
+    var buff_main, buff_side, card, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, k, l, len, len1, line, room, struct;
+    room = ROOM_all[client.rid];
+    if (!room) {
+      return false;
+    }
+    buff_main = (function() {
       var k, ref, results;
       results = [];
       for (i = k = 0, ref = info.mainc; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
@@ -1522,7 +1526,7 @@
       }
       return results;
     })();
-    side = (function() {
+    buff_side = (function() {
       var k, ref, ref1, results;
       results = [];
       for (i = k = ref = info.mainc, ref1 = info.mainc + info.sidec; ref <= ref1 ? k < ref1 : k > ref1; i = ref <= ref1 ? ++k : --k) {
@@ -1530,16 +1534,62 @@
       }
       return results;
     })();
-    client.main = main;
-    client.side = side;
-    room = ROOM_all[client.rid];
-    if (!(room && room.random_type)) {
-      return;
+    if (room.random_type) {
+      if (client.is_host) {
+        room.waiting_for_player = room.waiting_for_player2;
+      }
+      room.last_active_time = moment();
+    } else if (!room.started && room.hostinfo.mode === 1 && settings.modules.tournament_mode.enabled) {
+      struct = ygopro.structs["deck"];
+      struct._setBuff(buffer);
+      struct.set("mainc", 1);
+      struct.set("sidec", 1);
+      struct.set("deckbuf", [4392470, 4392470]);
+      buffer = struct.buffer;
+      found_deck = false;
+      decks = fs.readdirSync(settings.modules.tournament_mode.deck_path);
+      for (k = 0, len = decks.length; k < len; k++) {
+        deck = decks[k];
+        if (_.endsWith(deck, client.name + ".ydk")) {
+          found_deck = deck;
+        }
+      }
+      if (found_deck) {
+        deck_text = fs.readFileSync(settings.modules.tournament_mode.deck_path + "/" + found_deck, {
+          encoding: "ASCII"
+        });
+        deck_array = deck_text.split("\n");
+        deck_main = [];
+        deck_side = [];
+        current_deck = deck_main;
+        for (l = 0, len1 = deck_array.length; l < len1; l++) {
+          line = deck_array[l];
+          if (line.indexOf("!side") >= 0) {
+            current_deck = deck_side;
+          }
+          card = parseInt(line);
+          if (!isNaN(card)) {
+            current_deck.push(card);
+          }
+        }
+        if (_.isEqual(buff_main, deck_main) && _.isEqual(buff_side, deck_side)) {
+          deckbuf = deck_main.concat(deck_side);
+          struct.set("mainc", deck_main.length);
+          struct.set("sidec", deck_side.length);
+          struct.set("deckbuf", deckbuf);
+          buffer = struct.buffer;
+          log.info("deck ok: " + client.name);
+          ygopro.stoc_send_chat(client, "成功参加比赛", ygopro.constants.COLORS.BABYBLUE);
+        } else {
+          log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side);
+          ygopro.stoc_send_chat(client, "您的卡组与报名卡组不符，请重新选择", ygopro.constants.COLORS.RED);
+        }
+      } else {
+        log.info("player deck not found: " + client.name);
+        ygopro.stoc_send_chat(client, "没有找到您的报名信息，请联系主持", ygopro.constants.COLORS.RED);
+      }
     }
-    if (client.is_host) {
-      room.waiting_for_player = room.waiting_for_player2;
-    }
-    room.last_active_time = moment();
+    return false;
   });
 
   ygopro.ctos_follow('RESPONSE', false, function(buffer, info, client, server) {
