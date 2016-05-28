@@ -18,7 +18,9 @@
     "hang_timeout": 90,
     "tournament_mode": {
       "enabled": false,
-      "deck_path": "./decks"
+      "deck_path": "./decks/",
+      "password": "123456",
+      "port": 7933
     },
     "http": {
       "port": 7922,

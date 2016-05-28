@@ -1246,7 +1246,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
       if _.endsWith(deck, client.name+".ydk")
         found_deck=deck
     if found_deck
-      deck_text=fs.readFileSync(settings.modules.tournament_mode.deck_path+"/"+found_deck,{encoding:"ASCII"})
+      deck_text=fs.readFileSync(settings.modules.tournament_mode.deck_path+found_deck,{encoding:"ASCII"})
       deck_array=deck_text.split("\n")
       deck_main=[]
       deck_side=[]

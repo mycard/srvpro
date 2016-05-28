@@ -1555,7 +1555,7 @@
         }
       }
       if (found_deck) {
-        deck_text = fs.readFileSync(settings.modules.tournament_mode.deck_path + "/" + found_deck, {
+        deck_text = fs.readFileSync(settings.modules.tournament_mode.deck_path + found_deck, {
           encoding: "ASCII"
         });
         deck_array = deck_text.split("\n");
