@@ -91,7 +91,7 @@
 
   settings.BANNED_IP = [];
 
-  settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16');
+  settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16');
 
   settings.lflist = (function() {
     var k, len, ref, results;
@@ -910,7 +910,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
-    var check, decrypted_buffer, finish, i, id, k, l, len, len1, name, ref, ref1, replay_id, room, secret, windbot;
+    var check, decrypted_buffer, finish, i, id, k, l, len, len1, name, ref, ref1, replay_id, room, secret, struct, windbot;
     if (settings.modules.stop) {
       ygopro.stoc_die(client, settings.modules.stop);
     } else if (info.pass.toUpperCase() === "R" && settings.modules.enable_cloud_replay) {
@@ -949,7 +949,7 @@
       } else {
         ygopro.stoc_die(client, "没有找到录像");
       }
-    } else if (info.version !== settings.version) {
+    } else if (info.version !== settings.version && info.version !== 4921) {
       ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
@@ -1115,6 +1115,14 @@
       log.info("BANNED IP LOGIN", client.name, client.remoteAddress);
       ygopro.stoc_die(client, "您的账号已被封禁");
     } else {
+      if (info.version === 4921) {
+        info.version = settings.version;
+        struct = ygopro.structs["CTOS_JoinGame"];
+        struct._setBuff(buffer);
+        struct.set("version", info.version);
+        buffer = struct.buffer;
+        ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE);
+      }
       room = ROOM_find_or_create_by_name(info.pass, client.remoteAddress);
       if (!room) {
         ygopro.stoc_die(client, "服务器已经爆满，请稍候再试");

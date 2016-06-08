@@ -66,7 +66,7 @@ nconf.myset = (settings, path, val) ->
 settings.BANNED_user = []
 settings.BANNED_IP = []
 
-settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
+settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   date=list.match(/!([\d\.]+)/)
   continue unless date
@@ -762,7 +762,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       ygopro.stoc_die(client, "没有找到录像")
 
-  else if info.version != settings.version
+  else if info.version != settings.version and info.version != 4921 #YGOMobile不更新，强行兼容
     ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED)
     ygopro.stoc_send client, 'ERROR_MSG', {
       msg: 4
@@ -921,6 +921,14 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_die(client, "您的账号已被封禁")
 
   else
+    if info.version == 4921 #YGOMobile不更新，强行兼容
+      info.version = settings.version
+      struct = ygopro.structs["CTOS_JoinGame"]
+      struct._setBuff(buffer)
+      struct.set("version", info.version)
+      buffer = struct.buffer
+      ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE)
+      
     #log.info 'join_game',info.pass, client.name
     room = ROOM_find_or_create_by_name(info.pass, client.remoteAddress)
     if !room
