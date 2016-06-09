@@ -784,6 +784,14 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         return
     else
       windbot = _.sample settings.modules.windbots
+    
+    if info.version == 4921 #YGOMobile不更新，强行兼容
+      info.version = settings.version
+      struct = ygopro.structs["CTOS_JoinGame"]
+      struct._setBuff(buffer)
+      struct.set("version", info.version)
+      buffer = struct.buffer
+      ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE)
 
     room = ROOM_find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000)) # 这个 AI# 没有特殊作用, 仅作为标记
     if !room

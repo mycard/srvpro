@@ -971,6 +971,14 @@
       } else {
         windbot = _.sample(settings.modules.windbots);
       }
+      if (info.version === 4921) {
+        info.version = settings.version;
+        struct = ygopro.structs["CTOS_JoinGame"];
+        struct._setBuff(buffer);
+        struct.set("version", info.version);
+        buffer = struct.buffer;
+        ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE);
+      }
       room = ROOM_find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000));
       if (!room) {
         ygopro.stoc_die(client, "服务器已经爆满，请稍候再试");
