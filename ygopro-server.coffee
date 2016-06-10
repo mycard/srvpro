@@ -29,7 +29,7 @@ settings = require './config.json'
 settings.BANNED_user = []
 settings.BANNED_IP = []
 settings.modules.hang_timeout = 90
-settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\d]+)/)[1], '16')
+settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
 
