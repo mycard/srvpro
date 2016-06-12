@@ -22,6 +22,33 @@
       "password": "123456",
       "port": 7933
     },
+    "pre_util": {
+      "enabled": false,
+      "port": 7944,
+      "password": "123456",
+      "git_html_path": "../mercury233.github.io/",
+      "html_path": "../mercury233.github.io/ygosrv233/",
+      "html_filename": "pre.html",
+      "git_db_path": "../ygopro-unofficial/",
+      "db_path": "../ygopro-unofficial/unofficial/",
+      "html_img_rel_path": "pre/pics/",
+      "html_img_thumbnail": "thumbnail/",
+      "ygopro_path": "../ygopro-pre/",
+      "only_show_dbs": {
+        "news.cdb": true,
+        "pre-release.cdb": true
+        },
+      "html_gits": [
+        {
+          "name": "GitHub",
+          "push": ["push", "origin"]
+        },
+        {
+          "name": "Coding",
+          "push": ["push", "coding", "master:master"]
+        }
+      ]
+    },
     "http": {
       "port": 7922,
       "password": "123456",
