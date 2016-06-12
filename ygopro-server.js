@@ -556,6 +556,12 @@
             }
           };
         })(this));
+        this.process.stderr.on('data', (function(_this) {
+          return function(data) {
+            log.info("YGOPRO stderr: " + data);
+            _this.has_ygopro_error = true;
+          };
+        })(this));
       } catch (error1) {
         this.error = "建立房间失败，请重试";
       }
@@ -588,6 +594,9 @@
             recorded_ip.push(player_ip);
             redisdb.lpush(player_ip + ":replays", replay_id);
           });
+          if (this.has_ygopro_error) {
+            log.info("error replay: R#" + replay_id);
+          }
         });
       }
       this.watcher_buffers = [];

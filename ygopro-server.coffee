@@ -416,6 +416,10 @@ class Room
             log.info "AI stderr: " + data
             return
         return
+      @process.stderr.on 'data', (data)=>
+        log.info "YGOPRO stderr: " + data
+        @has_ygopro_error = true
+        return
     catch
       @error = "建立房间失败，请重试"
   delete: ->
@@ -448,6 +452,8 @@ class Room
           recorded_ip.push player_ip
           redisdb.lpush(player_ip+":replays", replay_id)
           return
+        if @has_ygopro_error
+          log.info "error replay: R#" + replay_id
         return
     @watcher_buffers = []
     @recorder_buffers = []
