@@ -11,10 +11,10 @@
 * 广播消息
 * 召唤台词
 * 先行卡一键更新
+* Windbot在线AI
 
 ###不支持功能
 * 用户账号系统
-* 在线AI
 * 在线聊天室
 
 ###使用方法
@@ -22,34 +22,10 @@
 * `git clone https://github.com/mercury233/ygopro-server.git`
 * `cd ygopro-server`
 * `npm install`
-* 修改`config.json`
+* 将`config.json`复制为`config.user.json`并进行修改
  * `port`为你想要的端口
- * `version`为ygopro的十进制版本号（例如，0x1336=4918）
  * `ygopro_path`为ygopro服务端的相对路径
  * `modules.stop`为文本时，表示服务器关闭
- * `modules.TCG_banlist_id`为lflist中正在使用的TCG禁卡表的编号，0开始
 * `node ygopro-server.js`即可运行
 * 简易的控制台在http://mercury233.me/ygosrv233/dashboard.html （我没有开发给用户使用的大厅的打算。）
 * 简易的先行卡更新控制台在http://mercury233.me/ygosrv233/pre-dashboard.html
-
-###开发计划
-* 重写全部代码，与SalvationServer合并，或作为分支版本
-
-## Install Docker
-```bash
-wget -qO- https://get.docker.com/ | sh
-```
-see https://docs.docker.com/linux/step_one/ for more information.
-
-## Deploy from DockerHub
-
-```bash
-docker run --name ygopro -p 7911:7911 -p 7922:7922 --restart=on-failure -d mycard/ygopro-server
-```
-
-## Build
-```bash
-git clone --recursive https://github.com/mycard/ygopro-server.git
-cd ygopro-server
-docker build -t ygopro-server .
-```

@@ -1,7 +1,0 @@
-Dockerfile
-.git
-.gitattributes
-.gitignore
-.gitmodules
-.gitkeep
-.dockerignore
