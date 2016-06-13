@@ -558,7 +558,10 @@
         })(this));
         this.process.stderr.on('data', (function(_this) {
           return function(data) {
-            log.info("YGOPRO stderr: " + data);
+            data = "Debug: " + data;
+            data = data.replace(/\n$/, "");
+            log.info("YGOPRO " + data);
+            ygopro.stoc_send_chat_to_room(_this, data, ygopro.constants.COLORS.RED);
             _this.has_ygopro_error = true;
           };
         })(this));
@@ -568,11 +571,14 @@
     }
 
     Room.prototype["delete"] = function() {
-      var index, player_ips, player_names, recorder_buffer;
+      var index, log_rep_id, player_ips, player_names, recorder_buffer;
       if (this.deleted) {
         return;
       }
       if (this.player_datas.length && settings.modules.enable_cloud_replay) {
+        if (this.has_ygopro_error) {
+          log_rep_id = true;
+        }
         player_names = this.player_datas[0].name + (this.player_datas[2] ? "+" + this.player_datas[2].name : "") + " VS " + (this.player_datas[1] ? this.player_datas[1].name : "AI") + (this.player_datas[3] ? "+" + this.player_datas[3].name : "");
         player_ips = [];
         _.each(this.player_datas, function(player) {
@@ -594,7 +600,7 @@
             recorded_ip.push(player_ip);
             redisdb.lpush(player_ip + ":replays", replay_id);
           });
-          if (this.has_ygopro_error) {
+          if (log_rep_id) {
             log.info("error replay: R#" + replay_id);
           }
         });
@@ -928,7 +934,9 @@
         _.each(result, function(replay_id, id) {
           redisdb.hgetall("replay:" + replay_id, function(err, replay) {
             if (err || !replay) {
-              log.info("cloud replay getall error: " + err);
+              if (err) {
+                log.info("cloud replay getall error: " + err);
+              }
               return;
             }
             ygopro.stoc_send_chat(client, "<" + (id - 0 + 1) + "> R#" + replay_id + " " + replay.player_names + " " + replay.date_time, ygopro.constants.COLORS.BABYBLUE);
@@ -947,7 +955,9 @@
       if (replay_id > 0 && replay_id <= 9) {
         redisdb.lindex(client.remoteAddress + ":replays", replay_id - 1, function(err, replay_id) {
           if (err || !replay_id) {
-            log.info("cloud replay replayid error: " + err);
+            if (err) {
+              log.info("cloud replay replayid error: " + err);
+            }
             ygopro.stoc_die(client, "没有找到录像");
             return;
           }

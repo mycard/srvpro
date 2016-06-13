@@ -417,7 +417,10 @@ class Room
             return
         return
       @process.stderr.on 'data', (data)=>
-        log.info "YGOPRO stderr: " + data
+        data = "Debug: " + data
+        data = data.replace(/\n$/, "")
+        log.info "YGOPRO " + data
+        ygopro.stoc_send_chat_to_room this, data, ygopro.constants.COLORS.RED
         @has_ygopro_error = true
         return
     catch
@@ -426,6 +429,8 @@ class Room
     return if @deleted
     #log.info 'room-delete', this.name, ROOM_all.length
     if @player_datas.length and settings.modules.enable_cloud_replay
+      if @has_ygopro_error
+        log_rep_id = true
       player_names=@player_datas[0].name + (if @player_datas[2] then "+" + @player_datas[2].name else "") +
                     " VS " +
                    (if @player_datas[1] then @player_datas[1].name else "AI") +
@@ -452,7 +457,7 @@ class Room
           recorded_ip.push player_ip
           redisdb.lpush(player_ip+":replays", replay_id)
           return
-        if @has_ygopro_error
+        if log_rep_id
           log.info "error replay: R#" + replay_id
         return
     @watcher_buffers = []
@@ -738,7 +743,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       _.each result, (replay_id,id)->
         redisdb.hgetall "replay:"+replay_id, (err, replay)->
           if err or !replay
-            log.info "cloud replay getall error: " + err
+            log.info "cloud replay getall error: " + err if err
             return
           ygopro.stoc_send_chat(client,"<#{id-0+1}> R##{replay_id} #{replay.player_names} #{replay.date_time}", ygopro.constants.COLORS.BABYBLUE)
           return
@@ -758,7 +763,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     if (replay_id>0 and replay_id<=9)
       redisdb.lindex client.remoteAddress+":replays", replay_id-1, (err, replay_id)->
         if err or !replay_id
-          log.info "cloud replay replayid error: " + err
+          log.info "cloud replay replayid error: " + err if err
           ygopro.stoc_die(client, "没有找到录像")
           return
         redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
