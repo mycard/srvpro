@@ -17,9 +17,6 @@ WORKDIR /usr/src/app/ygopro
 RUN ln -s bin/release/ygopro ygopro
 RUN strip ygopro
 
-WORKDIR /usr/src/app/ygosharp
-RUN xbuild /property:Configuration=Release /property:OutDir=/usr/src/app/windbot/
-
 RUN mv /usr/src/app/windbot /usr/src/app/windbot-source
 WORKDIR /usr/src/app/windbot-source
 RUN xbuild /property:Configuration=Release /property:OutDir=/usr/src/app/windbot/

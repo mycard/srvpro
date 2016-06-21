@@ -5,6 +5,3 @@
 [submodule "windbot"]
 	path = windbot
 	url = https://github.com/mycard/windbot.git
-[submodule "ygosharp"]
-	path = ygosharp
-	url = https://github.com/IceYGO/ygosharp
