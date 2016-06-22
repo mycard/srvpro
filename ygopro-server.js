@@ -121,7 +121,7 @@
   }
 
   if (settings.modules.enable_windbot) {
-    settings.modules.windbots = require('./config.bot.json').windbots;
+    settings.modules.windbots = require('./windbot/bots.json').windbots;
   }
 
   ygopro = require('./ygopro.js');

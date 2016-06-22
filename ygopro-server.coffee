@@ -78,7 +78,7 @@ if settings.modules.enable_cloud_replay
   redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
 
 if settings.modules.enable_windbot
-  settings.modules.windbots = require('./config.bot.json').windbots
+  settings.modules.windbots = require('./windbot/bots.json').windbots
 
 #组件
 ygopro = require './ygopro.js'
