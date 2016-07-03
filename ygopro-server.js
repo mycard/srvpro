@@ -55,7 +55,7 @@
   })();
 
   if (settings.modules.enable_windbot) {
-    settings.modules.windbots = require('./windbot/bots.json').windbots;
+    settings.modules.windbot = require('./windbot/bots.json').windbots;
   }
 
   ygopro = require('./ygopro.js');

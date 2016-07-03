@@ -33,7 +33,7 @@ settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').ma
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
 if settings.modules.enable_windbot
-  settings.modules.windbots = require('./windbot/bots.json').windbots
+  settings.modules.windbot = require('./windbot/bots.json').windbots
 
 #组件
 ygopro = require './ygopro.js'
