@@ -22,9 +22,6 @@ moment = require 'moment'
 #redis = require 'redis'
 #redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
 
-if settings.modules.enable_windbot
-  settings.modules.windbots = require('./windbot/bots.json').windbots
-
 #heapdump = require 'heapdump'
 
 #配置文件
@@ -35,6 +32,8 @@ settings.modules.hang_timeout = 90
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
+if settings.modules.enable_windbot
+  settings.modules.windbots = require('./windbot/bots.json').windbots
 
 #组件
 ygopro = require './ygopro.js'
