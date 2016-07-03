@@ -30,6 +30,10 @@
 
   moment = require('moment');
 
+  if (settings.modules.enable_windbot) {
+    settings.modules.windbots = require('./windbot/bots.json').windbots;
+  }
+
   settings = require('./config.json');
 
   settings.BANNED_user = [];

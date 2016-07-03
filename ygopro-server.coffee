@@ -22,6 +22,9 @@ moment = require 'moment'
 #redis = require 'redis'
 #redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
 
+if settings.modules.enable_windbot
+  settings.modules.windbots = require('./windbot/bots.json').windbots
+
 #heapdump = require 'heapdump'
 
 #配置文件

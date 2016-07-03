@@ -10,6 +10,7 @@
     "redis_port": 6379,
     "enable_websocket_roomlist": true,
     "enable_random_duel": false,
+    "enable_windbot": true,
     "mycard_auth": "https://ygobbs.com",
     "post_start_watching": true,
     "enable_TCG_as_default": false,
@@ -22,43 +23,6 @@
         "cert": "ssl/ygopro-server.crt",
         "key": "ssl/ygopro-server.key"
       }
-    },
-    "windbot": [
-      {
-        "name": "琪露诺",
-        "deck": "Burn",
-        "dialog": "cirno.zh-CN"
-      },
-      {
-        "name": "琪露诺",
-        "deck": "Frog",
-        "dialog": "cirno.zh-CN"
-      },
-      {
-        "name": "琪露诺",
-        "deck": "Horus",
-        "dialog": "cirno.zh-CN"
-      },
-      {
-        "name": "琪露诺",
-        "deck": "OldSchool",
-        "dialog": "cirno.zh-CN"
-      },
-      {
-        "name": "谜之剑士LV4",
-        "deck": "Dragunity",
-        "dialog": "zh-CN"
-      },
-      {
-        "name": "谜之剑士LV4",
-        "deck": "Rank V",
-        "dialog": "zh-CN"
-      },
-      {
-        "name": "谜之剑士LV4",
-        "deck": "Zexal Weapons",
-        "dialog": "zh-CN"
-      }
-    ]
+    }
   }
 }
