@@ -230,6 +230,7 @@ class Room
     @established = false
     @watcher_buffers = []
     @recorder_buffers = []
+    @cloud_replay_id = Math.floor(Math.random()*100000000)
     @watchers = []
     @random_type = ''
     @welcome = ''
@@ -438,6 +439,7 @@ class Room
     return if @deleted
     #log.info 'room-delete', this.name, ROOM_all.length
     if @player_datas.length and settings.modules.enable_cloud_replay
+      replay_id = @cloud_replay_id
       if @has_ygopro_error
         log_rep_id = true
       player_names=@player_datas[0].name + (if @player_datas[2] then "+" + @player_datas[2].name else "") +
@@ -453,7 +455,7 @@ class Room
         replay_buffer=replay_buffer.toString('binary')
         #log.info err, replay_buffer
         date_time=moment().format('YYYY-MM-DD HH:mm:ss')
-        replay_id=Math.floor(Math.random()*100000000)
+        #replay_id=Math.floor(Math.random()*100000000)
         redisdb.hmset("replay:"+replay_id,
                       "replay_id", replay_id,
                       "replay_buffer", replay_buffer,
@@ -685,7 +687,8 @@ net.createServer (client) ->
     stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
     #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
-    client.write data
+    #client.write data
+    datas = []
 
     looplimit = 0
 
@@ -703,15 +706,22 @@ net.createServer (client) ->
       else
         if stoc_buffer.length >= 2 + stoc_message_length
           #console.log "STOC", ygopro.constants.STOC[stoc_proto]
+          cancel = false
           stanzas = stoc_proto
           if ygopro.stoc_follows[stoc_proto]
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
             if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
               struct._setBuff(b)
-              ygopro.stoc_follows[stoc_proto].callback b, _.clone(struct.fields), client, server
+              if ygopro.stoc_follows[stoc_proto].synchronous
+                cancel = ygopro.stoc_follows[stoc_proto].callback b, _.clone(struct.fields), client, server
+              else
+                ygopro.stoc_follows[stoc_proto].callback b, _.clone(struct.fields), client, server
             else
-              ygopro.stoc_follows[stoc_proto].callback b, null, client, server
-
+              if ygopro.stoc_follows[stoc_proto].synchronous
+                cancel = ygopro.stoc_follows[stoc_proto].callback b, null, client, server
+              else
+                ygopro.stoc_follows[stoc_proto].callback b, null, client, server
+          datas.push stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
           stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
           stoc_message_length = 0
           stoc_proto = 0
@@ -724,6 +734,8 @@ net.createServer (client) ->
         log.info("error stoc", client.name)
         server.end()
         break
+    client.write buffer for buffer in datas
+
     return
   return
 .listen settings.port, ->
@@ -1416,6 +1428,15 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
     room.waiting_for_player2 = client
   room.last_active_time = moment()
   return
+
+ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return settings.modules.tournament_mode.enabled unless room
+  if settings.modules.tournament_mode.enabled
+    ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}", ygopro.constants.COLORS.BABYBLUE)
+    return true
+  else
+    return false
 
 setInterval ()->
   for room in ROOM_all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player

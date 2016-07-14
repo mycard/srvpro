@@ -336,6 +336,7 @@
       this.established = false;
       this.watcher_buffers = [];
       this.recorder_buffers = [];
+      this.cloud_replay_id = Math.floor(Math.random() * 100000000);
       this.watchers = [];
       this.random_type = '';
       this.welcome = '';
@@ -591,11 +592,12 @@
     }
 
     Room.prototype["delete"] = function() {
-      var index, log_rep_id, player_ips, player_names, recorder_buffer;
+      var index, log_rep_id, player_ips, player_names, recorder_buffer, replay_id;
       if (this.deleted) {
         return;
       }
       if (this.player_datas.length && settings.modules.enable_cloud_replay) {
+        replay_id = this.cloud_replay_id;
         if (this.has_ygopro_error) {
           log_rep_id = true;
         }
@@ -606,10 +608,9 @@
         });
         recorder_buffer = Buffer.concat(this.recorder_buffers);
         zlib.deflate(recorder_buffer, function(err, replay_buffer) {
-          var date_time, recorded_ip, replay_id;
+          var date_time, recorded_ip;
           replay_buffer = replay_buffer.toString('binary');
           date_time = moment().format('YYYY-MM-DD HH:mm:ss');
-          replay_id = Math.floor(Math.random() * 100000000);
           redisdb.hmset("replay:" + replay_id, "replay_id", replay_id, "replay_buffer", replay_buffer, "player_names", player_names, "date_time", date_time);
           redisdb.expire("replay:" + replay_id, 60 * 60 * 24);
           recorded_ip = [];
@@ -882,12 +883,12 @@
       }
     });
     server.on('data', function(data) {
-      var b, looplimit, stanzas, stoc_buffer, stoc_message_length, stoc_proto, struct;
+      var b, buffer, cancel, datas, k, len, looplimit, stanzas, stoc_buffer, stoc_message_length, stoc_proto, struct;
       stoc_buffer = new Buffer(0);
       stoc_message_length = 0;
       stoc_proto = 0;
       stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length);
-      client.write(data);
+      datas = [];
       looplimit = 0;
       while (true) {
         if (stoc_message_length === 0) {
@@ -904,15 +905,27 @@
           }
         } else {
           if (stoc_buffer.length >= 2 + stoc_message_length) {
+            cancel = false;
             stanzas = stoc_proto;
             if (ygopro.stoc_follows[stoc_proto]) {
               b = stoc_buffer.slice(3, stoc_message_length - 1 + 3);
               if (struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]) {
                 struct._setBuff(b);
-                ygopro.stoc_follows[stoc_proto].callback(b, _.clone(struct.fields), client, server);
+                if (ygopro.stoc_follows[stoc_proto].synchronous) {
+                  cancel = ygopro.stoc_follows[stoc_proto].callback(b, _.clone(struct.fields), client, server);
+                } else {
+                  ygopro.stoc_follows[stoc_proto].callback(b, _.clone(struct.fields), client, server);
+                }
               } else {
-                ygopro.stoc_follows[stoc_proto].callback(b, null, client, server);
+                if (ygopro.stoc_follows[stoc_proto].synchronous) {
+                  cancel = ygopro.stoc_follows[stoc_proto].callback(b, null, client, server);
+                } else {
+                  ygopro.stoc_follows[stoc_proto].callback(b, null, client, server);
+                }
               }
+            }
+            if (!cancel) {
+              datas.push(stoc_buffer.slice(0, 2 + stoc_message_length));
             }
             stoc_buffer = stoc_buffer.slice(2 + stoc_message_length);
             stoc_message_length = 0;
@@ -927,6 +940,10 @@
           server.end();
           break;
         }
+      }
+      for (k = 0, len = datas.length; k < len; k++) {
+        buffer = datas[k];
+        client.write(buffer);
       }
     });
   }).listen(settings.port, function() {
@@ -1781,6 +1798,20 @@
       room.waiting_for_player2 = client;
     }
     room.last_active_time = moment();
+  });
+
+  ygopro.stoc_follow('REPLAY', true, function(buffer, info, client, server) {
+    var room;
+    room = ROOM_all[client.rid];
+    if (!room) {
+      return settings.modules.tournament_mode.enabled;
+    }
+    if (settings.modules.tournament_mode.enabled) {
+      ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id, ygopro.constants.COLORS.BABYBLUE);
+      return true;
+    } else {
+      return false;
+    }
   });
 
   setInterval(function() {
