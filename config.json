@@ -59,5 +59,13 @@
         "key": "ssl/ygopro-server.key"
       }
     }
+  },
+  "ban": {
+    "banned_user": [],
+    "banned_ip": [],
+    "badword_level1": ["傻逼", "垃圾"],
+    "badword_level2": ["死妈", "草你妈"],
+    "badword_level3": ["迷奸", "仿真枪"],
+    "illegal_id": ["^Lv.\\d+", "^VIP.\\d+"]
   }
 }

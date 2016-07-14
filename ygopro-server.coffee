@@ -63,8 +63,17 @@ nconf.myset = (settings, path, val) ->
     target[key] = val
   return
 
-settings.BANNED_user = []
-settings.BANNED_IP = []
+ban_user = (name) ->
+  settings.ban.banned_user.push(name)
+  nconf.myset(settings, "ban:banned_user", settings.ban.banned_user)
+  for room in ROOM_all when room and room.established
+    for player in room.players
+      if player and player.name == name
+        settings.ban.banned_ip.push(player.remoteAddress)
+        ygopro.stoc_send_chat_to_room(room, "#{player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
+        player.end()
+        continue
+  return
 
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
@@ -930,12 +939,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   else if info.pass.length && !ROOM_validate(info.pass)
     ygopro.stoc_die(client, "房间密码不正确")
 
-  else if _.indexOf(settings.BANNED_user, client.name) > -1 #账号被封
-    settings.BANNED_IP.push(client.remoteAddress)
+  else if _.indexOf(settings.ban.banned_user, client.name) > -1 #账号被封
+    settings.ban.banned_ip.push(client.remoteAddress)
     log.info("BANNED USER LOGIN", client.name, client.remoteAddress)
     ygopro.stoc_die(client, "您的账号已被封禁")
 
-  else if _.indexOf(settings.BANNED_IP, client.remoteAddress) > -1 #IP被封
+  else if _.indexOf(settings.ban.banned_ip, client.remoteAddress) > -1 #IP被封
     log.info("BANNED IP LOGIN", client.name, client.remoteAddress)
     ygopro.stoc_die(client, "您的账号已被封禁")
 
@@ -1427,7 +1436,7 @@ if settings.modules.http
         response.end(u.query.callback + "( ['loading dialogues', '" + settings.modules.dialogues + "'] );")
 
       else if u.query.ban
-        settings.BANNED_user.push(u.query.ban)
+        ban_user(u.query.ban)
         response.writeHead(200)
         response.end(u.query.callback + "( ['ban ok', '" + u.query.ban + "'] );")
 
