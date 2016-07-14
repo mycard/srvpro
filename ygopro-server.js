@@ -198,13 +198,16 @@
 
   ROOM_players_banned = [];
 
-  ROOM_ban_player = function(name, ip, reason) {
+  ROOM_ban_player = function(name, ip, reason, countadd) {
     var bannedplayer, bantime;
+    if (countadd == null) {
+      countadd = 1;
+    }
     bannedplayer = _.find(ROOM_players_banned, function(bannedplayer) {
       return ip === bannedplayer.ip;
     });
     if (bannedplayer) {
-      bannedplayer.count = bannedplayer.count + 1;
+      bannedplayer.count = bannedplayer.count + countadd;
       bantime = bannedplayer.count > 3 ? Math.pow(2, bannedplayer.count - 3) * 2 : 0;
       bannedplayer.time = moment() < bannedplayer.time ? moment(bannedplayer.time).add(bantime, 'm') : moment().add(bantime, 'm');
       if (!_.find(bannedplayer.reasons, function(bannedreason) {
@@ -217,7 +220,7 @@
       bannedplayer = {
         "ip": ip,
         "time": moment(),
-        "count": 1,
+        "count": countadd,
         "reasons": [reason],
         "need_tip": true
       };
@@ -1533,16 +1536,17 @@
   });
 
   ygopro.ctos_follow('CHAT', true, function(buffer, info, client, server) {
-    var cancel, room;
+    var cancel, msg, oldmsg, room, struct;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
     }
-    cancel = _.startsWith(_.trim(info.msg), "/");
+    msg = _.trim(info.msg);
+    cancel = _.startsWith(msg, "/");
     if (!(cancel || !room.random_type)) {
       room.last_active_time = moment();
     }
-    switch (_.trim(info.msg)) {
+    switch (msg) {
       case '/help':
         ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助");
         ygopro.stoc_send_chat(client, "/help 显示这个帮助信息");
@@ -1560,6 +1564,45 @@
         if (room) {
           ygopro.stoc_send_chat(client, "您当前的房间名是 " + room.name, ygopro.constants.COLORS.BABYBLUE);
         }
+    }
+    if (!(room && room.random_type)) {
+      return cancel;
+    }
+    oldmsg = msg;
+    if (_.any(settings.ban.badword_level3, function(badword) {
+      var regexp;
+      regexp = new RegExp(badword);
+      return msg.match(regexp);
+    }, msg)) {
+      log.warn("BAD WORD LEVEL 3", client.name, oldmsg);
+      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED);
+      ROOM_ban_player(client.name, client.ip, "发言违规");
+      ROOM_ban_player(client.name, client.ip, "发言违规", 3);
+      client.end();
+      cancel = true;
+    } else if (_.any(settings.ban.badword_level2, function(badword) {
+      var regexp;
+      regexp = new RegExp(badword);
+      return msg.match(regexp);
+    }, msg)) {
+      log.warn("BAD WORD LEVEL 2", client.name, oldmsg);
+      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，已被屏蔽，并记录一次违规！", ygopro.constants.COLORS.RED);
+      ROOM_ban_player(client.name, client.ip, "发言违规");
+      cancel = true;
+    } else {
+      _.each(settings.ban.badword_level1, function(badword) {
+        var regexp;
+        regexp = new RegExp(badword, "g");
+        msg = msg.replace(regexp, "**");
+      }, msg);
+      if (oldmsg !== msg) {
+        log.warn("BAD WORD LEVEL 1", client.name, oldmsg);
+        ygopro.stoc_send_chat(client, "请使用文明用语");
+      }
+      struct = ygopro.structs["chat"];
+      struct._setBuff(buffer);
+      struct.set("msg", msg);
+      buffer = struct.buffer;
     }
     return cancel;
   });

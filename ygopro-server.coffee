@@ -134,18 +134,18 @@ ROOM_all = []
 ROOM_players_oppentlist = {}
 ROOM_players_banned = []
 
-ROOM_ban_player = (name, ip, reason)->
+ROOM_ban_player = (name, ip, reason, countadd = 1)->
   bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
     ip == bannedplayer.ip
   if bannedplayer
-    bannedplayer.count = bannedplayer.count + 1
+    bannedplayer.count = bannedplayer.count + countadd
     bantime = if bannedplayer.count > 3 then Math.pow(2, bannedplayer.count - 3) * 2 else 0
     bannedplayer.time = if moment() < bannedplayer.time then moment(bannedplayer.time).add(bantime, 'm') else moment().add(bantime, 'm')
     bannedplayer.reasons.push(reason) if not _.find bannedplayer.reasons, (bannedreason)->
       bannedreason == reason
     bannedplayer.need_tip = true
   else
-    bannedplayer = {"ip": ip, "time": moment(), "count": 1, "reasons": [reason], "need_tip": true}
+    bannedplayer = {"ip": ip, "time": moment(), "count": countadd, "reasons": [reason], "need_tip": true}
     ROOM_players_banned.push(bannedplayer)
   #log.info("banned", name, ip, reason, bannedplayer.count)
   return
@@ -1237,9 +1237,10 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
 ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
-  cancel = _.startsWith(_.trim(info.msg), "/")
+  msg = _.trim(info.msg)
+  cancel = _.startsWith(msg, "/")
   room.last_active_time = moment() unless cancel or not room.random_type
-  switch _.trim(info.msg)
+  switch msg
     when '/help'
       ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client, "/help 显示这个帮助信息")
@@ -1254,7 +1255,41 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
 
     #when '/test'
     #  ygopro.stoc_send_hint_card_to_room(room, 2333365)
-
+  if !(room and room.random_type)
+    return cancel
+  oldmsg = msg
+  if (_.any(settings.ban.badword_level3, (badword) ->
+    regexp = new RegExp(badword)
+    return msg.match(regexp)
+  , msg))
+    log.warn "BAD WORD LEVEL 3", client.name, oldmsg
+    ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED)
+    ROOM_ban_player(client.name, client.ip, "发言违规")
+    ROOM_ban_player(client.name, client.ip, "发言违规", 3)
+    client.end()
+    cancel = true
+  else if (_.any(settings.ban.badword_level2, (badword) ->
+    regexp = new RegExp(badword)
+    return msg.match(regexp)
+  , msg))
+    log.warn "BAD WORD LEVEL 2", client.name, oldmsg
+    ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，已被屏蔽，并记录一次违规！", ygopro.constants.COLORS.RED)
+    ROOM_ban_player(client.name, client.ip, "发言违规")
+    cancel = true
+  else
+    _.each(settings.ban.badword_level1, (badword) ->
+      #log.info msg
+      regexp = new RegExp(badword, "g")
+      msg = msg.replace(regexp, "**")
+      return
+    , msg)
+    if oldmsg != msg
+      log.warn "BAD WORD LEVEL 1", client.name, oldmsg
+      ygopro.stoc_send_chat(client, "请使用文明用语")
+    struct = ygopro.structs["chat"]
+    struct._setBuff(buffer)
+    struct.set("msg", msg)
+    buffer = struct.buffer
   return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
