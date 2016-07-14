@@ -1156,11 +1156,32 @@
       ygopro.stoc_die(client, "房间密码不正确");
     } else if (_.indexOf(settings.ban.banned_user, client.name) > -1) {
       settings.ban.banned_ip.push(client.remoteAddress);
-      log.info("BANNED USER LOGIN", client.name, client.remoteAddress);
+      log.warn("BANNED USER LOGIN", client.name, client.remoteAddress);
       ygopro.stoc_die(client, "您的账号已被封禁");
     } else if (_.indexOf(settings.ban.banned_ip, client.remoteAddress) > -1) {
-      log.info("BANNED IP LOGIN", client.name, client.remoteAddress);
+      log.warn("BANNED IP LOGIN", client.name, client.remoteAddress);
       ygopro.stoc_die(client, "您的账号已被封禁");
+    } else if (_.any(settings.ban.badword_level3, function(badword) {
+      var regexp;
+      regexp = new RegExp(badword);
+      return name.match(regexp);
+    }, name = client.name)) {
+      log.warn("BAD NAME LEVEL 3", client.name, client.remoteAddress);
+      ygopro.stoc_die(client, "您的用户名存在不适当的内容");
+    } else if (_.any(settings.ban.badword_level2, function(badword) {
+      var regexp;
+      regexp = new RegExp(badword);
+      return name.match(regexp);
+    }, name = client.name)) {
+      log.warn("BAD NAME LEVEL 2", client.name, client.remoteAddress);
+      ygopro.stoc_die(client, "您的用户名存在不适当的内容");
+    } else if (_.any(settings.ban.badword_level1, function(badword) {
+      var regexp;
+      regexp = new RegExp(badword);
+      return name.match(regexp);
+    }, name = client.name)) {
+      log.warn("BAD NAME LEVEL 1", client.name, client.remoteAddress);
+      ygopro.stoc_die(client, "您的用户名存在不适当的内容，请注意更改");
     } else {
       if (info.version === 4921) {
         info.version = settings.version;
@@ -1574,7 +1595,7 @@
       regexp = new RegExp(badword);
       return msg.match(regexp);
     }, msg)) {
-      log.warn("BAD WORD LEVEL 3", client.name, oldmsg);
+      log.warn("BAD WORD LEVEL 3", client.name, client.remoteAddress, oldmsg);
       ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED);
       ROOM_ban_player(client.name, client.ip, "发言违规");
       ROOM_ban_player(client.name, client.ip, "发言违规", 3);
@@ -1585,7 +1606,7 @@
       regexp = new RegExp(badword);
       return msg.match(regexp);
     }, msg)) {
-      log.warn("BAD WORD LEVEL 2", client.name, oldmsg);
+      log.warn("BAD WORD LEVEL 2", client.name, client.remoteAddress, oldmsg);
       ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，已被屏蔽，并记录一次违规！", ygopro.constants.COLORS.RED);
       ROOM_ban_player(client.name, client.ip, "发言违规");
       cancel = true;
@@ -1596,7 +1617,7 @@
         msg = msg.replace(regexp, "**");
       }, msg);
       if (oldmsg !== msg) {
-        log.warn("BAD WORD LEVEL 1", client.name, oldmsg);
+        log.warn("BAD WORD LEVEL 1", client.name, client.remoteAddress, oldmsg);
         ygopro.stoc_send_chat(client, "请使用文明用语");
       }
       struct = ygopro.structs["chat"];
