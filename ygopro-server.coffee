@@ -1151,6 +1151,12 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
   return unless room
   for player in room.players
     if player and player.pos == info.pos and player != client
+      client.kick_count = if client.kick_count then client.kick_count+1 else 1
+      if client.kick_count>=5
+        ygopro.stoc_send_chat_to_room(room, "#{client.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
+        ROOM_ban_player(player.name, player.ip, "挂房间")
+        client.end()
+        return true
       ygopro.stoc_send_chat_to_room(room, "#{player.name} 被请出了房间", ygopro.constants.COLORS.RED)
   return false
 

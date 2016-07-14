@@ -1391,6 +1391,13 @@
     for (k = 0, len = ref.length; k < len; k++) {
       player = ref[k];
       if (player && player.pos === info.pos && player !== client) {
+        client.kick_count = client.kick_count ? client.kick_count + 1 : 1;
+        if (client.kick_count >= 5) {
+          ygopro.stoc_send_chat_to_room(room, client.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
+          ROOM_ban_player(player.name, player.ip, "挂房间");
+          client.end();
+          return true;
+        }
         ygopro.stoc_send_chat_to_room(room, player.name + " 被请出了房间", ygopro.constants.COLORS.RED);
       }
     }
