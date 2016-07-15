@@ -1372,13 +1372,13 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
         struct.set("sidec", deck_side.length)
         struct.set("deckbuf", deckbuf)
         buffer = struct.buffer
-        log.info("deck ok: " + client.name)
+        #log.info("deck ok: " + client.name)
         ygopro.stoc_send_chat(client, "成功参加比赛", ygopro.constants.COLORS.BABYBLUE)
       else
-        log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
+        #log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
         ygopro.stoc_send_chat(client, "您的卡组与报名卡组不符，请重新选择", ygopro.constants.COLORS.RED)
     else
-      log.info("player deck not found: " + client.name)
+      #log.info("player deck not found: " + client.name)
       ygopro.stoc_send_chat(client, "没有找到您的报名信息，请联系主持", ygopro.constants.COLORS.RED)
   return false
 
