@@ -1110,14 +1110,14 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     client.lp = room.hostinfo.start_lp
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
-  ###
-  if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(room.name, 'M#') and client.is_host
+  
+  if ygopro.constants.MSG[msg] == 'WIN' and client.is_host
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2
     reason = buffer.readUInt8(2)
     #log.info {winner: pos, reason: reason}
-    room.duels.push {winner: pos, reason: reason}
-  ###
+    #room.duels.push {winner: pos, reason: reason}
+    room.winner = pos
 
   #lp跟踪
   if ygopro.constants.MSG[msg] == 'DAMAGE' and client.is_host
@@ -1433,6 +1433,19 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return settings.modules.tournament_mode.enabled unless room
   if settings.modules.tournament_mode.enabled
+    if client.is_host
+      log = {
+        time: moment().format('YYYY-MM-DD HH:mm:ss'),
+        name: room.name,
+        roomid: room.port.toString(),
+        cloud_replay_id: "R#"+room.cloud_replay_id,
+        players: (for player in room.players
+          name: player.name,
+          winner: player.pos == room.winner
+        )
+      }
+      settings.modules.tournament_mode.duel_log.push log
+      nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
     ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}", ygopro.constants.COLORS.BABYBLUE)
     return true
   else
@@ -1479,6 +1492,16 @@ if settings.modules.http
           istart: if room.started then 'start' else 'wait'
         )
         response.end(u.query.callback + "( " + roomsjson + " );")
+
+    else if u.pathname == '/api/duellog' and settings.modules.tournament_mode.enabled
+      if !pass_validated
+        response.writeHead(200)
+        response.end("密码错误")
+        return
+      else
+        response.writeHead(200)
+        duellog = JSON.stringify settings.modules.tournament_mode.duel_log
+        response.end(u.query.callback + "( " + duellog + " );")
 
     else if u.pathname == '/api/message'
       if !pass_validated

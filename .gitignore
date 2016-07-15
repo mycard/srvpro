@@ -1,6 +1,7 @@
 # ignore
 jsconfig.json
 coffeelint.json
+.vscode/
 
 password.json
 config.*.json

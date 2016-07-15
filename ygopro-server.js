@@ -1322,7 +1322,7 @@
   }
 
   ygopro.stoc_follow('GAME_MSG', false, function(buffer, info, client, server) {
-    var card, k, len, line, msg, playertype, pos, ref, ref1, ref2, room, val;
+    var card, k, len, line, msg, playertype, pos, reason, ref, ref1, ref2, room, val;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -1337,15 +1337,14 @@
       client.is_first = !(playertype & 0xf);
       client.lp = room.hostinfo.start_lp;
     }
-
-    /*
-    if ygopro.constants.MSG[msg] == 'WIN' and _.startsWith(room.name, 'M#') and client.is_host
-      pos = buffer.readUInt8(1)
-      pos = 1 - pos unless client.is_first or pos == 2
-      reason = buffer.readUInt8(2)
-      #log.info {winner: pos, reason: reason}
-      room.duels.push {winner: pos, reason: reason}
-     */
+    if (ygopro.constants.MSG[msg] === 'WIN' && client.is_host) {
+      pos = buffer.readUInt8(1);
+      if (!(client.is_first || pos === 2)) {
+        pos = 1 - pos;
+      }
+      reason = buffer.readUInt8(2);
+      room.winner = pos;
+    }
     if (ygopro.constants.MSG[msg] === 'DAMAGE' && client.is_host) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
@@ -1801,12 +1800,35 @@
   });
 
   ygopro.stoc_follow('REPLAY', true, function(buffer, info, client, server) {
-    var room;
+    var player, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return settings.modules.tournament_mode.enabled;
     }
     if (settings.modules.tournament_mode.enabled) {
+      if (client.is_host) {
+        log = {
+          time: moment().format('YYYY-MM-DD HH:mm:ss'),
+          name: room.name,
+          roomid: room.port.toString(),
+          cloud_replay_id: "R#" + room.cloud_replay_id,
+          players: (function() {
+            var k, len, ref, results;
+            ref = room.players;
+            results = [];
+            for (k = 0, len = ref.length; k < len; k++) {
+              player = ref[k];
+              results.push({
+                name: player.name,
+                winner: player.pos === room.winner
+              });
+            }
+            return results;
+          })()
+        };
+        settings.modules.tournament_mode.duel_log.push(log);
+        nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log);
+      }
       ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id, ygopro.constants.COLORS.BABYBLUE);
       return true;
     } else {
@@ -1835,7 +1857,7 @@
 
   if (settings.modules.http) {
     requestListener = function(request, response) {
-      var k, len, parseQueryString, pass_validated, player, room, roomsjson, u;
+      var duellog, k, len, parseQueryString, pass_validated, player, room, roomsjson, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
@@ -1881,6 +1903,16 @@
             })()
           });
           response.end(u.query.callback + "( " + roomsjson + " );");
+        }
+      } else if (u.pathname === '/api/duellog' && settings.modules.tournament_mode.enabled) {
+        if (!pass_validated) {
+          response.writeHead(200);
+          response.end("密码错误");
+          return;
+        } else {
+          response.writeHead(200);
+          duellog = JSON.stringify(settings.modules.tournament_mode.duel_log);
+          response.end(u.query.callback + "( " + duellog + " );");
         }
       } else if (u.pathname === '/api/message') {
         if (!pass_validated) {

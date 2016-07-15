@@ -19,6 +19,7 @@
     "tournament_mode": {
       "enabled": false,
       "deck_path": "./decks/",
+      "duel_log": [],
       "password": "123456",
       "port": 7933
     },
