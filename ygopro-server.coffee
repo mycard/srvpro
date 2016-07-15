@@ -961,21 +961,21 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_die(client, "您的账号已被封禁")
 
   else if _.any(settings.ban.badword_level3, (badword) ->
-    regexp = new RegExp(badword)
+    regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 3", client.name, client.remoteAddress)
     ygopro.stoc_die(client, "您的用户名存在不适当的内容")
 
   else if _.any(settings.ban.badword_level2, (badword) ->
-    regexp = new RegExp(badword)
+    regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 2", client.name, client.remoteAddress)
     ygopro.stoc_die(client, "您的用户名存在不适当的内容")
 
   else if _.any(settings.ban.badword_level1, (badword) ->
-    regexp = new RegExp(badword)
+    regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 1", client.name, client.remoteAddress)
@@ -1298,7 +1298,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     return cancel
   oldmsg = msg
   if (_.any(settings.ban.badword_level3, (badword) ->
-    regexp = new RegExp(badword)
+    regexp = new RegExp(badword, 'i')
     return msg.match(regexp)
   , msg))
     log.warn "BAD WORD LEVEL 3", client.name, client.remoteAddress, oldmsg
@@ -1308,7 +1308,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     client.end()
     cancel = true
   else if (_.any(settings.ban.badword_level2, (badword) ->
-    regexp = new RegExp(badword)
+    regexp = new RegExp(badword, 'i')
     return msg.match(regexp)
   , msg))
     log.warn "BAD WORD LEVEL 2", client.name, client.remoteAddress, oldmsg
@@ -1318,7 +1318,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   else
     _.each(settings.ban.badword_level1, (badword) ->
       #log.info msg
-      regexp = new RegExp(badword, "g")
+      regexp = new RegExp(badword, "ig")
       msg = msg.replace(regexp, "**")
       return
     , msg)

@@ -1180,21 +1180,21 @@
       ygopro.stoc_die(client, "您的账号已被封禁");
     } else if (_.any(settings.ban.badword_level3, function(badword) {
       var regexp;
-      regexp = new RegExp(badword);
+      regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
       log.warn("BAD NAME LEVEL 3", client.name, client.remoteAddress);
       ygopro.stoc_die(client, "您的用户名存在不适当的内容");
     } else if (_.any(settings.ban.badword_level2, function(badword) {
       var regexp;
-      regexp = new RegExp(badword);
+      regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
       log.warn("BAD NAME LEVEL 2", client.name, client.remoteAddress);
       ygopro.stoc_die(client, "您的用户名存在不适当的内容");
     } else if (_.any(settings.ban.badword_level1, function(badword) {
       var regexp;
-      regexp = new RegExp(badword);
+      regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
       log.warn("BAD NAME LEVEL 1", client.name, client.remoteAddress);
@@ -1615,7 +1615,7 @@
     oldmsg = msg;
     if (_.any(settings.ban.badword_level3, function(badword) {
       var regexp;
-      regexp = new RegExp(badword);
+      regexp = new RegExp(badword, 'i');
       return msg.match(regexp);
     }, msg)) {
       log.warn("BAD WORD LEVEL 3", client.name, client.remoteAddress, oldmsg);
@@ -1626,7 +1626,7 @@
       cancel = true;
     } else if (_.any(settings.ban.badword_level2, function(badword) {
       var regexp;
-      regexp = new RegExp(badword);
+      regexp = new RegExp(badword, 'i');
       return msg.match(regexp);
     }, msg)) {
       log.warn("BAD WORD LEVEL 2", client.name, client.remoteAddress, oldmsg);
@@ -1636,7 +1636,7 @@
     } else {
       _.each(settings.ban.badword_level1, function(badword) {
         var regexp;
-        regexp = new RegExp(badword, "g");
+        regexp = new RegExp(badword, "ig");
         msg = msg.replace(regexp, "**");
       }, msg);
       if (oldmsg !== msg) {
