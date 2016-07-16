@@ -1642,11 +1642,17 @@
       if (oldmsg !== msg) {
         log.warn("BAD WORD LEVEL 1", client.name, client.remoteAddress, oldmsg);
         ygopro.stoc_send_chat(client, "请使用文明用语");
+        struct = ygopro.structs["chat"];
+        struct._setBuff(buffer);
+        struct.set("msg", msg);
+        buffer = struct.buffer;
+      } else if (_.any(settings.ban.badword_level0, function(badword) {
+        var regexp;
+        regexp = new RegExp(badword, 'i');
+        return msg.match(regexp);
+      }, msg)) {
+        log.info("BAD WORD LEVEL 0", client.name, client.remoteAddress, oldmsg);
       }
-      struct = ygopro.structs["chat"];
-      struct._setBuff(buffer);
-      struct.set("msg", msg);
-      buffer = struct.buffer;
     }
     return cancel;
   });
@@ -1717,9 +1723,9 @@
           struct.set("sidec", deck_side.length);
           struct.set("deckbuf", deckbuf);
           buffer = struct.buffer;
-          ygopro.stoc_send_chat(client, "成功使用卡组" + found_deck + "参加比赛", ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "成功使用卡组 " + found_deck + " 参加比赛。", ygopro.constants.COLORS.BABYBLUE);
         } else {
-          ygopro.stoc_send_chat(client, client.name + "，您的卡组与报名卡组不符。注意卡组不能有包括卡片顺序在内的任何修改。", ygopro.constants.COLORS.RED);
+          ygopro.stoc_send_chat(client, "您的卡组与报名卡组 " + found_deck + " 不符。注意卡组不能有包括卡片顺序在内的任何修改。", ygopro.constants.COLORS.RED);
         }
       } else {
         ygopro.stoc_send_chat(client, client.name + "，没有找到您的报名信息，请确定您使用昵称与报名ID一致。", ygopro.constants.COLORS.RED);

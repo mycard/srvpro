@@ -1325,10 +1325,15 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     if oldmsg != msg
       log.warn "BAD WORD LEVEL 1", client.name, client.remoteAddress, oldmsg
       ygopro.stoc_send_chat(client, "请使用文明用语")
-    struct = ygopro.structs["chat"]
-    struct._setBuff(buffer)
-    struct.set("msg", msg)
-    buffer = struct.buffer
+      struct = ygopro.structs["chat"]
+      struct._setBuff(buffer)
+      struct.set("msg", msg)
+      buffer = struct.buffer
+    else if (_.any(settings.ban.badword_level0, (badword) ->
+      regexp = new RegExp(badword, 'i')
+      return msg.match(regexp)
+    , msg))
+      log.info "BAD WORD LEVEL 0", client.name, client.remoteAddress, oldmsg
   return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
@@ -1373,10 +1378,10 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
         struct.set("deckbuf", deckbuf)
         buffer = struct.buffer
         #log.info("deck ok: " + client.name)
-        ygopro.stoc_send_chat(client, "成功使用卡组#{found_deck}参加比赛", ygopro.constants.COLORS.BABYBLUE)
+        ygopro.stoc_send_chat(client, "成功使用卡组 #{found_deck} 参加比赛。", ygopro.constants.COLORS.BABYBLUE)
       else
         #log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
-        ygopro.stoc_send_chat(client, "#{client.name}，您的卡组与报名卡组不符。注意卡组不能有包括卡片顺序在内的任何修改。", ygopro.constants.COLORS.RED)
+        ygopro.stoc_send_chat(client, "您的卡组与报名卡组 #{found_deck} 不符。注意卡组不能有包括卡片顺序在内的任何修改。", ygopro.constants.COLORS.RED)
     else
       #log.info("player deck not found: " + client.name)
       ygopro.stoc_send_chat(client, "#{client.name}，没有找到您的报名信息，请确定您使用昵称与报名ID一致。", ygopro.constants.COLORS.RED)
