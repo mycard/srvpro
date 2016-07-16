@@ -1630,7 +1630,7 @@
       return msg.match(regexp);
     }, msg)) {
       log.warn("BAD WORD LEVEL 2", client.name, client.remoteAddress, oldmsg);
-      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，已被屏蔽，并记录一次违规！", ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败，并记录一次违规！", ygopro.constants.COLORS.RED);
       ROOM_ban_player(client.name, client.ip, "发言违规");
       cancel = true;
     } else {
@@ -1717,12 +1717,12 @@
           struct.set("sidec", deck_side.length);
           struct.set("deckbuf", deckbuf);
           buffer = struct.buffer;
-          ygopro.stoc_send_chat(client, "成功参加比赛", ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "成功使用卡组" + found_deck + "参加比赛", ygopro.constants.COLORS.BABYBLUE);
         } else {
-          ygopro.stoc_send_chat(client, "您的卡组与报名卡组不符，请重新选择", ygopro.constants.COLORS.RED);
+          ygopro.stoc_send_chat(client, client.name + "，您的卡组与报名卡组不符。注意卡组不能有包括卡片顺序在内的任何修改。", ygopro.constants.COLORS.RED);
         }
       } else {
-        ygopro.stoc_send_chat(client, "没有找到您的报名信息，请联系主持", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat(client, client.name + "，没有找到您的报名信息，请确定您使用昵称与报名ID一致。", ygopro.constants.COLORS.RED);
       }
     }
     return false;
@@ -1826,7 +1826,7 @@
         settings.modules.tournament_mode.duel_log.push(log);
         nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log);
       }
-      ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id, ygopro.constants.COLORS.BABYBLUE);
+      ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id + "。将于MATCH结束后可播放。", ygopro.constants.COLORS.BABYBLUE);
       return true;
     } else {
       return false;
