@@ -464,7 +464,8 @@ class Room
                       "replay_buffer", replay_buffer,
                       "player_names", player_names,
                       "date_time", date_time)
-        redisdb.expire("replay:"+replay_id, 60*60*24)
+        if !log_rep_id
+          redisdb.expire("replay:"+replay_id, 60*60*24)
         recorded_ip=[]
         _.each player_ips, (player_ip)->
           return if _.contains(recorded_ip, player_ip)
