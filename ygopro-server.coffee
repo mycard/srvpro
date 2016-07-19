@@ -1445,6 +1445,8 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return settings.modules.tournament_mode.enabled unless room
+  if settings.modules.enable_cloud_replay
+    Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled
     if client.is_host
       log = {
@@ -1461,7 +1463,6 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
     if settings.modules.enable_cloud_replay
       ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于MATCH结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
-      Cloud_replay_ids.push room.cloud_replay_id
     return true
   else
     return false

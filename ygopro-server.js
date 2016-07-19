@@ -1816,6 +1816,9 @@
     if (!room) {
       return settings.modules.tournament_mode.enabled;
     }
+    if (settings.modules.enable_cloud_replay) {
+      Cloud_replay_ids.push(room.cloud_replay_id);
+    }
     if (settings.modules.tournament_mode.enabled) {
       if (client.is_host) {
         log = {
@@ -1842,7 +1845,6 @@
       }
       if (settings.modules.enable_cloud_replay) {
         ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id + "。将于MATCH结束后可播放。", ygopro.constants.COLORS.BABYBLUE);
-        Cloud_replay_ids.push(room.cloud_replay_id);
       }
       return true;
     } else {
