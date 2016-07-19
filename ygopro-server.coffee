@@ -130,6 +130,8 @@ setInterval ()->
   return
 , 3000
 
+Cloud_replay_ids = []
+
 ROOM_all = []
 ROOM_players_oppentlist = {}
 ROOM_players_banned = []
@@ -795,6 +797,10 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       ygopro.stoc_die(client, "没有找到录像")
 
+  else if info.pass.toUpperCase()=="W" and settings.modules.enable_cloud_replay
+    replay_id=Cloud_replay_ids[Math.floor(Math.random()*Cloud_replay_ids.length)]
+    redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
+
   else if info.version != settings.version and info.version != 4921 #YGOMobile不更新，强行兼容
     ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED)
     ygopro.stoc_send client, 'ERROR_MSG', {
@@ -1452,7 +1458,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       }
       settings.modules.tournament_mode.duel_log.push log
       nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
-    ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于MATCH结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
+    if settings.modules.enable_cloud_replay
+      ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于MATCH结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
+      Cloud_replay_ids.push room.cloud_replay_id
     return true
   else
     return false
