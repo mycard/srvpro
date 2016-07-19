@@ -247,6 +247,7 @@ class Room
       start_hand: 5
       draw_count: 1
       time_limit: 180
+      replay_mode: if settings.modules.tournament_mode.enabled then 1 else 0
 
     if name[0...2] == 'M#'
       @hostinfo.mode = 1
@@ -387,7 +388,7 @@ class Room
 
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'),
       (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'),
-      @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit]
+      @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
 
     try
       @process = spawn './ygopro', param, {cwd: settings.ygopro_path}

@@ -353,7 +353,8 @@
         start_lp: 8000,
         start_hand: 5,
         draw_count: 1,
-        time_limit: 180
+        time_limit: 180,
+        replay_mode: settings.modules.tournament_mode.enabled ? 1 : 0
       });
       if (name.slice(0, 2) === 'M#') {
         this.hostinfo.mode = 1;
@@ -525,7 +526,7 @@
           this.hostinfo.enable_priority = true;
         }
       }
-      param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit];
+      param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode];
       try {
         this.process = spawn('./ygopro', param, {
           cwd: settings.ygopro_path
