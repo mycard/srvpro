@@ -1706,6 +1706,9 @@
         if (_.endsWith(deck, client.name + ".ydk")) {
           found_deck = deck;
         }
+        if (_.endsWith(deck, client.name + ".ydk.ydk")) {
+          found_deck = deck;
+        }
       }
       if (found_deck) {
         deck_text = fs.readFileSync(settings.modules.tournament_mode.deck_path + found_deck, {
@@ -1816,7 +1819,7 @@
     if (!room) {
       return settings.modules.tournament_mode.enabled;
     }
-    if (settings.modules.enable_cloud_replay) {
+    if (settings.modules.enable_cloud_replay && room.random_type) {
       Cloud_replay_ids.push(room.cloud_replay_id);
     }
     if (settings.modules.tournament_mode.enabled) {
@@ -1844,7 +1847,7 @@
         nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log);
       }
       if (settings.modules.enable_cloud_replay) {
-        ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id + "。将于MATCH结束后可播放。", ygopro.constants.COLORS.BABYBLUE);
+        ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id + "。将于本局结束后可播放。", ygopro.constants.COLORS.BABYBLUE);
       }
       return true;
     } else {

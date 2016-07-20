@@ -1368,6 +1368,8 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
     for deck in decks
       if _.endsWith(deck, client.name+".ydk")
         found_deck=deck
+      if _.endsWith(deck, client.name+".ydk.ydk")
+        found_deck=deck
     if found_deck
       deck_text=fs.readFileSync(settings.modules.tournament_mode.deck_path+found_deck,{encoding:"ASCII"})
       deck_array=deck_text.split("\n")
@@ -1445,7 +1447,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return settings.modules.tournament_mode.enabled unless room
-  if settings.modules.enable_cloud_replay
+  if settings.modules.enable_cloud_replay and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled
     if client.is_host
@@ -1462,7 +1464,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       settings.modules.tournament_mode.duel_log.push log
       nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
     if settings.modules.enable_cloud_replay
-      ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于MATCH结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
+      ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于本局结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
     return true
   else
     return false
