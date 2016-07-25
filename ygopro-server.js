@@ -562,21 +562,7 @@
               });
             });
             if (_this.windbot) {
-              _this.ai_process = spawn('mono', ['WindBot.exe'], {
-                cwd: 'windbot',
-                env: {
-                  YGOPRO_VERSION: settings.version,
-                  YGOPRO_HOST: '127.0.0.1',
-                  YGOPRO_PORT: _this.port,
-                  YGOPRO_NAME: _this.windbot.name,
-                  YGOPRO_DECK: _this.windbot.deck,
-                  YGOPRO_DIALOG: _this.windbot.dialog
-                }
-              });
-              _this.ai_process.stdout.on('data', function(data) {});
-              _this.ai_process.stderr.on('data', function(data) {
-                log.info("AI stderr: " + data);
-              });
+              request.get("http://127.0.0.1:2399/?name=" + (encodeURIComponent(_this.windbot.name)) + "&deck=" + (encodeURIComponent(_this.windbot.deck)) + "&host=127.0.0.1&port=" + _this.port + "&dialog=" + (encodeURIComponent(_this.windbot.dialog)) + "&version=" + settings.version);
             }
           };
         })(this));

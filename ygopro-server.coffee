@@ -411,23 +411,7 @@ class Room
             return
           return
         if @windbot
-          #log.info @windbot
-          @ai_process = spawn 'mono', ['WindBot.exe'], {
-            cwd: 'windbot', env: {
-              YGOPRO_VERSION: settings.version
-              YGOPRO_HOST: '127.0.0.1'
-              YGOPRO_PORT: @port
-              YGOPRO_NAME: @windbot.name
-              YGOPRO_DECK: @windbot.deck
-              YGOPRO_DIALOG: @windbot.dialog
-            }
-          }
-          @ai_process.stdout.on 'data', (data)->
-            #log.info "AI stdout: " + data
-            return
-          @ai_process.stderr.on 'data', (data)->
-            log.info "AI stderr: " + data
-            return
+          request.get "http://127.0.0.1:2399/?name=#{encodeURIComponent(@windbot.name)}&deck=#{encodeURIComponent(@windbot.deck)}&host=127.0.0.1&port=#{@port}&dialog=#{encodeURIComponent(@windbot.dialog)}&version=#{settings.version}"
         return
       @process.stderr.on 'data', (data)=>
         data = "Debug: " + data
