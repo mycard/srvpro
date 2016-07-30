@@ -47,3 +47,16 @@
  * 先行卡更新
 * 用户账号系统和管理员账号系统
 * 云录像更换存储方式
+
+### TODO
+* refactoring CTOS and STOC
+* change features to modules
+ * room name parsing
+ * random duel
+ * summon dialogues
+ * WindBot
+ * cloud replay
+ * tournament mode
+ * expansions updater
+* user and admin account system
+* new database for cloud replay
