@@ -1,4 +1,4 @@
-#标准库
+# 标准库
 net = require 'net'
 http = require 'http'
 url = require 'url'
@@ -10,7 +10,7 @@ execFile = require('child_process').execFile
 spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
 
-#三方库
+# 三方库
 _ = require 'underscore'
 _.str = require 'underscore.string'
 _.mixin(_.str.exports())
@@ -41,13 +41,16 @@ moment.locale('zh-cn', {
 
 #heapdump = require 'heapdump'
 
-#配置
+# 配置
+# use nconf to save user config.user.json .
+# config.json shouldn't be changed
 nconf = require 'nconf'
 nconf.file('./config.user.json')
 defaultconfig = require('./config.json')
 nconf.defaults(defaultconfig)
 settings = global.settings = nconf.get()
 nconf.myset = (settings, path, val) ->
+  # path should be like "modules:welcome"
   nconf.set(path, val)
   nconf.save()
   log.info("setting changed", path, val) if _.isString(val)
@@ -63,6 +66,7 @@ nconf.myset = (settings, path, val) ->
     target[key] = val
   return
 
+# ban a user manually and permanently
 ban_user = (name) ->
   settings.ban.banned_user.push(name)
   nconf.myset(settings, "ban:banned_user", settings.ban.banned_user)
@@ -76,6 +80,7 @@ ban_user = (name) ->
   return
 
 settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
+# load the lflist of current date
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   date=list.match(/!([\d\.]+)/)
   continue unless date
@@ -89,14 +94,14 @@ if settings.modules.enable_cloud_replay
 if settings.modules.enable_windbot
   settings.modules.windbots = require('./windbot/bots.json').windbots
 
-#组件
+# 组件
 ygopro = require './ygopro.js'
-#Room = require './room.js'
 roomlist = require './roomlist.js' if settings.modules.enable_websocket_roomlist
 
+# cache users of mycard login
 users_cache = {}
 
-#获取可用内存
+# 获取可用内存
 get_memory_usage = ()->
   prc_free = spawnSync("free", [])
   if (prc_free.stdout)
@@ -112,7 +117,9 @@ get_memory_usage = ()->
     percentUsed = 0
   return percentUsed
 
-#定时清理关闭的连接
+# 定时清理关闭的连接
+# the server write data directly to the socket object
+# so this is a dumb way to clean data
 Graveyard = []
 
 tribute = (socket) ->
@@ -136,6 +143,7 @@ ROOM_all = []
 ROOM_players_oppentlist = {}
 ROOM_players_banned = []
 
+# automatically ban user to use random duel
 ROOM_ban_player = (name, ip, reason, countadd = 1)->
   bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
     ip == bannedplayer.ip
@@ -490,11 +498,11 @@ class Room
     if @random_type
       host_player = @get_host()
       if host_player && (host_player != client)
-        #进来时已经有人在等待了，互相记录为匹配过
+        # 进来时已经有人在等待了，互相记录为匹配过
         ROOM_players_oppentlist[host_player.remoteAddress] = client.remoteAddress
         ROOM_players_oppentlist[client.remoteAddress] = host_player.remoteAddress
       else
-        #第一个玩家刚进来，还没就位
+        # 第一个玩家刚进来，还没就位
         ROOM_players_oppentlist[client.remoteAddress] = null
 
     if @established
@@ -529,14 +537,15 @@ class Room
     return
 
 
-#网络连接
+# 网络连接
 net.createServer (client) ->
+  # server stand for the connection to ygopro server process
   server = new net.Socket()
   client.server = server
 
   client.setTimeout(300000) #5分钟
 
-  #释放处理
+  # 释放处理
   client.on 'close', (had_error) ->
     #log.info "client closed", client.name, had_error
     room=ROOM_all[client.rid]
@@ -602,8 +611,8 @@ net.createServer (client) ->
         return
       return
     
-  #需要重构
-  #客户端到服务端(ctos)协议分析
+  # 需要重构
+  # 客户端到服务端(ctos)协议分析
   
   client.pre_establish_buffers = new Array()
 
@@ -667,7 +676,7 @@ net.createServer (client) ->
 
     return
 
-  #服务端到客户端(stoc)
+  # 服务端到客户端(stoc)
   server.on 'data', (data)->
     stoc_buffer = new Buffer(0)
     stoc_message_length = 0
@@ -730,9 +739,12 @@ net.createServer (client) ->
   log.info "server started", settings.port
   return
 
-#功能模块
+# 功能模块
+# return true to cancel a synchronous message
 
 ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
+  # checkmate use username$password, but here don't
+  # so remove the password
   name = info.name.split("$")[0]
   struct = ygopro.structs["CTOS_PlayerInfo"]
   struct._setBuff(buffer)
@@ -758,7 +770,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           return
         return
       return
-    #强行等待异步执行完毕_(:з」∠)_
+    # 强行等待异步执行完毕_(:з」∠)_
     setTimeout (()->
       ygopro.stoc_send client, 'ERROR_MSG',{
         msg: 1
@@ -1066,7 +1078,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       return
   return
 
-#登场台词
+# 登场台词
 load_dialogues = () ->
   request
     url: settings.modules.dialogues
