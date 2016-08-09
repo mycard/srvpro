@@ -1137,7 +1137,7 @@
         baseUrl: settings.modules.mycard_auth,
         url: '/users/' + encodeURIComponent(client.name) + '.json',
         qs: {
-          api_key: 'dc7298a754828b3d26b709f035a0eeceb43e73cbd8c4fa8dec18951f8a95d2bc',
+          api_key: settings.modules.mycard_auth_key,
           api_username: client.name,
           skip_track_visit: true
         },

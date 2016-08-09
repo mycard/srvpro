@@ -15,6 +15,7 @@
     "enable_websocket_roomlist": false,
     "redis_port": 6379,
     "mycard_auth": false,
+    "mycard_auth_key": "please set in config.user.json",
     "hang_timeout": 90,
     "tournament_mode": {
       "enabled": false,
