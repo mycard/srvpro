@@ -660,6 +660,7 @@
       this.players.push(client);
       client.ip = client.remoteAddress;
       if (this.random_type) {
+        client.abuse_count = 0;
         host_player = this.get_host();
         if (host_player && (host_player !== client)) {
           ROOM_players_oppentlist[host_player.remoteAddress] = client.remoteAddress;
@@ -1606,6 +1607,11 @@
     if (!(room && room.random_type)) {
       return cancel;
     }
+    if (client.abuse_count >= 5) {
+      log.warn("BANNED CHAT", client.name, client.remoteAddress, msg);
+      ygopro.stoc_send_chat(client, "您已被禁言！", ygopro.constants.COLORS.RED);
+      return true;
+    }
     oldmsg = msg;
     if (_.any(settings.ban.badword_level3, function(badword) {
       var regexp;
@@ -1613,19 +1619,25 @@
       return msg.match(regexp);
     }, msg)) {
       log.warn("BAD WORD LEVEL 3", client.name, client.remoteAddress, oldmsg);
-      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED);
-      ROOM_ban_player(client.name, client.ip, "发言违规");
-      ROOM_ban_player(client.name, client.ip, "发言违规", 3);
-      client.end();
       cancel = true;
+      if (client.abuse_count > 0) {
+        ygopro.stoc_send_chat(client, "您的发言存在严重不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED);
+        ROOM_ban_player(client.name, client.ip, "发言违规");
+        ROOM_ban_player(client.name, client.ip, "发言违规", 3);
+        client.end();
+        return true;
+      } else {
+        client.abuse_count = client.abuse_count + 4;
+        ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED);
+      }
     } else if (_.any(settings.ban.badword_level2, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');
       return msg.match(regexp);
     }, msg)) {
       log.warn("BAD WORD LEVEL 2", client.name, client.remoteAddress, oldmsg);
-      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败，并记录一次违规！", ygopro.constants.COLORS.RED);
-      ROOM_ban_player(client.name, client.ip, "发言违规");
+      client.abuse_count = client.abuse_count + 3;
+      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED);
       cancel = true;
     } else {
       _.each(settings.ban.badword_level1, function(badword) {
@@ -1635,7 +1647,8 @@
       }, msg);
       if (oldmsg !== msg) {
         log.warn("BAD WORD LEVEL 1", client.name, client.remoteAddress, oldmsg);
-        ygopro.stoc_send_chat(client, "请使用文明用语");
+        client.abuse_count = client.abuse_count + 1;
+        ygopro.stoc_send_chat(client, "请使用文明用语！");
         struct = ygopro.structs["chat"];
         struct._setBuff(buffer);
         struct.set("msg", msg);
@@ -1647,6 +1660,10 @@
       }, msg)) {
         log.info("BAD WORD LEVEL 0", client.name, client.remoteAddress, oldmsg);
       }
+    }
+    if (client.abuse_count >= 5) {
+      ygopro.stoc_send_chat_to_room(room, client.name + " 已被禁言！", ygopro.constants.COLORS.RED);
+      ROOM_ban_player(client.name, client.ip, "发言违规");
     }
     return cancel;
   });
