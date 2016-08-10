@@ -161,8 +161,11 @@ ROOM_ban_player = (name, ip, reason, countadd = 1)->
   return
 
 ROOM_find_or_create_by_name = (name, player_ip)->
-  if settings.modules.enable_random_duel and (name == '' or name.toUpperCase() == 'S' or name.toUpperCase() == 'M' or name.toUpperCase() == 'T')
-    return ROOM_find_or_create_random(name.toUpperCase(), player_ip)
+  uname=name.toUpperCase()
+  if settings.modules.enable_windbot and (uname[0...2] == 'AI' or (!settings.modules.enable_random_duel and uname == ''))
+    return ROOM_find_or_create_ai(name)
+  if settings.modules.enable_random_duel and (uname == '' or uname == 'S' or uname == 'M' or uname == 'T')
+    return ROOM_find_or_create_random(uname, player_ip)
   if room = ROOM_find_by_name(name)
     return room
   else if get_memory_usage() >= 90
@@ -195,7 +198,7 @@ ROOM_find_or_create_random = (type, player_ip)->
   if result
     result.welcome = '对手已经在等你了，开始决斗吧！'
     #log.info 'found room', player_name
-  else
+  else if get_memory_usage() < 90
     type = if type then type else 'S'
     name = type + ',RANDOM#' + Math.floor(Math.random() * 100000)
     result = new Room(name)
@@ -204,7 +207,33 @@ ROOM_find_or_create_random = (type, player_ip)->
     result.welcome = '已建立随机对战房间，正在等待对手！'
     result.deprecated = playerbanned
     #log.info 'create room', player_name, name
+  else
+    return null
   if result.random_type=='M' then result.welcome = result.welcome + '\n您进入了比赛模式的房间，我们推荐使用竞技卡组！'
+  return result
+
+ROOM_find_or_create_ai = (name)->
+  if name == ''
+    name = 'AI'
+  if name[0...3] == 'AI_'
+    name = 'AI#' + name.slice(3)
+  if room = ROOM_find_by_name(name)
+    return room
+  else if name == 'AI'
+    windbot = _.sample settings.modules.windbots
+    name = 'AI#' + Math.floor(Math.random() * 100000)
+  else if ainame = name.split('#')[1]
+    windbot = _.sample _.filter settings.modules.windbots, (w)->
+      w.name == ainame or w.deck == ainame
+    if !windbot
+      return { "error": "未找到该AI角色或卡组" }
+    name = name + ',' + Math.floor(Math.random() * 100000)
+  else
+    windbot = _.sample settings.modules.windbots
+    name = name + '#' + Math.floor(Math.random() * 100000)
+  
+  result = new Room(name)
+  result.windbot = windbot
   return result
 
 ROOM_find_by_name = (name)->
@@ -419,7 +448,9 @@ class Room
             return
           return
         if @windbot
-          request.get "http://127.0.0.1:2399/?name=#{encodeURIComponent(@windbot.name)}&deck=#{encodeURIComponent(@windbot.deck)}&host=127.0.0.1&port=#{@port}&dialog=#{encodeURIComponent(@windbot.dialog)}&version=#{settings.version}"
+          setTimeout ()=>
+            @add_windbot(@windbot)
+          , 200
         return
       @process.stderr.on 'data', (data)=>
         data = "Debug: " + data
@@ -492,6 +523,19 @@ class Room
       return
     return host_player
 
+  add_windbot: (botdata)->
+    @windbot = botdata
+    request
+      url: "http://127.0.0.1:#{settings.modules.windbot_port}/?name=#{encodeURIComponent(botdata.name)}&deck=#{encodeURIComponent(botdata.deck)}&host=127.0.0.1&port=#{settings.port}&dialog=#{encodeURIComponent(botdata.dialog)}&version=#{settings.version}&password=#{encodeURIComponent(@name)}"
+    , (error, response, body)=>
+      if error
+        log.warn 'windbot add error', error, this.name, response
+        ygopro.stoc_send_chat_to_room(this, "添加AI失败，可尝试输入 /ai 重新添加", ygopro.constants.COLORS.RED)
+      else
+        log.info "windbot added"
+      return
+    return
+
   connect: (client)->
     @players.push client
     client.ip = client.remoteAddress
@@ -527,7 +571,7 @@ class Room
       #log.info(@started,@disconnector,@random_type)
       if @started and @disconnector != 'server' and @random_type
         ROOM_ban_player(client.name, client.ip, "强退")
-      if @players.length
+      if @players.length and !(@windbot and client.is_host)
         ygopro.stoc_send_chat_to_room this, "#{client.name} 离开了游戏" + if error then ": #{error}" else ''
         roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
         #client.room = null
@@ -807,42 +851,10 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.end()
 
-  else if !info.pass.length and !settings.modules.enable_random_duel
+  else if !info.pass.length and !settings.modules.enable_random_duel and !settings.modules.enable_windbot
     ygopro.stoc_die(client, "房间名为空，请填写主机密码")
 
-  else if settings.modules.enable_windbot and info.pass[0...2] == 'AI'
-
-    if info.pass.length > 3 and info.pass[0...3] == 'AI#' or info.pass[0...3] == 'AI_'
-      name = info.pass.slice(3)
-      windbot = _.sample _.filter settings.modules.windbots, (w)->
-        w.name == name or w.deck == name
-      if !windbot
-        ygopro.stoc_die(client, '主机密码不正确 (Invalid Windbot Name)')
-        return
-    else
-      windbot = _.sample settings.modules.windbots
-    
-    if info.version == 4921 #YGOMobile不更新，强行兼容
-      info.version = settings.version
-      struct = ygopro.structs["CTOS_JoinGame"]
-      struct._setBuff(buffer)
-      struct.set("version", info.version)
-      buffer = struct.buffer
-      ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE)
-
-    room = ROOM_find_or_create_by_name('AI#' + Math.floor(Math.random() * 100000)) # 这个 AI# 没有特殊作用, 仅作为标记
-    if !room
-      ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
-    else if room.error
-      ygopro.stoc_die(client, room.error)
-    else
-      room.windbot = windbot
-      room.private = true
-      #client.room = room
-      client.rid = _.indexOf(ROOM_all, room)
-      room.connect(client)
-
-  else if info.pass.length and settings.modules.mycard_auth
+  else if info.pass.length and settings.modules.mycard_auth and info.pass[0...2] != 'AI'
     ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE)
     if info.pass.length <= 8
       ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)')
@@ -1272,8 +1284,6 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     for player in room.players when player.pos != 7
       room.dueling_players[player.pos] = player
       room.player_datas.push ip: player.remoteAddress, name: player.name
-      if room.windbot
-        room.dueling_players[1 - player.pos] = {}
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
   return
@@ -1289,10 +1299,16 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client, "/help 显示这个帮助信息")
       ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字")
+      ygopro.stoc_send_chat(client, "/ai 添加一个AI") if settings.modules.enable_windbot
       ygopro.stoc_send_chat(client, "/tip 显示一条提示") if settings.modules.tips
 
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips
+
+    when '/ai'
+      if settings.modules.enable_windbot
+        windbot = _.sample settings.modules.windbots
+        room.add_windbot(windbot)
 
     when '/roomname'
       ygopro.stoc_send_chat(client, "您当前的房间名是 " + room.name, ygopro.constants.COLORS.BABYBLUE) if room

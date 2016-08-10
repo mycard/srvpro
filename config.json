@@ -14,6 +14,7 @@
     "enable_windbot": false,
     "enable_websocket_roomlist": false,
     "redis_port": 6379,
+    "windbot_port": 2399,
     "mycard_auth": false,
     "mycard_auth_key": "please set in config.user.json",
     "hang_timeout": 90,
