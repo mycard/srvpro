@@ -1594,7 +1594,7 @@
   });
 
   ygopro.ctos_follow('CHAT', true, function(buffer, info, client, server) {
-    var cancel, msg, oldmsg, room, struct, windbot;
+    var cancel, cmd, msg, name, oldmsg, room, struct, windbot;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -1604,13 +1604,14 @@
     if (!(cancel || !room.random_type)) {
       room.last_active_time = moment();
     }
-    switch (msg) {
+    cmd = msg.split(' ');
+    switch (cmd[0]) {
       case '/help':
         ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助");
         ygopro.stoc_send_chat(client, "/help 显示这个帮助信息");
         ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字");
         if (settings.modules.enable_windbot) {
-          ygopro.stoc_send_chat(client, "/ai 添加一个AI");
+          ygopro.stoc_send_chat(client, "/ai 添加一个AI，/ai 角色名 可指定添加的角色");
         }
         if (settings.modules.tips) {
           ygopro.stoc_send_chat(client, "/tip 显示一条提示");
@@ -1623,7 +1624,17 @@
         break;
       case '/ai':
         if (settings.modules.enable_windbot) {
-          windbot = _.sample(settings.modules.windbots);
+          if (name = cmd[1]) {
+            windbot = _.sample(_.filter(settings.modules.windbots, function(w) {
+              return w.name === name || w.deck === name;
+            }));
+            if (!windbot) {
+              ygopro.stoc_send_chat(client, "未找到该AI角色或卡组", ygopro.constants.COLORS.RED);
+              return;
+            }
+          } else {
+            windbot = _.sample(settings.modules.windbots);
+          }
           room.add_windbot(windbot);
         }
         break;
