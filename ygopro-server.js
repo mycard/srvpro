@@ -704,8 +704,6 @@
           if (error) {
             log.warn('windbot add error', error, _this.name, response);
             ygopro.stoc_send_chat_to_room(_this, "添加AI失败，可尝试输入 /ai 重新添加", ygopro.constants.COLORS.RED);
-          } else {
-            log.info("windbot added");
           }
         };
       })(this));

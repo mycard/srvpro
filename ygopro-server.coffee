@@ -531,8 +531,8 @@ class Room
       if error
         log.warn 'windbot add error', error, this.name, response
         ygopro.stoc_send_chat_to_room(this, "添加AI失败，可尝试输入 /ai 重新添加", ygopro.constants.COLORS.RED)
-      else
-        log.info "windbot added"
+      #else
+        #log.info "windbot added"
       return
     return
 
