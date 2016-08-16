@@ -142,6 +142,8 @@ Cloud_replay_ids = []
 ROOM_all = []
 ROOM_players_oppentlist = {}
 ROOM_players_banned = []
+ROOM_connected_ip = {}
+ROOM_bad_ip = {}
 
 # automatically ban user to use random duel
 ROOM_ban_player = (name, ip, reason, countadd = 1)->
@@ -539,6 +541,13 @@ class Room
   connect: (client)->
     @players.push client
     client.ip = client.remoteAddress
+    connect_count = 0
+    if client.remoteAddress != '::ffff:127.0.0.1'
+      if connect_count = ROOM_connected_ip[client.remoteAddress]
+        connect_count++
+      else
+        connect_count = 1
+    ROOM_connected_ip[client.remoteAddress] = connect_count
     if @random_type
       client.abuse_count = 0
       host_player = @get_host()
@@ -594,6 +603,10 @@ net.createServer (client) ->
   client.on 'close', (had_error) ->
     #log.info "client closed", client.name, had_error
     room=ROOM_all[client.rid]
+    connect_count = ROOM_connected_ip[client.ip]
+    if connect_count > 0
+      connect_count--
+    ROOM_connected_ip[client.ip] = connect_count
     tribute(client)
     unless client.closed
       client.closed = true
@@ -604,6 +617,10 @@ net.createServer (client) ->
   client.on 'error', (error)->
     #log.info "client error", client.name, error
     room=ROOM_all[client.rid]
+    connect_count = ROOM_connected_ip[client.ip]
+    if connect_count > 0
+      connect_count--
+    ROOM_connected_ip[client.ip] = connect_count
     tribute(client)
     unless client.closed
       client.closed = error
@@ -637,6 +654,11 @@ net.createServer (client) ->
       client.end()
     return
   
+  if ROOM_bad_ip[client.remoteAddress] > 5
+    log.info 'BAD IP', client.remoteAddress
+    client.end()
+    return
+
   if settings.modules.enable_cloud_replay
     client.open_cloud_replay= (err, replay)->
       if err or !replay
@@ -709,8 +731,13 @@ net.createServer (client) ->
 
         looplimit++
         #log.info(looplimit)
-        if looplimit > 800
-          log.info("error ctos", client.name)
+        if looplimit > 800 or ROOM_bad_ip[client.remoteAddress] > 5 or ROOM_connected_ip[client.remoteAddress] > 10
+          log.info("error ctos", client.name, client.remoteAddress)
+          bad_ip_count = ROOM_bad_ip[client.remoteAddress]
+          if bad_ip_count
+            ROOM_bad_ip[client.remoteAddress] = bad_ip_count + 1
+          else
+            ROOM_bad_ip[client.remoteAddress] = 1
           server.end()
           break
 
@@ -964,9 +991,13 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         return
       users_cache[client.name] = body.user.id
       finish(buffer)
+  
+  else if !client.name or client.name==""
+    ygopro.stoc_die(client, "请输入正确的用户名")
 
-  else if info.pass.length && !ROOM_validate(info.pass)
-    ygopro.stoc_die(client, "房间密码不正确")
+  else if ROOM_connected_ip[client.remoteAddress] > 10
+    log.warn("MULTI LOGIN", client.name, client.remoteAddress)
+    ygopro.stoc_die(client, "同时开启的客户端数量过多 " + client.remoteAddress)
 
   else if _.indexOf(settings.ban.banned_user, client.name) > -1 #账号被封
     settings.ban.banned_ip.push(client.remoteAddress)
@@ -997,6 +1028,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   , name = client.name)
     log.warn("BAD NAME LEVEL 1", client.name, client.remoteAddress)
     ygopro.stoc_die(client, "您的用户名存在不适当的内容，请注意更改")
+
+  else if info.pass.length && !ROOM_validate(info.pass)
+    ygopro.stoc_die(client, "房间密码不正确")
   
   else
     if info.version == 4921 #YGOMobile不更新，强行兼容
