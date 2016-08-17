@@ -738,7 +738,7 @@ net.createServer (client) ->
             ROOM_bad_ip[client.remoteAddress] = bad_ip_count + 1
           else
             ROOM_bad_ip[client.remoteAddress] = 1
-          server.end()
+          client.end()
           break
 
       if client.established

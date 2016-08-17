@@ -945,7 +945,7 @@
             } else {
               ROOM_bad_ip[client.remoteAddress] = 1;
             }
-            server.end();
+            client.end();
             break;
           }
         }
