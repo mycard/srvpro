@@ -90,6 +90,9 @@ if settings.modules.enable_cloud_replay
   redis = require 'redis'
   zlib = require 'zlib'
   redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
+  redisdb.on 'error', (err)->
+    log.warn err
+    return
 
 if settings.modules.enable_windbot
   settings.modules.windbots = require('./windbot/bots.json').windbots
@@ -731,7 +734,7 @@ net.createServer (client) ->
 
         looplimit++
         #log.info(looplimit)
-        if looplimit > 800 or ROOM_bad_ip[client.remoteAddress] > 5 or ROOM_connected_ip[client.remoteAddress] > 10
+        if looplimit > 800 or ROOM_bad_ip[client.remoteAddress] > 5
           log.info("error ctos", client.name, client.remoteAddress)
           bad_ip_count = ROOM_bad_ip[client.remoteAddress]
           if bad_ip_count

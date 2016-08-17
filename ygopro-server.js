@@ -135,6 +135,9 @@
       host: "127.0.0.1",
       port: settings.modules.redis_port
     });
+    redisdb.on('error', function(err) {
+      log.warn(err);
+    });
   }
 
   if (settings.modules.enable_windbot) {
@@ -937,7 +940,7 @@
             }
           }
           looplimit++;
-          if (looplimit > 800 || ROOM_bad_ip[client.remoteAddress] > 5 || ROOM_connected_ip[client.remoteAddress] > 10) {
+          if (looplimit > 800 || ROOM_bad_ip[client.remoteAddress] > 5) {
             log.info("error ctos", client.name, client.remoteAddress);
             bad_ip_count = ROOM_bad_ip[client.remoteAddress];
             if (bad_ip_count) {
