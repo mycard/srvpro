@@ -573,7 +573,7 @@ class Room
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       #log.info(@started,@disconnector,@random_type)
-      if @started and @disconnector != 'server' and @random_type
+      if @started and @disconnector != 'server' and @random_type and (client.pos < 4 or client.is_host)
         ROOM_ban_player(client.name, client.ip, "强退")
       if @players.length and !(@windbot and client.is_host)
         ygopro.stoc_send_chat_to_room this, "#{client.name} 离开了游戏" + if error then ": #{error}" else ''

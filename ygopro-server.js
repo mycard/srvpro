@@ -759,7 +759,7 @@
         if (index !== -1) {
           this.players.splice(index, 1);
         }
-        if (this.started && this.disconnector !== 'server' && this.random_type) {
+        if (this.started && this.disconnector !== 'server' && this.random_type && (client.pos < 4 || client.is_host)) {
           ROOM_ban_player(client.name, client.ip, "强退");
         }
         if (this.players.length && !(this.windbot && client.is_host)) {
