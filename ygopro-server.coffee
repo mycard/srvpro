@@ -73,9 +73,9 @@ ban_user = (name) ->
   for room in ROOM_all when room and room.established
     for player in room.players
       if player and player.name == name
-        settings.ban.banned_ip.push(player.remoteAddress)
+        settings.ban.banned_ip.push(player.ip)
         ygopro.stoc_send_chat_to_room(room, "#{player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
-        player.end()
+        player.destroy()
         continue
   return
 
@@ -198,7 +198,7 @@ ROOM_find_or_create_random = (type, player_ip)->
     return room and room.random_type != '' and !room.started and
     ((type == '' and room.random_type != 'T') or room.random_type == type) and
     room.get_playing_player().length < max_player and
-    (room.get_host() == null or room.get_host().remoteAddress != ROOM_players_oppentlist[player_ip]) and
+    (room.get_host() == null or room.get_host().ip != ROOM_players_oppentlist[player_ip]) and
     (playerbanned == room.deprecated)
   if result
     result.welcome = '对手已经在等你了，开始决斗吧！'
@@ -506,7 +506,7 @@ class Room
     @watcher_buffers = []
     @recorder_buffers = []
     @players = []
-    @watcher.end() if @watcher
+    @watcher.destroy() if @watcher
     @deleted = true
     index = _.indexOf(ROOM_all, this)
     ROOM_all[index] = null unless index == -1
@@ -543,24 +543,16 @@ class Room
 
   connect: (client)->
     @players.push client
-    client.ip = client.remoteAddress
-    connect_count = 0
-    if client.remoteAddress != '::ffff:127.0.0.1'
-      if connect_count = ROOM_connected_ip[client.remoteAddress]
-        connect_count++
-      else
-        connect_count = 1
-    ROOM_connected_ip[client.remoteAddress] = connect_count
     if @random_type
       client.abuse_count = 0
       host_player = @get_host()
       if host_player && (host_player != client)
         # 进来时已经有人在等待了，互相记录为匹配过
-        ROOM_players_oppentlist[host_player.remoteAddress] = client.remoteAddress
-        ROOM_players_oppentlist[client.remoteAddress] = host_player.remoteAddress
+        ROOM_players_oppentlist[host_player.ip] = client.ip
+        ROOM_players_oppentlist[client.ip] = host_player.ip
       else
         # 第一个玩家刚进来，还没就位
-        ROOM_players_oppentlist[client.remoteAddress] = null
+        ROOM_players_oppentlist[client.ip] = null
 
     if @established
       roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
@@ -596,6 +588,13 @@ class Room
 
 # 网络连接
 net.createServer (client) ->
+  client.ip = client.remoteAddress
+  connect_count = ROOM_connected_ip[client.ip] or 0
+  if client.ip != '::ffff:127.0.0.1'
+    connect_count++
+  ROOM_connected_ip[client.ip] = connect_count
+  #log.info "connect", client.ip, ROOM_connected_ip[client.ip]
+
   # server stand for the connection to ygopro server process
   server = new net.Socket()
   client.server = server
@@ -610,11 +609,12 @@ net.createServer (client) ->
     if connect_count > 0
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
+    #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
     tribute(client)
     unless client.closed
       client.closed = true
       room.disconnect(client) if room
-    server.end()
+    server.destroy()
     return
 
   client.on 'error', (error)->
@@ -624,42 +624,45 @@ net.createServer (client) ->
     if connect_count > 0
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
+    #log.info "err disconnect", client.ip, ROOM_connected_ip[client.ip]
     tribute(client)
     unless client.closed
       client.closed = error
       room.disconnect(client, error) if room
-    server.end()
+    server.destroy()
     return
 
   client.on 'timeout', ()->
-    server.end()
+    server.destroy()
     return
 
   server.on 'close', (had_error) ->
     #log.info "server closed", client.name, had_error
     room=ROOM_all[client.rid]
+    #log.info "server close", client.ip, ROOM_connected_ip[client.ip]
     tribute(server)
     room.disconnector = 'server' if room
     server.closed = true unless server.closed
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器关闭了连接", ygopro.constants.COLORS.RED)
-      client.end()
+      client.destroy()
     return
 
   server.on 'error', (error)->
     #log.info "server error", client.name, error
     room=ROOM_all[client.rid]
+    #log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
     tribute(server)
     room.disconnector = 'server' if room
     server.closed = error
     unless client.closed
       ygopro.stoc_send_chat(client, "服务器错误: #{error}", ygopro.constants.COLORS.RED)
-      client.end()
+      client.destroy()
     return
   
-  if ROOM_bad_ip[client.remoteAddress] > 5
-    log.info 'BAD IP', client.remoteAddress
-    client.end()
+  if ROOM_bad_ip[client.ip] > 5
+    log.info 'BAD IP', client.ip
+    client.destroy()
     return
 
   if settings.modules.enable_cloud_replay
@@ -673,11 +676,11 @@ net.createServer (client) ->
         if err
           log.info "cloud replay unzip error: " + err
           ygopro.stoc_send_chat(client, "播放录像出错", ygopro.constants.COLORS.RED)
-          client.end()
+          client.destroy()
           return
         ygopro.stoc_send_chat(client, "正在观看云录像：R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", ygopro.constants.COLORS.BABYBLUE)
         client.write replay_buffer
-        client.end()
+        client.destroy()
         return
       return
     
@@ -734,14 +737,14 @@ net.createServer (client) ->
 
         looplimit++
         #log.info(looplimit)
-        if looplimit > 800 or ROOM_bad_ip[client.remoteAddress] > 5
-          log.info("error ctos", client.name, client.remoteAddress)
-          bad_ip_count = ROOM_bad_ip[client.remoteAddress]
+        if looplimit > 800 or ROOM_bad_ip[client.ip] > 5
+          log.info("error ctos", client.name, client.ip)
+          bad_ip_count = ROOM_bad_ip[client.ip]
           if bad_ip_count
-            ROOM_bad_ip[client.remoteAddress] = bad_ip_count + 1
+            ROOM_bad_ip[client.ip] = bad_ip_count + 1
           else
-            ROOM_bad_ip[client.remoteAddress] = 1
-          client.end()
+            ROOM_bad_ip[client.ip] = 1
+          client.destroy()
           break
 
       if client.established
@@ -804,7 +807,7 @@ net.createServer (client) ->
       #log.info(looplimit)
       if looplimit > 800
         log.info("error stoc", client.name)
-        server.end()
+        server.destroy()
         break
     client.write buffer for buffer in datas
 
@@ -835,7 +838,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     
   else if info.pass.toUpperCase()=="R" and settings.modules.enable_cloud_replay
     ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE)
-    redisdb.lrange client.remoteAddress+":replays", 0, 2, (err, result)->
+    redisdb.lrange client.ip+":replays", 0, 2, (err, result)->
       _.each result, (replay_id,id)->
         redisdb.hgetall "replay:"+replay_id, (err, replay)->
           if err or !replay
@@ -851,13 +854,13 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         msg: 1
         code: 2
       }
-      client.end()
+      client.destroy()
       return), 500
       
   else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.enable_cloud_replay
     replay_id=info.pass.split("#")[1]
     if (replay_id>0 and replay_id<=9)
-      redisdb.lindex client.remoteAddress+":replays", replay_id-1, (err, replay_id)->
+      redisdb.lindex client.ip+":replays", replay_id-1, (err, replay_id)->
         if err or !replay_id
           log.info "cloud replay replayid error: " + err if err
           ygopro.stoc_die(client, "没有找到录像")
@@ -879,7 +882,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       msg: 4
       code: settings.version
     }
-    client.end()
+    client.destroy()
 
   else if !info.pass.length and !settings.modules.enable_random_duel and !settings.modules.enable_windbot
     ygopro.stoc_die(client, "房间名为空，请填写主机密码")
@@ -998,38 +1001,38 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   else if !client.name or client.name==""
     ygopro.stoc_die(client, "请输入正确的用户名")
 
-  else if ROOM_connected_ip[client.remoteAddress] > 10
-    log.warn("MULTI LOGIN", client.name, client.remoteAddress)
-    ygopro.stoc_die(client, "同时开启的客户端数量过多 " + client.remoteAddress)
+  else if ROOM_connected_ip[client.ip] > 5
+    log.warn("MULTI LOGIN", client.name, client.ip)
+    ygopro.stoc_die(client, "同时开启的客户端数量过多 " + client.ip)
 
   else if _.indexOf(settings.ban.banned_user, client.name) > -1 #账号被封
-    settings.ban.banned_ip.push(client.remoteAddress)
-    log.warn("BANNED USER LOGIN", client.name, client.remoteAddress)
+    settings.ban.banned_ip.push(client.ip)
+    log.warn("BANNED USER LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "您的账号已被封禁")
 
-  else if _.indexOf(settings.ban.banned_ip, client.remoteAddress) > -1 #IP被封
-    log.warn("BANNED IP LOGIN", client.name, client.remoteAddress)
+  else if _.indexOf(settings.ban.banned_ip, client.ip) > -1 #IP被封
+    log.warn("BANNED IP LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "您的账号已被封禁")
 
   else if _.any(settings.ban.badword_level3, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
-    log.warn("BAD NAME LEVEL 3", client.name, client.remoteAddress)
+    log.warn("BAD NAME LEVEL 3", client.name, client.ip)
     ygopro.stoc_die(client, "您的用户名存在不适当的内容")
 
   else if _.any(settings.ban.badword_level2, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
-    log.warn("BAD NAME LEVEL 2", client.name, client.remoteAddress)
+    log.warn("BAD NAME LEVEL 2", client.name, client.ip)
     ygopro.stoc_die(client, "您的用户名存在不适当的内容")
 
   else if _.any(settings.ban.badword_level1, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
-    log.warn("BAD NAME LEVEL 1", client.name, client.remoteAddress)
+    log.warn("BAD NAME LEVEL 1", client.name, client.ip)
     ygopro.stoc_die(client, "您的用户名存在不适当的内容，请注意更改")
 
   else if info.pass.length && !ROOM_validate(info.pass)
@@ -1045,7 +1048,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE)
       
     #log.info 'join_game',info.pass, client.name
-    room = ROOM_find_or_create_by_name(info.pass, client.remoteAddress)
+    room = ROOM_find_or_create_by_name(info.pass, client.ip)
     if !room
       ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
     else if room.error
@@ -1221,7 +1224,7 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
       if client.kick_count>=5
         ygopro.stoc_send_chat_to_room(room, "#{client.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
         ROOM_ban_player(player.name, player.ip, "挂房间")
-        client.end()
+        client.destroy()
         return true
       ygopro.stoc_send_chat_to_room(room, "#{player.name} 被请出了房间", ygopro.constants.COLORS.RED)
   return false
@@ -1263,7 +1266,7 @@ wait_room_start = (room, time)->
         if player and player.is_host
           ROOM_ban_player(player.name, player.ip, "挂房间")
           ygopro.stoc_send_chat_to_room(room, "#{player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
-          player.end()
+          player.destroy()
   return
 
 #tip
@@ -1320,7 +1323,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     room.dueling_players = []
     for player in room.players when player.pos != 7
       room.dueling_players[player.pos] = player
-      room.player_datas.push ip: player.remoteAddress, name: player.name
+      room.player_datas.push ip: player.ip, name: player.name
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
   return
@@ -1363,7 +1366,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   if !(room and room.random_type)
     return cancel
   if client.abuse_count>=5
-    log.warn "BANNED CHAT", client.name, client.remoteAddress, msg
+    log.warn "BANNED CHAT", client.name, client.ip, msg
     ygopro.stoc_send_chat(client, "您已被禁言！", ygopro.constants.COLORS.RED)
     return true
   oldmsg = msg
@@ -1371,13 +1374,13 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     regexp = new RegExp(badword, 'i')
     return msg.match(regexp)
   , msg))
-    log.warn "BAD WORD LEVEL 3", client.name, client.remoteAddress, oldmsg
+    log.warn "BAD WORD LEVEL 3", client.name, client.ip, oldmsg
     cancel = true
     if client.abuse_count>0
       ygopro.stoc_send_chat(client, "您的发言存在严重不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED)
       ROOM_ban_player(client.name, client.ip, "发言违规")
       ROOM_ban_player(client.name, client.ip, "发言违规", 3)
-      client.end()
+      client.destroy()
       return true
     else
       client.abuse_count=client.abuse_count+4
@@ -1386,7 +1389,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     regexp = new RegExp(badword, 'i')
     return msg.match(regexp)
   , msg))
-    log.warn "BAD WORD LEVEL 2", client.name, client.remoteAddress, oldmsg
+    log.warn "BAD WORD LEVEL 2", client.name, client.ip, oldmsg
     client.abuse_count=client.abuse_count+3
     ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED)
     cancel = true
@@ -1398,7 +1401,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       return
     , msg)
     if oldmsg != msg
-      log.warn "BAD WORD LEVEL 1", client.name, client.remoteAddress, oldmsg
+      log.warn "BAD WORD LEVEL 1", client.name, client.ip, oldmsg
       client.abuse_count=client.abuse_count+1
       ygopro.stoc_send_chat(client, "请使用文明用语！")
       struct = ygopro.structs["chat"]
@@ -1409,7 +1412,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       regexp = new RegExp(badword, 'i')
       return msg.match(regexp)
     , msg))
-      log.info "BAD WORD LEVEL 0", client.name, client.remoteAddress, oldmsg
+      log.info "BAD WORD LEVEL 0", client.name, client.ip, oldmsg
   if client.abuse_count>=5
     ygopro.stoc_send_chat_to_room(room, "#{client.name} 已被禁言！", ygopro.constants.COLORS.RED)
     ROOM_ban_player(client.name, client.ip, "发言违规")
@@ -1548,7 +1551,7 @@ setInterval ()->
       room.last_active_time = moment()
       ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机")
       ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
-      room.waiting_for_player.server.end()
+      room.waiting_for_player.server.destroy()
     else if time_passed >= (settings.modules.hang_timeout - 20) and not (time_passed % 10)
       ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 已经很久没有操作了，若继续挂机，将于#{settings.modules.hang_timeout - time_passed}秒后被请出房间", ygopro.constants.COLORS.RED)
   return

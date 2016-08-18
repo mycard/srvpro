@@ -254,7 +254,7 @@
       });
     }
     if (client) {
-      client.end();
+      client.destroy();
     }
   };
 

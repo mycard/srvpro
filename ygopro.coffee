@@ -158,5 +158,5 @@ for name, declaration of structs_declaration
     msg: 1
     code: 2
   } if client
-  client.end() if client
+  client.destroy() if client
   return

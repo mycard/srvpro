@@ -98,9 +98,9 @@
         for (l = 0, len1 = ref.length; l < len1; l++) {
           player = ref[l];
           if (player && player.name === name) {
-            settings.ban.banned_ip.push(player.remoteAddress);
+            settings.ban.banned_ip.push(player.ip);
             ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
-            player.end();
+            player.destroy();
             continue;
           }
         }
@@ -283,7 +283,7 @@
     max_player = type === 'T' ? 4 : 2;
     playerbanned = bannedplayer && bannedplayer.count > 3 && moment() < bannedplayer.time;
     result = _.find(ROOM_all, function(room) {
-      return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().remoteAddress !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated);
+      return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated);
     });
     if (result) {
       result.welcome = '对手已经在等你了，开始决斗吧！';
@@ -668,7 +668,7 @@
       this.recorder_buffers = [];
       this.players = [];
       if (this.watcher) {
-        this.watcher.end();
+        this.watcher.destroy();
       }
       this.deleted = true;
       index = _.indexOf(ROOM_all, this);
@@ -717,26 +717,16 @@
     };
 
     Room.prototype.connect = function(client) {
-      var connect_count, host_player;
+      var host_player;
       this.players.push(client);
-      client.ip = client.remoteAddress;
-      connect_count = 0;
-      if (client.remoteAddress !== '::ffff:127.0.0.1') {
-        if (connect_count = ROOM_connected_ip[client.remoteAddress]) {
-          connect_count++;
-        } else {
-          connect_count = 1;
-        }
-      }
-      ROOM_connected_ip[client.remoteAddress] = connect_count;
       if (this.random_type) {
         client.abuse_count = 0;
         host_player = this.get_host();
         if (host_player && (host_player !== client)) {
-          ROOM_players_oppentlist[host_player.remoteAddress] = client.remoteAddress;
-          ROOM_players_oppentlist[client.remoteAddress] = host_player.remoteAddress;
+          ROOM_players_oppentlist[host_player.ip] = client.ip;
+          ROOM_players_oppentlist[client.ip] = host_player.ip;
         } else {
-          ROOM_players_oppentlist[client.remoteAddress] = null;
+          ROOM_players_oppentlist[client.ip] = null;
         }
       }
       if (this.established) {
@@ -789,12 +779,18 @@
   })();
 
   net.createServer(function(client) {
-    var server;
+    var connect_count, server;
+    client.ip = client.remoteAddress;
+    connect_count = ROOM_connected_ip[client.ip] || 0;
+    if (client.ip !== '::ffff:127.0.0.1') {
+      connect_count++;
+    }
+    ROOM_connected_ip[client.ip] = connect_count;
     server = new net.Socket();
     client.server = server;
     client.setTimeout(300000);
     client.on('close', function(had_error) {
-      var connect_count, room;
+      var room;
       room = ROOM_all[client.rid];
       connect_count = ROOM_connected_ip[client.ip];
       if (connect_count > 0) {
@@ -808,10 +804,10 @@
           room.disconnect(client);
         }
       }
-      server.end();
+      server.destroy();
     });
     client.on('error', function(error) {
-      var connect_count, room;
+      var room;
       room = ROOM_all[client.rid];
       connect_count = ROOM_connected_ip[client.ip];
       if (connect_count > 0) {
@@ -825,10 +821,10 @@
           room.disconnect(client, error);
         }
       }
-      server.end();
+      server.destroy();
     });
     client.on('timeout', function() {
-      server.end();
+      server.destroy();
     });
     server.on('close', function(had_error) {
       var room;
@@ -842,7 +838,7 @@
       }
       if (!client.closed) {
         ygopro.stoc_send_chat(client, "服务器关闭了连接", ygopro.constants.COLORS.RED);
-        client.end();
+        client.destroy();
       }
     });
     server.on('error', function(error) {
@@ -855,12 +851,12 @@
       server.closed = error;
       if (!client.closed) {
         ygopro.stoc_send_chat(client, "服务器错误: " + error, ygopro.constants.COLORS.RED);
-        client.end();
+        client.destroy();
       }
     });
-    if (ROOM_bad_ip[client.remoteAddress] > 5) {
-      log.info('BAD IP', client.remoteAddress);
-      client.end();
+    if (ROOM_bad_ip[client.ip] > 5) {
+      log.info('BAD IP', client.ip);
+      client.destroy();
       return;
     }
     if (settings.modules.enable_cloud_replay) {
@@ -876,12 +872,12 @@
           if (err) {
             log.info("cloud replay unzip error: " + err);
             ygopro.stoc_send_chat(client, "播放录像出错", ygopro.constants.COLORS.RED);
-            client.end();
+            client.destroy();
             return;
           }
           ygopro.stoc_send_chat(client, "正在观看云录像：R#" + replay.replay_id + " " + replay.player_names + " " + replay.date_time, ygopro.constants.COLORS.BABYBLUE);
           client.write(replay_buffer);
-          client.end();
+          client.destroy();
         });
       };
     }
@@ -940,15 +936,15 @@
             }
           }
           looplimit++;
-          if (looplimit > 800 || ROOM_bad_ip[client.remoteAddress] > 5) {
-            log.info("error ctos", client.name, client.remoteAddress);
-            bad_ip_count = ROOM_bad_ip[client.remoteAddress];
+          if (looplimit > 800 || ROOM_bad_ip[client.ip] > 5) {
+            log.info("error ctos", client.name, client.ip);
+            bad_ip_count = ROOM_bad_ip[client.ip];
             if (bad_ip_count) {
-              ROOM_bad_ip[client.remoteAddress] = bad_ip_count + 1;
+              ROOM_bad_ip[client.ip] = bad_ip_count + 1;
             } else {
-              ROOM_bad_ip[client.remoteAddress] = 1;
+              ROOM_bad_ip[client.ip] = 1;
             }
-            client.end();
+            client.destroy();
             break;
           }
         }
@@ -1020,7 +1016,7 @@
         looplimit++;
         if (looplimit > 800) {
           log.info("error stoc", client.name);
-          server.end();
+          server.destroy();
           break;
         }
       }
@@ -1050,7 +1046,7 @@
       ygopro.stoc_die(client, settings.modules.stop);
     } else if (info.pass.toUpperCase() === "R" && settings.modules.enable_cloud_replay) {
       ygopro.stoc_send_chat(client, "以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE);
-      redisdb.lrange(client.remoteAddress + ":replays", 0, 2, function(err, result) {
+      redisdb.lrange(client.ip + ":replays", 0, 2, function(err, result) {
         _.each(result, function(replay_id, id) {
           redisdb.hgetall("replay:" + replay_id, function(err, replay) {
             if (err || !replay) {
@@ -1068,12 +1064,12 @@
           msg: 1,
           code: 2
         });
-        client.end();
+        client.destroy();
       }), 500);
     } else if (info.pass.slice(0, 2).toUpperCase() === "R#" && settings.modules.enable_cloud_replay) {
       replay_id = info.pass.split("#")[1];
       if (replay_id > 0 && replay_id <= 9) {
-        redisdb.lindex(client.remoteAddress + ":replays", replay_id - 1, function(err, replay_id) {
+        redisdb.lindex(client.ip + ":replays", replay_id - 1, function(err, replay_id) {
           if (err || !replay_id) {
             if (err) {
               log.info("cloud replay replayid error: " + err);
@@ -1097,7 +1093,7 @@
         msg: 4,
         code: settings.version
       });
-      client.end();
+      client.destroy();
     } else if (!info.pass.length && !settings.modules.enable_random_duel && !settings.modules.enable_windbot) {
       ygopro.stoc_die(client, "房间名为空，请填写主机密码");
     } else if (info.pass.length && settings.modules.mycard_auth && info.pass.slice(0, 2) !== 'AI') {
@@ -1225,36 +1221,36 @@
       });
     } else if (!client.name || client.name === "") {
       ygopro.stoc_die(client, "请输入正确的用户名");
-    } else if (ROOM_connected_ip[client.remoteAddress] > 10) {
-      log.warn("MULTI LOGIN", client.name, client.remoteAddress);
-      ygopro.stoc_die(client, "同时开启的客户端数量过多 " + client.remoteAddress);
+    } else if (ROOM_connected_ip[client.ip] > 5) {
+      log.warn("MULTI LOGIN", client.name, client.ip);
+      ygopro.stoc_die(client, "同时开启的客户端数量过多 " + client.ip);
     } else if (_.indexOf(settings.ban.banned_user, client.name) > -1) {
-      settings.ban.banned_ip.push(client.remoteAddress);
-      log.warn("BANNED USER LOGIN", client.name, client.remoteAddress);
+      settings.ban.banned_ip.push(client.ip);
+      log.warn("BANNED USER LOGIN", client.name, client.ip);
       ygopro.stoc_die(client, "您的账号已被封禁");
-    } else if (_.indexOf(settings.ban.banned_ip, client.remoteAddress) > -1) {
-      log.warn("BANNED IP LOGIN", client.name, client.remoteAddress);
+    } else if (_.indexOf(settings.ban.banned_ip, client.ip) > -1) {
+      log.warn("BANNED IP LOGIN", client.name, client.ip);
       ygopro.stoc_die(client, "您的账号已被封禁");
     } else if (_.any(settings.ban.badword_level3, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
-      log.warn("BAD NAME LEVEL 3", client.name, client.remoteAddress);
+      log.warn("BAD NAME LEVEL 3", client.name, client.ip);
       ygopro.stoc_die(client, "您的用户名存在不适当的内容");
     } else if (_.any(settings.ban.badword_level2, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
-      log.warn("BAD NAME LEVEL 2", client.name, client.remoteAddress);
+      log.warn("BAD NAME LEVEL 2", client.name, client.ip);
       ygopro.stoc_die(client, "您的用户名存在不适当的内容");
     } else if (_.any(settings.ban.badword_level1, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
-      log.warn("BAD NAME LEVEL 1", client.name, client.remoteAddress);
+      log.warn("BAD NAME LEVEL 1", client.name, client.ip);
       ygopro.stoc_die(client, "您的用户名存在不适当的内容，请注意更改");
     } else if (info.pass.length && !ROOM_validate(info.pass)) {
       ygopro.stoc_die(client, "房间密码不正确");
@@ -1267,7 +1263,7 @@
         buffer = struct.buffer;
         ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE);
       }
-      room = ROOM_find_or_create_by_name(info.pass, client.remoteAddress);
+      room = ROOM_find_or_create_by_name(info.pass, client.ip);
       if (!room) {
         ygopro.stoc_die(client, "服务器已经爆满，请稍候再试");
       } else if (room.error) {
@@ -1470,7 +1466,7 @@
         if (client.kick_count >= 5) {
           ygopro.stoc_send_chat_to_room(room, client.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
           ROOM_ban_player(player.name, player.ip, "挂房间");
-          client.end();
+          client.destroy();
           return true;
         }
         ygopro.stoc_send_chat_to_room(room, player.name + " 被请出了房间", ygopro.constants.COLORS.RED);
@@ -1533,7 +1529,7 @@
           if (player && player.is_host) {
             ROOM_ban_player(player.name, player.ip, "挂房间");
             ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
-            player.end();
+            player.destroy();
           }
         }
       }
@@ -1625,7 +1621,7 @@
         }
         room.dueling_players[player.pos] = player;
         room.player_datas.push({
-          ip: player.remoteAddress,
+          ip: player.ip,
           name: player.name
         });
       }
@@ -1689,7 +1685,7 @@
       return cancel;
     }
     if (client.abuse_count >= 5) {
-      log.warn("BANNED CHAT", client.name, client.remoteAddress, msg);
+      log.warn("BANNED CHAT", client.name, client.ip, msg);
       ygopro.stoc_send_chat(client, "您已被禁言！", ygopro.constants.COLORS.RED);
       return true;
     }
@@ -1699,13 +1695,13 @@
       regexp = new RegExp(badword, 'i');
       return msg.match(regexp);
     }, msg)) {
-      log.warn("BAD WORD LEVEL 3", client.name, client.remoteAddress, oldmsg);
+      log.warn("BAD WORD LEVEL 3", client.name, client.ip, oldmsg);
       cancel = true;
       if (client.abuse_count > 0) {
         ygopro.stoc_send_chat(client, "您的发言存在严重不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED);
         ROOM_ban_player(client.name, client.ip, "发言违规");
         ROOM_ban_player(client.name, client.ip, "发言违规", 3);
-        client.end();
+        client.destroy();
         return true;
       } else {
         client.abuse_count = client.abuse_count + 4;
@@ -1716,7 +1712,7 @@
       regexp = new RegExp(badword, 'i');
       return msg.match(regexp);
     }, msg)) {
-      log.warn("BAD WORD LEVEL 2", client.name, client.remoteAddress, oldmsg);
+      log.warn("BAD WORD LEVEL 2", client.name, client.ip, oldmsg);
       client.abuse_count = client.abuse_count + 3;
       ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED);
       cancel = true;
@@ -1727,7 +1723,7 @@
         msg = msg.replace(regexp, "**");
       }, msg);
       if (oldmsg !== msg) {
-        log.warn("BAD WORD LEVEL 1", client.name, client.remoteAddress, oldmsg);
+        log.warn("BAD WORD LEVEL 1", client.name, client.ip, oldmsg);
         client.abuse_count = client.abuse_count + 1;
         ygopro.stoc_send_chat(client, "请使用文明用语！");
         struct = ygopro.structs["chat"];
@@ -1739,7 +1735,7 @@
         regexp = new RegExp(badword, 'i');
         return msg.match(regexp);
       }, msg)) {
-        log.info("BAD WORD LEVEL 0", client.name, client.remoteAddress, oldmsg);
+        log.info("BAD WORD LEVEL 0", client.name, client.ip, oldmsg);
       }
     }
     if (client.abuse_count >= 5) {
@@ -1951,7 +1947,7 @@
         room.last_active_time = moment();
         ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机");
         ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
-        room.waiting_for_player.server.end();
+        room.waiting_for_player.server.destroy();
       } else if (time_passed >= (settings.modules.hang_timeout - 20) && !(time_passed % 10)) {
         ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " 已经很久没有操作了，若继续挂机，将于" + (settings.modules.hang_timeout - time_passed) + "秒后被请出房间", ygopro.constants.COLORS.RED);
       }
