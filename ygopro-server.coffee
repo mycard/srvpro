@@ -70,9 +70,12 @@ nconf.myset = (settings, path, val) ->
 ban_user = (name) ->
   settings.ban.banned_user.push(name)
   nconf.myset(settings, "ban:banned_user", settings.ban.banned_user)
+  bad_ip=0
   for room in ROOM_all when room and room.established
     for player in room.players
-      if player and player.name == name
+      if player and (player.name == name or player.ip == bad_ip)
+        bad_ip = player.ip
+        ROOM_bad_ip.push(player.ip)
         settings.ban.banned_ip.push(player.ip)
         ygopro.stoc_send_chat_to_room(room, "#{player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
         player.destroy()
