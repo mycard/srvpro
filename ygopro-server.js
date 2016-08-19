@@ -308,19 +308,21 @@
   };
 
   ROOM_find_or_create_ai = function(name) {
-    var ainame, result, room, windbot;
+    var ainame, namea, result, room, windbot;
     if (name === '') {
       name = 'AI';
     }
     if (name.slice(0, 3) === 'AI_') {
       name = 'AI#' + name.slice(3);
     }
+    namea = name.split('#');
     if (room = ROOM_find_by_name(name)) {
       return room;
     } else if (name === 'AI') {
       windbot = _.sample(settings.modules.windbots);
       name = 'AI#' + Math.floor(Math.random() * 100000);
-    } else if (ainame = name.split('#')[1]) {
+    } else if (namea.length > 1) {
+      ainame = namea[namea.length - 1];
       windbot = _.sample(_.filter(settings.modules.windbots, function(w) {
         return w.name === ainame || w.deck === ainame;
       }));
@@ -333,6 +335,12 @@
     } else {
       windbot = _.sample(settings.modules.windbots);
       name = name + '#' + Math.floor(Math.random() * 100000);
+    }
+    if (name.replace(/[^\x00-\xff]/g, "00").length > 20) {
+      log.info("long ai name", name);
+      return {
+        "error": "AI房间名过长"
+      };
     }
     result = new Room(name);
     result.windbot = windbot;
