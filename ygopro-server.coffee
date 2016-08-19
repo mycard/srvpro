@@ -683,7 +683,7 @@ net.createServer (client) ->
           return
         ygopro.stoc_send_chat(client, "正在观看云录像：R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", ygopro.constants.COLORS.BABYBLUE)
         client.write replay_buffer
-        client.destroy()
+        client.end()
         return
       return
     
