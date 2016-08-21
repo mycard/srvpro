@@ -2,7 +2,7 @@ _ = require 'underscore'
 _.str = require 'underscore.string'
 _.mixin(_.str.exports())
 
-Struct = require('struct').Struct
+Struct = require('./struct.js').Struct
 
 #常量/类型声明
 structs_declaration = require './structs.json'  #结构体声明

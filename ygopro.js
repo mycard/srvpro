@@ -8,7 +8,7 @@
 
   _.mixin(_.str.exports());
 
-  Struct = require('struct').Struct;
+  Struct = require('./struct.js').Struct;
 
   structs_declaration = require('./structs.json');
 
