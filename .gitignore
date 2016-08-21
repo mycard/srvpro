@@ -6,17 +6,17 @@ coffeelint.json
 password.json
 config.*.json
 
-ygopro
-windbot
+/ygopro/
+/windbot/
 /decks/
 /node_modules/
-!/node_modules/struct/
 
 test*
 *.heapsnapshot
 *.tmp
 *.bak
 *.log
+
 Thumbs.db
 ehthumbs.db
 Desktop.ini
