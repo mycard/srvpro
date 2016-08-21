@@ -6,8 +6,8 @@ coffeelint.json
 password.json
 config.*.json
 
-/ygopro/
-/windbot/
+/ygopro
+/windbot
 /decks/
 /node_modules/
 
