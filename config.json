@@ -20,8 +20,8 @@
       "ssl": {
         "enabled": true,
         "port": 7923,
-        "cert": "ssl/ygopro-server.crt",
-        "key": "ssl/ygopro-server.key"
+        "cert": "ssl/fullchain.pem",
+        "key": "ssl/privkey.pem"
       }
     }
   }
