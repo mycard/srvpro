@@ -1905,7 +1905,7 @@
   });
 
   ygopro.stoc_follow('REPLAY', true, function(buffer, info, client, server) {
-    var player, room;
+    var duellog, player, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return settings.modules.tournament_mode.enabled;
@@ -1915,7 +1915,7 @@
     }
     if (settings.modules.tournament_mode.enabled) {
       if (client.is_host) {
-        log = {
+        duellog = {
           time: moment().format('YYYY-MM-DD HH:mm:ss'),
           name: room.name,
           roomid: room.port.toString(),
@@ -1934,7 +1934,7 @@
             return results;
           })()
         };
-        settings.modules.tournament_mode.duel_log.push(log);
+        settings.modules.tournament_mode.duel_log.push(duellog);
         nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log);
       }
       if (settings.modules.enable_cloud_replay) {

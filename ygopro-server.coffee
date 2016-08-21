@@ -1532,7 +1532,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
     Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled
     if client.is_host
-      log = {
+      duellog = {
         time: moment().format('YYYY-MM-DD HH:mm:ss'),
         name: room.name,
         roomid: room.port.toString(),
@@ -1542,7 +1542,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
           winner: player.pos == room.winner
         )
       }
-      settings.modules.tournament_mode.duel_log.push log
+      settings.modules.tournament_mode.duel_log.push duellog
       nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
     if settings.modules.enable_cloud_replay
       ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于本局结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
