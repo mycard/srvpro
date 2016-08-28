@@ -1336,6 +1336,13 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       room.player_datas.push ip: player.ip, name: player.name
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
+  if client.main and client.main.length and not client.deck_saved
+    deck_text = '#ygosrv233 deck log\r\n#main\r\n' + client.main.join('\r\n') + '\r\n!side\r\n' + client.side.join('\r\n') + '\r\n'
+    deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_')
+    fs.writeFile 'decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
+      if err
+        log.warn 'DECK SAVE ERROR', err
+    client.deck_saved = true
   return
 
 ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
@@ -1434,8 +1441,8 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
   #log.info info
   buff_main = (info.deckbuf[i] for i in [0...info.mainc])
   buff_side = (info.deckbuf[i] for i in [info.mainc...info.mainc + info.sidec])
-  ##client.main = main
-  ##client.side = side
+  client.main = buff_main
+  client.side = buff_side
   if room.random_type
     if client.is_host
       room.waiting_for_player = room.waiting_for_player2

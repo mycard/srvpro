@@ -1616,7 +1616,7 @@
   }
 
   ygopro.stoc_follow('DUEL_START', false, function(buffer, info, client, server) {
-    var k, len, player, ref, room;
+    var deck_name, deck_text, k, len, player, ref, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -1642,6 +1642,16 @@
     }
     if (settings.modules.tips) {
       ygopro.stoc_send_random_tip(client);
+    }
+    if (client.main && client.main.length && !client.deck_saved) {
+      deck_text = '#ygosrv233 deck log\r\n#main\r\n' + client.main.join('\r\n') + '\r\n!side\r\n' + client.side.join('\r\n') + '\r\n';
+      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_');
+      fs.writeFile('decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
+        if (err) {
+          return log.warn('DECK SAVE ERROR', err);
+        }
+      });
+      client.deck_saved = true;
     }
   });
 
@@ -1781,6 +1791,8 @@
       }
       return results;
     })();
+    client.main = buff_main;
+    client.side = buff_side;
     if (room.random_type) {
       if (client.is_host) {
         room.waiting_for_player = room.waiting_for_player2;
