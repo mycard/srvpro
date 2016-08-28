@@ -514,6 +514,7 @@ class Room
     @recorder_buffers = []
     @players = []
     @watcher.destroy() if @watcher
+    @recorder.destroy() if @recorder
     @deleted = true
     index = _.indexOf(ROOM_all, this)
     ROOM_all[index] = null unless index == -1
@@ -687,7 +688,9 @@ net.createServer (client) ->
           return
         ygopro.stoc_send_chat(client, "正在观看云录像：R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", ygopro.constants.COLORS.BABYBLUE)
         client.write replay_buffer
-        client.end()
+        setTimeout (()->
+          client.destroy()
+          return), 1000
         return
       return
     
