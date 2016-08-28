@@ -339,7 +339,7 @@
     if (name.replace(/[^\x00-\xff]/g, "00").length > 20) {
       log.info("long ai name", name);
       return {
-        "error": "AI房间名过长"
+        "error": "AI房间名过长，请在建立房间后输入 /ai 来添加AI"
       };
     }
     result = new Room(name);
@@ -400,9 +400,7 @@
       this.welcome = '';
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = {
-        lflist: _.findIndex(settings.lflist, function(list) {
-          return !list.tcg && list.date.isBefore();
-        }),
+        lflist: settings.lflist.length ? 0 : -1,
         rule: settings.modules.enable_TCG_as_default ? 2 : 0,
         mode: 0,
         enable_priority: false,
@@ -459,12 +457,12 @@
           case "1":
           case "T":
             this.hostinfo.lflist = _.findIndex(settings.lflist, function(list) {
-              return list.tcg && list.date.isBefore();
+              return list.tcg;
             });
             break;
           default:
             this.hostinfo.lflist = _.findIndex(settings.lflist, function(list) {
-              return !list.tcg && list.date.isBefore();
+              return !list.tcg;
             });
         }
         if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0) {
@@ -515,7 +513,7 @@
         if (rule.match(/(^|，|,)(TCGONLY|TO)(，|,|$)/)) {
           this.hostinfo.rule = 1;
           this.hostinfo.lflist = _.findIndex(settings.lflist, function(list) {
-            return list.tcg && list.date.isBefore();
+            return list.tcg;
           });
         }
         if (rule.match(/(^|，|,)(OCGONLY|OO)(，|,|$)/)) {

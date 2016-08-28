@@ -243,7 +243,7 @@ ROOM_find_or_create_ai = (name)->
     name = name + '#' + Math.floor(Math.random() * 100000)
   if name.replace(/[^\x00-\xff]/g,"00").length>20
     log.info "long ai name", name
-    return { "error": "AI房间名过长" }
+    return { "error": "AI房间名过长，请在建立房间后输入 /ai 来添加AI" }
   result = new Room(name)
   result.windbot = windbot
   return result
@@ -288,7 +288,7 @@ class Room
     ROOM_all.push this
 
     @hostinfo ||=
-      lflist: _.findIndex settings.lflist, (list)-> !list.tcg and list.date.isBefore()
+      lflist: if settings.lflist.length then 0 else -1
       rule: if settings.modules.enable_TCG_as_default then 2 else 0
       mode: 0
       enable_priority: false
@@ -339,9 +339,9 @@ class Room
 
       switch rule.charAt(2)
         when "1","T"
-          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg and list.date.isBefore()
+          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
         else
-          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> !list.tcg and list.date.isBefore()
+          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> !list.tcg
 
       if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0)
         @hostinfo.time_limit = param * 60
@@ -386,7 +386,7 @@ class Room
 
       if (rule.match /(^|，|,)(TCGONLY|TO)(，|,|$)/)
         @hostinfo.rule = 1
-        @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg and list.date.isBefore()
+        @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
 
       if (rule.match /(^|，|,)(OCGONLY|OO)(，|,|$)/)
         @hostinfo.rule = 0
