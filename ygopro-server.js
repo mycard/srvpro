@@ -1646,7 +1646,7 @@
     if (settings.modules.tips) {
       ygopro.stoc_send_random_tip(client);
     }
-    if (client.main && client.main.length && !client.deck_saved) {
+    if (settings.modules.enable_deck_log && client.main && client.main.length && !client.deck_saved) {
       deck_text = '#ygosrv233 deck log\r\n#main\r\n' + client.main.join('\r\n') + '\r\n!side\r\n' + client.side.join('\r\n') + '\r\n';
       deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_');
       fs.writeFile('decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
