@@ -800,7 +800,7 @@
     ROOM_connected_ip[client.ip] = connect_count;
     server = new net.Socket();
     client.server = server;
-    client.setTimeout(300000);
+    client.setTimeout(2000);
     client.on('close', function(had_error) {
       var room;
       room = ROOM_all[client.rid];
@@ -866,7 +866,7 @@
         client.destroy();
       }
     });
-    if (ROOM_bad_ip[client.ip] > 5) {
+    if (ROOM_bad_ip[client.ip] > 5 || ROOM_connected_ip[client.ip] > 10) {
       log.info('BAD IP', client.ip);
       client.destroy();
       return;
@@ -1187,6 +1187,7 @@
         } else if (room.error) {
           ygopro.stoc_die(client, room.error);
         } else {
+          client.setTimeout(300000);
           client.rid = _.indexOf(ROOM_all, room);
           room.connect(client);
         }
@@ -1284,6 +1285,7 @@
         ygopro.stoc_die(client, room.error);
       } else if (room.started) {
         if (settings.modules.enable_halfway_watch) {
+          client.setTimeout(300000);
           client.rid = _.indexOf(ROOM_all, room);
           client.is_post_watcher = true;
           ygopro.stoc_send_chat_to_room(room, client.name + " 加入了观战");
@@ -1298,6 +1300,7 @@
           ygopro.stoc_die(client, "决斗已开始，不允许观战");
         }
       } else {
+        client.setTimeout(300000);
         client.rid = _.indexOf(ROOM_all, room);
         room.connect(client);
       }

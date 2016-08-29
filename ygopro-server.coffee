@@ -607,7 +607,7 @@ net.createServer (client) ->
   server = new net.Socket()
   client.server = server
 
-  client.setTimeout(300000) #5分钟
+  client.setTimeout(2000) #连接前超时2秒
 
   # 释放处理
   client.on 'close', (had_error) ->
@@ -668,7 +668,7 @@ net.createServer (client) ->
       client.destroy()
     return
   
-  if ROOM_bad_ip[client.ip] > 5
+  if ROOM_bad_ip[client.ip] > 5 or ROOM_connected_ip[client.ip] > 10
     log.info 'BAD IP', client.ip
     client.destroy()
     return
@@ -970,6 +970,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         ygopro.stoc_die(client, room.error)
       else
         #client.room = room
+        client.setTimeout(300000) #连接后超时5分钟
         client.rid = _.indexOf(ROOM_all, room)
         room.connect(client)
       return
@@ -1065,7 +1066,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       ygopro.stoc_die(client, room.error)
     else if room.started
       if settings.modules.enable_halfway_watch
-        #client.room = room
+        client.setTimeout(300000) #连接后超时5分钟
         client.rid = _.indexOf(ROOM_all, room)
         client.is_post_watcher = true
         ygopro.stoc_send_chat_to_room(room, "#{client.name} 加入了观战")
@@ -1076,7 +1077,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       else
         ygopro.stoc_die(client, "决斗已开始，不允许观战")
     else
-      #client.room = room
+      client.setTimeout(300000) #连接后超时5分钟
       client.rid = _.indexOf(ROOM_all, room)
       room.connect(client)
   return
