@@ -891,23 +891,21 @@
           client.write(replay_buffer);
           setTimeout((function() {
             client.destroy();
-          }), 1000);
+          }), 5000);
         });
       };
     }
     client.pre_establish_buffers = new Array();
-    client.on('data', function(data) {
-      var b, bad_ip_count, buffer, cancel, ctos_buffer, ctos_message_length, ctos_proto, datas, k, l, len, len1, looplimit, room, struct;
+    client.on('data', function(ctos_buffer) {
+      var b, bad_ip_count, buffer, cancel, ctos_message_length, ctos_proto, datas, k, l, len, len1, looplimit, room, struct;
       if (client.is_post_watcher) {
         room = ROOM_all[client.rid];
         if (room) {
-          room.watcher.write(data);
+          room.watcher.write(ctos_buffer);
         }
       } else {
-        ctos_buffer = new Buffer(0);
         ctos_message_length = 0;
         ctos_proto = 0;
-        ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length);
         datas = [];
         looplimit = 0;
         while (true) {
@@ -915,12 +913,16 @@
             if (ctos_buffer.length >= 2) {
               ctos_message_length = ctos_buffer.readUInt16LE(0);
             } else {
+              if (ctos_buffer.length !== 0) {
+                log.warn("bad ctos_buffer length", client.ip);
+              }
               break;
             }
           } else if (ctos_proto === 0) {
             if (ctos_buffer.length >= 3) {
               ctos_proto = ctos_buffer.readUInt8(2);
             } else {
+              log.warn("bad ctos_proto length", client.ip);
               break;
             }
           } else {
@@ -946,6 +948,7 @@
               ctos_message_length = 0;
               ctos_proto = 0;
             } else {
+              log.warn("bad ctos_message length", client.ip);
               break;
             }
           }
@@ -975,12 +978,10 @@
         }
       }
     });
-    server.on('data', function(data) {
-      var b, buffer, cancel, datas, k, len, looplimit, stanzas, stoc_buffer, stoc_message_length, stoc_proto, struct;
-      stoc_buffer = new Buffer(0);
+    server.on('data', function(stoc_buffer) {
+      var b, buffer, cancel, datas, k, len, looplimit, stanzas, stoc_message_length, stoc_proto, struct;
       stoc_message_length = 0;
       stoc_proto = 0;
-      stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length);
       datas = [];
       looplimit = 0;
       while (true) {
@@ -988,12 +989,16 @@
           if (stoc_buffer.length >= 2) {
             stoc_message_length = stoc_buffer.readUInt16LE(0);
           } else {
+            if (stoc_buffer.length !== 0) {
+              log.warn("bad stoc_buffer length", client.ip);
+            }
             break;
           }
         } else if (stoc_proto === 0) {
           if (stoc_buffer.length >= 3) {
             stoc_proto = stoc_buffer.readUInt8(2);
           } else {
+            log.warn("bad stoc_proto length", client.ip);
             break;
           }
         } else {
@@ -1024,6 +1029,7 @@
             stoc_message_length = 0;
             stoc_proto = 0;
           } else {
+            log.warn("bad stoc_message length", client.ip);
             break;
           }
         }

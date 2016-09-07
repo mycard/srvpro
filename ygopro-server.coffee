@@ -690,7 +690,7 @@ net.createServer (client) ->
         client.write replay_buffer
         setTimeout (()->
           client.destroy()
-          return), 1000
+          return), 5000
         return
       return
     
@@ -699,15 +699,15 @@ net.createServer (client) ->
   
   client.pre_establish_buffers = new Array()
 
-  client.on 'data', (data) ->
+  client.on 'data', (ctos_buffer) ->
     if client.is_post_watcher
       room=ROOM_all[client.rid]
-      room.watcher.write data if room
+      room.watcher.write ctos_buffer if room
     else
-      ctos_buffer = new Buffer(0)
+      #ctos_buffer = new Buffer(0)
       ctos_message_length = 0
       ctos_proto = 0
-      ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
+      #ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
       datas = []
 
@@ -718,11 +718,13 @@ net.createServer (client) ->
           if ctos_buffer.length >= 2
             ctos_message_length = ctos_buffer.readUInt16LE(0)
           else
+            log.warn("bad ctos_buffer length", client.ip) unless ctos_buffer.length == 0
             break
         else if ctos_proto == 0
           if ctos_buffer.length >= 3
             ctos_proto = ctos_buffer.readUInt8(2)
           else
+            log.warn("bad ctos_proto length", client.ip)
             break
         else
           if ctos_buffer.length >= 2 + ctos_message_length
@@ -743,6 +745,7 @@ net.createServer (client) ->
             ctos_message_length = 0
             ctos_proto = 0
           else
+            log.warn("bad ctos_message length", client.ip)
             break
 
         looplimit++
@@ -765,11 +768,11 @@ net.createServer (client) ->
     return
 
   # 服务端到客户端(stoc)
-  server.on 'data', (data)->
-    stoc_buffer = new Buffer(0)
+  server.on 'data', (stoc_buffer)->
+    #stoc_buffer = new Buffer(0)
     stoc_message_length = 0
     stoc_proto = 0
-    stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
+    #stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
 
     #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
     #client.write data
@@ -782,11 +785,13 @@ net.createServer (client) ->
         if stoc_buffer.length >= 2
           stoc_message_length = stoc_buffer.readUInt16LE(0)
         else
+          log.warn("bad stoc_buffer length", client.ip) unless stoc_buffer.length == 0
           break
       else if stoc_proto == 0
         if stoc_buffer.length >= 3
           stoc_proto = stoc_buffer.readUInt8(2)
         else
+          log.warn("bad stoc_proto length", client.ip)
           break
       else
         if stoc_buffer.length >= 2 + stoc_message_length
@@ -811,6 +816,7 @@ net.createServer (client) ->
           stoc_message_length = 0
           stoc_proto = 0
         else
+          log.warn("bad stoc_message length", client.ip)
           break
 
       looplimit++
