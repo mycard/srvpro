@@ -151,7 +151,12 @@ function read_decks() {
         }
     }
     output_csv(ALL_MAIN_CARDS,"main.csv");
-    if (ALL_SIDE_CARDS.length) {
+    var ALL_SIDE_CARDS_isempty = true;
+    for (var j in ALL_SIDE_CARDS) {
+        ALL_SIDE_CARDS_isempty = false;
+        break;
+    }
+    if (!ALL_SIDE_CARDS_isempty) {
         output_csv(ALL_SIDE_CARDS,"side.csv");
     }
 }
