@@ -9,6 +9,7 @@ config.*.json
 /ygopro
 /windbot
 /decks/
+/decks_save*
 /node_modules/
 
 test*
