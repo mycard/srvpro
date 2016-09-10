@@ -1282,7 +1282,6 @@
         struct._setBuff(buffer);
         struct.set("version", info.version);
         buffer = struct.buffer;
-        ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE);
       }
       room = ROOM_find_or_create_by_name(info.pass, client.ip);
       if (!room) {
