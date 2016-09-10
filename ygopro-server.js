@@ -948,7 +948,7 @@
               ctos_message_length = 0;
               ctos_proto = 0;
             } else {
-              log.warn("bad ctos_message length", client.ip);
+              log.warn("bad ctos_message length", client.ip, ctos_buffer.length, ctos_message_length, ctos_proto);
               break;
             }
           }
