@@ -125,7 +125,7 @@ var loadDb = function(db_file) {
                 if (result.attribute & constants.ATTRIBUTES.ATTRIBUTE_LIGHT) {cardAttr="光";}
                 if (result.attribute & constants.ATTRIBUTES.ATTRIBUTE_DARK) {cardAttr="暗";}
                 if (result.attribute & constants.ATTRIBUTES.ATTRIBUTE_DEVINE) {cardAttr="神";}
-                cardText+="/"+ cardAttr +"\r\n";
+                cardText+="/"+ cardAttr +"\n";
             
                 var cardLevel;
                 var cardLScale;
@@ -147,14 +147,14 @@ var loadDb = function(db_file) {
                     cardText+="  " + cardLScale + "/" +cardRScale;
                 }
                 
-                cardText+="\r\n";
+                cardText+="\n";
             }
             else {
-                cardText+="\r\n";
+                cardText+="\n";
             }
             cardText+=result.desc;
             
-            cardHTML+='<td>'+ cardText.replace(/\r\n/g,"<br>") +'</td>';
+            cardHTML+='<td>'+ cardText.replace(/\n/g,"<br>") +'</td>';
             cardHTML+='</tr>';
             
             cardHTMLs.push(cardHTML);
@@ -172,11 +172,11 @@ var loadDb = function(db_file) {
 //将cardHTMLs中内容更新到指定列表页，同步
 var writeToFile = function(message) {
     var fileContent=fs.readFileSync(config.html_path+config.html_filename, {"encoding":"utf-8"});
-    var newContent=cardHTMLs.join("\r\n");
-    fileContent=fileContent.replace(/<tbody class="auto-generated">[\w\W]*<\/tbody>/,'<tbody class="auto-generated">\r\n'+newContent+'\r\n</tbody>');
+    var newContent=cardHTMLs.join("\n");
+    fileContent=fileContent.replace(/<tbody class="auto-generated">[\w\W]*<\/tbody>/,'<tbody class="auto-generated">\n'+newContent+'\n</tbody>');
     if (message) {
         message="<li>"+moment().format('L HH:mm')+"<ul><li>"+message.split("！换行符！").join("</li><li>")+"</li></ul></li>";
-        fileContent=fileContent.replace(/<ul class="auto-generated">/,'<ul class="auto-generated">\r\n'+message);
+        fileContent=fileContent.replace(/<ul class="auto-generated">/,'<ul class="auto-generated">\n'+message);
     }
     fs.writeFileSync(config.html_path+config.html_filename, fileContent);
     sendResponse("列表更新完成。");
