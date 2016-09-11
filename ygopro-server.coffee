@@ -892,7 +892,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     replay_id=Cloud_replay_ids[Math.floor(Math.random()*Cloud_replay_ids.length)]
     redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
 
-  else if info.version != settings.version and info.version != 4921 #YGOMobile不更新，强行兼容
+  else if info.version != settings.version and (info.version != 4921 or settings.version != 4922) #YGOMobile不更新，强行兼容
     ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED)
     ygopro.stoc_send client, 'ERROR_MSG', {
       msg: 4
@@ -1056,7 +1056,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_die(client, "房间密码不正确")
   
   else
-    if info.version == 4921 #YGOMobile不更新，强行兼容
+    if info.version == 4921 and settings.version == 4922 #YGOMobile不更新，强行兼容
       info.version = settings.version
       struct = ygopro.structs["CTOS_JoinGame"]
       struct._setBuff(buffer)

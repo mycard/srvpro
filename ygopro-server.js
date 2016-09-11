@@ -1107,7 +1107,7 @@
     } else if (info.pass.toUpperCase() === "W" && settings.modules.enable_cloud_replay) {
       replay_id = Cloud_replay_ids[Math.floor(Math.random() * Cloud_replay_ids.length)];
       redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
-    } else if (info.version !== settings.version && info.version !== 4921) {
+    } else if (info.version !== settings.version && (info.version !== 4921 || settings.version !== 4922)) {
       ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
@@ -1276,7 +1276,7 @@
     } else if (info.pass.length && !ROOM_validate(info.pass)) {
       ygopro.stoc_die(client, "房间密码不正确");
     } else {
-      if (info.version === 4921) {
+      if (info.version === 4921 && settings.version === 4922) {
         info.version = settings.version;
         struct = ygopro.structs["CTOS_JoinGame"];
         struct._setBuff(buffer);
