@@ -316,66 +316,8 @@ class Room
       @hostinfo.start_hand = parseInt(param[7])
       @hostinfo.draw_count = parseInt(param[8])
 
-    else if (((param = name.match /(.+)#/) != null) and ( (param[1].length <= 2 and param[1].match(/(S|N|M|T)(0|1|2|T|A)/i)) or (param[1].match(/^(S|N|M|T)(0|1|2|O|T|A)(0|1|O|T)/i)) ) )
-      rule = param[1].toUpperCase()
-      #log.info "C", rule
-
-      switch rule.charAt(0)
-        when "M","1"
-          @hostinfo.mode = 1
-        when "T","2"
-          @hostinfo.mode = 2
-          @hostinfo.start_lp = 16000
-        else
-          @hostinfo.mode = 0
-
-      switch rule.charAt(1)
-        when "0","O"
-          @hostinfo.rule = 0
-        when "1","T"
-          @hostinfo.rule = 1
-        else
-          @hostinfo.rule = 2
-
-      switch rule.charAt(2)
-        when "1","T"
-          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
-        else
-          @hostinfo.lflist = _.findIndex settings.lflist, (list)-> !list.tcg
-
-      if ((param = parseInt(rule.charAt(3).match(/\d/))) >= 0)
-        @hostinfo.time_limit = param * 60
-
-      switch rule.charAt(4)
-        when "T","1"
-          @hostinfo.enable_priority = true
-        else
-          @hostinfo.enable_priority = false
-
-      switch rule.charAt(5)
-        when "T","1"
-          @hostinfo.no_check_deck = true
-        else
-          @hostinfo.no_check_deck = false
-
-      switch rule.charAt(6)
-        when "T","1"
-          @hostinfo.no_shuffle_deck = true
-        else
-          @hostinfo.no_shuffle_deck = false
-
-      if ((param = parseInt(rule.charAt(7).match(/\d/))) > 0)
-        @hostinfo.start_lp = param * 4000
-
-      if ((param = parseInt(rule.charAt(8).match(/\d/))) > 0)
-        @hostinfo.start_hand = param
-
-      if ((param = parseInt(rule.charAt(9).match(/\d/))) >= 0)
-        @hostinfo.draw_count = param
-
     else if ((param = name.match /(.+)#/) != null)
       rule = param[1].toUpperCase()
-      #log.info "233", rule
 
       if (rule.match /(^|，|,)(M|MATCH)(，|,|$)/)
         @hostinfo.mode = 1
