@@ -8,7 +8,7 @@ COPY package.json /usr/src/app/
 RUN npm install
 COPY . /usr/src/app
 WORKDIR /usr/src/app/ygopro
-ADD https://mycard.moe/ygopro/cards.cdb cards.cdb
+# ADD https://mycard.moe/ygopro/cards.cdb cards.cdb
 RUN premake4 --os=linux --platform=x64 gmake
 RUN ln -s /usr/lib/x86_64-linux-gnu/liblua5.2.so /usr/lib/liblua.so
 WORKDIR /usr/src/app/ygopro/build
