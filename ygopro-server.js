@@ -872,7 +872,7 @@
               ctos_buffer = ctos_buffer.slice(2 + ctos_message_length);
               ctos_message_length = 0;
               ctos_proto = 0;
-            } else {
+            } else if (ctos_message_length !== 17735) {
               log.warn("bad ctos_message length", client.ip, ctos_buffer.length, ctos_message_length, ctos_proto);
               break;
             }
@@ -1040,7 +1040,7 @@
       });
       client.destroy();
     } else if (!info.pass.length && !settings.modules.enable_random_duel && !settings.modules.enable_windbot) {
-      ygopro.stoc_die(client, "房间名为空，请填写主机密码");
+      ygopro.stoc_die(client, "房间名为空，请在主机密码处填写房间名");
     } else if (info.pass.length && settings.modules.mycard_auth && info.pass.slice(0, 2) !== 'AI') {
       ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {
