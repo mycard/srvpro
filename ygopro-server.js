@@ -872,8 +872,10 @@
               ctos_buffer = ctos_buffer.slice(2 + ctos_message_length);
               ctos_message_length = 0;
               ctos_proto = 0;
-            } else if (ctos_message_length !== 17735) {
-              log.warn("bad ctos_message length", client.ip, ctos_buffer.length, ctos_message_length, ctos_proto);
+            } else {
+              if (ctos_message_length !== 17735) {
+                log.warn("bad ctos_message length", client.ip, ctos_buffer.length, ctos_message_length, ctos_proto);
+              }
               break;
             }
           }
