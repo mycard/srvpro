@@ -3,10 +3,10 @@
   "ygopro_path": "ygopro",
   "modules": {
     "welcome": "YGOPRO Server",
-    "update": "请更新游戏版本",
+    "update": "请更新游戏版本，可在社区手动下载更新包",
     "stop": false,
-    "tips": "http://mycard.moe/ygopro/tips.json",
-    "dialogues": "http://mycard.moe/ygopro/dialogues.json",
+    "tips": "http://mycard.moe/tips.json",
+    "dialogues": "http://mycard.moe/dialogues.json",
     "redis_port": 6379,
     "enable_websocket_roomlist": true,
     "enable_random_duel": false,
