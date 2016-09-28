@@ -10,14 +10,14 @@ room_data = (room)->
   users: ({username: client.name, position: client.pos} for client in room.players),
   options: room.hostinfo
 
-init = (http_server, Room)->
+init = (http_server, ROOM_all)->
   server = new WebSocketServer
     server: http_server
 
   server.on 'connection', (connection) ->
     connection.send JSON.stringify
       event: 'init'
-      data: room_data(room) for room in Room.all when room.established and !room.private and !room.started
+      data: room_data(room) for room in ROOM_all when room and room.established and !room.private and !room.started
 
 create = (room)->
   broadcast('create', room_data(room))

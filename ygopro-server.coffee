@@ -1639,5 +1639,5 @@ if settings.modules.http
       cert: fs.readFileSync(settings.modules.http.ssl.cert)
       key: fs.readFileSync(settings.modules.http.ssl.key)
     https_server = https.createServer(options, requestListener)
-    roomlist.init https_server, Room
+    roomlist.init https_server, ROOM_all
     https_server.listen settings.modules.http.ssl.port
