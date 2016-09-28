@@ -31,7 +31,7 @@
     };
   };
 
-  init = function(http_server, Room) {
+  init = function(http_server, ROOM_all) {
     server = new WebSocketServer({
       server: http_server
     });
@@ -40,12 +40,11 @@
       return connection.send(JSON.stringify({
         event: 'init',
         data: (function() {
-          var i, len, ref, results;
-          ref = Room.all;
+          var i, len, results;
           results = [];
-          for (i = 0, len = ref.length; i < len; i++) {
-            room = ref[i];
-            if (room.established && !room["private"] && !room.started) {
+          for (i = 0, len = ROOM_all.length; i < len; i++) {
+            room = ROOM_all[i];
+            if (room && room.established && !room["private"] && !room.started) {
               results.push(room_data(room));
             }
           }

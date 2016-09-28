@@ -1535,6 +1535,7 @@ if settings.modules.spawn_windbot
   windbot_process.stdout.on 'data', (data)->
     log.info 'WindBot:', data
     return
+  windbot_process.stderr.setEncoding('utf8')
   windbot_process.stderr.on 'data', (data)->
     log.warn 'WindBot Error:', data
     return
@@ -1638,5 +1639,5 @@ if settings.modules.http
       cert: fs.readFileSync(settings.modules.http.ssl.cert)
       key: fs.readFileSync(settings.modules.http.ssl.key)
     https_server = https.createServer(options, requestListener)
-    roomlist.init https_server, Room
+    roomlist.init https_server, ROOM_all
     https_server.listen settings.modules.http.ssl.port
