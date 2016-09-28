@@ -139,7 +139,6 @@ setInterval ()->
       Graveyard[i][j] = null
     Graveyard[i] = null
   Graveyard = []
-  #global.gc()
   return
 , 3000
 
@@ -384,7 +383,7 @@ class Room
       @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
 
     try
-      @process = spawn './ygopro', param, {cwd: settings.ygopro_path}
+      @process = spawn './ygopro', param, {cwd: 'ygopro'}
       @process.on 'exit', (code)=>
         @disconnector = 'server' unless @disconnector
         this.delete()
@@ -936,7 +935,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       baseUrl: settings.modules.mycard_auth,
       url: '/users/' + encodeURIComponent(client.name) + '.json',
       qs:
-        api_key: settings.modules.mycard_auth_key,
+        api_key: process.env.MYCARD_AUTH_KEY,
         api_username: client.name,
         skip_track_visit: true
       json: true
@@ -1509,19 +1508,36 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   else
     return false
 
-setInterval ()->
-  for room in ROOM_all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player
-    time_passed = Math.floor((moment() - room.last_active_time) / 1000)
-    #log.info time_passed
-    if time_passed >= settings.modules.hang_timeout
-      room.last_active_time = moment()
-      ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机")
-      ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
-      room.waiting_for_player.server.destroy()
-    else if time_passed >= (settings.modules.hang_timeout - 20) and not (time_passed % 10)
-      ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 已经很久没有操作了，若继续挂机，将于#{settings.modules.hang_timeout - time_passed}秒后被请出房间", ygopro.constants.COLORS.RED)
-  return
-, 1000
+if settings.modules.enable_random_duel
+  setInterval ()->
+    for room in ROOM_all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player
+      time_passed = Math.floor((moment() - room.last_active_time) / 1000)
+      #log.info time_passed
+      if time_passed >= settings.modules.hang_timeout
+        room.last_active_time = moment()
+        ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机")
+        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
+        room.waiting_for_player.server.destroy()
+      else if time_passed >= (settings.modules.hang_timeout - 20) and not (time_passed % 10)
+        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 已经很久没有操作了，若继续挂机，将于#{settings.modules.hang_timeout - time_passed}秒后被请出房间", ygopro.constants.COLORS.RED)
+    return
+  , 1000
+
+if settings.modules.spawn_windbot
+  windbot_process = spawn 'mono', ['WindBot.exe', settings.modules.windbot_port], {cwd: 'windbot'}
+  windbot_process.on 'error', (err)->
+    log.warn 'WindBot ERROR', err
+    return
+  windbot_process.on 'exit', (code)->
+    log.warn 'WindBot EXIT', code
+    return
+  windbot_process.stdout.setEncoding('utf8')
+  windbot_process.stdout.on 'data', (data)->
+    log.info 'WindBot:', data
+    return
+  windbot_process.stderr.on 'data', (data)->
+    log.warn 'WindBot Error:', data
+    return
 
 #http
 if settings.modules.http

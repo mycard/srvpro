@@ -1,6 +1,5 @@
 {
   "port": 7911,
-  "ygopro_path": "ygopro",
   "modules": {
     "welcome": "YGOPRO Server",
     "update": "请更新游戏版本",
@@ -16,8 +15,8 @@
     "enable_deck_log": false,
     "redis_port": 6379,
     "windbot_port": 2399,
+    "spawn_windbot": false,
     "mycard_auth": false,
-    "mycard_auth_key": "please set in config.user.json",
     "hang_timeout": 90,
     "tournament_mode": {
       "enabled": false,
@@ -59,8 +58,8 @@
       "ssl": {
         "enabled": false,
         "port": 7923,
-        "cert": "ssl/ygopro-server.crt",
-        "key": "ssl/ygopro-server.key"
+        "cert": "ssl/fullchain.pem",
+        "key": "ssl/privkey.pem"
       }
     }
   },
@@ -68,7 +67,7 @@
     "banned_user": [],
     "banned_ip": [],
     "badword_level0": ["滚", "衮", "操", "草", "艹", "狗", "日", "曰", "妈", "娘", "逼"],
-    "badword_level1": ["傻逼", "垃圾"],
+    "badword_level1": ["傻逼", "鸡巴"],
     "badword_level2": ["死妈", "草你妈"],
     "badword_level3": ["迷奸", "仿真枪"],
     "illegal_id": ["^Lv.\\d+", "^VIP.\\d+"]
