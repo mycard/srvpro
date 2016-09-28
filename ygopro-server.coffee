@@ -1535,6 +1535,7 @@ if settings.modules.spawn_windbot
   windbot_process.stdout.on 'data', (data)->
     log.info 'WindBot:', data
     return
+  windbot_process.stderr.setEncoding('utf8')
   windbot_process.stderr.on 'data', (data)->
     log.warn 'WindBot Error:', data
     return

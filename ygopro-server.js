@@ -1925,6 +1925,7 @@
     windbot_process.stdout.on('data', function(data) {
       log.info('WindBot:', data);
     });
+    windbot_process.stderr.setEncoding('utf8');
     windbot_process.stderr.on('data', function(data) {
       log.warn('WindBot Error:', data);
     });
