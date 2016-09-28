@@ -20,6 +20,7 @@
         "GAME_MSG": "GameMsg_Hint_Card_only",
         "SELECT_HAND": "",
         "SELECT_TP": "",
+        "REPLAY": "",
         "CHAT": "STOC_Chat"
     }
 }

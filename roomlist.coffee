@@ -1,4 +1,4 @@
-WebSocketServer = require('ws').Server;
+WebSocketServer = require('ws').Server
 
 
 server = null

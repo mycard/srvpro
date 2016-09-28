@@ -1,19 +1,57 @@
 {
   "port": 7911,
-  "ygopro_path": "ygopro",
   "modules": {
     "welcome": "YGOPRO Server",
     "update": "请更新游戏版本，可在社区手动下载更新包",
     "stop": false,
     "tips": "http://mycard.moe/tips.json",
     "dialogues": "http://mycard.moe/dialogues.json",
-    "redis_port": 6379,
-    "enable_websocket_roomlist": true,
     "enable_random_duel": false,
-    "enable_windbot": true,
-    "mycard_auth": "https://ygobbs.com",
-    "post_start_watching": true,
+    "enable_halfway_watch": true,
     "enable_TCG_as_default": false,
+    "enable_cloud_replay": false,
+    "enable_windbot": true,
+    "enable_websocket_roomlist": true,
+    "enable_deck_log": false,
+    "redis_port": 6379,
+    "windbot_port": 2399,
+    "spawn_windbot": true,
+    "mycard_auth": "https://ygobbs.com",
+    "hang_timeout": 90,
+    "tournament_mode": {
+      "enabled": false,
+      "deck_path": "./decks/",
+      "duel_log": [],
+      "password": "123456",
+      "port": 7933
+    },
+    "pre_util": {
+      "enabled": false,
+      "port": 7944,
+      "password": "123456",
+      "git_html_path": "../mercury233.github.io/",
+      "html_path": "../mercury233.github.io/ygosrv233/",
+      "html_filename": "pre.html",
+      "git_db_path": "../ygopro-unofficial/",
+      "db_path": "../ygopro-unofficial/unofficial/",
+      "html_img_rel_path": "pre/pics/",
+      "html_img_thumbnail": "thumbnail/",
+      "ygopro_path": "../ygopro-pre/",
+      "only_show_dbs": {
+        "news.cdb": true,
+        "pre-release.cdb": true
+        },
+      "html_gits": [
+        {
+          "name": "GitHub",
+          "push": ["push", "origin"]
+        },
+        {
+          "name": "Coding",
+          "push": ["push", "coding", "master:master"]
+        }
+      ]
+    },
     "http": {
       "port": 7922,
       "password": "123456",
@@ -24,5 +62,14 @@
         "key": "ssl/privkey.pem"
       }
     }
+  },
+  "ban": {
+    "banned_user": [],
+    "banned_ip": [],
+    "badword_level0": ["滚", "衮", "操", "草", "艹", "狗", "日", "曰", "妈", "娘", "逼"],
+    "badword_level1": ["傻逼", "鸡巴"],
+    "badword_level2": ["死妈", "草你妈"],
+    "badword_level3": ["迷奸", "仿真枪"],
+    "illegal_id": ["^Lv.\\d+", "^VIP.\\d+"]
   }
 }

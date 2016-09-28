@@ -17,7 +17,13 @@ var moment = require('moment');
 moment.locale('zh-cn');
 
 var constants = require('./constants.json');
-var config = require('./config.pre.json');
+
+var nconf = require('nconf');
+nconf.file('./config.user.json');
+var defaultconfig = require('./config.json');
+nconf.defaults(defaultconfig);
+var settings = nconf.get();
+config=settings.modules.pre_util;
 
 //全卡HTML列表
 var cardHTMLs=[];
@@ -52,7 +58,7 @@ var loadDb = function(db_file) {
             
             var cardHTML="<tr>";
             
-            cardHTML+='<td><a href="'+ config.html_img_rel_path + result.id +'.jpg" target="_blank"><img src="'+config.html_img_rel_path+'thumbnail/'+ result.id +'.jpg" alt="'+ result.name +'"></a></td>';
+            cardHTML+='<td><a href="'+ config.html_img_rel_path + result.id +'.jpg" target="_blank"><img src="'+config.html_img_rel_path+config.html_img_thumbnail+ result.id +'.jpg" alt="'+ result.name +'"></a></td>';
             cardHTML+='<td>'+ result.name +'</td>';
             
             var cardText="";
@@ -92,7 +98,7 @@ var loadDb = function(db_file) {
                 if (result.race & constants.RACES.RACE_ZOMBIE) {cardRace="不死";}
                 if (result.race & constants.RACES.RACE_MACHINE) {cardRace="机械";}
                 if (result.race & constants.RACES.RACE_AQUA) {cardRace="水";}
-                if (result.race & constants.RACES.RACE_PYRO) {cardRace="念动力";}
+                if (result.race & constants.RACES.RACE_PYRO) {cardRace="炎";}
                 if (result.race & constants.RACES.RACE_ROCK) {cardRace="岩石";}
                 if (result.race & constants.RACES.RACE_WINDBEAST) {cardRace="鸟兽";}
                 if (result.race & constants.RACES.RACE_PLANT) {cardRace="植物";}
@@ -119,7 +125,7 @@ var loadDb = function(db_file) {
                 if (result.attribute & constants.ATTRIBUTES.ATTRIBUTE_LIGHT) {cardAttr="光";}
                 if (result.attribute & constants.ATTRIBUTES.ATTRIBUTE_DARK) {cardAttr="暗";}
                 if (result.attribute & constants.ATTRIBUTES.ATTRIBUTE_DEVINE) {cardAttr="神";}
-                cardText+="/"+ cardAttr +"\r\n";
+                cardText+="/"+ cardAttr +"\n";
             
                 var cardLevel;
                 var cardLScale;
@@ -141,14 +147,14 @@ var loadDb = function(db_file) {
                     cardText+="  " + cardLScale + "/" +cardRScale;
                 }
                 
-                cardText+="\r\n";
+                cardText+="\n";
             }
             else {
-                cardText+="\r\n";
+                cardText+="\n";
             }
             cardText+=result.desc;
             
-            cardHTML+='<td>'+ cardText.replace(/\r\n/g,"<br>") +'</td>';
+            cardHTML+='<td>'+ cardText.replace(/\n/g,"<br>") +'</td>';
             cardHTML+='</tr>';
             
             cardHTMLs.push(cardHTML);
@@ -166,11 +172,11 @@ var loadDb = function(db_file) {
 //将cardHTMLs中内容更新到指定列表页，同步
 var writeToFile = function(message) {
     var fileContent=fs.readFileSync(config.html_path+config.html_filename, {"encoding":"utf-8"});
-    var newContent=cardHTMLs.join("\r\n");
-    fileContent=fileContent.replace(/<tbody class="auto-generated">[\w\W]*<\/tbody>/,'<tbody class="auto-generated">\r\n'+newContent+'\r\n</tbody>');
+    var newContent=cardHTMLs.join("\n");
+    fileContent=fileContent.replace(/<tbody class="auto-generated">[\w\W]*<\/tbody>/,'<tbody class="auto-generated">\n'+newContent+'\n</tbody>');
     if (message) {
         message="<li>"+moment().format('L HH:mm')+"<ul><li>"+message.split("！换行符！").join("</li><li>")+"</li></ul></li>";
-        fileContent=fileContent.replace(/<ul class="auto-generated">/,'<ul class="auto-generated">\r\n'+message);
+        fileContent=fileContent.replace(/<ul class="auto-generated">/,'<ul class="auto-generated">\n'+message);
     }
     fs.writeFileSync(config.html_path+config.html_filename, fileContent);
     sendResponse("列表更新完成。");
@@ -183,7 +189,7 @@ var loadAllDbs = function() {
     var files = fs.readdirSync(config.db_path+"expansions/");
     for (var i in files) {
         var filename = files[i];
-        if (filename.slice(-4) === ".cdb") {
+        if (filename.slice(-4) === ".cdb" && (!config.only_show_dbs || config.only_show_dbs.length==0 || config.only_show_dbs[filename])) {
             loadDb(config.db_path+"expansions/"+filename);
         }
     }
@@ -198,7 +204,7 @@ var fetchDatas = function() {
     });
     proc.stderr.setEncoding('utf8');
     proc.stderr.on('data', function(data) {
-        sendResponse("git pull error: "+data);
+        sendResponse("git pull: "+data);
     });
     proc.on('close', function (code) {
         sendResponse("数据更新完成。");
@@ -210,7 +216,7 @@ var fetchDatas = function() {
     });
     proc2.stderr.setEncoding('utf8');
     proc2.stderr.on('data', function(data) {
-        sendResponse("git pull error: "+data);
+        sendResponse("git pull: "+data);
     });
     proc2.on('close', function (code) {
         sendResponse("网页同步完成。");
@@ -225,30 +231,27 @@ var pushDatas = function() {
     } catch (error) {
         sendResponse("git error: "+error.stdout);
     }
-    var proc2 = spawn("git", ["push", "gitcafe", "master:gitcafe-pages"], { cwd: config.git_html_path, env: process.env });
-    proc2.stdout.setEncoding('utf8');
-    proc2.stdout.on('data', function(data) {
-        sendResponse("git push: "+data);
-    });
-    proc2.stderr.setEncoding('utf8');
-    proc2.stderr.on('data', function(data) {
-        sendResponse("git push error: "+data);
-    });
-    proc2.on('close', function (code) {
-        sendResponse("gitcafe上传完成。");
-    });
-    var proc = spawn("git", ["push"], { cwd: config.git_html_path, env: process.env });
-    proc.stdout.setEncoding('utf8');
-    proc.stdout.on('data', function(data) {
-        sendResponse("git push: "+data);
-    });
-    proc.stderr.setEncoding('utf8');
-    proc.stderr.on('data', function(data) {
-        sendResponse("git push: "+data);
-    });
-    proc.on('close', function (code) {
-        sendResponse("github上传完成。");
-    });
+    for (var i in config.html_gits) {
+        var git = config.html_gits[i];
+        var proc = spawn("git", git.push, { cwd: config.git_html_path, env: process.env });
+        proc.stdout.setEncoding('utf8');
+        proc.stdout.on('data', (function(git) {
+            return function(data) {
+                sendResponse(git.name + " git push: " + data);
+            }
+        })(git));
+        proc.stderr.setEncoding('utf8');
+        proc.stderr.on('data', (function(git) {
+            return function(data) {
+                sendResponse(git.name + " git push: " + data);
+            }
+        })(git));
+        proc.on('close', (function(git) {
+            return function(code) {
+                sendResponse(git.name + "上传完成。");
+            }
+        })(git));
+    }
 }
 
 //将数据库文件夹里卡图复制到列表页对应文件夹里，同步
@@ -260,9 +263,13 @@ var copyImages = function() {
 
 //将数据库文件夹复制到YGOPRO文件夹里，同步
 var copyToYGOPRO = function() {
-    execSync('rm -rf "' + config.ygopro_path + 'expansions/*' + '"');
+    execSync('rm -rf ' + config.ygopro_path + 'expansions/*' + '');
     execSync('cp -rf "' + config.db_path + 'expansions' + '" "' + config.ygopro_path + '"');
     execSync('cp -rf "' + config.db_path + 'script' + '" "' + config.ygopro_path + 'expansions"');
+    try {
+        execSync('cp -rf "' + config.db_path + 'lflist.conf' + '" "' + config.ygopro_path + '"');
+    }
+    catch (e) {}
     sendResponse("更新完成。");
 }
 

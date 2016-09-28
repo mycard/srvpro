@@ -1,7 +1,7 @@
 ## ygopro-server
-一个YGOPRO服务器，基于mycard代码修改。
+一个YGOPRO服务器。
 
-现用于[YGOPRO 233服](http://mercury233.me/ygosrv233/)。
+现用于[mycard](https://mycard.moe/)。
 
 ###支持功能
 * Linux上运行
@@ -11,29 +11,56 @@
 * 广播消息
 * 召唤台词
 * 先行卡一键更新
+* Windbot在线AI
 
 ###不支持功能
 * 用户账号系统
-* 在线AI
 * 在线聊天室
 
 ###使用方法
-* 安装修改后的mycard版ygopro服务端：https://github.com/mercury233/ygopro/tree/server
-* `git clone https://github.com/mercury233/ygopro-server.git`
-* `cd ygopro-server`
-* `npm install`
-* 修改`config.json`
+* 可参考[wiki](https://github.com/mercury233/ygopro-server/wiki)安装
+* 手动安装：
+ * 安装mycard版ygopro服务端：https://github.com/mycard/ygopro/tree/server
+  * `git clone https://github.com/mycard/ygopro-server.git`
+  * `cd ygopro-server`
+  * `npm install`
+* 将`config.json`复制为`config.user.json`并进行修改
  * `port`为你想要的端口
- * `version`为ygopro的十进制版本号（例如，0x1336=4918）
- * `ygopro_path`为ygopro服务端的相对路径
  * `modules.stop`为文本时，表示服务器关闭
- * `modules.TCG_banlist_id`为lflist中正在使用的TCG禁卡表的编号，0开始
+ * 更多选项参见wiki
 * `node ygopro-server.js`即可运行
 * 简易的控制台在http://mercury233.me/ygosrv233/dashboard.html （我没有开发给用户使用的大厅的打算。）
+
+###高级功能
+* 待补充说明
 * 简易的先行卡更新控制台在http://mercury233.me/ygosrv233/pre-dashboard.html
 
-###开发计划
-* 重写全部代码，与SalvationServer合并，或作为分支版本
+### 开发计划
+* 重做CTOS和STOC部分
+* 模块化附加功能
+ * 房名代码
+ * 随机对战
+ * 召唤台词
+ * WindBot
+ * 云录像
+ * 比赛模式
+ * 先行卡更新
+* 用户账号系统和管理员账号系统
+* 云录像更换存储方式
+
+### TODO
+* refactoring CTOS and STOC
+* change features to modules
+ * room name parsing
+ * random duel
+ * summon dialogues
+ * WindBot
+ * cloud replay
+ * tournament mode
+ * expansions updater
+* user and admin account system
+* new database for cloud replay
+
 
 ## Install Docker
 ```bash

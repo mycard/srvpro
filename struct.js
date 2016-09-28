@@ -1,3 +1,6 @@
+// a special version of node-struct by xdenser
+// https://github.com/xdenser/node-struct/tree/f843487d6768cd0bf20c2ce7803dde2d92df5694
+
 function byteField(p, offset) {
     this.length = 1;
     this.get = function () {
