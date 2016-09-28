@@ -1535,16 +1535,10 @@
         throw error;
       }
       client.query('SELECT username, id from users', function(error, result) {
-        var k, len, ref, row;
         if (error) {
           throw error;
         }
         done();
-        ref = result.rows;
-        for (k = 0, len = ref.length; k < len; k++) {
-          row = ref[k];
-          users_cache[row.username] = row.id;
-        }
         console.log("users loaded", _.keys(users_cache).length);
       });
     });
