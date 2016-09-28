@@ -1265,8 +1265,8 @@ if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
     client.query 'SELECT username, id from users', (error, result)->
       throw error if error
       done()
-      #for row in result.rows
-      #  users_cache[row.username] = row.id
+      for row in result.rows
+        users_cache[row.username] = row.id
       console.log("users loaded", _.keys(users_cache).length)
       return
     return
