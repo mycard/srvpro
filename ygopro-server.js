@@ -1042,7 +1042,7 @@
       });
       client.destroy();
     } else if (!info.pass.length && !settings.modules.enable_random_duel && !settings.modules.enable_windbot) {
-      ygopro.stoc_die(client, "房间名为空，请在主机密码处填写房间名");
+      ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名");
     } else if (info.pass.length && settings.modules.mycard_auth && info.pass.slice(0, 2) !== 'AI') {
       ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {

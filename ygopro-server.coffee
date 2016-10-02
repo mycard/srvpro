@@ -842,7 +842,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.destroy()
 
   else if !info.pass.length and !settings.modules.enable_random_duel and !settings.modules.enable_windbot
-    ygopro.stoc_die(client, "房间名为空，请在主机密码处填写房间名")
+    ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名")
 
   else if info.pass.length and settings.modules.mycard_auth and info.pass[0...2] != 'AI'
     ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE)
