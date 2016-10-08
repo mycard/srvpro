@@ -842,7 +842,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.destroy()
 
   else if !info.pass.length and !settings.modules.enable_random_duel and !settings.modules.enable_windbot
-    ygopro.stoc_die(client, "房间名为空，请在主机密码处填写房间名")
+    ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名")
 
   else if info.pass.length and settings.modules.mycard_auth and info.pass[0...2] != 'AI'
     ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE)
@@ -1284,12 +1284,26 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       room.player_datas.push ip: player.ip, name: player.name
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
-  if settings.modules.enable_deck_log and client.main and client.main.length and not client.deck_saved
-    deck_text = '#ygosrv233 deck log\r\n#main\r\n' + client.main.join('\r\n') + '\r\n!side\r\n' + client.side.join('\r\n') + '\r\n'
-    deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_')
-    fs.writeFile 'decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
-      if err
-        log.warn 'DECK SAVE ERROR', err
+  if (settings.modules.enable_deck_log or settings.modules.post_deck) and client.main and client.main.length and not client.deck_saved
+    deck_text = '#ygosrv233 deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
+    if settings.modules.enable_deck_log
+      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_')
+      fs.writeFile 'decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
+        if err
+          log.warn 'DECK SAVE ERROR', err
+    if settings.modules.post_deck
+      request.post { url : settings.modules.post_deck , form : {
+        deck: deck_text,
+        playername: client.name,
+        arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain'
+      }}, (error, response, body)->
+        if error
+          log.warn 'DECK POST ERROR', error, response
+        else
+          if response.statusCode != 200
+            log.warn 'DECK POST', response.statusCode, response.statusMessage
+          log.info 'DECK POST', client.name, body
+        return
     client.deck_saved = true
   return
 

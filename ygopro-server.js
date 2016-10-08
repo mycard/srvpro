@@ -1042,7 +1042,7 @@
       });
       client.destroy();
     } else if (!info.pass.length && !settings.modules.enable_random_duel && !settings.modules.enable_windbot) {
-      ygopro.stoc_die(client, "房间名为空，请在主机密码处填写房间名");
+      ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名");
     } else if (info.pass.length && settings.modules.mycard_auth && info.pass.slice(0, 2) !== 'AI') {
       ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {
@@ -1578,14 +1578,35 @@
     if (settings.modules.tips) {
       ygopro.stoc_send_random_tip(client);
     }
-    if (settings.modules.enable_deck_log && client.main && client.main.length && !client.deck_saved) {
-      deck_text = '#ygosrv233 deck log\r\n#main\r\n' + client.main.join('\r\n') + '\r\n!side\r\n' + client.side.join('\r\n') + '\r\n';
-      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_');
-      fs.writeFile('decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
-        if (err) {
-          return log.warn('DECK SAVE ERROR', err);
-        }
-      });
+    if ((settings.modules.enable_deck_log || settings.modules.post_deck) && client.main && client.main.length && !client.deck_saved) {
+      deck_text = '#ygosrv233 deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n';
+      if (settings.modules.enable_deck_log) {
+        deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_');
+        fs.writeFile('decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
+          if (err) {
+            return log.warn('DECK SAVE ERROR', err);
+          }
+        });
+      }
+      if (settings.modules.post_deck) {
+        request.post({
+          url: settings.modules.post_deck,
+          form: {
+            deck: deck_text,
+            playername: client.name,
+            arena: room.hostinfo.mode === 1 ? 'athletic' : 'entertain'
+          }
+        }, function(error, response, body) {
+          if (error) {
+            log.warn('DECK POST ERROR', error, response);
+          } else {
+            if (response.statusCode !== 200) {
+              log.warn('DECK POST', response.statusCode, response.statusMessage);
+            }
+            log.info('DECK POST', client.name, body);
+          }
+        });
+      }
       client.deck_saved = true;
     }
   });

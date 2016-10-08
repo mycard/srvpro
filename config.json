@@ -17,6 +17,7 @@
     "windbot_port": 2399,
     "spawn_windbot": true,
     "mycard_auth": "https://ygobbs.com",
+    "post_deck": "http://mycard.moe/ygopro/analytics/deck/text",
     "hang_timeout": 90,
     "tournament_mode": {
       "enabled": false,
