@@ -1336,6 +1336,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
           log.warn 'DECK SAVE ERROR', err
     if settings.modules.post_deck
       request.post { url : settings.modules.post_deck , form : {
+        accesskey: process.env.MYCARD_AUTH_KEY,
         deck: deck_text,
         playername: client.name,
         arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain'

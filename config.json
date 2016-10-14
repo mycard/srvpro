@@ -21,7 +21,7 @@
     "hang_timeout": 90,
     "arena_mode": {
       "mode": "entertain",
-      "post_score": "https://mycard.moe/ygopro/arena/index.php?c=",
+      "post_score": "https://mycard.moe/ygopro/arena/index.php?c=trueskill",
       "get_score": "https://mycard.moe/ygopro/arena/index.php?c=query&username="
     },
     "tournament_mode": {

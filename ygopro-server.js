@@ -1653,6 +1653,7 @@
         request.post({
           url: settings.modules.post_deck,
           form: {
+            accesskey: process.env.MYCARD_AUTH_KEY,
             deck: deck_text,
             playername: client.name,
             arena: room.hostinfo.mode === 1 ? 'athletic' : 'entertain'
