@@ -398,6 +398,7 @@
       this.watchers = [];
       this.random_type = '';
       this.welcome = '';
+      this.scores = {};
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = {
         lflist: settings.lflist.length ? 0 : -1,
@@ -562,9 +563,46 @@
     }
 
     Room.prototype["delete"] = function() {
-      var index, log_rep_id, player_ips, player_names, recorder_buffer, replay_id;
+      var index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref, replay_id, score, score_array;
       if (this.deleted) {
         return;
+      }
+      if (this.started && settings.modules.arena_mode.post_score) {
+        score_array = [];
+        ref = this.scores;
+        for (name in ref) {
+          score = ref[name];
+          score_array.push({
+            name: name,
+            score: score
+          });
+        }
+        log.info(this.start_time, score_array);
+        request.post({
+          url: settings.modules.arena_mode.post_score,
+          form: {
+            accesskey: process.env.MYCARD_AUTH_KEY,
+            usernameA: score_array[0].name,
+            usernameB: score_array[1].name,
+            userscoreA: score_array[0].score,
+            userscoreB: score_array[1].score,
+            start: this.start_time,
+            end: moment().format(),
+            arena: settings.modules.arena_mode.mode
+          }
+        }, (function(_this) {
+          return function(error, response, body) {
+            if (error) {
+              log.warn('SCORE POST ERROR', error, response);
+            } else {
+              if (response.statusCode !== 204) {
+                log.warn('SCORE POST', response.statusCode, response.statusMessage, _this.name, body);
+              } else {
+                log.info('SCORE POST', response.statusCode, response.statusMessage, _this.name, body);
+              }
+            }
+          };
+        })(this));
       }
       if (this.player_datas.length && settings.modules.enable_cloud_replay) {
         replay_id = this.cloud_replay_id;
@@ -696,8 +734,12 @@
         if (index !== -1) {
           this.players.splice(index, 1);
         }
-        if (this.started && this.disconnector !== 'server' && this.random_type && (client.pos < 4 || client.is_host)) {
-          ROOM_ban_player(client.name, client.ip, "强退");
+        if (this.started && this.disconnector !== 'server' && (client.pos < 4 || client.is_host)) {
+          this.finished = true;
+          this.scores[client.name] = -1;
+          if (this.random_type) {
+            ROOM_ban_player(client.name, client.ip, "强退");
+          }
         }
         if (this.players.length && !(this.windbot && client.is_host)) {
           ygopro.stoc_send_chat_to_room(this, (client.name + " 离开了游戏") + (error ? ": " + error : ''));
@@ -1251,6 +1293,19 @@
     if (room.welcome) {
       ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE);
     }
+    if (settings.modules.arena_mode.get_score) {
+      request({
+        url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
+        json: true
+      }, function(error, response, body) {
+        if (error || !body || _.isString(body)) {
+          log.warn('LOAD SCORE ERROR', client.name, error, response, body);
+        } else {
+          log.info('LOAD SCORE', client.name, body);
+          ygopro.stoc_send_chat(client, "积分系统测试中，您有" + body.exp + "点经验，" + body.pt + "点战斗力。正式上线前这些数据可能被重置。", ygopro.constants.COLORS.BABYBLUE);
+        }
+      });
+    }
     if (!room.recorder) {
       room.recorder = recorder = net.connect(room.port, function() {
         ygopro.ctos_send(recorder, 'PLAYER_INFO', {
@@ -1348,6 +1403,10 @@
       }
       reason = buffer.readUInt8(2);
       room.winner = pos;
+      if (!room.finished) {
+        room.winner_name = room.dueling_players[pos].name;
+        room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
+      }
     }
     if (ygopro.constants.MSG[msg] === 'DAMAGE' && client.is_host) {
       pos = buffer.readUInt8(1);
@@ -1558,6 +1617,7 @@
     }
     if (!room.started) {
       room.started = true;
+      room.start_time = moment().format();
       if (settings.modules.enable_websocket_roomlist && !room["private"]) {
         roomlist["delete"](room.name);
       }
@@ -1569,6 +1629,7 @@
           continue;
         }
         room.dueling_players[player.pos] = player;
+        room.scores[player.name] = 0;
         room.player_datas.push({
           ip: player.ip,
           name: player.name
@@ -1601,9 +1662,10 @@
             log.warn('DECK POST ERROR', error, response);
           } else {
             if (response.statusCode !== 200) {
-              log.warn('DECK POST', response.statusCode, response.statusMessage);
+              log.warn('DECK POST', response.statusCode, client.name, body);
+            } else {
+              log.info('DECK POST', response.statusCode, client.name, body);
             }
-            log.info('DECK POST', client.name, body);
           }
         });
       }
@@ -1893,7 +1955,7 @@
           cloud_replay_id: "R#" + room.cloud_replay_id,
           players: (function() {
             var k, len, ref, results;
-            ref = room.players;
+            ref = room.dueling_players;
             results = [];
             for (k = 0, len = ref.length; k < len; k++) {
               player = ref[k];

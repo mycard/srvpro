@@ -19,6 +19,11 @@
     "mycard_auth": "https://ygobbs.com",
     "post_deck": "http://mycard.moe/ygopro/analytics/deck/text",
     "hang_timeout": 90,
+    "arena_mode": {
+      "mode": "entertain",
+      "post_score": "https://mycard.moe/ygopro/arena/index.php?c=",
+      "get_score": "https://mycard.moe/ygopro/arena/index.php?c=query&username="
+    },
     "tournament_mode": {
       "enabled": false,
       "deck_path": "./decks/",
