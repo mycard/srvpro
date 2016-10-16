@@ -581,14 +581,14 @@
         request.post({
           url: settings.modules.arena_mode.post_score,
           form: {
-            accesskey: process.env.MYCARD_AUTH_KEY,
+            accesskey: process.env.MYCARD_SCORE_KEY,
             usernameA: score_array[0].name,
             usernameB: score_array[1].name,
             userscoreA: score_array[0].score,
             userscoreB: score_array[1].score,
             start: this.start_time,
             end: moment().format(),
-            arena: settings.modules.arena_mode.mode
+            arena: room.hostinfo.mode === 1 ? 'athletic' : 'entertain'
           }
         }, (function(_this) {
           return function(error, response, body) {
@@ -1302,7 +1302,7 @@
           log.warn('LOAD SCORE ERROR', client.name, error, response, body);
         } else {
           log.info('LOAD SCORE', client.name, body);
-          ygopro.stoc_send_chat(client, "积分系统测试中，您有" + body.exp + "点经验，" + body.pt + "点战斗力。正式上线前这些数据可能被重置。", ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "您有" + body.exp + "点经验，排名第" + body.exp_rank + "，" + body.pt + "点战斗力，排名第" + body.arena_rank + "。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE);
         }
       });
     }
@@ -1653,7 +1653,7 @@
         request.post({
           url: settings.modules.post_deck,
           form: {
-            accesskey: process.env.MYCARD_AUTH_KEY,
+            accesskey: process.env.MYCARD_DECK_KEY,
             deck: deck_text,
             playername: client.name,
             arena: room.hostinfo.mode === 1 ? 'athletic' : 'entertain'
