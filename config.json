@@ -17,7 +17,13 @@
     "windbot_port": 2399,
     "spawn_windbot": false,
     "mycard_auth": false,
+    "post_deck": false,
     "hang_timeout": 90,
+    "arena_mode": {
+      "mode": "233",
+      "post_score": false,
+      "get_score": false
+    },
     "tournament_mode": {
       "enabled": false,
       "deck_path": "./decks/",

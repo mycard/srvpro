@@ -284,6 +284,7 @@ class Room
     @watchers = []
     @random_type = ''
     @welcome = ''
+    @scores = {}
     ROOM_all.push this
 
     @hostinfo ||=
@@ -417,6 +418,30 @@ class Room
   delete: ->
     return if @deleted
     #log.info 'room-delete', this.name, ROOM_all.length
+    if @started and settings.modules.arena_mode.post_score
+      #log.info @scores
+      score_array=[]
+      for name, score of @scores
+        score_array.push { name: name, score: score }
+      log.info @start_time, score_array
+      request.post { url : settings.modules.arena_mode.post_score , form : {
+        accesskey: process.env.MYCARD_SCORE_KEY,
+        usernameA: score_array[0].name,
+        usernameB: score_array[1].name,
+        userscoreA: score_array[0].score,
+        userscoreB: score_array[1].score,
+        start: @start_time,
+        end: moment().format(),
+        arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain' #settings.modules.arena_mode.mode
+      }}, (error, response, body)=>
+        if error
+          log.warn 'SCORE POST ERROR', error, response
+        else
+          if response.statusCode != 204
+            log.warn 'SCORE POST', response.statusCode, response.statusMessage, @name, body
+          else
+            log.info 'SCORE POST', response.statusCode, response.statusMessage, @name, body
+        return
     if @player_datas.length and settings.modules.enable_cloud_replay
       replay_id = @cloud_replay_id
       if @has_ygopro_error
@@ -522,8 +547,11 @@ class Room
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       #log.info(@started,@disconnector,@random_type)
-      if @started and @disconnector != 'server' and @random_type and (client.pos < 4 or client.is_host)
-        ROOM_ban_player(client.name, client.ip, "强退")
+      if @started and @disconnector != 'server' and (client.pos < 4 or client.is_host)
+        @finished = true
+        @scores[client.name] = -1
+        if @random_type
+          ROOM_ban_player(client.name, client.ip, "强退")
       if @players.length and !(@windbot and client.is_host)
         ygopro.stoc_send_chat_to_room this, "#{client.name} 离开了游戏" + if error then ": #{error}" else ''
         roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
@@ -1037,7 +1065,17 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome
     ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
-    #log.info(ROOM_all)
+  if settings.modules.arena_mode.get_score
+    request
+      url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
+      json: true
+    , (error, response, body)->
+      if error or !body or _.isString body
+        log.warn 'LOAD SCORE ERROR', client.name, error, response, body
+      else
+        log.info 'LOAD SCORE', client.name, body
+        ygopro.stoc_send_chat(client, "您有#{body.exp}点经验，排名第#{body.exp_rank}，#{body.pt}点战斗力，排名第#{body.arena_rank}。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE)
+      return
 
   if !room.recorder
     room.recorder = recorder = net.connect room.port, ->
@@ -1133,6 +1171,9 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     #log.info {winner: pos, reason: reason}
     #room.duels.push {winner: pos, reason: reason}
     room.winner = pos
+    if !room.finished
+      room.winner_name = room.dueling_players[pos].name
+      room.scores[room.winner_name] = room.scores[room.winner_name] + 1
 
   #lp跟踪
   if ygopro.constants.MSG[msg] == 'DAMAGE' and client.is_host
@@ -1276,20 +1317,38 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   return unless room
   unless room.started #first start
     room.started = true
+    room.start_time = moment().format()
     roomlist.delete room.name if settings.modules.enable_websocket_roomlist and not room.private
     #room.duels = []
     room.dueling_players = []
     for player in room.players when player.pos != 7
       room.dueling_players[player.pos] = player
+      room.scores[player.name] = 0
       room.player_datas.push ip: player.ip, name: player.name
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
-  if settings.modules.enable_deck_log and client.main and client.main.length and not client.deck_saved
-    deck_text = '#ygosrv233 deck log\r\n#main\r\n' + client.main.join('\r\n') + '\r\n!side\r\n' + client.side.join('\r\n') + '\r\n'
-    deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_')
-    fs.writeFile 'decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
-      if err
-        log.warn 'DECK SAVE ERROR', err
+  if (settings.modules.enable_deck_log or settings.modules.post_deck) and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
+    deck_text = '#ygosrv233 deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
+    if settings.modules.enable_deck_log
+      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_')
+      fs.writeFile 'decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
+        if err
+          log.warn 'DECK SAVE ERROR', err
+    if settings.modules.post_deck
+      request.post { url : settings.modules.post_deck , form : {
+        accesskey: process.env.MYCARD_DECK_KEY,
+        deck: deck_text,
+        playername: client.name,
+        arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain'
+      }}, (error, response, body)->
+        if error
+          log.warn 'DECK POST ERROR', error, response
+        else
+          if response.statusCode != 200
+            log.warn 'DECK POST', response.statusCode, client.name, body
+          else
+            log.info 'DECK POST', response.statusCode, client.name, body
+        return
     client.deck_saved = true
   return
 
@@ -1495,7 +1554,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
         name: room.name,
         roomid: room.port.toString(),
         cloud_replay_id: "R#"+room.cloud_replay_id,
-        players: (for player in room.players
+        players: (for player in room.dueling_players
           name: player.name,
           winner: player.pos == room.winner
         )
