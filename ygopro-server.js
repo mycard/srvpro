@@ -1403,7 +1403,7 @@
       }
       reason = buffer.readUInt8(2);
       room.winner = pos;
-      if (!room.finished) {
+      if (room && !room.finished && room.dueling_players[pos]) {
         room.winner_name = room.dueling_players[pos].name;
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
       }
