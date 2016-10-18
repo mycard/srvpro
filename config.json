@@ -20,11 +20,6 @@
     "post_deck": "http://mycard.moe/ygopro/analytics/deck/text",
     "hang_timeout": 90,
     "arena_mode": {
-      "mode": "233",
-      "post_score": false,
-      "get_score": false
-    },
-    "arena_mode_bak": {
       "mode": "entertain",
       "post_score": "https://mycard.moe/ygopro/arena/index.php?c=update",
       "get_score": "https://mycard.moe/ygopro/arena/index.php?c=query&username="

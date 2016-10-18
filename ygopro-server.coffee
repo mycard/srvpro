@@ -425,7 +425,7 @@ class Room
         score_array.push { name: name, score: score }
       log.info @start_time, score_array
       request.post { url : settings.modules.arena_mode.post_score , form : {
-        accesskey: process.env.MYCARD_SCORE_KEY,
+        accesskey: process.env.MYCARD_ARENA_KEY,
         usernameA: score_array[0].name,
         usernameB: score_array[1].name,
         userscoreA: score_array[0].score,
@@ -1171,7 +1171,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     #log.info {winner: pos, reason: reason}
     #room.duels.push {winner: pos, reason: reason}
     room.winner = pos
-    if !room.finished
+    if room and !room.finished and room.dueling_players[pos]
       room.winner_name = room.dueling_players[pos].name
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
 
