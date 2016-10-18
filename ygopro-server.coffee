@@ -107,6 +107,21 @@ roomlist = require './roomlist.js' if settings.modules.enable_websocket_roomlist
 # cache users of mycard login
 users_cache = {}
 
+if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
+  pgClient = require('pg').Client
+  pg_client = new pgClient(process.env.MYCARD_AUTH_DATABASE)
+  pg_query = pg_client.query('SELECT username, id from users')
+  pg_query.on 'row', (row) ->
+    #log.info "load user", row.username, row.id
+    users_cache[row.username] = row.id
+    return
+  pg_query.on 'end', (result) ->
+    log.info "users loaded", result.rowCount
+    return
+  pg_client.on 'drain', pg_client.end.bind(pg_client)
+  log.info "loading mycard user..."
+  pg_client.connect()
+
 # 获取可用内存
 get_memory_usage = ()->
   prc_free = spawnSync("free", [])
@@ -1298,19 +1313,6 @@ if settings.modules.tips
       ygopro.stoc_send_random_tip_to_room(room) unless room and room.started
     return
   , 30000
-
-if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
-  pg = require('pg')
-  pg.connect process.env.MYCARD_AUTH_DATABASE, (error, client, done)->
-    throw error if error
-    client.query 'SELECT username, id from users', (error, result)->
-      throw error if error
-      done()
-      for row in result.rows
-        users_cache[row.username] = row.id
-      console.log("users loaded", _.keys(users_cache).length)
-      return
-    return
 
 ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
