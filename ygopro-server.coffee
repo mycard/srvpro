@@ -439,6 +439,7 @@ class Room
       for name, score of @scores
         score_array.push { name: name, score: score }
       log.info @start_time, score_array
+      return if score_array.length != 2
       request.post { url : settings.modules.arena_mode.post_score , form : {
         accesskey: process.env.MYCARD_ARENA_KEY,
         usernameA: score_array[0].name,
@@ -447,7 +448,7 @@ class Room
         userscoreB: score_array[1].score,
         start: @start_time,
         end: moment().format(),
-        arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain' #settings.modules.arena_mode.mode
+        arena: if @hostinfo.mode ==1 then 'athletic' else 'entertain' #settings.modules.arena_mode.mode
       }}, (error, response, body)=>
         if error
           log.warn 'SCORE POST ERROR', error, response
@@ -1080,17 +1081,6 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome
     ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
-  if settings.modules.arena_mode.get_score
-    request
-      url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
-      json: true
-    , (error, response, body)->
-      if error or !body or _.isString body
-        log.warn 'LOAD SCORE ERROR', client.name, error, response, body
-      else
-        log.info 'LOAD SCORE', client.name, body
-        ygopro.stoc_send_chat(client, "您有#{body.exp}点经验，排名第#{body.exp_rank}，#{body.pt}点战斗力，排名第#{body.arena_rank}。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE)
-      return
 
   if !room.recorder
     room.recorder = recorder = net.connect room.port, ->
@@ -1329,6 +1319,18 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       room.player_datas.push ip: player.ip, name: player.name
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
+  if settings.modules.arena_mode.get_score and not client.score_shown
+    request
+      url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
+      json: true
+    , (error, response, body)->
+      if error or !body or _.isString body
+        log.warn 'LOAD SCORE ERROR', client.name, error, response, body
+      else
+        log.info 'LOAD SCORE', client.name, body
+        ygopro.stoc_send_chat_to_room(room, "#{client.name} #{body.exp}点经验 #{Math.round(body.pt)}点战斗力 排名第#{body.arena_rank} （正式上线前这些积分可能被重置）", ygopro.constants.COLORS.BABYBLUE)
+        client.score_shown = true
+      return
   if (settings.modules.enable_deck_log or settings.modules.post_deck) and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
     deck_text = '#ygosrv233 deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
     if settings.modules.enable_deck_log
