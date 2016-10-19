@@ -1626,11 +1626,13 @@
         url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
         json: true
       }, function(error, response, body) {
+        var rank_txt;
         if (error || !body || _.isString(body)) {
           log.warn('LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body);
         } else {
           log.info('LOAD SCORE', client.name, body);
-          ygopro.stoc_send_chat_to_room(room, client.name + " " + body.exp + "点经验 " + (Math.round(body.pt)) + "点战斗力 排名第" + body.arena_rank + " （正式上线前这些积分可能被重置）", ygopro.constants.COLORS.BABYBLUE);
+          rank_txt = body.arena_rank > 0 ? "排名第" + body.arena_rank : "暂无排名";
+          ygopro.stoc_send_chat_to_room(room, client.name + " " + body.exp + "点经验 " + (Math.round(body.pt)) + "点战斗力 " + rank_txt + " （正式上线前这些积分可能被重置）", ygopro.constants.COLORS.BABYBLUE);
           client.score_shown = true;
         }
       });
