@@ -1081,6 +1081,19 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome
     ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
+  if settings.modules.arena_mode.get_score #and not client.score_shown
+    request
+      url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
+      json: true
+    , (error, response, body)->
+      if error or !body or _.isString body
+        log.warn 'LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body
+      else
+        log.info 'LOAD SCORE', client.name, body
+        rank_txt = if body.arena_rank>0 then "排名第" + body.arena_rank else "暂无排名"
+        ygopro.stoc_send_chat(client, "#{client.name}，你有#{body.exp}点经验，你的战斗力是#{Math.round(body.pt)}，#{rank_txt}。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE)
+        #client.score_shown = true
+      return
 
   if !room.recorder
     room.recorder = recorder = net.connect room.port, ->
@@ -1319,19 +1332,6 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       room.player_datas.push ip: player.ip, name: player.name
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
-  if settings.modules.arena_mode.get_score and not client.score_shown
-    request
-      url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
-      json: true
-    , (error, response, body)->
-      if error or !body or _.isString body
-        log.warn 'LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body
-      else
-        log.info 'LOAD SCORE', client.name, body
-        rank_txt = if body.arena_rank>0 then "排名第" + body.arena_rank else "暂无排名"
-        ygopro.stoc_send_chat_to_room(room, "#{client.name} #{body.exp}点经验 #{Math.round(body.pt)}点战斗力 #{rank_txt} （正式上线前这些积分可能被重置）", ygopro.constants.COLORS.BABYBLUE)
-        client.score_shown = true
-      return
   if (settings.modules.enable_deck_log or settings.modules.post_deck) and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
     deck_text = '#ygosrv233 deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
     if settings.modules.enable_deck_log

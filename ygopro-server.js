@@ -1310,6 +1310,21 @@
     if (room.welcome) {
       ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE);
     }
+    if (settings.modules.arena_mode.get_score) {
+      request({
+        url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
+        json: true
+      }, function(error, response, body) {
+        var rank_txt;
+        if (error || !body || _.isString(body)) {
+          log.warn('LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body);
+        } else {
+          log.info('LOAD SCORE', client.name, body);
+          rank_txt = body.arena_rank > 0 ? "排名第" + body.arena_rank : "暂无排名";
+          ygopro.stoc_send_chat(client, client.name + "，你有" + body.exp + "点经验，你的战斗力是" + (Math.round(body.pt)) + "，" + rank_txt + "。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE);
+        }
+      });
+    }
     if (!room.recorder) {
       room.recorder = recorder = net.connect(room.port, function() {
         ygopro.ctos_send(recorder, 'PLAYER_INFO', {
@@ -1620,22 +1635,6 @@
     }
     if (settings.modules.tips) {
       ygopro.stoc_send_random_tip(client);
-    }
-    if (settings.modules.arena_mode.get_score && !client.score_shown) {
-      request({
-        url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
-        json: true
-      }, function(error, response, body) {
-        var rank_txt;
-        if (error || !body || _.isString(body)) {
-          log.warn('LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body);
-        } else {
-          log.info('LOAD SCORE', client.name, body);
-          rank_txt = body.arena_rank > 0 ? "排名第" + body.arena_rank : "暂无排名";
-          ygopro.stoc_send_chat_to_room(room, client.name + " " + body.exp + "点经验 " + (Math.round(body.pt)) + "点战斗力 " + rank_txt + " （正式上线前这些积分可能被重置）", ygopro.constants.COLORS.BABYBLUE);
-          client.score_shown = true;
-        }
-      });
     }
     if ((settings.modules.enable_deck_log || settings.modules.post_deck) && client.main && client.main.length && !client.deck_saved && client.ip !== '::ffff:127.0.0.1') {
       deck_text = '#ygosrv233 deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n';
