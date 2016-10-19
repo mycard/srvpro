@@ -438,26 +438,26 @@ class Room
       score_array=[]
       for name, score of @scores
         score_array.push { name: name, score: score }
-      log.info @start_time, score_array
-      return if score_array.length != 2
-      request.post { url : settings.modules.arena_mode.post_score , form : {
-        accesskey: process.env.MYCARD_ARENA_KEY,
-        usernameA: score_array[0].name,
-        usernameB: score_array[1].name,
-        userscoreA: score_array[0].score,
-        userscoreB: score_array[1].score,
-        start: @start_time,
-        end: moment().format(),
-        arena: if @hostinfo.mode ==1 then 'athletic' else 'entertain' #settings.modules.arena_mode.mode
-      }}, (error, response, body)=>
-        if error
-          log.warn 'SCORE POST ERROR', error, response
-        else
-          if response.statusCode != 204
-            log.warn 'SCORE POST', response.statusCode, response.statusMessage, @name, body
+      log.info 'SCORE', score_array, @start_time
+      if score_array.length == 2
+        request.post { url : settings.modules.arena_mode.post_score , form : {
+          accesskey: process.env.MYCARD_ARENA_KEY,
+          usernameA: score_array[0].name,
+          usernameB: score_array[1].name,
+          userscoreA: score_array[0].score,
+          userscoreB: score_array[1].score,
+          start: @start_time,
+          end: moment().format(),
+          arena: if @hostinfo.mode ==1 then 'athletic' else 'entertain' #settings.modules.arena_mode.mode
+        }}, (error, response, body)=>
+          if error
+            log.warn 'SCORE POST ERROR', error, response.statusCode, response.statusMessage, body
           else
-            log.info 'SCORE POST', response.statusCode, response.statusMessage, @name, body
-        return
+            if response.statusCode != 204
+              log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
+            else
+              log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
+          return
     if @player_datas.length and settings.modules.enable_cloud_replay
       replay_id = @cloud_replay_id
       if @has_ygopro_error
@@ -1325,7 +1325,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       json: true
     , (error, response, body)->
       if error or !body or _.isString body
-        log.warn 'LOAD SCORE ERROR', client.name, error, response, body
+        log.warn 'LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body
       else
         log.info 'LOAD SCORE', client.name, body
         ygopro.stoc_send_chat_to_room(room, "#{client.name} #{body.exp}点经验 #{Math.round(body.pt)}点战斗力 排名第#{body.arena_rank} （正式上线前这些积分可能被重置）", ygopro.constants.COLORS.BABYBLUE)
@@ -1349,9 +1349,9 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
           log.warn 'DECK POST ERROR', error, response
         else
           if response.statusCode != 200
-            log.warn 'DECK POST', response.statusCode, client.name, body
+            log.warn 'DECK POST FAIL', response.statusCode, client.name, body
           else
-            log.info 'DECK POST', response.statusCode, client.name, body
+            log.info 'DECK POST OK', response.statusCode, client.name, body
         return
     client.deck_saved = true
   return

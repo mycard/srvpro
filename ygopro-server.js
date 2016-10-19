@@ -592,35 +592,34 @@
             score: score
           });
         }
-        log.info(this.start_time, score_array);
-        if (score_array.length !== 2) {
-          return;
-        }
-        request.post({
-          url: settings.modules.arena_mode.post_score,
-          form: {
-            accesskey: process.env.MYCARD_ARENA_KEY,
-            usernameA: score_array[0].name,
-            usernameB: score_array[1].name,
-            userscoreA: score_array[0].score,
-            userscoreB: score_array[1].score,
-            start: this.start_time,
-            end: moment().format(),
-            arena: this.hostinfo.mode === 1 ? 'athletic' : 'entertain'
-          }
-        }, (function(_this) {
-          return function(error, response, body) {
-            if (error) {
-              log.warn('SCORE POST ERROR', error, response);
-            } else {
-              if (response.statusCode !== 204) {
-                log.warn('SCORE POST', response.statusCode, response.statusMessage, _this.name, body);
-              } else {
-                log.info('SCORE POST', response.statusCode, response.statusMessage, _this.name, body);
-              }
+        log.info('SCORE', score_array, this.start_time);
+        if (score_array.length === 2) {
+          request.post({
+            url: settings.modules.arena_mode.post_score,
+            form: {
+              accesskey: process.env.MYCARD_ARENA_KEY,
+              usernameA: score_array[0].name,
+              usernameB: score_array[1].name,
+              userscoreA: score_array[0].score,
+              userscoreB: score_array[1].score,
+              start: this.start_time,
+              end: moment().format(),
+              arena: this.hostinfo.mode === 1 ? 'athletic' : 'entertain'
             }
-          };
-        })(this));
+          }, (function(_this) {
+            return function(error, response, body) {
+              if (error) {
+                log.warn('SCORE POST ERROR', error, response.statusCode, response.statusMessage, body);
+              } else {
+                if (response.statusCode !== 204) {
+                  log.warn('SCORE POST FAIL', response.statusCode, response.statusMessage, _this.name, body);
+                } else {
+                  log.info('SCORE POST OK', response.statusCode, response.statusMessage, _this.name, body);
+                }
+              }
+            };
+          })(this));
+        }
       }
       if (this.player_datas.length && settings.modules.enable_cloud_replay) {
         replay_id = this.cloud_replay_id;
@@ -1628,7 +1627,7 @@
         json: true
       }, function(error, response, body) {
         if (error || !body || _.isString(body)) {
-          log.warn('LOAD SCORE ERROR', client.name, error, response, body);
+          log.warn('LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body);
         } else {
           log.info('LOAD SCORE', client.name, body);
           ygopro.stoc_send_chat_to_room(room, client.name + " " + body.exp + "点经验 " + (Math.round(body.pt)) + "点战斗力 排名第" + body.arena_rank + " （正式上线前这些积分可能被重置）", ygopro.constants.COLORS.BABYBLUE);
@@ -1660,9 +1659,9 @@
             log.warn('DECK POST ERROR', error, response);
           } else {
             if (response.statusCode !== 200) {
-              log.warn('DECK POST', response.statusCode, client.name, body);
+              log.warn('DECK POST FAIL', response.statusCode, client.name, body);
             } else {
-              log.info('DECK POST', response.statusCode, client.name, body);
+              log.info('DECK POST OK', response.statusCode, client.name, body);
             }
           }
         });
