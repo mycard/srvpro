@@ -1607,6 +1607,10 @@ if settings.modules.spawn_windbot
 #http
 if settings.modules.http
 
+  addCallback = (callback, text)->
+    if not callback then return text
+    return callback + "( " + text + " );"
+
   requestListener = (request, response)->
     parseQueryString = true
     u = url.parse(request.url, parseQueryString)
@@ -1615,7 +1619,7 @@ if settings.modules.http
     if u.pathname == '/api/getrooms'
       if !pass_validated and !settings.modules.enable_public_roomlist
         response.writeHead(200)
-        response.end(u.query.callback + '( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );')
+        response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'))
       else
         response.writeHead(200)
         roomsjson = JSON.stringify rooms: (for room in ROOM_all when room and room.established
@@ -1629,8 +1633,8 @@ if settings.modules.http
             pos: player.pos
           ),
           istart: if room.started then 'start' else 'wait'
-        )
-        response.end(u.query.callback + "( " + roomsjson + " );")
+        ), null, 2
+        response.end(addCallback(u.query.callback, roomsjson))
 
     else if u.pathname == '/api/duellog' and settings.modules.tournament_mode.enabled
       if !pass_validated
@@ -1640,57 +1644,57 @@ if settings.modules.http
       else
         response.writeHead(200)
         duellog = JSON.stringify settings.modules.tournament_mode.duel_log
-        response.end(u.query.callback + "( " + duellog + " );")
+        response.end(addCallback(u.query.callback, duellog))
 
     else if u.pathname == '/api/message'
       if !pass_validated
         response.writeHead(200)
-        response.end(u.query.callback + "( ['密码错误', 0] );")
+        response.end(addCallback(u.query.callback, "['密码错误', 0]"))
         return
 
       if u.query.shout
         for room in ROOM_all when room and room.established
           ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
         response.writeHead(200)
-        response.end(u.query.callback + "( ['shout ok', '" + u.query.shout + "'] );")
+        response.end(addCallback(u.query.callback, "['shout ok', '" + u.query.shout + "']"))
 
       else if u.query.stop
         if u.query.stop == 'false'
           u.query.stop = false
         settings.modules.stop = u.query.stop
         response.writeHead(200)
-        response.end(u.query.callback + "( ['stop ok', '" + u.query.stop + "'] );")
+        response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
 
       else if u.query.welcome
         nconf.myset(settings, 'modules:welcome', u.query.welcome)
         response.writeHead(200)
-        response.end(u.query.callback + "( ['welcome ok', '" + u.query.welcome + "'] );")
+        response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
 
       else if u.query.getwelcome
         response.writeHead(200)
-        response.end(u.query.callback + "( ['get ok', '" + settings.modules.welcome + "'] );")
+        response.end(addCallback(u.query.callback, "['get ok', '" + settings.modules.welcome + "']"))
 
       else if u.query.loadtips
         load_tips()
         response.writeHead(200)
-        response.end(u.query.callback + "( ['loading tip', '" + settings.modules.tips + "'] );")
+        response.end(addCallback(u.query.callback, "['loading tip', '" + settings.modules.tips + "']"))
 
       else if u.query.loaddialogues
         load_dialogues()
         response.writeHead(200)
-        response.end(u.query.callback + "( ['loading dialogues', '" + settings.modules.dialogues + "'] );")
+        response.end(addCallback(u.query.callback, "['loading dialogues', '" + settings.modules.dialogues + "']"))
 
       else if u.query.ban
         ban_user(u.query.ban)
         response.writeHead(200)
-        response.end(u.query.callback + "( ['ban ok', '" + u.query.ban + "'] );")
+        response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"))
 
       else
-        response.writeHead(404)
+        response.writeHead(400)
         response.end()
 
     else
-      response.writeHead(404)
+      response.writeHead(400)
       response.end()
     return
 
