@@ -2025,7 +2025,7 @@
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
       if (u.pathname === '/api/getrooms') {
-        if (!pass_validated) {
+        if (!pass_validated && !settings.modules.enable_public_roomlist) {
           response.writeHead(200);
           response.end(u.query.callback + '( {"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]} );');
         } else {

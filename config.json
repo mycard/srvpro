@@ -13,6 +13,7 @@
     "enable_windbot": false,
     "enable_websocket_roomlist": false,
     "enable_deck_log": false,
+    "enable_public_roomlist": false,
     "redis_port": 6379,
     "windbot_port": 2399,
     "spawn_windbot": false,
