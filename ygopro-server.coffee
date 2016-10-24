@@ -451,9 +451,9 @@ class Room
           arena: if @hostinfo.mode ==1 then 'athletic' else 'entertain' #settings.modules.arena_mode.mode
         }}, (error, response, body)=>
           if error
-            log.warn 'SCORE POST ERROR', error, response.statusCode, response.statusMessage, body
+            log.warn 'SCORE POST ERROR', error
           else
-            if response.statusCode != 204
+            if response.statusCode != 204 or response.statusCode != 200
               log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
             else
               log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
@@ -1086,8 +1086,10 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
       json: true
     , (error, response, body)->
-      if error or !body or _.isString body
-        log.warn 'LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body
+      if error
+        log.warn 'LOAD SCORE ERROR', client.name, error
+      else if !body or _.isString body
+        log.warn 'LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body
       else
         log.info 'LOAD SCORE', client.name, body
         rank_txt = if body.arena_rank>0 then "排名第" + body.arena_rank else "暂无排名"
@@ -1347,7 +1349,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
         arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain'
       }}, (error, response, body)->
         if error
-          log.warn 'DECK POST ERROR', error, response
+          log.warn 'DECK POST ERROR', error
         else
           if response.statusCode != 200
             log.warn 'DECK POST FAIL', response.statusCode, client.name, body

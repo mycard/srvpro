@@ -609,9 +609,9 @@
           }, (function(_this) {
             return function(error, response, body) {
               if (error) {
-                log.warn('SCORE POST ERROR', error, response.statusCode, response.statusMessage, body);
+                log.warn('SCORE POST ERROR', error);
               } else {
-                if (response.statusCode !== 204) {
+                if (response.statusCode !== 204 || response.statusCode !== 200) {
                   log.warn('SCORE POST FAIL', response.statusCode, response.statusMessage, _this.name, body);
                 } else {
                   log.info('SCORE POST OK', response.statusCode, response.statusMessage, _this.name, body);
@@ -1316,8 +1316,10 @@
         json: true
       }, function(error, response, body) {
         var rank_txt;
-        if (error || !body || _.isString(body)) {
-          log.warn('LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body);
+        if (error) {
+          log.warn('LOAD SCORE ERROR', client.name, error);
+        } else if (!body || _.isString(body)) {
+          log.warn('LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body);
         } else {
           log.info('LOAD SCORE', client.name, body);
           rank_txt = body.arena_rank > 0 ? "排名第" + body.arena_rank : "暂无排名";
@@ -1657,7 +1659,7 @@
           }
         }, function(error, response, body) {
           if (error) {
-            log.warn('DECK POST ERROR', error, response);
+            log.warn('DECK POST ERROR', error);
           } else {
             if (response.statusCode !== 200) {
               log.warn('DECK POST FAIL', response.statusCode, client.name, body);
