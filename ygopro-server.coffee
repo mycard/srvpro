@@ -260,6 +260,7 @@ ROOM_find_or_create_ai = (name)->
     return { "error": "AI房间名过长，请在建立房间后输入 /ai 来添加AI" }
   result = new Room(name)
   result.windbot = windbot
+  result.private = true
   return result
 
 ROOM_find_by_name = (name)->
@@ -451,9 +452,9 @@ class Room
           arena: if @hostinfo.mode ==1 then 'athletic' else 'entertain' #settings.modules.arena_mode.mode
         }}, (error, response, body)=>
           if error
-            log.warn 'SCORE POST ERROR', error, response.statusCode, response.statusMessage, body
+            log.warn 'SCORE POST ERROR', error
           else
-            if response.statusCode != 204
+            if response.statusCode != 204 or response.statusCode != 200
               log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
             else
               log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
@@ -524,7 +525,7 @@ class Room
       url: "http://127.0.0.1:#{settings.modules.windbot_port}/?name=#{encodeURIComponent(botdata.name)}&deck=#{encodeURIComponent(botdata.deck)}&host=127.0.0.1&port=#{settings.port}&dialog=#{encodeURIComponent(botdata.dialog)}&version=#{settings.version}&password=#{encodeURIComponent(@name)}"
     , (error, response, body)=>
       if error
-        log.warn 'windbot add error', error, this.name, response
+        log.warn 'windbot add error', error, this.name
         ygopro.stoc_send_chat_to_room(this, "添加AI失败，可尝试输入 /ai 重新添加", ygopro.constants.COLORS.RED)
       #else
         #log.info "windbot added"
@@ -888,7 +889,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   else if !info.pass.length and !settings.modules.enable_random_duel and !settings.modules.enable_windbot
     ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名")
 
-  else if info.pass.length and settings.modules.mycard_auth and info.pass[0...2] != 'AI'
+  else if info.pass.length and settings.modules.mycard_auth and info.pass[0...3] != 'AI_' and info.pass[0...3] != 'AI#'
     ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE)
     if info.pass.length <= 8
       ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)')
@@ -1086,8 +1087,10 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
       json: true
     , (error, response, body)->
-      if error or !body or _.isString body
-        log.warn 'LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body
+      if error
+        log.warn 'LOAD SCORE ERROR', client.name, error
+      else if !body or _.isString body
+        log.warn 'LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body
       else
         log.info 'LOAD SCORE', client.name, body
         rank_txt = if body.arena_rank>0 then "排名第" + body.arena_rank else "暂无排名"
@@ -1347,7 +1350,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
         arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain'
       }}, (error, response, body)->
         if error
-          log.warn 'DECK POST ERROR', error, response
+          log.warn 'DECK POST ERROR', error
         else
           if response.statusCode != 200
             log.warn 'DECK POST FAIL', response.statusCode, client.name, body
@@ -1368,7 +1371,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     when '/help'
       ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client, "/help 显示这个帮助信息")
-      ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字")
+      ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字") if !settings.modules.mycard_auth
       ygopro.stoc_send_chat(client, "/ai 添加一个AI，/ai 角色名 可指定添加的角色") if settings.modules.enable_windbot
       ygopro.stoc_send_chat(client, "/tip 显示一条提示") if settings.modules.tips
 

@@ -359,6 +359,7 @@
     }
     result = new Room(name);
     result.windbot = windbot;
+    result["private"] = true;
     return result;
   };
 
@@ -609,9 +610,9 @@
           }, (function(_this) {
             return function(error, response, body) {
               if (error) {
-                log.warn('SCORE POST ERROR', error, response.statusCode, response.statusMessage, body);
+                log.warn('SCORE POST ERROR', error);
               } else {
-                if (response.statusCode !== 204) {
+                if (response.statusCode !== 204 || response.statusCode !== 200) {
                   log.warn('SCORE POST FAIL', response.statusCode, response.statusMessage, _this.name, body);
                 } else {
                   log.info('SCORE POST OK', response.statusCode, response.statusMessage, _this.name, body);
@@ -701,7 +702,7 @@
       }, (function(_this) {
         return function(error, response, body) {
           if (error) {
-            log.warn('windbot add error', error, _this.name, response);
+            log.warn('windbot add error', error, _this.name);
             ygopro.stoc_send_chat_to_room(_this, "添加AI失败，可尝试输入 /ai 重新添加", ygopro.constants.COLORS.RED);
           }
         };
@@ -1102,7 +1103,7 @@
       client.destroy();
     } else if (!info.pass.length && !settings.modules.enable_random_duel && !settings.modules.enable_windbot) {
       ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名");
-    } else if (info.pass.length && settings.modules.mycard_auth && info.pass.slice(0, 2) !== 'AI') {
+    } else if (info.pass.length && settings.modules.mycard_auth && info.pass.slice(0, 3) !== 'AI_' && info.pass.slice(0, 3) !== 'AI#') {
       ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {
         ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)');
@@ -1316,8 +1317,10 @@
         json: true
       }, function(error, response, body) {
         var rank_txt;
-        if (error || !body || _.isString(body)) {
-          log.warn('LOAD SCORE ERROR', client.name, error, response.statusCode, response.statusMessage, body);
+        if (error) {
+          log.warn('LOAD SCORE ERROR', client.name, error);
+        } else if (!body || _.isString(body)) {
+          log.warn('LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body);
         } else {
           log.info('LOAD SCORE', client.name, body);
           rank_txt = body.arena_rank > 0 ? "排名第" + body.arena_rank : "暂无排名";
@@ -1657,7 +1660,7 @@
           }
         }, function(error, response, body) {
           if (error) {
-            log.warn('DECK POST ERROR', error, response);
+            log.warn('DECK POST ERROR', error);
           } else {
             if (response.statusCode !== 200) {
               log.warn('DECK POST FAIL', response.statusCode, client.name, body);
@@ -1687,7 +1690,9 @@
       case '/help':
         ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助");
         ygopro.stoc_send_chat(client, "/help 显示这个帮助信息");
-        ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字");
+        if (!settings.modules.mycard_auth) {
+          ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字");
+        }
         if (settings.modules.enable_windbot) {
           ygopro.stoc_send_chat(client, "/ai 添加一个AI，/ai 角色名 可指定添加的角色");
         }
