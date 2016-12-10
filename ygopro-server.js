@@ -193,7 +193,7 @@
   tribute = function(socket) {
     setTimeout((function(socket) {
       Graveyard.push(socket);
-    })(socket), 3000);
+    }), 3000, socket);
   };
 
   setInterval(function() {

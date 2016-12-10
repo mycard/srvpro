@@ -144,7 +144,7 @@ get_memory_usage = ()->
 Graveyard = []
 
 tribute = (socket) ->
-  setTimeout ((socket)-> Graveyard.push(socket);return)(socket), 3000
+  setTimeout ((socket)-> Graveyard.push(socket);return), 3000, socket
   return
 
 setInterval ()->
