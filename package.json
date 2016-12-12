@@ -2,7 +2,7 @@
   "name": "ygopro-server",
   "version": "2.3.3",
   "description": "a server for ygopro",
-  "repository": "github:mercury233/ygopro-server",
+  "repository": "github:mycard/ygopro-server",
   "keywords": [
     "mycard",
     "ygopro",

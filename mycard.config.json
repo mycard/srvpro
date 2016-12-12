@@ -1,0 +1,39 @@
+{
+  "port": 7911,
+  "modules": {
+    "welcome": "Mycard YGOPro Server",
+    "update": "请更新游戏版本，可在社区手动下载更新包",
+    "tips": "http://mycard.moe/tips.json",
+    "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
+    "enable_windbot": true,
+    "enable_websocket_roomlist": true,
+    "windbot_port": 2399,
+    "spawn_windbot": true,
+    "mycard_auth": "https://ygobbs.com",
+    "post_deck": "http://mycard.moe/ygopro/analytics/deck/text",
+    "arena_mode": {
+      "mode": "entertain",
+      "post_score": "https://mycard.moe/ygopro/arena/index.php?c=update",
+      "get_score": "https://mycard.moe/ygopro/arena/index.php?c=query&username="
+    },
+    "http": {
+      "port": 7922,
+      "password": "123456",
+      "ssl": {
+        "enabled": false,
+        "port": 7923,
+        "cert": "ssl/fullchain.pem",
+        "key": "ssl/privkey.pem"
+      }
+    }
+  },
+  "ban": {
+    "banned_user": [],
+    "banned_ip": [],
+    "badword_level0": ["滚", "衮", "操", "草", "艹", "狗", "日", "曰", "妈", "娘", "逼"],
+    "badword_level1": ["傻逼", "鸡巴"],
+    "badword_level2": ["死妈", "草你妈"],
+    "badword_level3": ["迷奸", "仿真枪"],
+    "illegal_id": ["^Lv.\\d+", "^VIP.\\d+"]
+  }
+}
