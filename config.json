@@ -8,7 +8,6 @@
     "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
     "enable_random_duel": false,
     "enable_halfway_watch": true,
-    "enable_TCG_as_default": false,
     "enable_cloud_replay": false,
     "enable_windbot": false,
     "enable_websocket_roomlist": false,
@@ -20,6 +19,20 @@
     "mycard_auth": false,
     "post_deck": false,
     "hang_timeout": 90,
+    "default_version": 4924,
+    "default_room_info": {
+      "lflist": 0,
+      "rule": 0,
+      "mode": 0,
+      "comment": "rule: 0=OCGONLY, 1=TCGONLY, 2=OT; mode: 0=SINGLE, 1=MATCH, 2=TAG",
+      "enable_priority": false,
+      "no_check_deck": false,
+      "no_shuffle_deck": false,
+      "start_lp": 8000,
+      "start_hand": 5,
+      "draw_count": 1,
+      "time_limit": 180
+    },
     "arena_mode": {
       "mode": "233",
       "post_score": false,

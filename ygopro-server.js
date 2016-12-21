@@ -111,7 +111,12 @@
     }
   };
 
-  settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16');
+  try {
+    settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16');
+  } catch (error1) {
+    settings.version = settings.modules.default_version;
+    log.info("fail to read version from ygopro source code, using 0x" + settings.version.toString(16), "from config");
+  }
 
   settings.lflist = (function() {
     var k, len, ref, results;
@@ -416,19 +421,17 @@
       this.welcome = '';
       this.scores = {};
       ROOM_all.push(this);
-      this.hostinfo || (this.hostinfo = {
-        lflist: settings.lflist.length ? 0 : -1,
-        rule: settings.modules.enable_TCG_as_default ? 2 : 0,
-        mode: 0,
-        enable_priority: false,
-        no_check_deck: false,
-        no_shuffle_deck: false,
-        start_lp: 8000,
-        start_hand: 5,
-        draw_count: 1,
-        time_limit: 180,
-        replay_mode: settings.modules.tournament_mode.enabled ? 1 : 0
-      });
+      this.hostinfo || (this.hostinfo = settings.modules.default_room_info);
+      if (settings.lflist.length) {
+        if (this.hostinfo.rule === 1 && this.hostinfo.lflist === 0) {
+          this.hostinfo.lflist = _.findIndex(settings.lflist, function(list) {
+            return list.tcg;
+          });
+        }
+      } else {
+        this.hostinfo.lflist = -1;
+      }
+      this.hostinfo.replay_mode = settings.modules.tournament_mode.enabled ? 1 : 0;
       if (name.slice(0, 2) === 'M#') {
         this.hostinfo.mode = 1;
       } else if (name.slice(0, 2) === 'T#') {

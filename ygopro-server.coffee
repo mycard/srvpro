@@ -82,7 +82,11 @@ ban_user = (name) ->
         continue
   return
 
-settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
+try
+  settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
+catch
+  settings.version = settings.modules.default_version
+  log.info "fail to read version from ygopro source code, using 0x"+settings.version.toString(16), "from config"
 # load the lflist of current date
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   date=list.match(/!([\d\.]+)/)
@@ -303,18 +307,13 @@ class Room
     @scores = {}
     ROOM_all.push this
 
-    @hostinfo ||=
-      lflist: if settings.lflist.length then 0 else -1
-      rule: if settings.modules.enable_TCG_as_default then 2 else 0
-      mode: 0
-      enable_priority: false
-      no_check_deck: false
-      no_shuffle_deck: false
-      start_lp: 8000
-      start_hand: 5
-      draw_count: 1
-      time_limit: 180
-      replay_mode: if settings.modules.tournament_mode.enabled then 1 else 0
+    @hostinfo ||= settings.modules.default_room_info
+    if settings.lflist.length
+      if @hostinfo.rule == 1 and @hostinfo.lflist == 0
+        @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
+    else
+      @hostinfo.lflist =  -1
+    @hostinfo.replay_mode = if settings.modules.tournament_mode.enabled then 1 else 0
 
     if name[0...2] == 'M#'
       @hostinfo.mode = 1
