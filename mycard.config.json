@@ -26,6 +26,7 @@
     "arena_mode": {
       "enabled": true,
       "mode": "entertain",
+      "comment": "mode: athletic / entertain",
       "accesskey": "233",
       "post_score": "https://mycard.moe/ygopro/arena/index.php?c=update",
       "get_score": "https://mycard.moe/ygopro/arena/index.php?c=query&username="
@@ -47,14 +48,5 @@
         "key": "ssl/privkey.pem"
       }
     }
-  },
-  "ban": {
-    "banned_user": [],
-    "banned_ip": [],
-    "badword_level0": ["滚", "衮", "操", "草", "艹", "狗", "日", "曰", "妈", "娘", "逼"],
-    "badword_level1": ["傻逼", "鸡巴"],
-    "badword_level2": ["死妈", "草你妈"],
-    "badword_level3": ["迷奸", "仿真枪"],
-    "illegal_id": ["^Lv.\\d+", "^VIP.\\d+"]
   }
 }
