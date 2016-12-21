@@ -43,7 +43,8 @@
       "post": "https://mycard.moe/ygopro/analytics/deck/text"
     },
     "arena_mode": {
-      "mode": "233",
+      "enabled": false,
+      "mode": "entertain",
       "comment": "mode: athletic / entertain",
       "accesskey": "233",
       "post_score": false,

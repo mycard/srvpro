@@ -113,9 +113,10 @@
 
   try {
     settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16');
+    log.info("ygopro version 0x" + settings.version.toString(16), "(from source code)");
   } catch (error1) {
     settings.version = settings.modules.default_version;
-    log.info("fail to read version from ygopro source code, using 0x" + settings.version.toString(16), "from config");
+    log.info("ygopro version 0x" + settings.version.toString(16), "(from config)");
   }
 
   settings.lflist = (function() {
@@ -331,9 +332,6 @@
     var ainame, namea, result, room, windbot;
     if (name === '') {
       name = 'AI';
-    }
-    if (name.slice(0, 3) === 'AI_') {
-      name = 'AI#' + name.slice(3);
     }
     namea = name.split('#');
     if (room = ROOM_find_by_name(name)) {
@@ -586,7 +584,7 @@
       if (this.deleted) {
         return;
       }
-      if (this.started && settings.modules.arena_mode.post_score) {
+      if (this.started && settings.modules.arena_mode.enabled) {
         score_array = [];
         ref = this.scores;
         for (name in ref) {
@@ -615,7 +613,7 @@
               if (error) {
                 log.warn('SCORE POST ERROR', error);
               } else {
-                if (response.statusCode !== 204 || response.statusCode !== 200) {
+                if (response.statusCode !== 204 && response.statusCode !== 200) {
                   log.warn('SCORE POST FAIL', response.statusCode, response.statusMessage, _this.name, body);
                 } else {
                   log.info('SCORE POST OK', response.statusCode, response.statusMessage, _this.name, body);
@@ -1106,7 +1104,7 @@
       client.destroy();
     } else if (!info.pass.length && !settings.modules.enable_random_duel && !settings.modules.enable_windbot) {
       ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名");
-    } else if (info.pass.length && settings.modules.mycard.enabled && info.pass.slice(0, 3) !== 'AI_' && info.pass.slice(0, 3) !== 'AI#') {
+    } else if (info.pass.length && settings.modules.mycard.enabled && info.pass.slice(0, 3) !== 'AI#') {
       ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {
         ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)');
@@ -1314,7 +1312,7 @@
     if (room.welcome) {
       ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE);
     }
-    if (settings.modules.arena_mode.get_score) {
+    if (settings.modules.arena_mode.enabled) {
       request({
         url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
         json: true
