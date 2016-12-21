@@ -592,7 +592,7 @@
       if (this.deleted) {
         return;
       }
-      if (this.started && settings.modules.arena_mode.enabled) {
+      if (this.started && settings.modules.arena_mode.enabled && this.arena) {
         score_array = [];
         ref = this.scores;
         for (name in ref) {
@@ -1191,6 +1191,7 @@
           case 4:
             room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8));
             room["private"] = true;
+            room.arena = settings.modules.arena_mode.mode;
             break;
           default:
             ygopro.stoc_die(client, '主机密码不正确 (Invalid Action)');
@@ -1670,14 +1671,14 @@
           }
         });
       }
-      if (settings.modules.deck_log.post) {
+      if (settings.modules.deck_log.post && room.arena) {
         request.post({
           url: settings.modules.deck_log.post,
           form: {
             accesskey: settings.modules.deck_log.accesskey,
             deck: deck_text,
             playername: client.name,
-            arena: room.hostinfo.mode === 1 ? 'athletic' : 'entertain'
+            arena: settings.modules.arena_mode.mode
           }
         }, function(error, response, body) {
           if (error) {

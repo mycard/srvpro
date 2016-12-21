@@ -438,7 +438,7 @@ class Room
   delete: ->
     return if @deleted
     #log.info 'room-delete', this.name, ROOM_all.length
-    if @started and settings.modules.arena_mode.enabled
+    if @started and settings.modules.arena_mode.enabled and @arena
       #log.info @scores
       score_array=[]
       for name, score of @scores
@@ -965,6 +965,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         when 4
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           room.private = true
+          room.arena = settings.modules.arena_mode.mode
         else
           ygopro.stoc_die(client, '主机密码不正确 (Invalid Action)')
           return
@@ -1357,12 +1358,12 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
         if err
           log.warn 'DECK SAVE ERROR', err
-    if settings.modules.deck_log.post
+    if settings.modules.deck_log.post and room.arena
       request.post { url : settings.modules.deck_log.post , form : {
         accesskey: settings.modules.deck_log.accesskey,
         deck: deck_text,
         playername: client.name,
-        arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain'
+        arena: settings.modules.arena_mode.mode
       }}, (error, response, body)->
         if error
           log.warn 'DECK POST ERROR', error
