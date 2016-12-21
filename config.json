@@ -11,13 +11,10 @@
     "enable_cloud_replay": false,
     "enable_windbot": false,
     "enable_websocket_roomlist": false,
-    "enable_deck_log": false,
     "enable_public_roomlist": false,
     "redis_port": 6379,
     "windbot_port": 2399,
     "spawn_windbot": false,
-    "mycard_auth": false,
-    "post_deck": false,
     "hang_timeout": 90,
     "default_version": 4924,
     "default_room_info": {
@@ -33,8 +30,22 @@
       "draw_count": 1,
       "time_limit": 180
     },
+    "mycard": {
+      "enabled": false,
+      "auth_base_url": "https://ygobbs.com",
+      "auth_database": "postgres://233@233.mycard.moe/233",
+      "auth_key": "233333"
+    },
+    "deck_log": {
+      "enabled": false,
+      "accesskey": "233",
+      "local": "./deck_log/",
+      "post": "https://mycard.moe/ygopro/analytics/deck/text"
+    },
     "arena_mode": {
       "mode": "233",
+      "comment": "mode: athletic / entertain",
+      "accesskey": "233",
       "post_score": false,
       "get_score": false
     },
@@ -52,8 +63,8 @@
       "git_html_path": "../mercury233.github.io/",
       "html_path": "../mercury233.github.io/ygosrv233/",
       "html_filename": "pre.html",
-      "git_db_path": "../ygopro-unofficial/",
-      "db_path": "../ygopro-unofficial/unofficial/",
+      "git_db_path": "../ygopro-pre-data/",
+      "db_path": "../ygopro-pre-data/unofficial/",
       "html_img_rel_path": "pre/pics/",
       "html_img_thumbnail": "thumbnail/",
       "ygopro_path": "../ygopro-pre/",

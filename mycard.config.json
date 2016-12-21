@@ -9,10 +9,21 @@
     "enable_websocket_roomlist": true,
     "windbot_port": 2399,
     "spawn_windbot": true,
-    "mycard_auth": "https://ygobbs.com",
-    "post_deck": "http://mycard.moe/ygopro/analytics/deck/text",
+    "mycard": {
+      "enabled": true,
+      "auth_base_url": "https://ygobbs.com",
+      "auth_database": "postgres://233@233.mycard.moe/233",
+      "auth_key": "233333"
+    },
+    "deck_log": {
+      "enabled": true,
+      "accesskey": "233",
+      "local": false,
+      "post": "https://mycard.moe/ygopro/analytics/deck/text"
+    },
     "arena_mode": {
       "mode": "entertain",
+      "accesskey": "233",
       "post_score": "https://mycard.moe/ygopro/arena/index.php?c=update",
       "get_score": "https://mycard.moe/ygopro/arena/index.php?c=query&username="
     },

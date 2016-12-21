@@ -111,9 +111,9 @@ roomlist = require './roomlist.js' if settings.modules.enable_websocket_roomlist
 # cache users of mycard login
 users_cache = {}
 
-if settings.modules.mycard_auth and process.env.MYCARD_AUTH_DATABASE
+if settings.modules.mycard.enabled
   pgClient = require('pg').Client
-  pg_client = new pgClient(process.env.MYCARD_AUTH_DATABASE)
+  pg_client = new pgClient(settings.modules.mycard.auth_database)
   pg_query = pg_client.query('SELECT username, id from users')
   pg_query.on 'row', (row) ->
     #log.info "load user", row.username, row.id
@@ -441,14 +441,14 @@ class Room
       log.info 'SCORE', score_array, @start_time
       if score_array.length == 2
         request.post { url : settings.modules.arena_mode.post_score , form : {
-          accesskey: process.env.MYCARD_ARENA_KEY,
+          accesskey: settings.modules.arena_mode.accesskey,
           usernameA: score_array[0].name,
           usernameB: score_array[1].name,
           userscoreA: score_array[0].score,
           userscoreB: score_array[1].score,
           start: @start_time,
           end: moment().format(),
-          arena: if @hostinfo.mode ==1 then 'athletic' else 'entertain' #settings.modules.arena_mode.mode
+          arena: settings.modules.arena_mode.mode
         }}, (error, response, body)=>
           if error
             log.warn 'SCORE POST ERROR', error
@@ -888,7 +888,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   else if !info.pass.length and !settings.modules.enable_random_duel and !settings.modules.enable_windbot
     ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名")
 
-  else if info.pass.length and settings.modules.mycard_auth and info.pass[0...3] != 'AI_' and info.pass[0...3] != 'AI#'
+  else if info.pass.length and settings.modules.mycard.enabled and info.pass[0...3] != 'AI_' and info.pass[0...3] != 'AI#'
     ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE)
     if info.pass.length <= 8
       ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)')
@@ -976,10 +976,10 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
     #TODO: query database directly, like preload.
     request
-      baseUrl: settings.modules.mycard_auth,
+      baseUrl: settings.modules.mycard.auth_base_url,
       url: '/users/' + encodeURIComponent(client.name) + '.json',
       qs:
-        api_key: process.env.MYCARD_AUTH_KEY,
+        api_key: ettings.modules.mycard.auth_key,
         api_username: client.name,
         skip_track_visit: true
       json: true
@@ -1334,16 +1334,16 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       room.player_datas.push ip: player.ip, name: player.name
   if settings.modules.tips
     ygopro.stoc_send_random_tip(client)
-  if (settings.modules.enable_deck_log or settings.modules.post_deck) and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
-    deck_text = '#ygosrv233 deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
-    if settings.modules.enable_deck_log
+  if settings.modules.deck_log.enabled and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
+    deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
+    if settings.modules.deck_log.local
       deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_')
-      fs.writeFile 'decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
+      fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
         if err
           log.warn 'DECK SAVE ERROR', err
-    if settings.modules.post_deck
-      request.post { url : settings.modules.post_deck , form : {
-        accesskey: process.env.MYCARD_DECK_KEY,
+    if settings.modules.deck_log.post
+      request.post { url : settings.modules.deck_log.post , form : {
+        accesskey: settings.modules.deck_log.accesskey,
         deck: deck_text,
         playername: client.name,
         arena: if room.hostinfo.mode ==1 then 'athletic' else 'entertain'
@@ -1370,7 +1370,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     when '/help'
       ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client, "/help 显示这个帮助信息")
-      ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字") if !settings.modules.mycard_auth
+      ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字") if !settings.modules.mycard.enabled
       ygopro.stoc_send_chat(client, "/ai 添加一个AI，/ai 角色名 可指定添加的角色") if settings.modules.enable_windbot
       ygopro.stoc_send_chat(client, "/tip 显示一条提示") if settings.modules.tips
 

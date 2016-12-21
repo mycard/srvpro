@@ -160,9 +160,9 @@
 
   users_cache = {};
 
-  if (settings.modules.mycard_auth && process.env.MYCARD_AUTH_DATABASE) {
+  if (settings.modules.mycard.enabled) {
     pgClient = require('pg').Client;
-    pg_client = new pgClient(process.env.MYCARD_AUTH_DATABASE);
+    pg_client = new pgClient(settings.modules.mycard.auth_database);
     pg_query = pg_client.query('SELECT username, id from users');
     pg_query.on('row', function(row) {
       users_cache[row.username] = row.id;
@@ -601,14 +601,14 @@
           request.post({
             url: settings.modules.arena_mode.post_score,
             form: {
-              accesskey: process.env.MYCARD_ARENA_KEY,
+              accesskey: settings.modules.arena_mode.accesskey,
               usernameA: score_array[0].name,
               usernameB: score_array[1].name,
               userscoreA: score_array[0].score,
               userscoreB: score_array[1].score,
               start: this.start_time,
               end: moment().format(),
-              arena: this.hostinfo.mode === 1 ? 'athletic' : 'entertain'
+              arena: settings.modules.arena_mode.mode
             }
           }, (function(_this) {
             return function(error, response, body) {
@@ -1106,7 +1106,7 @@
       client.destroy();
     } else if (!info.pass.length && !settings.modules.enable_random_duel && !settings.modules.enable_windbot) {
       ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名");
-    } else if (info.pass.length && settings.modules.mycard_auth && info.pass.slice(0, 3) !== 'AI_' && info.pass.slice(0, 3) !== 'AI#') {
+    } else if (info.pass.length && settings.modules.mycard.enabled && info.pass.slice(0, 3) !== 'AI_' && info.pass.slice(0, 3) !== 'AI#') {
       ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {
         ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)');
@@ -1201,10 +1201,10 @@
         }
       }
       request({
-        baseUrl: settings.modules.mycard_auth,
+        baseUrl: settings.modules.mycard.auth_base_url,
         url: '/users/' + encodeURIComponent(client.name) + '.json',
         qs: {
-          api_key: process.env.MYCARD_AUTH_KEY,
+          api_key: ettings.modules.mycard.auth_key,
           api_username: client.name,
           skip_track_visit: true
         },
@@ -1642,21 +1642,21 @@
     if (settings.modules.tips) {
       ygopro.stoc_send_random_tip(client);
     }
-    if ((settings.modules.enable_deck_log || settings.modules.post_deck) && client.main && client.main.length && !client.deck_saved && client.ip !== '::ffff:127.0.0.1') {
-      deck_text = '#ygosrv233 deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n';
-      if (settings.modules.enable_deck_log) {
+    if (settings.modules.deck_log.enabled && client.main && client.main.length && !client.deck_saved && client.ip !== '::ffff:127.0.0.1') {
+      deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n';
+      if (settings.modules.deck_log.local) {
         deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_');
-        fs.writeFile('decks_save\/' + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
+        fs.writeFile(settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
           if (err) {
             return log.warn('DECK SAVE ERROR', err);
           }
         });
       }
-      if (settings.modules.post_deck) {
+      if (settings.modules.deck_log.post) {
         request.post({
-          url: settings.modules.post_deck,
+          url: settings.modules.deck_log.post,
           form: {
-            accesskey: process.env.MYCARD_DECK_KEY,
+            accesskey: settings.modules.deck_log.accesskey,
             deck: deck_text,
             playername: client.name,
             arena: room.hostinfo.mode === 1 ? 'athletic' : 'entertain'
@@ -1693,7 +1693,7 @@
       case '/help':
         ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助");
         ygopro.stoc_send_chat(client, "/help 显示这个帮助信息");
-        if (!settings.modules.mycard_auth) {
+        if (!settings.modules.mycard.enabled) {
           ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字");
         }
         if (settings.modules.enable_windbot) {
