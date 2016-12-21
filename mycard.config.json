@@ -2,13 +2,15 @@
   "port": 7911,
   "modules": {
     "welcome": "Mycard YGOPro Server",
-    "update": "请更新游戏版本，可在社区手动下载更新包",
-    "tips": "http://mycard.moe/tips.json",
-    "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
-    "enable_windbot": true,
-    "enable_websocket_roomlist": true,
-    "windbot_port": 2399,
-    "spawn_windbot": true,
+    "update": "请更新游戏版本，可在社区(https://ygobbs.com)手动下载更新包",
+    "tips": {
+      "enabled": true,
+      "get": "http://mycard.moe/tips.json"
+    },
+    "dialogues": {
+      "enabled": true,
+      "get": "http://mercury233.me/ygosrv233/dialogues.json"
+    },
     "mycard": {
       "enabled": true,
       "auth_base_url": "https://ygobbs.com",
@@ -28,9 +30,16 @@
       "post_score": "https://mycard.moe/ygopro/arena/index.php?c=update",
       "get_score": "https://mycard.moe/ygopro/arena/index.php?c=query&username="
     },
+    "windbot": {
+      "enabled": true,
+      "botlist": "./windbot/bots.json",
+      "spawn": false,
+      "port": 2399
+    },
     "http": {
       "port": 7922,
       "password": "123456",
+      "websocket_roomlist": true,
       "ssl": {
         "enabled": true,
         "port": 7923,

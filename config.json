@@ -1,34 +1,45 @@
 {
   "port": 7911,
+  "version": 4924,
+  "hostinfo": {
+    "lflist": 0,
+    "rule": 0,
+    "mode": 0,
+    "comment": "rule: 0=OCGONLY, 1=TCGONLY, 2=OT; mode: 0=SINGLE, 1=MATCH, 2=TAG",
+    "enable_priority": false,
+    "no_check_deck": false,
+    "no_shuffle_deck": false,
+    "start_lp": 8000,
+    "start_hand": 5,
+    "draw_count": 1,
+    "time_limit": 180
+  },
   "modules": {
-    "welcome": "YGOPRO Server",
+    "welcome": "Mycard YGOPRO Server",
     "update": "请更新游戏版本",
     "stop": false,
-    "tips": "http://mercury233.me/ygosrv233/tips.json",
-    "dialogues": "http://mercury233.me/ygosrv233/dialogues.json",
-    "enable_random_duel": false,
-    "enable_halfway_watch": true,
-    "enable_cloud_replay": false,
-    "enable_windbot": false,
-    "enable_websocket_roomlist": false,
-    "enable_public_roomlist": false,
-    "redis_port": 6379,
-    "windbot_port": 2399,
-    "spawn_windbot": false,
-    "hang_timeout": 90,
-    "default_version": 4924,
-    "default_room_info": {
-      "lflist": 0,
-      "rule": 0,
-      "mode": 0,
-      "comment": "rule: 0=OCGONLY, 1=TCGONLY, 2=OT; mode: 0=SINGLE, 1=MATCH, 2=TAG",
-      "enable_priority": false,
-      "no_check_deck": false,
-      "no_shuffle_deck": false,
-      "start_lp": 8000,
-      "start_hand": 5,
-      "draw_count": 1,
-      "time_limit": 180
+    "tips": {
+      "enabled": true,
+      "get": false
+    },
+    "dialogues": {
+      "enabled": true,
+      "get": "http://mercury233.me/ygosrv233/dialogues.json"
+    },
+    "random_duel": {
+      "enabled": false,
+      "hang_timeout": 90
+    },
+    "cloud_replay": {
+      "enabled": false,
+      "redis_port": 6379,
+      "enable_halfway_watch": true
+    },
+    "windbot": {
+      "enabled": false,
+      "botlist": "./windbot/bots.json",
+      "spawn": false,
+      "port": 2399
     },
     "mycard": {
       "enabled": false,
@@ -87,6 +98,8 @@
     "http": {
       "port": 7922,
       "password": "123456",
+      "websocket_roomlist": false,
+      "public_roomlist": false,
       "ssl": {
         "enabled": false,
         "port": 7923,
@@ -103,5 +116,17 @@
     "badword_level2": ["死妈", "草你妈"],
     "badword_level3": ["迷奸", "仿真枪"],
     "illegal_id": ["^Lv.\\d+", "^VIP.\\d+"]
+  },
+  "tip": [
+    "欢迎来到本服务器",
+    "本服务器使用萌卡代码搭建"
+  ],
+  "dialogues": {
+    "46986414": [
+      "出来吧，我最强的仆人，黑魔导！"
+    ],
+    "58481572": [
+      "我们来做朋友吧！"
+    ]
   }
 }

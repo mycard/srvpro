@@ -83,10 +83,11 @@ ban_user = (name) ->
   return
 
 try
-  settings.version = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
+  cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
+  nconf.myset(settings, "version", cppversion)
   log.info "ygopro version 0x"+settings.version.toString(16), "(from source code)"
 catch
-  settings.version = settings.modules.default_version
+  #settings.version = settings.version_default
   log.info "ygopro version 0x"+settings.version.toString(16), "(from config)"
 # load the lflist of current date
 settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
@@ -94,20 +95,20 @@ settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').mat
   continue unless date
   {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
 
-if settings.modules.enable_cloud_replay
+if settings.modules.cloud_replay.enabled
   redis = require 'redis'
   zlib = require 'zlib'
-  redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.redis_port
+  redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.cloud_replay.redis_port
   redisdb.on 'error', (err)->
     log.warn err
     return
 
-if settings.modules.enable_windbot
-  settings.modules.windbots = require('./windbot/bots.json').windbots
+if settings.modules.windbot.enabled
+  settings.modules.windbots = require(settings.modules.windbot.botlist).windbots
 
 # 组件
 ygopro = require './ygopro.js'
-roomlist = require './roomlist.js' if settings.modules.enable_websocket_roomlist
+roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
 
 # cache users of mycard login
 users_cache = {}
@@ -189,9 +190,9 @@ ROOM_ban_player = (name, ip, reason, countadd = 1)->
 
 ROOM_find_or_create_by_name = (name, player_ip)->
   uname=name.toUpperCase()
-  if settings.modules.enable_windbot and (uname[0...2] == 'AI' or (!settings.modules.enable_random_duel and uname == ''))
+  if settings.modules.windbot.enabled and (uname[0...2] == 'AI' or (!settings.modules.random_duel.enabled and uname == ''))
     return ROOM_find_or_create_ai(name)
-  if settings.modules.enable_random_duel and (uname == '' or uname == 'S' or uname == 'M' or uname == 'T')
+  if settings.modules.random_duel.enabled and (uname == '' or uname == 'S' or uname == 'M' or uname == 'T')
     return ROOM_find_or_create_random(uname, player_ip)
   if room = ROOM_find_by_name(name)
     return room
@@ -306,7 +307,7 @@ class Room
     @scores = {}
     ROOM_all.push this
 
-    @hostinfo ||= settings.modules.default_room_info
+    @hostinfo ||= settings.hostinfo
     if settings.lflist.length
       if @hostinfo.rule == 1 and @hostinfo.lflist == 0
         @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
@@ -406,7 +407,7 @@ class Room
       @process.stdout.setEncoding('utf8')
       @process.stdout.once 'data', (data)=>
         @established = true
-        roomlist.create(this) if !@private and settings.modules.enable_websocket_roomlist
+        roomlist.create(this) if !@private and settings.modules.http.websocket_roomlist
         @port = parseInt data
         _.each @players, (player)=>
           player.server.connect @port, '127.0.0.1', ->
@@ -457,7 +458,7 @@ class Room
             else
               log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
-    if @player_datas.length and settings.modules.enable_cloud_replay
+    if @player_datas.length and settings.modules.cloud_replay.enabled
       replay_id = @cloud_replay_id
       if @has_ygopro_error
         log_rep_id = true
@@ -500,7 +501,7 @@ class Room
     index = _.indexOf(ROOM_all, this)
     ROOM_all[index] = null unless index == -1
     #ROOM_all.splice(index, 1) unless index == -1
-    roomlist.delete @name if !@private and !@started and @established and settings.modules.enable_websocket_roomlist
+    roomlist.delete @name if !@private and !@started and @established and settings.modules.http.websocket_roomlist
     return
 
   get_playing_player: ->
@@ -520,7 +521,7 @@ class Room
   add_windbot: (botdata)->
     @windbot = botdata
     request
-      url: "http://127.0.0.1:#{settings.modules.windbot_port}/?name=#{encodeURIComponent(botdata.name)}&deck=#{encodeURIComponent(botdata.deck)}&host=127.0.0.1&port=#{settings.port}&dialog=#{encodeURIComponent(botdata.dialog)}&version=#{settings.version}&password=#{encodeURIComponent(@name)}"
+      url: "http://127.0.0.1:#{settings.modules.windbot.port}/?name=#{encodeURIComponent(botdata.name)}&deck=#{encodeURIComponent(botdata.deck)}&host=127.0.0.1&port=#{settings.port}&dialog=#{encodeURIComponent(botdata.dialog)}&version=#{settings.version}&password=#{encodeURIComponent(@name)}"
     , (error, response, body)=>
       if error
         log.warn 'windbot add error', error, this.name
@@ -544,7 +545,7 @@ class Room
         ROOM_players_oppentlist[client.ip] = null
 
     if @established
-      roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
+      roomlist.update(this) if !@private and !@started and settings.modules.http.websocket_roomlist
       client.server.connect @port, '127.0.0.1', ->
         client.server.write buffer for buffer in client.pre_establish_buffers
         client.established = true
@@ -569,7 +570,7 @@ class Room
           ROOM_ban_player(client.name, client.ip, "强退")
       if @players.length and !(@windbot and client.is_host)
         ygopro.stoc_send_chat_to_room this, "#{client.name} 离开了游戏" + if error then ": #{error}" else ''
-        roomlist.update(this) if !@private and !@started and settings.modules.enable_websocket_roomlist
+        roomlist.update(this) if !@private and !@started and settings.modules.http.websocket_roomlist
         #client.room = null
       else
         @process.kill()
@@ -657,7 +658,7 @@ net.createServer (client) ->
     client.destroy()
     return
 
-  if settings.modules.enable_cloud_replay
+  if settings.modules.cloud_replay.enabled
     client.open_cloud_replay= (err, replay)->
       if err or !replay
         ygopro.stoc_die(client, "没有找到录像")
@@ -836,7 +837,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   if settings.modules.stop
     ygopro.stoc_die(client, settings.modules.stop)
     
-  else if info.pass.toUpperCase()=="R" and settings.modules.enable_cloud_replay
+  else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled
     ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE)
     redisdb.lrange client.ip+":replays", 0, 2, (err, result)->
       _.each result, (replay_id,id)->
@@ -857,7 +858,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       client.destroy()
       return), 500
       
-  else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.enable_cloud_replay
+  else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.cloud_replay.enabled
     replay_id=info.pass.split("#")[1]
     if (replay_id>0 and replay_id<=9)
       redisdb.lindex client.ip+":replays", replay_id-1, (err, replay_id)->
@@ -872,7 +873,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       ygopro.stoc_die(client, "没有找到录像")
 
-  else if info.pass.toUpperCase()=="W" and settings.modules.enable_cloud_replay
+  else if info.pass.toUpperCase()=="W" and settings.modules.cloud_replay.enabled
     replay_id=Cloud_replay_ids[Math.floor(Math.random()*Cloud_replay_ids.length)]
     redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
 
@@ -884,7 +885,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     client.destroy()
 
-  else if !info.pass.length and !settings.modules.enable_random_duel and !settings.modules.enable_windbot
+  else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled
     ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名")
 
   else if info.pass.length and settings.modules.mycard.enabled and info.pass[0...3] != 'AI#'
@@ -1055,7 +1056,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else if room.error
       ygopro.stoc_die(client, room.error)
     else if room.started
-      if settings.modules.enable_halfway_watch
+      if settings.modules.cloud_replay.enable_halfway_watch
         client.setTimeout(300000) #连接后超时5分钟
         client.rid = _.indexOf(ROOM_all, room)
         client.is_post_watcher = true
@@ -1112,14 +1113,14 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
     recorder.on 'data', (data)->
       room=ROOM_all[client.rid]
-      return unless room and settings.modules.enable_cloud_replay
+      return unless room and settings.modules.cloud_replay.enabled
       room.recorder_buffers.push data
       return
 
     recorder.on 'error', (error)->
       return
 
-  if settings.modules.enable_halfway_watch and !room.watcher
+  if settings.modules.cloud_replay.enable_halfway_watch and !room.watcher
     room.watcher = watcher = net.connect room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
         name: "the Big Brother"
@@ -1149,7 +1150,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 # 登场台词
 load_dialogues = () ->
   request
-    url: settings.modules.dialogues
+    url: settings.modules.dialogues.get
     json: true
   , (error, response, body)->
     if _.isString body
@@ -1162,7 +1163,7 @@ load_dialogues = () ->
     return
   return
 
-if settings.modules.dialogues
+if settings.modules.dialogues.get
   load_dialogues()
 
 ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
@@ -1224,7 +1225,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       ygopro.stoc_send_chat_to_room(room, "背水一战！", ygopro.constants.COLORS.PINK)
 
   #登场台词
-  if settings.modules.dialogues
+  if settings.modules.dialogues.enabled
     if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING'
       card = buffer.readUInt32LE(1)
       if settings.dialogues[card]
@@ -1289,15 +1290,17 @@ wait_room_start = (room, time)->
 
 #tip
 ygopro.stoc_send_random_tip = (client)->
-  ygopro.stoc_send_chat(client, "Tip: " + settings.tips[Math.floor(Math.random() * settings.tips.length)]) if settings.modules.tips
+  if settings.modules.tips.enabled && settings.tips.length
+    ygopro.stoc_send_chat(client, "Tip: " + settings.tips[Math.floor(Math.random() * settings.tips.length)])
   return
 ygopro.stoc_send_random_tip_to_room = (room)->
-  ygopro.stoc_send_chat_to_room(room, "Tip: " + settings.tips[Math.floor(Math.random() * settings.tips.length)]) if settings.modules.tips
+  if settings.modules.tips.enabled && settings.tips.length
+    ygopro.stoc_send_chat_to_room(room, "Tip: " + settings.tips[Math.floor(Math.random() * settings.tips.length)])
   return
 
 load_tips = ()->
   request
-    url: settings.modules.tips
+    url: settings.modules.tips.get
     json: true
   , (error, response, body)->
     if _.isString body
@@ -1310,7 +1313,7 @@ load_tips = ()->
     return
   return
 
-if settings.modules.tips
+if settings.modules.tips.get
   load_tips()
   setInterval ()->
     for room in ROOM_all when room and room.established
@@ -1324,14 +1327,14 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   unless room.started #first start
     room.started = true
     room.start_time = moment().format()
-    roomlist.delete room.name if settings.modules.enable_websocket_roomlist and not room.private
+    roomlist.delete room.name if settings.modules.http.websocket_roomlist and not room.private
     #room.duels = []
     room.dueling_players = []
     for player in room.players when player.pos != 7
       room.dueling_players[player.pos] = player
       room.scores[player.name] = 0
       room.player_datas.push ip: player.ip, name: player.name
-  if settings.modules.tips
+  if settings.modules.tips.enabled
     ygopro.stoc_send_random_tip(client)
   if settings.modules.deck_log.enabled and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
     deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
@@ -1370,14 +1373,14 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助")
       ygopro.stoc_send_chat(client, "/help 显示这个帮助信息")
       ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字") if !settings.modules.mycard.enabled
-      ygopro.stoc_send_chat(client, "/ai 添加一个AI，/ai 角色名 可指定添加的角色") if settings.modules.enable_windbot
-      ygopro.stoc_send_chat(client, "/tip 显示一条提示") if settings.modules.tips
+      ygopro.stoc_send_chat(client, "/ai 添加一个AI，/ai 角色名 可指定添加的角色") if settings.modules.windbot.enabled
+      ygopro.stoc_send_chat(client, "/tip 显示一条提示") if settings.modules.tips.enabled
 
     when '/tip'
-      ygopro.stoc_send_random_tip(client) if settings.modules.tips
+      ygopro.stoc_send_random_tip(client) if settings.modules.tips.enabled
 
     when '/ai'
-      if settings.modules.enable_windbot
+      if settings.modules.windbot.enabled
         if name = cmd[1]
           windbot = _.sample _.filter settings.modules.windbots, (w)->
             w.name == name or w.deck == name
@@ -1512,7 +1515,7 @@ ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
   return unless room and room.random_type
   if client.is_host
     room.waiting_for_player = room.waiting_for_player2
-  room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's')
+  room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
   return
 
 ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server)->
@@ -1528,7 +1531,7 @@ ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->
     room.waiting_for_player = client
   else
     room.waiting_for_player2 = client
-  room.last_active_time = moment().subtract(settings.modules.hang_timeout - 19, 's')
+  room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
   return
 
 ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
@@ -1551,7 +1554,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return settings.modules.tournament_mode.enabled unless room
-  if settings.modules.enable_cloud_replay and room.random_type
+  if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled
     if client.is_host
@@ -1567,29 +1570,30 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       }
       settings.modules.tournament_mode.duel_log.push duellog
       nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
-    if settings.modules.enable_cloud_replay
+    if settings.modules.cloud_replay.enabled
       ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于本局结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
     return true
   else
     return false
 
-if settings.modules.enable_random_duel
+if settings.modules.random_duel.enabled
   setInterval ()->
     for room in ROOM_all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
-      if time_passed >= settings.modules.hang_timeout
+      if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
         ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机")
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
         room.waiting_for_player.server.destroy()
-      else if time_passed >= (settings.modules.hang_timeout - 20) and not (time_passed % 10)
-        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 已经很久没有操作了，若继续挂机，将于#{settings.modules.hang_timeout - time_passed}秒后被请出房间", ygopro.constants.COLORS.RED)
+      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
+        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 已经很久没有操作了，若继续挂机，将于#{settings.modules.random_duel.hang_timeout - time_passed}秒后被请出房间", ygopro.constants.COLORS.RED)
     return
   , 1000
 
-if settings.modules.spawn_windbot
-  windbot_process = spawn 'mono', ['WindBot.exe', settings.modules.windbot_port], {cwd: 'windbot'}
+# spawn windbot
+if settings.modules.windbot.spawn
+  windbot_process = spawn 'mono', ['WindBot.exe', settings.modules.windbot.port], {cwd: 'windbot'}
   windbot_process.on 'error', (err)->
     log.warn 'WindBot ERROR', err
     return
@@ -1618,7 +1622,7 @@ if settings.modules.http
     pass_validated = u.query.pass == settings.modules.http.password
 
     if u.pathname == '/api/getrooms'
-      if !pass_validated and !settings.modules.enable_public_roomlist
+      if !pass_validated and !settings.modules.http.public_roomlist
         response.writeHead(200)
         response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'))
       else
@@ -1678,12 +1682,12 @@ if settings.modules.http
       else if u.query.loadtips
         load_tips()
         response.writeHead(200)
-        response.end(addCallback(u.query.callback, "['loading tip', '" + settings.modules.tips + "']"))
+        response.end(addCallback(u.query.callback, "['loading tip', '" + settings.modules.tips.get + "']"))
 
       else if u.query.loaddialogues
         load_dialogues()
         response.writeHead(200)
-        response.end(addCallback(u.query.callback, "['loading dialogues', '" + settings.modules.dialogues + "']"))
+        response.end(addCallback(u.query.callback, "['loading dialogues', '" + settings.modules.dialogues.get + "']"))
 
       else if u.query.ban
         ban_user(u.query.ban)
