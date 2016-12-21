@@ -115,7 +115,8 @@
     "badword_level1": ["傻逼", "鸡巴"],
     "badword_level2": ["死妈", "草你妈"],
     "badword_level3": ["迷奸", "仿真枪"],
-    "illegal_id": ["^Lv.\\d+", "^VIP.\\d+"]
+    "illegal_id": ["^Lv\\.-*\\d+\\s*(.*)", "^VIP\\.\\d+\\s*(.*)"],
+    "spam_word": ["——"]
   },
   "tip": [
     "欢迎来到本服务器",

@@ -1040,6 +1040,18 @@
   ygopro.ctos_follow('PLAYER_INFO', true, function(buffer, info, client, server) {
     var name, struct;
     name = info.name.split("$")[0];
+    if (_.any(settings.ban.illegal_id, function(badid) {
+      var matchs, regexp;
+      regexp = new RegExp(badid, 'i');
+      matchs = name.match(regexp);
+      if (matchs) {
+        name = matchs[1];
+        return true;
+      }
+      return false;
+    }, name)) {
+      client.rag = true;
+    }
     struct = ygopro.structs["CTOS_PlayerInfo"];
     struct._setBuff(buffer);
     struct.set("name", name);
@@ -1753,6 +1765,22 @@
         client.abuse_count = client.abuse_count + 4;
         ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED);
       }
+    } else if (client.rag && room.started) {
+      client.rag = false;
+      cancel = true;
+    } else if (msg.length > 100) {
+      log.warn("SPAM WORD", client.name, client.ip, oldmsg);
+      client.abuse_count = client.abuse_count + 2;
+      ygopro.stoc_send_chat(client, "请不要发送垃圾信息！", ygopro.constants.COLORS.RED);
+      cancel = true;
+    } else if (_.any(settings.ban.spam_word, function(badword) {
+      var regexp;
+      regexp = new RegExp(badword, 'i');
+      return msg.match(regexp);
+    }, msg)) {
+      client.abuse_count = client.abuse_count + 2;
+      ygopro.stoc_send_chat(client, "请不要发送垃圾信息！", ygopro.constants.COLORS.RED);
+      cancel = true;
     } else if (_.any(settings.ban.badword_level2, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');
