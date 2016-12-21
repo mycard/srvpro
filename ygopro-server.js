@@ -530,6 +530,14 @@
         this.process = spawn('./ygopro', param, {
           cwd: 'ygopro'
         });
+        this.process.on('error', (function(_this) {
+          return function(err) {
+            _.each(_this.players, function(player) {
+              return ygopro.stoc_die(player, "建立房间失败，请重试");
+            });
+            _this["delete"]();
+          };
+        })(this));
         this.process.on('exit', (function(_this) {
           return function(code) {
             if (!_this.disconnector) {

@@ -400,6 +400,11 @@ class Room
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}
+      @process.on 'error', (err)=>
+        _.each @players, (player)->
+          ygopro.stoc_die(player, "建立房间失败，请重试")
+        this.delete()
+        return
       @process.on 'exit', (code)=>
         @disconnector = 'server' unless @disconnector
         this.delete()
