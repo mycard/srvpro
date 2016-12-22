@@ -1223,7 +1223,7 @@
         baseUrl: settings.modules.mycard.auth_base_url,
         url: '/users/' + encodeURIComponent(client.name) + '.json',
         qs: {
-          api_key: ettings.modules.mycard.auth_key,
+          api_key: settings.modules.mycard.auth_key,
           api_username: client.name,
           skip_track_visit: true
         },

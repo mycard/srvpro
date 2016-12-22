@@ -1,7 +1,7 @@
 {
   "port": 7911,
   "modules": {
-    "welcome": "Mycard YGOPro Server",
+    "welcome": "MyCard YGOPro Server",
     "update": "请更新游戏版本，可在社区(https://ygobbs.com)手动下载更新包",
     "tips": {
       "enabled": true,
