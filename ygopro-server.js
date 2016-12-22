@@ -1333,7 +1333,7 @@
     if (room.welcome) {
       ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE);
     }
-    if (settings.modules.arena_mode.enabled) {
+    if (settings.modules.arena_mode.enabled && client.ip !== '::ffff:127.0.0.1') {
       request({
         url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
         json: true
@@ -1344,7 +1344,6 @@
         } else if (!body || _.isString(body)) {
           log.warn('LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body);
         } else {
-          log.info('LOAD SCORE', client.name, body);
           rank_txt = body.arena_rank > 0 ? "排名第" + body.arena_rank : "暂无排名";
           ygopro.stoc_send_chat(client, client.name + "，你有" + body.exp + "点经验，你的战斗力是" + (Math.round(body.pt)) + "，" + rank_txt + "。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE);
         }
@@ -1663,7 +1662,6 @@
     }
     if (settings.modules.deck_log.enabled && client.main && client.main.length && !client.deck_saved && client.ip !== '::ffff:127.0.0.1') {
       deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n';
-      log.info("DECK LOG START", client.name, room.arena);
       if (settings.modules.deck_log.local) {
         deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_');
         fs.writeFile(settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', function(err) {

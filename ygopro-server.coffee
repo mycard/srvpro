@@ -1096,7 +1096,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome
     ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
-  if settings.modules.arena_mode.enabled #and not client.score_shown
+  if settings.modules.arena_mode.enabled and client.ip != '::ffff:127.0.0.1' #and not client.score_shown
     request
       url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
       json: true
@@ -1106,7 +1106,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       else if !body or _.isString body
         log.warn 'LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body
       else
-        log.info 'LOAD SCORE', client.name, body
+        #log.info 'LOAD SCORE', client.name, body
         rank_txt = if body.arena_rank>0 then "排名第" + body.arena_rank else "暂无排名"
         ygopro.stoc_send_chat(client, "#{client.name}，你有#{body.exp}点经验，你的战斗力是#{Math.round(body.pt)}，#{rank_txt}。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE)
         #client.score_shown = true
@@ -1353,7 +1353,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     ygopro.stoc_send_random_tip(client)
   if settings.modules.deck_log.enabled and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
     deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
-    log.info "DECK LOG START", client.name, room.arena
+    #log.info "DECK LOG START", client.name, room.arena
     if settings.modules.deck_log.local
       deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_')
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
