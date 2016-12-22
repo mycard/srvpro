@@ -1353,6 +1353,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     ygopro.stoc_send_random_tip(client)
   if settings.modules.deck_log.enabled and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
     deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
+    log.info "DECK LOG START", client.name, room.arena
     if settings.modules.deck_log.local
       deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/\//g, '_')
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
