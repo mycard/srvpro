@@ -419,7 +419,7 @@
       this.welcome = '';
       this.scores = {};
       ROOM_all.push(this);
-      this.hostinfo || (this.hostinfo = settings.hostinfo);
+      this.hostinfo || (this.hostinfo = JSON.parse(JSON.stringify(settings.hostinfo)));
       if (settings.lflist.length) {
         if (this.hostinfo.rule === 1 && this.hostinfo.lflist === 0) {
           this.hostinfo.lflist = _.findIndex(settings.lflist, function(list) {

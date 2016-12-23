@@ -307,7 +307,7 @@ class Room
     @scores = {}
     ROOM_all.push this
 
-    @hostinfo ||= settings.hostinfo
+    @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
     if settings.lflist.length
       if @hostinfo.rule == 1 and @hostinfo.lflist == 0
         @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
