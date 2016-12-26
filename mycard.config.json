@@ -28,8 +28,8 @@
       "mode": "entertain",
       "comment": "mode: athletic / entertain",
       "accesskey": "233",
-      "post_score": "https://mycard.moe/ygopro/arena/index.php?c=update",
-      "get_score": "https://mycard.moe/ygopro/arena/index.php?c=query&username="
+      "post_score": "https://mycard.moe/ygopro/api/score",
+      "get_score": "https://mycard.moe/ygopro/api/user?username="
     },
     "windbot": {
       "enabled": true,
