@@ -1,0 +1,29 @@
+{
+  "name": "ygopro-server",
+  "version": "3.0.0",
+  "description": "a server for ygopro",
+  "repository": "github:mycard/ygopro-server",
+  "keywords": [
+    "mycard",
+    "ygopro",
+    "server"
+  ],
+  "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>",
+  "dependencies": {
+    "i18n": "^0.8.3",
+    "node-fetch": "^1.6.3",
+    "ref-array": "^1.2.0",
+    "ref-struct": "^1.1.0",
+    "ws": "^1.1.1"
+  },
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "@types/i18n": "^0.5.20",
+    "@types/node": "^6.0.52",
+    "@types/node-fetch": "^1.6.6",
+    "@types/ref-array": "0.0.28",
+    "@types/ref-struct": "0.0.28",
+    "@types/ws": "0.0.37",
+    "typescript": "^2.1.4"
+  }
+}

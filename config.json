@@ -1,0 +1,133 @@
+{
+  "port": 17911,
+  "version": 4924,
+  "hostinfo": {
+    "lflist": 0,
+    "rule": 0,
+    "mode": 0,
+    "comment": "rule: 0=OCGONLY, 1=TCGONLY, 2=OT; mode: 0=SINGLE, 1=MATCH, 2=TAG",
+    "enable_priority": false,
+    "no_check_deck": false,
+    "no_shuffle_deck": false,
+    "start_lp": 8000,
+    "start_hand": 5,
+    "draw_count": 1,
+    "time_limit": 180
+  },
+  "modules": {
+    "welcome": "MyCard YGOPro Server",
+    "update": "请更新游戏版本",
+    "stop": false,
+    "tips": {
+      "enabled": true,
+      "get": false
+    },
+    "dialogues": {
+      "enabled": true,
+      "get": "http://mercury233.me/ygosrv233/dialogues.json"
+    },
+    "random_duel": {
+      "enabled": false,
+      "hang_timeout": 90
+    },
+    "cloud_replay": {
+      "enabled": false,
+      "redis_port": 6379,
+      "enable_halfway_watch": true
+    },
+    "windbot": {
+      "enabled": false,
+      "botlist": "./windbot/bots.json",
+      "spawn": false,
+      "port": 12399
+    },
+    "mycard": {
+      "enabled": false,
+      "auth_base_url": "https://ygobbs.com",
+      "auth_database": "postgres://233@233.mycard.moe/233",
+      "auth_key": "233333"
+    },
+    "deck_log": {
+      "enabled": false,
+      "accesskey": "233",
+      "local": "./deck_log/",
+      "post": "https://mycard.moe/ygopro/analytics/deck/text"
+    },
+    "arena_mode": {
+      "enabled": false,
+      "mode": "entertain",
+      "comment": "mode: athletic / entertain",
+      "accesskey": "233",
+      "post_score": false,
+      "get_score": false
+    },
+    "tournament_mode": {
+      "enabled": false,
+      "deck_path": "./decks/",
+      "duel_log": [],
+      "password": "123456",
+      "port": 7933
+    },
+    "pre_util": {
+      "enabled": false,
+      "port": 7944,
+      "password": "123456",
+      "git_html_path": "../mercury233.github.io/",
+      "html_path": "../mercury233.github.io/ygosrv233/",
+      "html_filename": "pre.html",
+      "git_db_path": "../ygopro-pre-data/",
+      "db_path": "../ygopro-pre-data/unofficial/",
+      "html_img_rel_path": "pre/pics/",
+      "html_img_thumbnail": "thumbnail/",
+      "ygopro_path": "../ygopro-pre/",
+      "only_show_dbs": {
+        "news.cdb": true,
+        "pre-release.cdb": true
+        },
+      "html_gits": [
+        {
+          "name": "GitHub",
+          "push": ["push", "origin"]
+        },
+        {
+          "name": "Coding",
+          "push": ["push", "coding", "master:master"]
+        }
+      ]
+    },
+    "http": {
+      "port": 17922,
+      "password": "123456",
+      "websocket_roomlist": true,
+      "public_roomlist": false,
+      "ssl": {
+        "enabled": false,
+        "port": 17923,
+        "cert": "ssl/fullchain.pem",
+        "key": "ssl/privkey.pem"
+      }
+    }
+  },
+  "ban": {
+    "banned_user": [],
+    "banned_ip": [],
+    "badword_level0": ["滚", "衮", "操", "草", "艹", "狗", "日", "曰", "妈", "娘", "逼"],
+    "badword_level1": ["傻逼", "鸡巴"],
+    "badword_level2": ["死妈", "草你妈"],
+    "badword_level3": ["迷奸", "仿真枪"],
+    "illegal_id": ["^Lv\\.-*\\d+\\s*(.*)", "^VIP\\.\\d+\\s*(.*)"],
+    "spam_word": ["——"]
+  },
+  "tips": [
+    "欢迎来到本服务器",
+    "本服务器使用萌卡代码搭建"
+  ],
+  "dialogues": {
+    "46986414": [
+      "出来吧，我最强的仆人，黑魔导！"
+    ],
+    "58481572": [
+      "我们来做朋友吧！"
+    ]
+  }
+}
