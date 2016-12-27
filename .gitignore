@@ -53,3 +53,20 @@ jspm_packages
 .yarn-integrity
 
 
+tsconfig.json
+
+jsconfig.json
+coffeelint.json
+.vscode/
+
+password.json
+config.*.json
+
+/ygopro
+/windbot
+/ssl
+/decks/
+/decks_save*
+/node_modules/
+test*
+log*

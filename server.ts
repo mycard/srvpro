@@ -48,7 +48,7 @@ const server = net.createServer((client) => {
 
 server.listen(config.port);
 
-if (config.modules.windbot) {
+if (config.modules.windbot.spawn) {
     let windbot = child_process.spawn('mono', ['WindBot.exe', config.modules.windbot.port], {
         cwd: 'windbot',
         stdio: 'inherit'
