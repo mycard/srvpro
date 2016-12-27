@@ -8,7 +8,7 @@ import assert = require('assert');
 import StructType = require("ref-struct");
 
 export class Protocol extends Transform {
-    buffer = new Buffer(0);
+    buffer = Buffer.alloc(0);
     size = 0;
     follows = new Map<StructType, Function[]>();
 
@@ -18,7 +18,7 @@ export class Protocol extends Transform {
     constructor(types: Map<number, StructType>) {
         super();
         this.types = types;
-        this.types_reverse = new Map(<[StructType, number][]>Array.from(types).map(([key, value]) => [value, key]));
+        this.types_reverse = new Map(Array.from(types).map(([key, value]) => <[StructType, number]>[value, key]));
     }
 
     follow(proto, callback) {
@@ -36,7 +36,7 @@ export class Protocol extends Transform {
             throw 'send unknown proto'
         }
         let buffer = data['ref.buffer'];
-        let length_buffer = new Buffer(2);
+        let length_buffer = Buffer.alloc(2);
         length_buffer.writeUInt16LE(buffer.length + 1, 0);
         let id_buffer = Buffer.from([id]);
         this.push(length_buffer);

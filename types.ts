@@ -54,7 +54,7 @@ export const ERROR_MSG = StructType({
 });
 
 export interface ERROR_MSG {
-    msg: number
+    msg: ERRMSG
     code: number
 }
 
@@ -110,12 +110,12 @@ export enum COLORS {
     DARKGRAY = 19
 }
 
-export const STOC = new Map(<[number, StructType][]>Object.entries({
+export const STOC = new Map(Object.entries({
     2: ERROR_MSG,
     25: STOC_CHAT
-}).map(([key, value]) => [parseInt(key), value]));
+}).map(([key, value]) => <[number, StructType]>[parseInt(key), value]));
 
-export const CTOS = new Map<number, StructType>(<[number, StructType][]>Object.entries({
+export const CTOS = new Map(Object.entries({
     16: PLAYER_INFO,
     18: JOIN_GAME
-}).map(([key, value]) => [parseInt(key), value]));
+}).map(([key, value]) => <[number, StructType]>[parseInt(key), value]));

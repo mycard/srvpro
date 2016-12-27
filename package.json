@@ -9,6 +9,10 @@
     "server"
   ],
   "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>",
+  "scripts": {
+    "build": "tsc",
+    "start": "node server.js"
+  },
   "dependencies": {
     "i18n": "^0.8.3",
     "node-fetch": "^1.6.3",
