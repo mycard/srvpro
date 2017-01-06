@@ -63,7 +63,10 @@
     },
     "tournament_mode": {
       "enabled": false,
+      "deck_check": true,
       "deck_path": "./decks/",
+      "replay_safe": true,
+      "replay_path": "./replays/",
       "duel_log": [],
       "password": "123456",
       "port": 7933

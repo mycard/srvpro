@@ -313,7 +313,7 @@ class Room
         @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
     else
       @hostinfo.lflist =  -1
-    @hostinfo.replay_mode = if settings.modules.tournament_mode.enabled then 1 else 0
+    @hostinfo.replay_mode = if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe then 1 else 0
 
     if name[0...2] == 'M#'
       @hostinfo.mode = 1
@@ -1496,7 +1496,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
     if client.is_host
       room.waiting_for_player = room.waiting_for_player2
     room.last_active_time = moment()
-  else if !room.started and room.hostinfo.mode == 1 and settings.modules.tournament_mode.enabled
+  else if !room.started and room.hostinfo.mode == 1 and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.deck_check
     struct = ygopro.structs["deck"]
     struct._setBuff(buffer)
     struct.set("mainc", 1)
@@ -1586,23 +1586,32 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return settings.modules.tournament_mode.enabled unless room
+  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe unless room
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
-  if settings.modules.tournament_mode.enabled
+  if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
     if client.is_host
+      dueltime=moment().format('YYYY-MM-DD HH:mm:ss')
+      replay_filename=dueltime
+      for player,i in room.dueling_players
+        replay_filename=replay_filename + (if i > 0 then " VS " else " ") + player.name
+      replay_filename=replay_filename.replace(/[\/\\\?\*]/g, '_')+".yrp"
       duellog = {
-        time: moment().format('YYYY-MM-DD HH:mm:ss'),
+        time: dueltime,
         name: room.name,
         roomid: room.port.toString(),
         cloud_replay_id: "R#"+room.cloud_replay_id,
+        replay_filename: replay_filename,
         players: (for player in room.dueling_players
           name: player.name,
           winner: player.pos == room.winner
         )
       }
-      settings.modules.tournament_mode.duel_log.push duellog
+      settings.modules.tournament_mode.duel_log.unshift duellog
       nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
+      fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
+        if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
+      )
     if settings.modules.cloud_replay.enabled
       ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于本局结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
     return true
@@ -1675,14 +1684,31 @@ if settings.modules.http
         response.end(addCallback(u.query.callback, roomsjson))
 
     else if u.pathname == '/api/duellog' and settings.modules.tournament_mode.enabled
-      if !pass_validated
+      if !(u.query.pass == settings.modules.tournament_mode.password)
         response.writeHead(200)
-        response.end("密码错误")
+        response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
         return
       else
         response.writeHead(200)
-        duellog = JSON.stringify settings.modules.tournament_mode.duel_log
+        duellog = JSON.stringify settings.modules.tournament_mode.duel_log, null, 2
         response.end(addCallback(u.query.callback, duellog))
+
+    else if _.startsWith(u.pathname, '/api/replay') and settings.modules.tournament_mode.enabled
+      if !(u.query.pass == settings.modules.tournament_mode.password)
+        response.writeHead(403)
+        response.end("密码错误")
+        return
+      else
+        getpath=u.pathname.split("/")
+        filename=decodeURIComponent(getpath.pop())
+        fs.readFile(settings.modules.tournament_mode.replay_path + filename, (error, buffer)->
+          if error
+            response.writeHead(404)
+            response.end("未找到文件 " + filename)
+          else
+            response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
+            response.end(buffer)
+        )
 
     else if u.pathname == '/api/message'
       if !pass_validated

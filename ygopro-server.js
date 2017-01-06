@@ -429,7 +429,7 @@
       } else {
         this.hostinfo.lflist = -1;
       }
-      this.hostinfo.replay_mode = settings.modules.tournament_mode.enabled ? 1 : 0;
+      this.hostinfo.replay_mode = settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe ? 1 : 0;
       if (name.slice(0, 2) === 'M#') {
         this.hostinfo.mode = 1;
       } else if (name.slice(0, 2) === 'T#') {
@@ -1856,7 +1856,7 @@
         room.waiting_for_player = room.waiting_for_player2;
       }
       room.last_active_time = moment();
-    } else if (!room.started && room.hostinfo.mode === 1 && settings.modules.tournament_mode.enabled) {
+    } else if (!room.started && room.hostinfo.mode === 1 && settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.deck_check) {
       struct = ygopro.structs["deck"];
       struct._setBuff(buffer);
       struct.set("mainc", 1);
@@ -1978,27 +1978,36 @@
   });
 
   ygopro.stoc_follow('REPLAY', true, function(buffer, info, client, server) {
-    var duellog, player, room;
+    var duellog, dueltime, i, k, len, player, ref, replay_filename, room;
     room = ROOM_all[client.rid];
     if (!room) {
-      return settings.modules.tournament_mode.enabled;
+      return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe;
     }
     if (settings.modules.cloud_replay.enabled && room.random_type) {
       Cloud_replay_ids.push(room.cloud_replay_id);
     }
-    if (settings.modules.tournament_mode.enabled) {
+    if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
       if (client.is_host) {
+        dueltime = moment().format('YYYY-MM-DD HH:mm:ss');
+        replay_filename = dueltime;
+        ref = room.dueling_players;
+        for (i = k = 0, len = ref.length; k < len; i = ++k) {
+          player = ref[i];
+          replay_filename = replay_filename + (i > 0 ? " VS " : " ") + player.name;
+        }
+        replay_filename = replay_filename.replace(/[\/\\\?\*]/g, '_') + ".yrp";
         duellog = {
-          time: moment().format('YYYY-MM-DD HH:mm:ss'),
+          time: dueltime,
           name: room.name,
           roomid: room.port.toString(),
           cloud_replay_id: "R#" + room.cloud_replay_id,
+          replay_filename: replay_filename,
           players: (function() {
-            var k, len, ref, results;
-            ref = room.dueling_players;
+            var l, len1, ref1, results;
+            ref1 = room.dueling_players;
             results = [];
-            for (k = 0, len = ref.length; k < len; k++) {
-              player = ref[k];
+            for (l = 0, len1 = ref1.length; l < len1; l++) {
+              player = ref1[l];
               results.push({
                 name: player.name,
                 winner: player.pos === room.winner
@@ -2007,8 +2016,13 @@
             return results;
           })()
         };
-        settings.modules.tournament_mode.duel_log.push(duellog);
+        settings.modules.tournament_mode.duel_log.unshift(duellog);
         nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log);
+        fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, function(err) {
+          if (err) {
+            return log.warn("SAVE REPLAY ERROR", replay_filename, err);
+          }
+        });
       }
       if (settings.modules.cloud_replay.enabled) {
         ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id + "。将于本局结束后可播放。", ygopro.constants.COLORS.BABYBLUE);
@@ -2068,7 +2082,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var duellog, k, len, parseQueryString, pass_validated, player, room, roomsjson, u;
+      var duellog, filename, getpath, k, len, parseQueryString, pass_validated, player, room, roomsjson, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
@@ -2116,14 +2130,35 @@
           response.end(addCallback(u.query.callback, roomsjson));
         }
       } else if (u.pathname === '/api/duellog' && settings.modules.tournament_mode.enabled) {
-        if (!pass_validated) {
+        if (!(u.query.pass === settings.modules.tournament_mode.password)) {
           response.writeHead(200);
-          response.end("密码错误");
+          response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"));
           return;
         } else {
           response.writeHead(200);
-          duellog = JSON.stringify(settings.modules.tournament_mode.duel_log);
+          duellog = JSON.stringify(settings.modules.tournament_mode.duel_log, null, 2);
           response.end(addCallback(u.query.callback, duellog));
+        }
+      } else if (_.startsWith(u.pathname, '/api/replay') && settings.modules.tournament_mode.enabled) {
+        if (!(u.query.pass === settings.modules.tournament_mode.password)) {
+          response.writeHead(403);
+          response.end("密码错误");
+          return;
+        } else {
+          getpath = u.pathname.split("/");
+          filename = decodeURIComponent(getpath.pop());
+          fs.readFile(settings.modules.tournament_mode.replay_path + filename, function(error, buffer) {
+            if (error) {
+              response.writeHead(404);
+              return response.end("未找到文件 " + filename);
+            } else {
+              response.writeHead(200, {
+                "Content-Type": "application/octet-stream",
+                "Content-Disposition": "attachment"
+              });
+              return response.end(buffer);
+            }
+          });
         }
       } else if (u.pathname === '/api/message') {
         if (!pass_validated) {
