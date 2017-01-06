@@ -11,12 +11,15 @@ config.*.json
 /decks/
 /decks_save*
 /node_modules/
+/ssl
 
 test*
 *.heapsnapshot
 *.tmp
 *.bak
 *.log
+
+*.map
 
 Thumbs.db
 ehthumbs.db
