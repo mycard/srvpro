@@ -1359,7 +1359,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
         if err
           log.warn 'DECK SAVE ERROR', err
-    if settings.modules.deck_log.post and room.arena
+    if settings.modules.deck_log.post and (room.arena or not settings.modules.arena_mode.enabled)
       request.post { url : settings.modules.deck_log.post , form : {
         accesskey: settings.modules.deck_log.accesskey,
         deck: deck_text,

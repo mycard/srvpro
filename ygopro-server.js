@@ -1670,7 +1670,7 @@
           }
         });
       }
-      if (settings.modules.deck_log.post && room.arena) {
+      if (settings.modules.deck_log.post && (room.arena || !settings.modules.arena_mode.enabled)) {
         request.post({
           url: settings.modules.deck_log.post,
           form: {
