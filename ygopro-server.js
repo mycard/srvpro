@@ -803,7 +803,6 @@
         connect_count--;
       }
       ROOM_connected_ip[client.ip] = connect_count;
-      tribute(client);
       if (!client.closed) {
         client.closed = true;
         if (room) {
@@ -820,7 +819,6 @@
         connect_count--;
       }
       ROOM_connected_ip[client.ip] = connect_count;
-      tribute(client);
       if (!client.closed) {
         client.closed = error;
         if (room) {
@@ -835,7 +833,6 @@
     server.on('close', function(had_error) {
       var room;
       room = ROOM_all[client.rid];
-      tribute(server);
       if (room) {
         room.disconnector = 'server';
       }
@@ -850,7 +847,6 @@
     server.on('error', function(error) {
       var room;
       room = ROOM_all[client.rid];
-      tribute(server);
       if (room) {
         room.disconnector = 'server';
       }

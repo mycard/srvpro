@@ -608,7 +608,7 @@ net.createServer (client) ->
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
     #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
-    tribute(client)
+    #tribute(client)
     unless client.closed
       client.closed = true
       room.disconnect(client) if room
@@ -623,7 +623,7 @@ net.createServer (client) ->
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
     #log.info "err disconnect", client.ip, ROOM_connected_ip[client.ip]
-    tribute(client)
+    #tribute(client)
     unless client.closed
       client.closed = error
       room.disconnect(client, error) if room
@@ -638,7 +638,7 @@ net.createServer (client) ->
     #log.info "server closed", client.name, had_error
     room=ROOM_all[client.rid]
     #log.info "server close", client.ip, ROOM_connected_ip[client.ip]
-    tribute(server)
+    #tribute(server)
     room.disconnector = 'server' if room
     server.closed = true unless server.closed
     unless client.closed
@@ -650,7 +650,7 @@ net.createServer (client) ->
     #log.info "server error", client.name, error
     room=ROOM_all[client.rid]
     #log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
-    tribute(server)
+    #tribute(server)
     room.disconnector = 'server' if room
     server.closed = error
     unless client.closed
