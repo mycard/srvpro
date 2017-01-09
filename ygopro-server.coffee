@@ -206,7 +206,7 @@ ROOM_find_or_create_random = (type, player_ip)->
     return player_ip == bannedplayer.ip
   if bannedplayer
     if bannedplayer.count > 6 and moment() < bannedplayer.time
-      return {"error": "因为您近期在游戏中多次#{bannedplayer.reasons.join('、')}，您已被禁止使用随机对战功能，将在#{moment(bannedplayer.time).fromNow(true)}后解封"}
+      return {"error": "${random_banned_part1}#{bannedplayer.reasons.join('、')}${random_banned_part2}#{moment(bannedplayer.time).fromNow(true)}${random_banned_part3}"}
     if bannedplayer.count > 3 and moment() < bannedplayer.time and bannedplayer.need_tip
       bannedplayer.need_tip = false
       return {"error": "因为您近期在游戏中#{bannedplayer.reasons.join('、')}，在#{moment(bannedplayer.time).fromNow(true)}内您随机对战时只能遇到其他违规玩家"}
