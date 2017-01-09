@@ -52,7 +52,7 @@
     "exp_value_part4": ". These points may be reset after officla launch.",
     "lp_low_level1": "お前のライフはもうまるで风前の灯火！",
     "lp_low_level2": "*Low LP Alert*",
-    "zombie_player": "Please begin.",
+    "away_from_keyboard": "Please begin, your opponent is waiting.",
     "kicked_by_player": "removed from the game",
     "kicked_by_system_count_down": "seconds before the host being removed for not starting the game.",
     "chat_order_main": "Mycard YGOPro Server function list",
@@ -82,6 +82,9 @@
     "no_action_warn_part2": " seconds",
     "incorrect_password": "incorrect password",
     "file_not_found": "file not found "
+    "banned_duel_part1": "Recently, you have committed",
+    "banned_duel_part2": ", therefore you will only meet players with similar offence within ",
+    "banned_duel_part3": "."
   },
   "zh-cn": {
     "kicked_by_system": "被系统请出了房间",
@@ -136,7 +139,7 @@
     "exp_value_part4": "。正式上线前这些积分可能被重置",
     "lp_low_level1": "你的生命已经如风中残烛了！",
     "lp_low_level2": "背水一战！",
-    "zombie_player": "挂房间",
+    "away_from_keyboard": "挂房间",
     "kicked_by_player": "被请出了房间",
     "kicked_by_system_count_down": "秒后房主若不开始游戏将被请出房间",
     "chat_order_main": "Mycard YGOPro Server 指令帮助",
@@ -152,7 +155,7 @@
     "chat_warn_level3": "请不要发送垃圾信息！",
     "chat_warn_level4": "请使用文明用语！",
     "banned_chat_level3": "已被禁言！",
-    "chat_bad": "发言违规",
+    "chat_inappropriate": "发言违规",
     "deck_correct_part1": "成功使用卡组",
     "deck_correct_part2": "参加比赛。",
     "deck_incorrect_part1": "您的卡组与报名卡组",
@@ -165,6 +168,9 @@
     "no_action_warn_part1": "已经很久没有操作了，若继续挂机，将于",
     "no_action_warn_part2": "秒后被请出房间",
     "incorrect_password": "密码错误",
-    "file_not_found": "未找到文件 "
+    "file_not_found": "未找到文件 ",
+    "banned_duel_part1": "因为您近期在游戏中",
+    "banned_duel_part2": "，在",
+    "banned_duel_part3": "内您随机对战时只能遇到其他违规玩家。"
   }
 }
