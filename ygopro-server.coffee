@@ -212,7 +212,7 @@ ROOM_find_or_create_random = (type, player_ip)->
       return {"error": "因为您近期在游戏中#{bannedplayer.reasons.join('、')}，在#{moment(bannedplayer.time).fromNow(true)}内您随机对战时只能遇到其他违规玩家"}
     else if bannedplayer.need_tip
       bannedplayer.need_tip = false
-      return {"error": "系统检测到您近期在游戏中#{bannedplayer.reasons.join('、')}，若您违规超过3次，将受到惩罚"}
+      return {"error": "${random_warn_part1}#{bannedplayer.reasons.join('、')}${random_warn_part2}"}
     else if bannedplayer.count > 2
       bannedplayer.need_tip = true
   max_player = if type == 'T' then 4 else 2
@@ -254,14 +254,14 @@ ROOM_find_or_create_ai = (name)->
     windbot = _.sample _.filter settings.modules.windbots, (w)->
       w.name == ainame or w.deck == ainame
     if !windbot
-      return { "error": "未找到该AI角色或卡组" }
+      return { "error": "${windbot_deck_not_found}" }
     name = name + ',' + Math.floor(Math.random() * 100000)
   else
     windbot = _.sample settings.modules.windbots
     name = name + '#' + Math.floor(Math.random() * 100000)
   if name.replace(/[^\x00-\xff]/g,"00").length>20
     log.info "long ai name", name
-    return { "error": "AI房间名过长，请在建立房间后输入 /ai 来添加AI" }
+    return { "error": "${windbot_name_too_long}" }
   result = new Room(name)
   result.windbot = windbot
   result.private = true
