@@ -102,7 +102,7 @@
             bad_ip = player.ip;
             ROOM_bad_ip[bad_ip] = 99;
             settings.ban.banned_ip.push(player.ip);
-            ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
+            ygopro.stoc_send_chat_to_room(room, player.name + "${kicked_by_system}", ygopro.constants.COLORS.RED);
             player.destroy();
             continue;
           }
@@ -310,20 +310,20 @@
       return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated);
     });
     if (result) {
-      result.welcome = '对手已经在等你了，开始决斗吧！';
+      result.welcome = '${random_duel_enter_room_waiting}';
     } else if (get_memory_usage() < 90) {
       type = type ? type : 'S';
       name = type + ',RANDOM#' + Math.floor(Math.random() * 100000);
       result = new Room(name);
       result.random_type = type;
       result.max_player = max_player;
-      result.welcome = '已建立随机对战房间，正在等待对手！';
+      result.welcome = '${random_duel_enter_room_new}';
       result.deprecated = playerbanned;
     } else {
       return null;
     }
     if (result.random_type === 'M') {
-      result.welcome = result.welcome + '\n您进入了比赛模式的房间，我们推荐使用竞技卡组！';
+      result.welcome = result.welcome + '\nrandom_duel_enter_room_match';
     }
     return result;
   };
@@ -1060,6 +1060,10 @@
     struct.set("name", name);
     buffer = struct.buffer;
     client.name = name;
+    client.lang = settings.modules.lang;
+    if (name === "P233") {
+      client.lang = "en-us";
+    }
     return false;
   });
 

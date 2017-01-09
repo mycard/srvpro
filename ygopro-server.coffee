@@ -77,7 +77,7 @@ ban_user = (name) ->
         bad_ip = player.ip
         ROOM_bad_ip[bad_ip]=99
         settings.ban.banned_ip.push(player.ip)
-        ygopro.stoc_send_chat_to_room(room, "#{player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
+        ygopro.stoc_send_chat_to_room(room, "#{player.name}${kicked_by_system}", ygopro.constants.COLORS.RED)
         player.destroy()
         continue
   return
@@ -224,7 +224,7 @@ ROOM_find_or_create_random = (type, player_ip)->
     (room.get_host() == null or room.get_host().ip != ROOM_players_oppentlist[player_ip]) and
     (playerbanned == room.deprecated)
   if result
-    result.welcome = '对手已经在等你了，开始决斗吧！'
+    result.welcome = '${random_duel_enter_room_waiting}'
     #log.info 'found room', player_name
   else if get_memory_usage() < 90
     type = if type then type else 'S'
@@ -232,12 +232,12 @@ ROOM_find_or_create_random = (type, player_ip)->
     result = new Room(name)
     result.random_type = type
     result.max_player = max_player
-    result.welcome = '已建立随机对战房间，正在等待对手！'
+    result.welcome = '${random_duel_enter_room_new}'
     result.deprecated = playerbanned
     #log.info 'create room', player_name, name
   else
     return null
-  if result.random_type=='M' then result.welcome = result.welcome + '\n您进入了比赛模式的房间，我们推荐使用竞技卡组！'
+  if result.random_type=='M' then result.welcome = result.welcome + '\nrandom_duel_enter_room_match'
   return result
 
 ROOM_find_or_create_ai = (name)->
@@ -843,6 +843,10 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   struct.set("name", name)
   buffer = struct.buffer
   client.name = name
+
+  client.lang=settings.modules.lang
+  if name == "P233"
+    client.lang="en-us"
   return false
 
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->

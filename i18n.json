@@ -1,0 +1,14 @@
+{
+  "en-us": {
+    "kicked_by_system": " is kicked by system.",
+    "random_duel_enter_room_waiting": "Your opponent is waiting for you, start duel now!",
+    "random_duel_enter_room_new": "entered new random duel room",
+    "random_duel_enter_room_match": "match mode, please use powerful deck"
+  },
+  "zh-cn": {
+    "kicked_by_system": " 被系统请出了房间",
+    "random_duel_enter_room_waiting": "对手已经在等你了，开始决斗吧！",
+    "random_duel_enter_room_new": "已建立随机对战房间，正在等待对手！",
+    "random_duel_enter_room_match": "您进入了比赛模式的房间，我们推荐使用竞技卡组！"
+  }
+}
