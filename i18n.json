@@ -1,11 +1,11 @@
 {
   "en-us": {
-    "kicked_by_system": " is kicked by system.",
-    "random_duel_enter_room_waiting": "Your opponent is waiting for you, start duel now!",
-    "random_duel_enter_room_new": "entered new random duel room",
-    "random_duel_enter_room_match": "match mode, please use powerful deck",
-    "random_banned_part1": "You had been banned to use random duel because ",
-    "random_banned_part2": ". The ban will last until ",
+    "kicked_by_system": " been removed from the game.",
+    "random_duel_enter_room_waiting": "Your opponent is already waiting for you, start now!",
+    "random_duel_enter_room_new": "Game created, waiting for random opponent.",
+    "random_duel_enter_room_match": "Match mode, better use competitive decks!",
+    "random_banned_part1": "You have been banned from the game due to ",
+    "random_banned_part2": ", it will last until ",
     "random_banned_part3": ".",
     "random_warn_part1": "The system detects that recently you had",
     "random_warn_part2": ", you will be penalized after 3 offences",
