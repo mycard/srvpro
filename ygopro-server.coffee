@@ -144,25 +144,6 @@ get_memory_usage = ()->
     percentUsed = 0
   return percentUsed
 
-# 定时清理关闭的连接
-# the server write data directly to the socket object
-# so this is a dumb way to clean data
-Graveyard = []
-
-tribute = (socket) ->
-  setTimeout ((socket)-> Graveyard.push(socket);return), 3000, socket
-  return
-
-setInterval ()->
-  for fuck,i in Graveyard
-    Graveyard[i].destroy() if Graveyard[i]
-    for you,j in Graveyard[i]
-      Graveyard[i][j] = null
-    Graveyard[i] = null
-  Graveyard = []
-  return
-, 3000
-
 Cloud_replay_ids = []
 
 ROOM_all = []
@@ -608,7 +589,6 @@ net.createServer (client) ->
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
     #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
-    #tribute(client)
     unless client.closed
       client.closed = true
       room.disconnect(client) if room
@@ -623,7 +603,6 @@ net.createServer (client) ->
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
     #log.info "err disconnect", client.ip, ROOM_connected_ip[client.ip]
-    #tribute(client)
     unless client.closed
       client.closed = error
       room.disconnect(client, error) if room
@@ -638,7 +617,6 @@ net.createServer (client) ->
     #log.info "server closed", client.name, had_error
     room=ROOM_all[client.rid]
     #log.info "server close", client.ip, ROOM_connected_ip[client.ip]
-    #tribute(server)
     room.disconnector = 'server' if room
     server.closed = true unless server.closed
     unless client.closed
@@ -650,7 +628,6 @@ net.createServer (client) ->
     #log.info "server error", client.name, error
     room=ROOM_all[client.rid]
     #log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
-    #tribute(server)
     room.disconnector = 'server' if room
     server.closed = error
     unless client.closed
@@ -1370,8 +1347,8 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
         else
           if response.statusCode != 200
             log.warn 'DECK POST FAIL', response.statusCode, client.name, body
-          else
-            log.info 'DECK POST OK', response.statusCode, client.name, body
+          #else
+            #log.info 'DECK POST OK', response.statusCode, client.name, body
         return
     client.deck_saved = true
   return
