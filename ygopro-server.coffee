@@ -237,7 +237,7 @@ ROOM_find_or_create_random = (type, player_ip)->
     #log.info 'create room', player_name, name
   else
     return null
-  if result.random_type=='M' then result.welcome = result.welcome + '\nrandom_duel_enter_room_match'
+  if result.random_type=='M' then result.welcome = result.welcome + '\n${random_duel_enter_room_match}'
   return result
 
 ROOM_find_or_create_ai = (name)->
