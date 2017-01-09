@@ -35,7 +35,7 @@
     "enter_correct_user": "Please enter the correct ID",
     "client_overload": "Too many clients running at the moment! ",
     "banned_ip_login": "You have been banned.",
-    "banned_user_login": "You have been banned."
+    "banned_user_login": "You have been banned.",
     "bad_name_level3": "Your ID contains illegal characters.",
     "bad_name_level2": "Your ID contains illegal characters.",
     "bad_name_level1": "Your ID contains inappropriate langauge.",
