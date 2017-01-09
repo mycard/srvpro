@@ -1,12 +1,12 @@
 {
   "en-us": {
-    "kicked_by_system": " is kicked by system.",
-    "random_duel_enter_room_waiting": "Your opponent is waiting for you, start duel now!",
-    "random_duel_enter_room_new": "entered new random duel room",
-    "random_duel_enter_room_match": "match mode, please use powerful deck",
-    "random_banned_part1": "You had been banned to use random duel because ",
-    "random_banned_part2": ". The ban will last until ",
-    "random_banned_part3": "."
+    "kicked_by_system": " been removed from the game.",
+    "random_duel_enter_room_waiting": "Your opponent is already waiting for you, start now!",
+    "random_duel_enter_room_new": "Game created, waiting for random opponent.",
+    "random_duel_enter_room_match": "Match mode, better use competitive decks!",
+    "random_banned_part1": "You have been banned from the game due to ",
+    "random_banned_part2": "{, it will last until ",
+    "random_banned_part3": ".",
     "random_warn_part1": "The system detects that recently you had",
     "random_warn_part2": ", you will be penalized after 3 offences",
     "windbot_deck_not_found": "Oops, AI or Deck not found",
@@ -90,7 +90,7 @@
     "random_duel_enter_room_match": "您进入了比赛模式的房间，我们推荐使用竞技卡组！",
     "random_banned_part1": "因为您近期在游戏中多次",
     "random_banned_part2": "，您已被禁止使用随机对战功能，将在",
-    "random_banned_part3": "后解封"
+    "random_banned_part3": "后解封",
     "random_warn_part1": "系统检测到您近期在游戏中",
     "random_warn_part2": "，若您违规超过3次，将受到惩罚",
     "windbot_deck_not_found": "未找到该AI角色或卡组",
