@@ -77,7 +77,7 @@ ban_user = (name) ->
         bad_ip = player.ip
         ROOM_bad_ip[bad_ip]=99
         settings.ban.banned_ip.push(player.ip)
-        ygopro.stoc_send_chat_to_room(room, "#{player.name}${kicked_by_system}", ygopro.constants.COLORS.RED)
+        ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         player.destroy()
         continue
   return
@@ -402,7 +402,7 @@ class Room
       @process = spawn './ygopro', param, {cwd: 'ygopro'}
       @process.on 'error', (err)=>
         _.each @players, (player)->
-          ygopro.stoc_die(player, "建立房间失败，请重试")
+          ygopro.stoc_die(player, "${duel_room_new_failed}")
         this.delete()
         return
       @process.on 'exit', (code)=>
@@ -434,7 +434,7 @@ class Room
         @has_ygopro_error = true
         return
     catch
-      @error = "建立房间失败，请重试"
+      @error = "${duel_room_new_failed}"
   delete: ->
     return if @deleted
     #log.info 'room-delete', this.name, ROOM_all.length
@@ -530,7 +530,7 @@ class Room
     , (error, response, body)=>
       if error
         log.warn 'windbot add error', error, this.name
-        ygopro.stoc_send_chat_to_room(this, "添加AI失败，可尝试输入 /ai 重新添加", ygopro.constants.COLORS.RED)
+        ygopro.stoc_send_chat_to_room(this, "${add_windbot_failed}", ygopro.constants.COLORS.RED)
       #else
         #log.info "windbot added"
       return
@@ -560,7 +560,7 @@ class Room
 
   disconnect: (client, error)->
     if client.is_post_watcher
-      ygopro.stoc_send_chat_to_room this, "#{client.name} 退出了观战" + if error then ": #{error}" else ''
+      ygopro.stoc_send_chat_to_room this, "#{client.name} ${quit_watch}" + if error then ": #{error}" else ''
       index = _.indexOf(@watchers, client)
       @watchers.splice(index, 1) unless index == -1
       #client.room = null
@@ -572,9 +572,9 @@ class Room
         @finished = true
         @scores[client.name] = -1
         if @random_type
-          ROOM_ban_player(client.name, client.ip, "强退")
+          ROOM_ban_player(client.name, client.ip, "${flee}")
       if @players.length and !(@windbot and client.is_host)
-        ygopro.stoc_send_chat_to_room this, "#{client.name} 离开了游戏" + if error then ": #{error}" else ''
+        ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
         roomlist.update(this) if !@private and !@started and settings.modules.http.websocket_roomlist
         #client.room = null
       else
@@ -642,7 +642,7 @@ net.createServer (client) ->
     room.disconnector = 'server' if room
     server.closed = true unless server.closed
     unless client.closed
-      ygopro.stoc_send_chat(client, "服务器关闭了连接", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send_chat(client, "${server_closed}", ygopro.constants.COLORS.RED)
       client.destroy()
     return
 
@@ -654,7 +654,7 @@ net.createServer (client) ->
     room.disconnector = 'server' if room
     server.closed = error
     unless client.closed
-      ygopro.stoc_send_chat(client, "服务器错误: #{error}", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send_chat(client, "${server_error}: #{error}", ygopro.constants.COLORS.RED)
       client.destroy()
     return
   
@@ -666,17 +666,17 @@ net.createServer (client) ->
   if settings.modules.cloud_replay.enabled
     client.open_cloud_replay= (err, replay)->
       if err or !replay
-        ygopro.stoc_die(client, "没有找到录像")
+        ygopro.stoc_die(client, "${cloud_replay_no}")
         return
       redisdb.expire("replay:"+replay.replay_id, 60*60*48)
       buffer=new Buffer(replay.replay_buffer,'binary')
       zlib.unzip buffer, (err, replay_buffer) ->
         if err
           log.info "cloud replay unzip error: " + err
-          ygopro.stoc_send_chat(client, "播放录像出错", ygopro.constants.COLORS.RED)
+          ygopro.stoc_send_chat(client, "${cloud_replay_error}", ygopro.constants.COLORS.RED)
           client.destroy()
           return
-        ygopro.stoc_send_chat(client, "正在观看云录像：R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", ygopro.constants.COLORS.BABYBLUE)
+        ygopro.stoc_send_chat(client, "${cloud_replay_playing} R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", ygopro.constants.COLORS.BABYBLUE)
         client.write replay_buffer, ()->
           client.destroy()
           return
@@ -855,7 +855,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_die(client, settings.modules.stop)
     
   else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled
-    ygopro.stoc_send_chat(client,"以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE)
+    ygopro.stoc_send_chat(client,"${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
     redisdb.lrange client.ip+":replays", 0, 2, (err, result)->
       _.each result, (replay_id,id)->
         redisdb.hgetall "replay:"+replay_id, (err, replay)->
@@ -881,14 +881,14 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       redisdb.lindex client.ip+":replays", replay_id-1, (err, replay_id)->
         if err or !replay_id
           log.info "cloud replay replayid error: " + err if err
-          ygopro.stoc_die(client, "没有找到录像")
+          ygopro.stoc_die(client, "${cloud_replay_no}")
           return
         redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
         return
     else if replay_id
       redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
     else
-      ygopro.stoc_die(client, "没有找到录像")
+      ygopro.stoc_die(client, "${cloud_replay_no}")
 
   else if info.pass.toUpperCase()=="W" and settings.modules.cloud_replay.enabled
     replay_id=Cloud_replay_ids[Math.floor(Math.random()*Cloud_replay_ids.length)]
@@ -903,18 +903,18 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     client.destroy()
 
   else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled
-    ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名")
+    ygopro.stoc_die(client, "${blank_room_name}")
 
   else if info.pass.length and settings.modules.mycard.enabled and info.pass[0...3] != 'AI#'
-    ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE)
+    ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
     if info.pass.length <= 8
-      ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)')
+      ygopro.stoc_die(client, '${invalid_password_length}')
       return
 
     buffer = new Buffer(info.pass[0...8], 'base64')
 
     if buffer.length != 6
-      ygopro.stoc_die(client, '主机密码不正确 (Invalid Payload Length)')
+      ygopro.stoc_die(client, '${invalid_password_payload}')
       return
 
     check = (buf)->
@@ -926,7 +926,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     finish = (buffer)->
       action = buffer.readUInt8(1) >> 4
       if buffer != decrypted_buffer and action in [1, 2, 4]
-        ygopro.stoc_die(client, '主机密码不正确 (Unauthorized)')
+        ygopro.stoc_die(client, '${invalid_password_unauthorized}')
         return
 
       # 1 create public room
@@ -937,7 +937,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         when 1,2
           name = crypto.createHash('md5').update(info.pass + client.name).digest('base64')[0...10].replace('+', '-').replace('/', '_')
           if ROOM_find_by_name(name)
-            ygopro.stoc_die(client, '主机密码不正确 (Already Existed)')
+            ygopro.stoc_die(client, '${invalid_password_existed}')
             return
 
           opt1 = buffer.readUInt8(2)
@@ -963,18 +963,18 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           name = info.pass.slice(8)
           room = ROOM_find_by_name(name)
           if(!room)
-            ygopro.stoc_die(client, '主机密码不正确 (Not Found)')
+            ygopro.stoc_die(client, '${invalid_password_not_found}')
             return
         when 4
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           room.private = true
           room.arena = settings.modules.arena_mode.mode
         else
-          ygopro.stoc_die(client, '主机密码不正确 (Invalid Action)')
+          ygopro.stoc_die(client, '${invalid_password_action}')
           return
       
       if !room
-        ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
+        ygopro.stoc_die(client, "${server_full}")
       else if room.error
         ygopro.stoc_die(client, room.error)
       else
@@ -1013,50 +1013,50 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       # buffer != decrypted_buffer  ==> auth failed
 
       if !check(buffer)
-        ygopro.stoc_die(client, '主机密码不正确 (Checksum Failed)')
+        ygopro.stoc_die(client, '${invalid_password_checksum}')
         return
       users_cache[client.name] = body.user.id
       finish(buffer)
   
   else if !client.name or client.name==""
-    ygopro.stoc_die(client, "请输入正确的用户名")
+    ygopro.stoc_die(client, "${enter_correct_user}")
 
   else if ROOM_connected_ip[client.ip] > 5
     log.warn("MULTI LOGIN", client.name, client.ip)
-    ygopro.stoc_die(client, "同时开启的客户端数量过多 " + client.ip)
+    ygopro.stoc_die(client, "${client_overload}" + client.ip)
 
   else if _.indexOf(settings.ban.banned_user, client.name) > -1 #账号被封
     settings.ban.banned_ip.push(client.ip)
     log.warn("BANNED USER LOGIN", client.name, client.ip)
-    ygopro.stoc_die(client, "您的账号已被封禁")
+    ygopro.stoc_die(client, "${banned_user_login}")
 
   else if _.indexOf(settings.ban.banned_ip, client.ip) > -1 #IP被封
     log.warn("BANNED IP LOGIN", client.name, client.ip)
-    ygopro.stoc_die(client, "您的账号已被封禁")
+    ygopro.stoc_die(client, "${banned_ip_login}")
 
   else if _.any(settings.ban.badword_level3, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 3", client.name, client.ip)
-    ygopro.stoc_die(client, "您的用户名存在不适当的内容")
+    ygopro.stoc_die(client, "${bad_name_level3}")
 
   else if _.any(settings.ban.badword_level2, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 2", client.name, client.ip)
-    ygopro.stoc_die(client, "您的用户名存在不适当的内容")
+    ygopro.stoc_die(client, "${bad_name_level2}")
 
   else if _.any(settings.ban.badword_level1, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 1", client.name, client.ip)
-    ygopro.stoc_die(client, "您的用户名存在不适当的内容，请注意更改")
+    ygopro.stoc_die(client, "${bad_name_level1}")
 
   else if info.pass.length && !ROOM_validate(info.pass)
-    ygopro.stoc_die(client, "房间密码不正确")
+    ygopro.stoc_die(client, "${invalid_password_room}")
   
   else
     if info.version == 4921 and settings.version == 4922 #YGOMobile不更新，强行兼容
@@ -1065,12 +1065,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       struct._setBuff(buffer)
       struct.set("version", info.version)
       buffer = struct.buffer
-      #ygopro.stoc_send_chat(client, "您的版本号过低，可能出现未知问题，电脑用户请升级版本，YGOMobile用户请等待作者更新", ygopro.constants.COLORS.BABYBLUE)
+      #ygopro.stoc_send_chat(client, "${outdated_client}", ygopro.constants.COLORS.BABYBLUE)
       
     #log.info 'join_game',info.pass, client.name
     room = ROOM_find_or_create_by_name(info.pass, client.ip)
     if !room
-      ygopro.stoc_die(client, "服务器已经爆满，请稍候再试")
+      ygopro.stoc_die(client, "${server_full}")
     else if room.error
       ygopro.stoc_die(client, room.error)
     else if room.started
@@ -1078,13 +1078,13 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         client.setTimeout(300000) #连接后超时5分钟
         client.rid = _.indexOf(ROOM_all, room)
         client.is_post_watcher = true
-        ygopro.stoc_send_chat_to_room(room, "#{client.name} 加入了观战")
+        ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
         room.watchers.push client
-        ygopro.stoc_send_chat(client, "观战中", ygopro.constants.COLORS.BABYBLUE)
+        ygopro.stoc_send_chat(client, "${watch_present}", ygopro.constants.COLORS.BABYBLUE)
         for buffer in room.watcher_buffers
           client.write buffer
       else
-        ygopro.stoc_die(client, "决斗已开始，不允许观战")
+        ygopro.stoc_die(client, "${watch_denied}")
     else
       client.setTimeout(300000) #连接后超时5分钟
       client.rid = _.indexOf(ROOM_all, room)
@@ -1110,8 +1110,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         log.warn 'LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body
       else
         #log.info 'LOAD SCORE', client.name, body
-        rank_txt = if body.arena_rank>0 then "排名第" + body.arena_rank else "暂无排名"
-        ygopro.stoc_send_chat(client, "#{client.name}，你有#{body.exp}点经验，你的战斗力是#{Math.round(body.pt)}，#{rank_txt}。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE)
+        rank_txt = if body.arena_rank>0 then "${rank_arena}" + body.arena_rank else "${rank_blank}"
+        ygopro.stoc_send_chat(client, "#{client.name}${exp_value_part1}#{body.exp}${exp_value_part2}${exp_value_part3}#{Math.round(body.pt)}#{rank_txt}${exp_value_part4}", ygopro.constants.COLORS.BABYBLUE)
         #client.score_shown = true
       return
 
@@ -1220,7 +1220,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp -= val
     if 0 < room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(room, "你的生命已经如风中残烛了！", ygopro.constants.COLORS.PINK)
+      ygopro.stoc_send_chat_to_room(room, "${lp_low_level1}", ygopro.constants.COLORS.PINK)
 
   if ygopro.constants.MSG[msg] == 'RECOVER' and client.is_host
     pos = buffer.readUInt8(1)
@@ -1240,7 +1240,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp -= val
     if 0 < room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(room, "背水一战！", ygopro.constants.COLORS.PINK)
+      ygopro.stoc_send_chat_to_room(room, "${lp_low_level2}", ygopro.constants.COLORS.PINK)
 
   #登场台词
   if settings.modules.dialogues.enabled
@@ -1259,11 +1259,11 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
     if player and player.pos == info.pos and player != client
       client.kick_count = if client.kick_count then client.kick_count+1 else 1
       if client.kick_count>=5
-        ygopro.stoc_send_chat_to_room(room, "#{client.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
-        ROOM_ban_player(player.name, player.ip, "挂房间")
+        ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
+        ROOM_ban_player(player.name, player.ip, "${zombie_player}")
         client.destroy()
         return true
-      ygopro.stoc_send_chat_to_room(room, "#{player.name} 被请出了房间", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_player}", ygopro.constants.COLORS.RED)
   return false
 
 ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
@@ -1296,13 +1296,13 @@ wait_room_start = (room, time)->
     time -= 1
     if time
       unless time % 5
-        ygopro.stoc_send_chat_to_room(room, "#{if time <= 9 then ' ' else ''}#{time}秒后房主若不开始游戏将被请出房间", if time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
+        ygopro.stoc_send_chat_to_room(room, "#{if time <= 9 then ' ' else ''}#{time}${kicked_by_system_count_down}", if time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
       setTimeout (()-> wait_room_start(room, time);return), 1000
     else
       for player in room.players
         if player and player.is_host
-          ROOM_ban_player(player.name, player.ip, "挂房间")
-          ygopro.stoc_send_chat_to_room(room, "#{player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
+          ROOM_ban_player(player.name, player.ip, "${zombie_player}")
+          ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
           player.destroy()
   return
 
@@ -1389,11 +1389,11 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   cmd = msg.split(' ')
   switch cmd[0]
     when '/help'
-      ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助")
-      ygopro.stoc_send_chat(client, "/help 显示这个帮助信息")
-      ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字") if !settings.modules.mycard.enabled
-      ygopro.stoc_send_chat(client, "/ai 添加一个AI，/ai 角色名 可指定添加的角色") if settings.modules.windbot.enabled
-      ygopro.stoc_send_chat(client, "/tip 显示一条提示") if settings.modules.tips.enabled
+      ygopro.stoc_send_chat(client, "${chat_order_main}")
+      ygopro.stoc_send_chat(client, "${chat_order_help}")
+      ygopro.stoc_send_chat(client, "${chat_order_roomname}") if !settings.modules.mycard.enabled
+      ygopro.stoc_send_chat(client, "${chat_order_windbot}") if settings.modules.windbot.enabled
+      ygopro.stoc_send_chat(client, "${chat_order_tip}") if settings.modules.tips.enabled
 
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips.enabled
@@ -1404,14 +1404,14 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
           windbot = _.sample _.filter settings.modules.windbots, (w)->
             w.name == name or w.deck == name
           if !windbot
-            ygopro.stoc_send_chat(client, "未找到该AI角色或卡组", ygopro.constants.COLORS.RED)
+            ygopro.stoc_send_chat(client, "${windbot_deck_not_found}", ygopro.constants.COLORS.RED)
             return
         else
           windbot = _.sample settings.modules.windbots
         room.add_windbot(windbot)
 
     when '/roomname'
-      ygopro.stoc_send_chat(client, "您当前的房间名是 " + room.name, ygopro.constants.COLORS.BABYBLUE) if room
+      ygopro.stoc_send_chat(client, "${room_name} " + room.name, ygopro.constants.COLORS.BABYBLUE) if room
 
     #when '/test'
     #  ygopro.stoc_send_hint_card_to_room(room, 2333365)
@@ -1419,7 +1419,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     return cancel
   if client.abuse_count>=5
     log.warn "BANNED CHAT", client.name, client.ip, msg
-    ygopro.stoc_send_chat(client, "您已被禁言！", ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${banned_chat_level1}", ygopro.constants.COLORS.RED)
     return true
   oldmsg = msg
   if (_.any(settings.ban.badword_level3, (badword) ->
@@ -1429,22 +1429,22 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     log.warn "BAD WORD LEVEL 3", client.name, client.ip, oldmsg
     cancel = true
     if client.abuse_count>0
-      ygopro.stoc_send_chat(client, "您的发言存在严重不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED)
-      ROOM_ban_player(client.name, client.ip, "发言违规")
-      ROOM_ban_player(client.name, client.ip, "发言违规", 3)
+      ygopro.stoc_send_chat(client, "${banned_chat_level2}", ygopro.constants.COLORS.RED)
+      ROOM_ban_player(client.name, client.ip, "${chat_bad}")
+      ROOM_ban_player(client.name, client.ip, "${chat_bad}", 3)
       client.destroy()
       return true
     else
       client.abuse_count=client.abuse_count+4
-      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED)
   else if (client.rag and room.started)
     client.rag = false
-    #ygopro.stoc_send_chat(client, "发言失败", ygopro.constants.COLORS.RED)
+    #ygopro.stoc_send_chat(client, "${chat_warn_level1}", ygopro.constants.COLORS.RED)
     cancel = true
   else if (msg.length>100)
     log.warn "SPAM WORD", client.name, client.ip, oldmsg
     client.abuse_count=client.abuse_count+2
-    ygopro.stoc_send_chat(client, "请不要发送垃圾信息！", ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${chat_warn_level3}", ygopro.constants.COLORS.RED)
     cancel = true
   else if (_.any(settings.ban.spam_word, (badword) ->
     regexp = new RegExp(badword, 'i')
@@ -1452,7 +1452,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   , msg))
     #log.warn "SPAM WORD", client.name, client.ip, oldmsg
     client.abuse_count=client.abuse_count+2
-    ygopro.stoc_send_chat(client, "请不要发送垃圾信息！", ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${chat_warn_level3}", ygopro.constants.COLORS.RED)
     cancel = true
   else if (_.any(settings.ban.badword_level2, (badword) ->
     regexp = new RegExp(badword, 'i')
@@ -1460,7 +1460,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   , msg))
     log.warn "BAD WORD LEVEL 2", client.name, client.ip, oldmsg
     client.abuse_count=client.abuse_count+3
-    ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED)
     cancel = true
   else
     _.each(settings.ban.badword_level1, (badword) ->
@@ -1472,7 +1472,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     if oldmsg != msg
       log.warn "BAD WORD LEVEL 1", client.name, client.ip, oldmsg
       client.abuse_count=client.abuse_count+1
-      ygopro.stoc_send_chat(client, "请使用文明用语！")
+      ygopro.stoc_send_chat(client, "${chat_warn_level4}")
       struct = ygopro.structs["chat"]
       struct._setBuff(buffer)
       struct.set("msg", msg)
@@ -1483,8 +1483,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     , msg))
       log.info "BAD WORD LEVEL 0", client.name, client.ip, oldmsg
   if client.abuse_count>=5
-    ygopro.stoc_send_chat_to_room(room, "#{client.name} 已被禁言！", ygopro.constants.COLORS.RED)
-    ROOM_ban_player(client.name, client.ip, "发言违规")
+    ygopro.stoc_send_chat_to_room(room, "#{client.name} ${banned_chat_level3}", ygopro.constants.COLORS.RED)
+    ROOM_ban_player(client.name, client.ip, "${chat_bad}")
   return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
@@ -1531,13 +1531,13 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
         struct.set("deckbuf", deckbuf)
         buffer = struct.buffer
         #log.info("deck ok: " + client.name)
-        ygopro.stoc_send_chat(client, "成功使用卡组 #{found_deck} 参加比赛。", ygopro.constants.COLORS.BABYBLUE)
+        ygopro.stoc_send_chat(client, "${deck_correct_part1} #{found_deck} ${deck_correct_part2}", ygopro.constants.COLORS.BABYBLUE)
       else
         #log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
-        ygopro.stoc_send_chat(client, "您的卡组与报名卡组 #{found_deck} 不符。注意卡组不能有包括卡片顺序在内的任何修改。", ygopro.constants.COLORS.RED)
+        ygopro.stoc_send_chat(client, "${deck_incorrect_part1} #{found_deck} ${deck_incorrect_part2}", ygopro.constants.COLORS.RED)
     else
       #log.info("player deck not found: " + client.name)
-      ygopro.stoc_send_chat(client, "#{client.name}，没有找到您的报名信息，请确定您使用昵称与报名ID一致。", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send_chat(client, "#{client.name}${no_sign_up}", ygopro.constants.COLORS.RED)
   return false
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
@@ -1616,7 +1616,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
     if settings.modules.cloud_replay.enabled
-      ygopro.stoc_send_chat(client, "本场比赛云录像：R##{room.cloud_replay_id}。将于本局结束后可播放。", ygopro.constants.COLORS.BABYBLUE)
+      ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
     return true
   else
     return false
@@ -1628,11 +1628,11 @@ if settings.modules.random_duel.enabled
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
-        ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机")
-        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 被系统请出了房间", ygopro.constants.COLORS.RED)
+        ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${no_action}")
+        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${no_action_kick}", ygopro.constants.COLORS.RED)
         room.waiting_for_player.server.destroy()
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
-        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} 已经很久没有操作了，若继续挂机，将于#{settings.modules.random_duel.hang_timeout - time_passed}秒后被请出房间", ygopro.constants.COLORS.RED)
+        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${no_action_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${no_action_warn_part2}", ygopro.constants.COLORS.RED)
     return
   , 1000
 
