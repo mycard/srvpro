@@ -168,6 +168,10 @@
     "afk_warn_part2": "秒后被请出房间",
     "surrender_confirm": "确实要投降吗？再次输入 /投降 以确认。",
     "surrender_canceled": "已取消投降，加油！",
-    "surrender_denied": "为保证双方玩家的游戏体验，随机对战中3回合后才能投降。"
+    "surrender_denied": "为保证双方玩家的游戏体验，随机对战中3回合后才能投降。",
+    "unwelcome_warn_part1": "如果您经常",
+    "unwelcome_warn_part2": "，您的对手可能会离你而去。",
+    "unwelcome_tip_part1": "因为您的对手有",
+    "unwelcome_tip_part2": "行为，现在您可以直接离开游戏，不视为强退。"
   }
 }

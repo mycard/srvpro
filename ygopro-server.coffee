@@ -273,6 +273,16 @@ ROOM_validate = (name)->
     room_pass = room_name_and_pass[1]
     client_name == room_name and client_pass != room_pass
 
+ROOM_unwelcome = (room, bad_player, reason)->
+  return unless room
+  for player in room.players
+    if player and player == bad_player
+      ygopro.stoc_send_chat(player, "${unwelcome_warn_part1}#{reason}${unwelcome_warn_part2}", ygopro.constants.COLORS.RED)
+    else if player and player.pos!=7 and player != bad_player
+      player.flee_free=true
+      ygopro.stoc_send_chat(player, "${unwelcome_tip_part1}#{reason}${unwelcome_tip_part2}", ygopro.constants.COLORS.BABYBLUE)
+  return
+
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -555,7 +565,7 @@ class Room
       if @started and @disconnector != 'server' and (client.pos < 4 or client.is_host)
         @finished = true
         @scores[client.name] = -1
-        if @random_type
+        if @random_type and not client.flee_free
           ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
       if @players.length and !(@windbot and client.is_host)
         ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
@@ -1488,6 +1498,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       return msg.match(regexp)
     , msg))
       log.info "BAD WORD LEVEL 0", client.name, client.ip, oldmsg
+  if client.abuse_count>=2
+    ROOM_unwelcome(room, client, "${random_ban_reason_abuse}")
   if client.abuse_count>=5
     ygopro.stoc_send_chat_to_room(room, "#{client.name} ${chat_banned}", ygopro.constants.COLORS.RED)
     ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
@@ -1639,6 +1651,7 @@ if settings.modules.random_duel.enabled
         room.waiting_for_player.server.destroy()
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
+        ROOM_unwelcome(room, room.waiting_for_player, "${random_ban_reason_AFK}")
     return
   , 1000
 
