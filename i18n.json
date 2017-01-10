@@ -81,7 +81,14 @@
     "cloud_replay_delay_part1": "The replay code for last duel is ",
     "cloud_replay_delay_part2": ". It can be accessed after this match.",
     "afk_warn_part1": "no opreation too long, will be disconnected after ",
-    "afk_warn_part2": " seconds"
+    "afk_warn_part2": " seconds",
+    "surrender_confirm": "Are you sure? Enter /surrender again to confirm.",
+    "surrender_canceled": "Surrender canceled.",
+    "surrender_denied": "Please use the Surrender button instead.",
+    "unwelcome_warn_part1": "If you keep doing ",
+    "unwelcome_warn_part2": ", your opponent may leave you.",
+    "unwelcome_tip_part1": "Your oppenent did ",
+    "unwelcome_tip_part2": ", so you can leave the game without being punished."
   },
   "zh-cn": {
     "random_duel_enter_room_waiting": "对手已经在等你了，开始决斗吧！",
