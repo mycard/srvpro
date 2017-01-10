@@ -66,22 +66,6 @@ nconf.myset = (settings, path, val) ->
     target[key] = val
   return
 
-# ban a user manually and permanently
-ban_user = (name) ->
-  settings.ban.banned_user.push(name)
-  nconf.myset(settings, "ban:banned_user", settings.ban.banned_user)
-  bad_ip=0
-  for room in ROOM_all when room and room.established
-    for player in room.players
-      if player and (player.name == name or player.ip == bad_ip)
-        bad_ip = player.ip
-        ROOM_bad_ip[bad_ip]=99
-        settings.ban.banned_ip.push(player.ip)
-        ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-        player.destroy()
-        continue
-  return
-
 try
   cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
   nconf.myset(settings, "version", cppversion)
@@ -109,6 +93,9 @@ if settings.modules.windbot.enabled
 # 组件
 ygopro = require './ygopro.js'
 roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
+
+if settings.modules.i18n.auto_pick
+  geoip = require('geoip-country-lite')
 
 # cache users of mycard login
 users_cache = {}
@@ -151,6 +138,22 @@ ROOM_players_oppentlist = {}
 ROOM_players_banned = []
 ROOM_connected_ip = {}
 ROOM_bad_ip = {}
+
+# ban a user manually and permanently
+ban_user = (name) ->
+  settings.ban.banned_user.push(name)
+  nconf.myset(settings, "ban:banned_user", settings.ban.banned_user)
+  bad_ip=0
+  for room in ROOM_all when room and room.established
+    for player in room.players
+      if player and (player.name == name or player.ip == bad_ip)
+        bad_ip = player.ip
+        ROOM_bad_ip[bad_ip]=99
+        settings.ban.banned_ip.push(player.ip)
+        ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
+        player.destroy()
+        continue
+  return
 
 # automatically ban user to use random duel
 ROOM_ban_player = (name, ip, reason, countadd = 1)->
@@ -821,9 +824,19 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   buffer = struct.buffer
   client.name = name
 
-  client.lang=settings.modules.lang
-  if name == "P233"
-    client.lang="en-us"
+  if not settings.modules.i18n.auto_pick
+    client.lang=settings.modules.i18n.default
+  else
+    geo = geoip.lookup(client.ip)
+    if not geo
+      log.warn("fail to locate ip", client.ip)
+      client.lang=settings.modules.i18n.fallback
+    else
+      if lang=settings.modules.i18n.map[geo.country]
+        client.lang=lang
+      else
+        log.info("TMP: not in china", client.ip)
+        client.lang=settings.modules.i18n.fallback
   return false
 
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->

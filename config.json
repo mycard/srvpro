@@ -18,7 +18,16 @@
     "welcome": "MyCard YGOPro Server",
     "update": "请更新游戏版本",
     "stop": false,
-    "lang": "zh-cn",
+    "i18n": {
+      "auto_pick": true,
+      "default": "zh-cn",
+      "fallback": "en-us",
+      "map": {
+        "CN": "zh-cn",
+        "HK": "zh-cn",
+        "TW": "zh-cn"
+      }
+    },
     "tips": {
       "enabled": true,
       "get": false
