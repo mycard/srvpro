@@ -824,7 +824,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   buffer = struct.buffer
   client.name = name
 
-  if not settings.modules.i18n.auto_pick
+  if not settings.modules.i18n.auto_pick or client.ip=="::ffff:127.0.0.1"
     client.lang=settings.modules.i18n.default
   else
     geo = geoip.lookup(client.ip)
@@ -835,7 +835,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
       if lang=settings.modules.i18n.map[geo.country]
         client.lang=lang
       else
-        log.info("TMP: not in china", client.ip)
+        log.info("Not in map", client.ip)
         client.lang=settings.modules.i18n.fallback
   return false
 

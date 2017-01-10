@@ -1039,7 +1039,7 @@
     struct.set("name", name);
     buffer = struct.buffer;
     client.name = name;
-    if (!settings.modules.i18n.auto_pick) {
+    if (!settings.modules.i18n.auto_pick || client.ip === "::ffff:127.0.0.1") {
       client.lang = settings.modules.i18n["default"];
     } else {
       geo = geoip.lookup(client.ip);
@@ -1050,7 +1050,7 @@
         if (lang = settings.modules.i18n.map[geo.country]) {
           client.lang = lang;
         } else {
-          log.info("TMP: not in china", client.ip);
+          log.info("Not in map", client.ip);
           client.lang = settings.modules.i18n.fallback;
         }
       }
