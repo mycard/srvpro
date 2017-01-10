@@ -829,13 +829,13 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   else
     geo = geoip.lookup(client.ip)
     if not geo
-      log.warn("fail to locate ip", client.ip)
+      log.warn("fail to locate ip", client.name, client.ip)
       client.lang=settings.modules.i18n.fallback
     else
       if lang=settings.modules.i18n.map[geo.country]
         client.lang=lang
       else
-        log.info("Not in map", client.ip)
+        log.info("Not in map", geo.country, client.name, client.ip)
         client.lang=settings.modules.i18n.fallback
   return false
 
