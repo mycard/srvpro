@@ -287,18 +287,18 @@
     if (bannedplayer) {
       if (bannedplayer.count > 6 && moment() < bannedplayer.time) {
         return {
-          "error": "${random_banned_part1}" + (bannedplayer.reasons.join('、')) + "${random_banned_part2}" + (moment(bannedplayer.time).fromNow(true)) + "${random_banned_part3}"
+          "error": "${random_banned_part1}" + (bannedplayer.reasons.join('${random_ban_reason_separator}')) + "${random_banned_part2}" + (moment(bannedplayer.time).fromNow(true)) + "${random_banned_part3}"
         };
       }
       if (bannedplayer.count > 3 && moment() < bannedplayer.time && bannedplayer.need_tip) {
         bannedplayer.need_tip = false;
         return {
-          "error": "因为您近期在游戏中" + (bannedplayer.reasons.join('、')) + "，在" + (moment(bannedplayer.time).fromNow(true)) + "内您随机对战时只能遇到其他违规玩家"
+          "error": "${random_deprecated_part1}" + (bannedplayer.reasons.join('${random_ban_reason_separator}')) + "${random_deprecated_part2}" + (moment(bannedplayer.time).fromNow(true)) + "${random_deprecated_part3}"
         };
       } else if (bannedplayer.need_tip) {
         bannedplayer.need_tip = false;
         return {
-          "error": "${random_warn_part1}" + (bannedplayer.reasons.join('、')) + "${random_warn_part2}"
+          "error": "${random_warn_part1}" + (bannedplayer.reasons.join('${random_ban_reason_separator}')) + "${random_warn_part2}"
         };
       } else if (bannedplayer.count > 2) {
         bannedplayer.need_tip = true;
@@ -533,7 +533,7 @@
         this.process.on('error', (function(_this) {
           return function(err) {
             _.each(_this.players, function(player) {
-              return ygopro.stoc_die(player, "${duel_room_new_failed}");
+              return ygopro.stoc_die(player, "${create_room_failed}");
             });
             _this["delete"]();
           };
@@ -583,7 +583,7 @@
           };
         })(this));
       } catch (error1) {
-        this.error = "${duel_room_new_failed}";
+        this.error = "${create_room_failed}";
       }
     }
 
@@ -765,7 +765,7 @@
           this.finished = true;
           this.scores[client.name] = -1;
           if (this.random_type) {
-            ROOM_ban_player(client.name, client.ip, "${flee}");
+            ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}");
           }
         }
         if (this.players.length && !(this.windbot && client.is_host)) {
@@ -1249,10 +1249,10 @@
         return finish(buffer);
       });
     } else if (!client.name || client.name === "") {
-      ygopro.stoc_die(client, "${enter_correct_user}");
+      ygopro.stoc_die(client, "${bad_user_name}");
     } else if (ROOM_connected_ip[client.ip] > 5) {
       log.warn("MULTI LOGIN", client.name, client.ip);
-      ygopro.stoc_die(client, "${client_overload}" + client.ip);
+      ygopro.stoc_die(client, "${too_much_connection}" + client.ip);
     } else if (_.indexOf(settings.ban.banned_user, client.name) > -1) {
       settings.ban.banned_ip.push(client.ip);
       log.warn("BANNED USER LOGIN", client.name, client.ip);
@@ -1303,7 +1303,7 @@
           client.is_post_watcher = true;
           ygopro.stoc_send_chat_to_room(room, client.name + " ${watch_join}");
           room.watchers.push(client);
-          ygopro.stoc_send_chat(client, "${watch_present}", ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE);
           ref1 = room.watcher_buffers;
           for (l = 0, len1 = ref1.length; l < len1; l++) {
             buffer = ref1[l];
@@ -1458,7 +1458,7 @@
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp -= val;
       if ((0 < (ref = room.dueling_players[pos].lp) && ref <= 100)) {
-        ygopro.stoc_send_chat_to_room(room, "${lp_low_level1}", ygopro.constants.COLORS.PINK);
+        ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK);
       }
     }
     if (ygopro.constants.MSG[msg] === 'RECOVER' && client.is_host) {
@@ -1485,7 +1485,7 @@
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp -= val;
       if ((0 < (ref1 = room.dueling_players[pos].lp) && ref1 <= 100)) {
-        ygopro.stoc_send_chat_to_room(room, "${lp_low_level2}", ygopro.constants.COLORS.PINK);
+        ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK);
       }
     }
     if (settings.modules.dialogues.enabled) {
@@ -1515,7 +1515,7 @@
         client.kick_count = client.kick_count ? client.kick_count + 1 : 1;
         if (client.kick_count >= 5) {
           ygopro.stoc_send_chat_to_room(room, client.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
-          ROOM_ban_player(player.name, player.ip, "${zombie_player}");
+          ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}");
           client.destroy();
           return true;
         }
@@ -1567,7 +1567,7 @@
       time -= 1;
       if (time) {
         if (!(time % 5)) {
-          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "${kicked_by_system_count_down}", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.LIGHTBLUE);
+          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "${kick_count_down}", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.LIGHTBLUE);
         }
         setTimeout((function() {
           wait_room_start(room, time);
@@ -1577,7 +1577,7 @@
         for (k = 0, len = ref.length; k < len; k++) {
           player = ref[k];
           if (player && player.is_host) {
-            ROOM_ban_player(player.name, player.ip, "${zombie_player}");
+            ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}");
             ygopro.stoc_send_chat_to_room(room, player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
             player.destroy();
           }
@@ -1751,7 +1751,7 @@
     }
     if (client.abuse_count >= 5) {
       log.warn("BANNED CHAT", client.name, client.ip, msg);
-      ygopro.stoc_send_chat(client, "${banned_chat_level1}", ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "${banned_chat_tip}", ygopro.constants.COLORS.RED);
       return true;
     }
     oldmsg = msg;
@@ -1763,9 +1763,9 @@
       log.warn("BAD WORD LEVEL 3", client.name, client.ip, oldmsg);
       cancel = true;
       if (client.abuse_count > 0) {
-        ygopro.stoc_send_chat(client, "${banned_chat_level2}", ygopro.constants.COLORS.RED);
-        ROOM_ban_player(client.name, client.ip, "${chat_bad}");
-        ROOM_ban_player(client.name, client.ip, "${chat_bad}", 3);
+        ygopro.stoc_send_chat(client, "${banned_duel_tip}", ygopro.constants.COLORS.RED);
+        ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}");
+        ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}", 3);
         client.destroy();
         return true;
       } else {
@@ -1778,7 +1778,7 @@
     } else if (msg.length > 100) {
       log.warn("SPAM WORD", client.name, client.ip, oldmsg);
       client.abuse_count = client.abuse_count + 2;
-      ygopro.stoc_send_chat(client, "${chat_warn_level3}", ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
       cancel = true;
     } else if (_.any(settings.ban.spam_word, function(badword) {
       var regexp;
@@ -1786,7 +1786,7 @@
       return msg.match(regexp);
     }, msg)) {
       client.abuse_count = client.abuse_count + 2;
-      ygopro.stoc_send_chat(client, "${chat_warn_level3}", ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
       cancel = true;
     } else if (_.any(settings.ban.badword_level2, function(badword) {
       var regexp;
@@ -1806,7 +1806,7 @@
       if (oldmsg !== msg) {
         log.warn("BAD WORD LEVEL 1", client.name, client.ip, oldmsg);
         client.abuse_count = client.abuse_count + 1;
-        ygopro.stoc_send_chat(client, "${chat_warn_level4}");
+        ygopro.stoc_send_chat(client, "${chat_warn_level1}");
         struct = ygopro.structs["chat"];
         struct._setBuff(buffer);
         struct.set("msg", msg);
@@ -1820,8 +1820,8 @@
       }
     }
     if (client.abuse_count >= 5) {
-      ygopro.stoc_send_chat_to_room(room, client.name + " ${banned_chat_level3}", ygopro.constants.COLORS.RED);
-      ROOM_ban_player(client.name, client.ip, "${chat_bad}");
+      ygopro.stoc_send_chat_to_room(room, client.name + " ${chat_banned}", ygopro.constants.COLORS.RED);
+      ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}");
     }
     return cancel;
   });
@@ -1902,7 +1902,7 @@
           ygopro.stoc_send_chat(client, "${deck_incorrect_part1} " + found_deck + " ${deck_incorrect_part2}", ygopro.constants.COLORS.RED);
         }
       } else {
-        ygopro.stoc_send_chat(client, client.name + "${no_sign_up}", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat(client, client.name + "${deck_not_found}", ygopro.constants.COLORS.RED);
       }
     }
     return false;
@@ -2043,11 +2043,11 @@
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
         if (time_passed >= settings.modules.random_duel.hang_timeout) {
           room.last_active_time = moment();
-          ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${no_action}");
-          ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${no_action_kick}", ygopro.constants.COLORS.RED);
+          ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}");
+          ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
           room.waiting_for_player.server.destroy();
         } else if (time_passed >= (settings.modules.random_duel.hang_timeout - 20) && !(time_passed % 10)) {
-          ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${no_action_warn_part1}" + (settings.modules.random_duel.hang_timeout - time_passed) + "${no_action_warn_part2}", ygopro.constants.COLORS.RED);
+          ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${afk_warn_part1}" + (settings.modules.random_duel.hang_timeout - time_passed) + "${afk_warn_part2}", ygopro.constants.COLORS.RED);
         }
       }
     }, 1000);

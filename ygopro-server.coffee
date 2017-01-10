@@ -206,13 +206,13 @@ ROOM_find_or_create_random = (type, player_ip)->
     return player_ip == bannedplayer.ip
   if bannedplayer
     if bannedplayer.count > 6 and moment() < bannedplayer.time
-      return {"error": "${random_banned_part1}#{bannedplayer.reasons.join('、')}${random_banned_part2}#{moment(bannedplayer.time).fromNow(true)}${random_banned_part3}"}
+      return {"error": "${random_banned_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_banned_part2}#{moment(bannedplayer.time).fromNow(true)}${random_banned_part3}"}
     if bannedplayer.count > 3 and moment() < bannedplayer.time and bannedplayer.need_tip
       bannedplayer.need_tip = false
-      return {"error": "因为您近期在游戏中#{bannedplayer.reasons.join('、')}，在#{moment(bannedplayer.time).fromNow(true)}内您随机对战时只能遇到其他违规玩家"}
+      return {"error": "${random_deprecated_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_deprecated_part2}#{moment(bannedplayer.time).fromNow(true)}${random_deprecated_part3}"}
     else if bannedplayer.need_tip
       bannedplayer.need_tip = false
-      return {"error": "${random_warn_part1}#{bannedplayer.reasons.join('、')}${random_warn_part2}"}
+      return {"error": "${random_warn_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_warn_part2}"}
     else if bannedplayer.count > 2
       bannedplayer.need_tip = true
   max_player = if type == 'T' then 4 else 2
@@ -402,7 +402,7 @@ class Room
       @process = spawn './ygopro', param, {cwd: 'ygopro'}
       @process.on 'error', (err)=>
         _.each @players, (player)->
-          ygopro.stoc_die(player, "${duel_room_new_failed}")
+          ygopro.stoc_die(player, "${create_room_failed}")
         this.delete()
         return
       @process.on 'exit', (code)=>
@@ -434,7 +434,7 @@ class Room
         @has_ygopro_error = true
         return
     catch
-      @error = "${duel_room_new_failed}"
+      @error = "${create_room_failed}"
   delete: ->
     return if @deleted
     #log.info 'room-delete', this.name, ROOM_all.length
@@ -572,7 +572,7 @@ class Room
         @finished = true
         @scores[client.name] = -1
         if @random_type
-          ROOM_ban_player(client.name, client.ip, "${flee}")
+          ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
       if @players.length and !(@windbot and client.is_host)
         ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
         roomlist.update(this) if !@private and !@started and settings.modules.http.websocket_roomlist
@@ -1019,11 +1019,11 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       finish(buffer)
   
   else if !client.name or client.name==""
-    ygopro.stoc_die(client, "${enter_correct_user}")
+    ygopro.stoc_die(client, "${bad_user_name}")
 
   else if ROOM_connected_ip[client.ip] > 5
     log.warn("MULTI LOGIN", client.name, client.ip)
-    ygopro.stoc_die(client, "${client_overload}" + client.ip)
+    ygopro.stoc_die(client, "${too_much_connection}" + client.ip)
 
   else if _.indexOf(settings.ban.banned_user, client.name) > -1 #账号被封
     settings.ban.banned_ip.push(client.ip)
@@ -1080,7 +1080,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         client.is_post_watcher = true
         ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
         room.watchers.push client
-        ygopro.stoc_send_chat(client, "${watch_present}", ygopro.constants.COLORS.BABYBLUE)
+        ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
         for buffer in room.watcher_buffers
           client.write buffer
       else
@@ -1220,7 +1220,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp -= val
     if 0 < room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(room, "${lp_low_level1}", ygopro.constants.COLORS.PINK)
+      ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
 
   if ygopro.constants.MSG[msg] == 'RECOVER' and client.is_host
     pos = buffer.readUInt8(1)
@@ -1240,7 +1240,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp -= val
     if 0 < room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(room, "${lp_low_level2}", ygopro.constants.COLORS.PINK)
+      ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK)
 
   #登场台词
   if settings.modules.dialogues.enabled
@@ -1260,7 +1260,7 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
       client.kick_count = if client.kick_count then client.kick_count+1 else 1
       if client.kick_count>=5
         ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-        ROOM_ban_player(player.name, player.ip, "${zombie_player}")
+        ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}")
         client.destroy()
         return true
       ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_player}", ygopro.constants.COLORS.RED)
@@ -1296,12 +1296,12 @@ wait_room_start = (room, time)->
     time -= 1
     if time
       unless time % 5
-        ygopro.stoc_send_chat_to_room(room, "#{if time <= 9 then ' ' else ''}#{time}${kicked_by_system_count_down}", if time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
+        ygopro.stoc_send_chat_to_room(room, "#{if time <= 9 then ' ' else ''}#{time}${kick_count_down}", if time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
       setTimeout (()-> wait_room_start(room, time);return), 1000
     else
       for player in room.players
         if player and player.is_host
-          ROOM_ban_player(player.name, player.ip, "${zombie_player}")
+          ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}")
           ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
           player.destroy()
   return
@@ -1419,7 +1419,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     return cancel
   if client.abuse_count>=5
     log.warn "BANNED CHAT", client.name, client.ip, msg
-    ygopro.stoc_send_chat(client, "${banned_chat_level1}", ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${banned_chat_tip}", ygopro.constants.COLORS.RED)
     return true
   oldmsg = msg
   if (_.any(settings.ban.badword_level3, (badword) ->
@@ -1429,9 +1429,9 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     log.warn "BAD WORD LEVEL 3", client.name, client.ip, oldmsg
     cancel = true
     if client.abuse_count>0
-      ygopro.stoc_send_chat(client, "${banned_chat_level2}", ygopro.constants.COLORS.RED)
-      ROOM_ban_player(client.name, client.ip, "${chat_bad}")
-      ROOM_ban_player(client.name, client.ip, "${chat_bad}", 3)
+      ygopro.stoc_send_chat(client, "${banned_duel_tip}", ygopro.constants.COLORS.RED)
+      ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
+      ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}", 3)
       client.destroy()
       return true
     else
@@ -1439,12 +1439,12 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED)
   else if (client.rag and room.started)
     client.rag = false
-    #ygopro.stoc_send_chat(client, "${chat_warn_level1}", ygopro.constants.COLORS.RED)
+    #ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
   else if (msg.length>100)
     log.warn "SPAM WORD", client.name, client.ip, oldmsg
     client.abuse_count=client.abuse_count+2
-    ygopro.stoc_send_chat(client, "${chat_warn_level3}", ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
   else if (_.any(settings.ban.spam_word, (badword) ->
     regexp = new RegExp(badword, 'i')
@@ -1452,7 +1452,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   , msg))
     #log.warn "SPAM WORD", client.name, client.ip, oldmsg
     client.abuse_count=client.abuse_count+2
-    ygopro.stoc_send_chat(client, "${chat_warn_level3}", ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
   else if (_.any(settings.ban.badword_level2, (badword) ->
     regexp = new RegExp(badword, 'i')
@@ -1472,7 +1472,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     if oldmsg != msg
       log.warn "BAD WORD LEVEL 1", client.name, client.ip, oldmsg
       client.abuse_count=client.abuse_count+1
-      ygopro.stoc_send_chat(client, "${chat_warn_level4}")
+      ygopro.stoc_send_chat(client, "${chat_warn_level1}")
       struct = ygopro.structs["chat"]
       struct._setBuff(buffer)
       struct.set("msg", msg)
@@ -1483,8 +1483,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     , msg))
       log.info "BAD WORD LEVEL 0", client.name, client.ip, oldmsg
   if client.abuse_count>=5
-    ygopro.stoc_send_chat_to_room(room, "#{client.name} ${banned_chat_level3}", ygopro.constants.COLORS.RED)
-    ROOM_ban_player(client.name, client.ip, "${chat_bad}")
+    ygopro.stoc_send_chat_to_room(room, "#{client.name} ${chat_banned}", ygopro.constants.COLORS.RED)
+    ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
   return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
@@ -1537,7 +1537,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
         ygopro.stoc_send_chat(client, "${deck_incorrect_part1} #{found_deck} ${deck_incorrect_part2}", ygopro.constants.COLORS.RED)
     else
       #log.info("player deck not found: " + client.name)
-      ygopro.stoc_send_chat(client, "#{client.name}${no_sign_up}", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send_chat(client, "#{client.name}${deck_not_found}", ygopro.constants.COLORS.RED)
   return false
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
@@ -1628,11 +1628,11 @@ if settings.modules.random_duel.enabled
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
-        ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${no_action}")
-        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${no_action_kick}", ygopro.constants.COLORS.RED)
+        ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
+        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         room.waiting_for_player.server.destroy()
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
-        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${no_action_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${no_action_warn_part2}", ygopro.constants.COLORS.RED)
+        ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
     return
   , 1000
 
