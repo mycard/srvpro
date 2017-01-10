@@ -18,6 +18,7 @@
     "welcome": "MyCard YGOPro Server",
     "update": "请更新游戏版本",
     "stop": false,
+    "lang": "zh-cn",
     "tips": {
       "enabled": true,
       "get": false

@@ -4,6 +4,8 @@ _.mixin(_.str.exports())
 
 Struct = require('./struct.js').Struct
 
+i18ns = require './i18n.json'
+
 #常量/类型声明
 structs_declaration = require './structs.json'  #结构体声明
 typedefs = require './typedefs.json'            #类型声明
@@ -116,6 +118,9 @@ for name, declaration of structs_declaration
   for line in _.lines(msg)
     if player>=10
       line="[System]: "+line
+    for o,r of i18ns[client.lang]
+      re=new RegExp("\\$\\{"+o+"\\}",'g')
+      line=line.replace(re,r)
     @stoc_send client, 'CHAT', {
       player: player
       msg: line

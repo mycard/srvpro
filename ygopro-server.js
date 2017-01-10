@@ -102,7 +102,7 @@
             bad_ip = player.ip;
             ROOM_bad_ip[bad_ip] = 99;
             settings.ban.banned_ip.push(player.ip);
-            ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
+            ygopro.stoc_send_chat_to_room(room, player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
             player.destroy();
             continue;
           }
@@ -262,18 +262,18 @@
     if (bannedplayer) {
       if (bannedplayer.count > 6 && moment() < bannedplayer.time) {
         return {
-          "error": "因为您近期在游戏中多次" + (bannedplayer.reasons.join('、')) + "，您已被禁止使用随机对战功能，将在" + (moment(bannedplayer.time).fromNow(true)) + "后解封"
+          "error": "${random_banned_part1}" + (bannedplayer.reasons.join('${random_ban_reason_separator}')) + "${random_banned_part2}" + (moment(bannedplayer.time).fromNow(true)) + "${random_banned_part3}"
         };
       }
       if (bannedplayer.count > 3 && moment() < bannedplayer.time && bannedplayer.need_tip) {
         bannedplayer.need_tip = false;
         return {
-          "error": "因为您近期在游戏中" + (bannedplayer.reasons.join('、')) + "，在" + (moment(bannedplayer.time).fromNow(true)) + "内您随机对战时只能遇到其他违规玩家"
+          "error": "${random_deprecated_part1}" + (bannedplayer.reasons.join('${random_ban_reason_separator}')) + "${random_deprecated_part2}" + (moment(bannedplayer.time).fromNow(true)) + "${random_deprecated_part3}"
         };
       } else if (bannedplayer.need_tip) {
         bannedplayer.need_tip = false;
         return {
-          "error": "系统检测到您近期在游戏中" + (bannedplayer.reasons.join('、')) + "，若您违规超过3次，将受到惩罚"
+          "error": "${random_warn_part1}" + (bannedplayer.reasons.join('${random_ban_reason_separator}')) + "${random_warn_part2}"
         };
       } else if (bannedplayer.count > 2) {
         bannedplayer.need_tip = true;
@@ -285,20 +285,20 @@
       return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated);
     });
     if (result) {
-      result.welcome = '对手已经在等你了，开始决斗吧！';
+      result.welcome = '${random_duel_enter_room_waiting}';
     } else if (get_memory_usage() < 90) {
       type = type ? type : 'S';
       name = type + ',RANDOM#' + Math.floor(Math.random() * 100000);
       result = new Room(name);
       result.random_type = type;
       result.max_player = max_player;
-      result.welcome = '已建立随机对战房间，正在等待对手！';
+      result.welcome = '${random_duel_enter_room_new}';
       result.deprecated = playerbanned;
     } else {
       return null;
     }
     if (result.random_type === 'M') {
-      result.welcome = result.welcome + '\n您进入了比赛模式的房间，我们推荐使用竞技卡组！';
+      result.welcome = result.welcome + '\n${random_duel_enter_room_match}';
     }
     return result;
   };
@@ -321,7 +321,7 @@
       }));
       if (!windbot) {
         return {
-          "error": "未找到该AI角色或卡组"
+          "error": "${windbot_deck_not_found}"
         };
       }
       name = name + ',' + Math.floor(Math.random() * 100000);
@@ -332,7 +332,7 @@
     if (name.replace(/[^\x00-\xff]/g, "00").length > 20) {
       log.info("long ai name", name);
       return {
-        "error": "AI房间名过长，请在建立房间后输入 /ai 来添加AI"
+        "error": "${windbot_name_too_long}"
       };
     }
     result = new Room(name);
@@ -508,7 +508,7 @@
         this.process.on('error', (function(_this) {
           return function(err) {
             _.each(_this.players, function(player) {
-              return ygopro.stoc_die(player, "建立房间失败，请重试");
+              return ygopro.stoc_die(player, "${create_room_failed}");
             });
             _this["delete"]();
           };
@@ -558,7 +558,7 @@
           };
         })(this));
       } catch (error1) {
-        this.error = "建立房间失败，请重试";
+        this.error = "${create_room_failed}";
       }
     }
 
@@ -687,7 +687,7 @@
         return function(error, response, body) {
           if (error) {
             log.warn('windbot add error', error, _this.name);
-            ygopro.stoc_send_chat_to_room(_this, "添加AI失败，可尝试输入 /ai 重新添加", ygopro.constants.COLORS.RED);
+            ygopro.stoc_send_chat_to_room(_this, "${add_windbot_failed}", ygopro.constants.COLORS.RED);
           }
         };
       })(this));
@@ -726,7 +726,7 @@
     Room.prototype.disconnect = function(client, error) {
       var index;
       if (client.is_post_watcher) {
-        ygopro.stoc_send_chat_to_room(this, (client.name + " 退出了观战") + (error ? ": " + error : ''));
+        ygopro.stoc_send_chat_to_room(this, (client.name + " ${quit_watch}") + (error ? ": " + error : ''));
         index = _.indexOf(this.watchers, client);
         if (index !== -1) {
           this.watchers.splice(index, 1);
@@ -740,11 +740,11 @@
           this.finished = true;
           this.scores[client.name] = -1;
           if (this.random_type) {
-            ROOM_ban_player(client.name, client.ip, "强退");
+            ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}");
           }
         }
         if (this.players.length && !(this.windbot && client.is_host)) {
-          ygopro.stoc_send_chat_to_room(this, (client.name + " 离开了游戏") + (error ? ": " + error : ''));
+          ygopro.stoc_send_chat_to_room(this, (client.name + " ${left_game}") + (error ? ": " + error : ''));
           if (!this["private"] && !this.started && settings.modules.http.websocket_roomlist) {
             roomlist.update(this);
           }
@@ -815,7 +815,7 @@
         server.closed = true;
       }
       if (!client.closed) {
-        ygopro.stoc_send_chat(client, "服务器关闭了连接", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat(client, "${server_closed}", ygopro.constants.COLORS.RED);
         client.destroy();
       }
     });
@@ -827,7 +827,7 @@
       }
       server.closed = error;
       if (!client.closed) {
-        ygopro.stoc_send_chat(client, "服务器错误: " + error, ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat(client, "${server_error}: " + error, ygopro.constants.COLORS.RED);
         client.destroy();
       }
     });
@@ -840,7 +840,7 @@
       client.open_cloud_replay = function(err, replay) {
         var buffer;
         if (err || !replay) {
-          ygopro.stoc_die(client, "没有找到录像");
+          ygopro.stoc_die(client, "${cloud_replay_no}");
           return;
         }
         redisdb.expire("replay:" + replay.replay_id, 60 * 60 * 48);
@@ -848,11 +848,11 @@
         zlib.unzip(buffer, function(err, replay_buffer) {
           if (err) {
             log.info("cloud replay unzip error: " + err);
-            ygopro.stoc_send_chat(client, "播放录像出错", ygopro.constants.COLORS.RED);
+            ygopro.stoc_send_chat(client, "${cloud_replay_error}", ygopro.constants.COLORS.RED);
             client.destroy();
             return;
           }
-          ygopro.stoc_send_chat(client, "正在观看云录像：R#" + replay.replay_id + " " + replay.player_names + " " + replay.date_time, ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "${cloud_replay_playing} R#" + replay.replay_id + " " + replay.player_names + " " + replay.date_time, ygopro.constants.COLORS.BABYBLUE);
           client.write(replay_buffer, function() {
             client.destroy();
           });
@@ -1035,6 +1035,10 @@
     struct.set("name", name);
     buffer = struct.buffer;
     client.name = name;
+    client.lang = settings.modules.lang;
+    if (name === "P233") {
+      client.lang = "en-us";
+    }
     return false;
   });
 
@@ -1043,7 +1047,7 @@
     if (settings.modules.stop) {
       ygopro.stoc_die(client, settings.modules.stop);
     } else if (info.pass.toUpperCase() === "R" && settings.modules.cloud_replay.enabled) {
-      ygopro.stoc_send_chat(client, "以下是您近期的云录像，密码处输入 R#录像编号 即可观看", ygopro.constants.COLORS.BABYBLUE);
+      ygopro.stoc_send_chat(client, "${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE);
       redisdb.lrange(client.ip + ":replays", 0, 2, function(err, result) {
         _.each(result, function(replay_id, id) {
           redisdb.hgetall("replay:" + replay_id, function(err, replay) {
@@ -1072,7 +1076,7 @@
             if (err) {
               log.info("cloud replay replayid error: " + err);
             }
-            ygopro.stoc_die(client, "没有找到录像");
+            ygopro.stoc_die(client, "${cloud_replay_no}");
             return;
           }
           redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
@@ -1080,7 +1084,7 @@
       } else if (replay_id) {
         redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
       } else {
-        ygopro.stoc_die(client, "没有找到录像");
+        ygopro.stoc_die(client, "${cloud_replay_no}");
       }
     } else if (info.pass.toUpperCase() === "W" && settings.modules.cloud_replay.enabled) {
       replay_id = Cloud_replay_ids[Math.floor(Math.random() * Cloud_replay_ids.length)];
@@ -1093,16 +1097,16 @@
       });
       client.destroy();
     } else if (!info.pass.length && !settings.modules.random_duel.enabled && !settings.modules.windbot.enabled) {
-      ygopro.stoc_die(client, "房间名不能为空，请在主机密码处填写房间名");
+      ygopro.stoc_die(client, "${blank_room_name}");
     } else if (info.pass.length && settings.modules.mycard.enabled && info.pass.slice(0, 3) !== 'AI#') {
-      ygopro.stoc_send_chat(client, '正在读取用户信息...', ygopro.constants.COLORS.BABYBLUE);
+      ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {
-        ygopro.stoc_die(client, '主机密码不正确 (Invalid Length)');
+        ygopro.stoc_die(client, '${invalid_password_length}');
         return;
       }
       buffer = new Buffer(info.pass.slice(0, 8), 'base64');
       if (buffer.length !== 6) {
-        ygopro.stoc_die(client, '主机密码不正确 (Invalid Payload Length)');
+        ygopro.stoc_die(client, '${invalid_password_payload}');
         return;
       }
       check = function(buf) {
@@ -1117,7 +1121,7 @@
         var action, name, opt1, opt2, opt3, options, room;
         action = buffer.readUInt8(1) >> 4;
         if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
-          ygopro.stoc_die(client, '主机密码不正确 (Unauthorized)');
+          ygopro.stoc_die(client, '${invalid_password_unauthorized}');
           return;
         }
         switch (action) {
@@ -1125,7 +1129,7 @@
           case 2:
             name = crypto.createHash('md5').update(info.pass + client.name).digest('base64').slice(0, 10).replace('+', '-').replace('/', '_');
             if (ROOM_find_by_name(name)) {
-              ygopro.stoc_die(client, '主机密码不正确 (Already Existed)');
+              ygopro.stoc_die(client, '${invalid_password_existed}');
               return;
             }
             opt1 = buffer.readUInt8(2);
@@ -1154,7 +1158,7 @@
             name = info.pass.slice(8);
             room = ROOM_find_by_name(name);
             if (!room) {
-              ygopro.stoc_die(client, '主机密码不正确 (Not Found)');
+              ygopro.stoc_die(client, '${invalid_password_not_found}');
               return;
             }
             break;
@@ -1164,11 +1168,11 @@
             room.arena = settings.modules.arena_mode.mode;
             break;
           default:
-            ygopro.stoc_die(client, '主机密码不正确 (Invalid Action)');
+            ygopro.stoc_die(client, '${invalid_password_action}');
             return;
         }
         if (!room) {
-          ygopro.stoc_die(client, "服务器已经爆满，请稍候再试");
+          ygopro.stoc_die(client, "${server_full}");
         } else if (room.error) {
           ygopro.stoc_die(client, room.error);
         } else {
@@ -1213,47 +1217,47 @@
           }
         }
         if (!check(buffer)) {
-          ygopro.stoc_die(client, '主机密码不正确 (Checksum Failed)');
+          ygopro.stoc_die(client, '${invalid_password_checksum}');
           return;
         }
         users_cache[client.name] = body.user.id;
         return finish(buffer);
       });
     } else if (!client.name || client.name === "") {
-      ygopro.stoc_die(client, "请输入正确的用户名");
+      ygopro.stoc_die(client, "${bad_user_name}");
     } else if (ROOM_connected_ip[client.ip] > 5) {
       log.warn("MULTI LOGIN", client.name, client.ip);
-      ygopro.stoc_die(client, "同时开启的客户端数量过多 " + client.ip);
+      ygopro.stoc_die(client, "${too_much_connection}" + client.ip);
     } else if (_.indexOf(settings.ban.banned_user, client.name) > -1) {
       settings.ban.banned_ip.push(client.ip);
       log.warn("BANNED USER LOGIN", client.name, client.ip);
-      ygopro.stoc_die(client, "您的账号已被封禁");
+      ygopro.stoc_die(client, "${banned_user_login}");
     } else if (_.indexOf(settings.ban.banned_ip, client.ip) > -1) {
       log.warn("BANNED IP LOGIN", client.name, client.ip);
-      ygopro.stoc_die(client, "您的账号已被封禁");
+      ygopro.stoc_die(client, "${banned_ip_login}");
     } else if (_.any(settings.ban.badword_level3, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
       log.warn("BAD NAME LEVEL 3", client.name, client.ip);
-      ygopro.stoc_die(client, "您的用户名存在不适当的内容");
+      ygopro.stoc_die(client, "${bad_name_level3}");
     } else if (_.any(settings.ban.badword_level2, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
       log.warn("BAD NAME LEVEL 2", client.name, client.ip);
-      ygopro.stoc_die(client, "您的用户名存在不适当的内容");
+      ygopro.stoc_die(client, "${bad_name_level2}");
     } else if (_.any(settings.ban.badword_level1, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');
       return name.match(regexp);
     }, name = client.name)) {
       log.warn("BAD NAME LEVEL 1", client.name, client.ip);
-      ygopro.stoc_die(client, "您的用户名存在不适当的内容，请注意更改");
+      ygopro.stoc_die(client, "${bad_name_level1}");
     } else if (info.pass.length && !ROOM_validate(info.pass)) {
-      ygopro.stoc_die(client, "房间密码不正确");
+      ygopro.stoc_die(client, "${invalid_password_room}");
     } else {
       if (info.version === 4921 && settings.version === 4922) {
         info.version = settings.version;
@@ -1264,7 +1268,7 @@
       }
       room = ROOM_find_or_create_by_name(info.pass, client.ip);
       if (!room) {
-        ygopro.stoc_die(client, "服务器已经爆满，请稍候再试");
+        ygopro.stoc_die(client, "${server_full}");
       } else if (room.error) {
         ygopro.stoc_die(client, room.error);
       } else if (room.started) {
@@ -1272,16 +1276,16 @@
           client.setTimeout(300000);
           client.rid = _.indexOf(ROOM_all, room);
           client.is_post_watcher = true;
-          ygopro.stoc_send_chat_to_room(room, client.name + " 加入了观战");
+          ygopro.stoc_send_chat_to_room(room, client.name + " ${watch_join}");
           room.watchers.push(client);
-          ygopro.stoc_send_chat(client, "观战中", ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE);
           ref1 = room.watcher_buffers;
           for (k = 0, len1 = ref1.length; k < len1; k++) {
             buffer = ref1[k];
             client.write(buffer);
           }
         } else {
-          ygopro.stoc_die(client, "决斗已开始，不允许观战");
+          ygopro.stoc_die(client, "${watch_denied}");
         }
       } else {
         client.setTimeout(300000);
@@ -1314,8 +1318,8 @@
         } else if (!body || _.isString(body)) {
           log.warn('LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body);
         } else {
-          rank_txt = body.arena_rank > 0 ? "排名第" + body.arena_rank : "暂无排名";
-          ygopro.stoc_send_chat(client, client.name + "，你有" + body.exp + "点经验，你的战斗力是" + (Math.round(body.pt)) + "，" + rank_txt + "。正式上线前这些积分可能被重置。", ygopro.constants.COLORS.BABYBLUE);
+          rank_txt = body.arena_rank > 0 ? "${rank_arena}" + body.arena_rank : "${rank_blank}";
+          ygopro.stoc_send_chat(client, client.name + "${exp_value_part1}" + body.exp + "${exp_value_part2}${exp_value_part3}" + (Math.round(body.pt)) + rank_txt + "${exp_value_part4}", ygopro.constants.COLORS.BABYBLUE);
         }
       });
     }
@@ -1429,7 +1433,7 @@
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp -= val;
       if ((0 < (ref = room.dueling_players[pos].lp) && ref <= 100)) {
-        ygopro.stoc_send_chat_to_room(room, "你的生命已经如风中残烛了！", ygopro.constants.COLORS.PINK);
+        ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK);
       }
     }
     if (ygopro.constants.MSG[msg] === 'RECOVER' && client.is_host) {
@@ -1456,7 +1460,7 @@
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp -= val;
       if ((0 < (ref1 = room.dueling_players[pos].lp) && ref1 <= 100)) {
-        ygopro.stoc_send_chat_to_room(room, "背水一战！", ygopro.constants.COLORS.PINK);
+        ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK);
       }
     }
     if (settings.modules.dialogues.enabled) {
@@ -1485,12 +1489,12 @@
       if (player && player.pos === info.pos && player !== client) {
         client.kick_count = client.kick_count ? client.kick_count + 1 : 1;
         if (client.kick_count >= 5) {
-          ygopro.stoc_send_chat_to_room(room, client.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
-          ROOM_ban_player(player.name, player.ip, "挂房间");
+          ygopro.stoc_send_chat_to_room(room, client.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
+          ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}");
           client.destroy();
           return true;
         }
-        ygopro.stoc_send_chat_to_room(room, player.name + " 被请出了房间", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat_to_room(room, player.name + " ${kicked_by_player}", ygopro.constants.COLORS.RED);
       }
     }
     return false;
@@ -1538,7 +1542,7 @@
       time -= 1;
       if (time) {
         if (!(time % 5)) {
-          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "秒后房主若不开始游戏将被请出房间", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.LIGHTBLUE);
+          ygopro.stoc_send_chat_to_room(room, "" + (time <= 9 ? ' ' : '') + time + "${kick_count_down}", time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.LIGHTBLUE);
         }
         setTimeout((function() {
           wait_room_start(room, time);
@@ -1548,8 +1552,8 @@
         for (j = 0, len = ref.length; j < len; j++) {
           player = ref[j];
           if (player && player.is_host) {
-            ROOM_ban_player(player.name, player.ip, "挂房间");
-            ygopro.stoc_send_chat_to_room(room, player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
+            ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}");
+            ygopro.stoc_send_chat_to_room(room, player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
             player.destroy();
           }
         }
@@ -1677,16 +1681,16 @@
     cmd = msg.split(' ');
     switch (cmd[0]) {
       case '/help':
-        ygopro.stoc_send_chat(client, "YGOSrv233 指令帮助");
-        ygopro.stoc_send_chat(client, "/help 显示这个帮助信息");
+        ygopro.stoc_send_chat(client, "${chat_order_main}");
+        ygopro.stoc_send_chat(client, "${chat_order_help}");
         if (!settings.modules.mycard.enabled) {
-          ygopro.stoc_send_chat(client, "/roomname 显示当前房间的名字");
+          ygopro.stoc_send_chat(client, "${chat_order_roomname}");
         }
         if (settings.modules.windbot.enabled) {
-          ygopro.stoc_send_chat(client, "/ai 添加一个AI，/ai 角色名 可指定添加的角色");
+          ygopro.stoc_send_chat(client, "${chat_order_windbot}");
         }
         if (settings.modules.tips.enabled) {
-          ygopro.stoc_send_chat(client, "/tip 显示一条提示");
+          ygopro.stoc_send_chat(client, "${chat_order_tip}");
         }
         break;
       case '/tip':
@@ -1701,7 +1705,7 @@
               return w.name === name || w.deck === name;
             }));
             if (!windbot) {
-              ygopro.stoc_send_chat(client, "未找到该AI角色或卡组", ygopro.constants.COLORS.RED);
+              ygopro.stoc_send_chat(client, "${windbot_deck_not_found}", ygopro.constants.COLORS.RED);
               return;
             }
           } else {
@@ -1712,7 +1716,7 @@
         break;
       case '/roomname':
         if (room) {
-          ygopro.stoc_send_chat(client, "您当前的房间名是 " + room.name, ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "${room_name} " + room.name, ygopro.constants.COLORS.BABYBLUE);
         }
     }
     if (!(room && room.random_type)) {
@@ -1720,7 +1724,7 @@
     }
     if (client.abuse_count >= 5) {
       log.warn("BANNED CHAT", client.name, client.ip, msg);
-      ygopro.stoc_send_chat(client, "您已被禁言！", ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "${banned_chat_tip}", ygopro.constants.COLORS.RED);
       return true;
     }
     oldmsg = msg;
@@ -1732,14 +1736,14 @@
       log.warn("BAD WORD LEVEL 3", client.name, client.ip, oldmsg);
       cancel = true;
       if (client.abuse_count > 0) {
-        ygopro.stoc_send_chat(client, "您的发言存在严重不适当的内容，禁止您使用随机对战功能！", ygopro.constants.COLORS.RED);
-        ROOM_ban_player(client.name, client.ip, "发言违规");
-        ROOM_ban_player(client.name, client.ip, "发言违规", 3);
+        ygopro.stoc_send_chat(client, "${banned_duel_tip}", ygopro.constants.COLORS.RED);
+        ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}");
+        ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}", 3);
         client.destroy();
         return true;
       } else {
         client.abuse_count = client.abuse_count + 4;
-        ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED);
       }
     } else if (client.rag && room.started) {
       client.rag = false;
@@ -1747,7 +1751,7 @@
     } else if (msg.length > 100) {
       log.warn("SPAM WORD", client.name, client.ip, oldmsg);
       client.abuse_count = client.abuse_count + 2;
-      ygopro.stoc_send_chat(client, "请不要发送垃圾信息！", ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
       cancel = true;
     } else if (_.any(settings.ban.spam_word, function(badword) {
       var regexp;
@@ -1755,7 +1759,7 @@
       return msg.match(regexp);
     }, msg)) {
       client.abuse_count = client.abuse_count + 2;
-      ygopro.stoc_send_chat(client, "请不要发送垃圾信息！", ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
       cancel = true;
     } else if (_.any(settings.ban.badword_level2, function(badword) {
       var regexp;
@@ -1764,7 +1768,7 @@
     }, msg)) {
       log.warn("BAD WORD LEVEL 2", client.name, client.ip, oldmsg);
       client.abuse_count = client.abuse_count + 3;
-      ygopro.stoc_send_chat(client, "您的发言存在不适当的内容，发送失败！", ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED);
       cancel = true;
     } else {
       _.each(settings.ban.badword_level1, function(badword) {
@@ -1775,7 +1779,7 @@
       if (oldmsg !== msg) {
         log.warn("BAD WORD LEVEL 1", client.name, client.ip, oldmsg);
         client.abuse_count = client.abuse_count + 1;
-        ygopro.stoc_send_chat(client, "请使用文明用语！");
+        ygopro.stoc_send_chat(client, "${chat_warn_level1}");
         struct = ygopro.structs["chat"];
         struct._setBuff(buffer);
         struct.set("msg", msg);
@@ -1789,8 +1793,8 @@
       }
     }
     if (client.abuse_count >= 5) {
-      ygopro.stoc_send_chat_to_room(room, client.name + " 已被禁言！", ygopro.constants.COLORS.RED);
-      ROOM_ban_player(client.name, client.ip, "发言违规");
+      ygopro.stoc_send_chat_to_room(room, client.name + " ${chat_banned}", ygopro.constants.COLORS.RED);
+      ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}");
     }
     return cancel;
   });
@@ -1866,12 +1870,12 @@
           struct.set("sidec", deck_side.length);
           struct.set("deckbuf", deckbuf);
           buffer = struct.buffer;
-          ygopro.stoc_send_chat(client, "成功使用卡组 " + found_deck + " 参加比赛。", ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "${deck_correct_part1} " + found_deck + " ${deck_correct_part2}", ygopro.constants.COLORS.BABYBLUE);
         } else {
-          ygopro.stoc_send_chat(client, "您的卡组与报名卡组 " + found_deck + " 不符。注意卡组不能有包括卡片顺序在内的任何修改。", ygopro.constants.COLORS.RED);
+          ygopro.stoc_send_chat(client, "${deck_incorrect_part1} " + found_deck + " ${deck_incorrect_part2}", ygopro.constants.COLORS.RED);
         }
       } else {
-        ygopro.stoc_send_chat(client, client.name + "，没有找到您的报名信息，请确定您使用昵称与报名ID一致。", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat(client, client.name + "${deck_not_found}", ygopro.constants.COLORS.RED);
       }
     }
     return false;
@@ -1993,7 +1997,7 @@
         });
       }
       if (settings.modules.cloud_replay.enabled) {
-        ygopro.stoc_send_chat(client, "本场比赛云录像：R#" + room.cloud_replay_id + "。将于本局结束后可播放。", ygopro.constants.COLORS.BABYBLUE);
+        ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R#" + room.cloud_replay_id + "${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE);
       }
       return true;
     } else {
@@ -2012,11 +2016,11 @@
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
         if (time_passed >= settings.modules.random_duel.hang_timeout) {
           room.last_active_time = moment();
-          ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "挂机");
-          ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " 被系统请出了房间", ygopro.constants.COLORS.RED);
+          ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}");
+          ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
           room.waiting_for_player.server.destroy();
         } else if (time_passed >= (settings.modules.random_duel.hang_timeout - 20) && !(time_passed % 10)) {
-          ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " 已经很久没有操作了，若继续挂机，将于" + (settings.modules.random_duel.hang_timeout - time_passed) + "秒后被请出房间", ygopro.constants.COLORS.RED);
+          ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${afk_warn_part1}" + (settings.modules.random_duel.hang_timeout - time_passed) + "${afk_warn_part2}", ygopro.constants.COLORS.RED);
         }
       }
     }, 1000);
