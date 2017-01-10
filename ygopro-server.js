@@ -1429,6 +1429,10 @@
       client.is_first = !(playertype & 0xf);
       client.lp = room.hostinfo.start_lp;
     }
+    if (ygopro.constants.MSG[msg] === 'NEW_TURN' && client.surrend_confirm) {
+      client.surrend_confirm = false;
+      ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE);
+    }
     if (ygopro.constants.MSG[msg] === 'WIN' && client.is_host) {
       pos = buffer.readUInt8(1);
       if (!(client.is_first || pos === 2)) {
@@ -1696,6 +1700,22 @@
     }
     cmd = msg.split(' ');
     switch (cmd[0]) {
+      case '/投降':
+      case '/surrender':
+        if (!room.started || room.hostinfo.mode === 2) {
+          return cancel;
+        }
+        if (room.random_type) {
+          ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE);
+          return cancel;
+        }
+        if (client.surrend_confirm) {
+          ygopro.ctos_send(client.server, 'SURRENDER');
+        } else {
+          ygopro.stoc_send_chat(client, "${surrender_confirm}", ygopro.constants.COLORS.BABYBLUE);
+          client.surrend_confirm = true;
+        }
+        break;
       case '/help':
         ygopro.stoc_send_chat(client, "${chat_order_main}");
         ygopro.stoc_send_chat(client, "${chat_order_help}");

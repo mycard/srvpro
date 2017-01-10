@@ -165,6 +165,9 @@
     "cloud_replay_delay_part1": "本场比赛云录像：",
     "cloud_replay_delay_part2": "。将于本局结束后可播放。",
     "afk_warn_part1": "已经很久没有操作了，若继续挂机，将于",
-    "afk_warn_part2": "秒后被请出房间"
+    "afk_warn_part2": "秒后被请出房间",
+    "surrender_confirm": "确实要投降吗？再次输入 /投降 以确认。",
+    "surrender_canceled": "已取消投降，加油！",
+    "surrender_denied": "为保证双方玩家的游戏体验，随机对战中3回合后才能投降。"
   }
 }

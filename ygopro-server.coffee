@@ -1191,6 +1191,10 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     client.lp = room.hostinfo.start_lp
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
+
+  if ygopro.constants.MSG[msg] == 'NEW_TURN' and client.surrend_confirm
+    client.surrend_confirm = false
+    ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
   
   if ygopro.constants.MSG[msg] == 'WIN' and client.is_host
     pos = buffer.readUInt8(1)
@@ -1378,6 +1382,18 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   room.last_active_time = moment() unless cancel or not room.random_type
   cmd = msg.split(' ')
   switch cmd[0]
+    when '/投降', '/surrender'
+      if !room.started or room.hostinfo.mode==2
+        return cancel
+      if room.random_type
+        ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
+        return cancel
+      if client.surrend_confirm
+        ygopro.ctos_send(client.server, 'SURRENDER')
+      else
+        ygopro.stoc_send_chat(client, "${surrender_confirm}", ygopro.constants.COLORS.BABYBLUE)
+        client.surrend_confirm = true
+
     when '/help'
       ygopro.stoc_send_chat(client, "${chat_order_main}")
       ygopro.stoc_send_chat(client, "${chat_order_help}")
