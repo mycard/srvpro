@@ -314,6 +314,9 @@ class Room
     else if name[0...2] == 'T#'
       @hostinfo.mode = 2
       @hostinfo.start_lp = 16000
+    else if name[0...3] == 'AI#'
+      @hostinfo.rule = 2
+      @hostinfo.lflist = -1
 
     else if (param = name.match /^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i)
       @hostinfo.rule = parseInt(param[1])
