@@ -250,7 +250,7 @@
     "chat_order_tip": "/tip TIP보기",
     "room_name": "방 이름: ",
     "banned_chat_tip": "채팅이 금지되어 있습니다.",
-    "banned_duel_tip": "부적절한 메시지를 보내어 랜덤듀얼 시스템 이용을 금지당했습니다..",
+    "banned_duel_tip": "랜덤듀얼 시스템 이용을 우측의 시간동안 금지당했습니다.",
     "chat_warn_level0": "WARNING: 부적절한 메시지 전송을 중단하십시오.",
     "chat_warn_level2": "WARNING: 당신의 대화는 싸구려 입니다!",
     "chat_warn_level1": "WARNING: 교양인 다운 용어를 사용하십시오.",
@@ -267,9 +267,9 @@
     "surrender_confirm": "진짜로 항복하시겠습니까? 확인을 위해 /surrender를 다시 입력하십시오.",
     "surrender_canceled": "항복 취소됨.",
     "surrender_denied": "항복 버튼을 사용해주십시오.",
-    "unwelcome_warn_part1": "만약 계속할 경우 ",
-    "unwelcome_warn_part2": ", 상대방이 떠날지도 모릅니다.",
-    "unwelcome_tip_part1": "상대했습니다 ",
-    "unwelcome_tip_part2": ", 그러므로 게임을 떠나셔도 처벌을 받지않을 것 입니다."
+    "unwelcome_warn_part1": "비매너 행동을 그만 해주세요. ",
+    "unwelcome_warn_part2": ", 의 이유로 서버에서 밴을 당할 수 있습니다.",
+    "unwelcome_tip_part1": "비매너 유저를 상대했습니다 ",
+    "unwelcome_tip_part2": ", 해당 게임을 나가셔도 처벌을 받지않을 것 입니다."
   }
 }
