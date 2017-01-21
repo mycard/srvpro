@@ -848,7 +848,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
       if lang=settings.modules.i18n.map[geo.country]
         client.lang=lang
       else
-        log.info("Not in map", geo.country, client.name, client.ip)
+        #log.info("Not in map", geo.country, client.name, client.ip)
         client.lang=settings.modules.i18n.fallback
   return false
 
