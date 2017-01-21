@@ -676,8 +676,8 @@
       if (index !== -1) {
         ROOM_all[index] = null;
       }
-      if (!this["private"] && !this.started && this.established && settings.modules.http.websocket_roomlist) {
-        roomlist["delete"](this.name);
+      if (!this["private"] && this.established && settings.modules.http.websocket_roomlist) {
+        roomlist["delete"](this);
       }
     };
 
@@ -1654,7 +1654,7 @@
       room.started = true;
       room.start_time = moment().format();
       if (settings.modules.http.websocket_roomlist && !room["private"]) {
-        roomlist["delete"](room.name);
+        roomlist.start(room);
       }
       room.dueling_players = [];
       ref = room.players;

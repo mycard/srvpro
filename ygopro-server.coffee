@@ -503,7 +503,7 @@ class Room
     index = _.indexOf(ROOM_all, this)
     ROOM_all[index] = null unless index == -1
     #ROOM_all.splice(index, 1) unless index == -1
-    roomlist.delete @name if !@private and !@started and @established and settings.modules.http.websocket_roomlist
+    roomlist.delete this if !@private and @established and settings.modules.http.websocket_roomlist
     return
 
   get_playing_player: ->
@@ -1352,7 +1352,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   unless room.started #first start
     room.started = true
     room.start_time = moment().format()
-    roomlist.delete room.name if settings.modules.http.websocket_roomlist and not room.private
+    roomlist.start room if settings.modules.http.websocket_roomlist and not room.private
     #room.duels = []
     room.dueling_players = []
     for player in room.players when player.pos != 7
