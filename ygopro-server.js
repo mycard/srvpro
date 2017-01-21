@@ -1153,7 +1153,7 @@
         return (checksum & 0xFF) === 0;
       };
       finish = function(buffer) {
-        var action, name, opt1, opt2, opt3, options, room;
+        var action, j, len, name, opt1, opt2, opt3, options, ref, room;
         action = buffer.readUInt8(1) >> 4;
         if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
           ygopro.stoc_die(client, '${invalid_password_unauthorized}');
@@ -1210,6 +1210,22 @@
           ygopro.stoc_die(client, "${server_full}");
         } else if (room.error) {
           ygopro.stoc_die(client, room.error);
+        } else if (room.started) {
+          if (settings.modules.cloud_replay.enable_halfway_watch) {
+            client.setTimeout(300000);
+            client.rid = _.indexOf(ROOM_all, room);
+            client.is_post_watcher = true;
+            ygopro.stoc_send_chat_to_room(room, client.name + " ${watch_join}");
+            room.watchers.push(client);
+            ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE);
+            ref = room.watcher_buffers;
+            for (j = 0, len = ref.length; j < len; j++) {
+              buffer = ref[j];
+              client.write(buffer);
+            }
+          } else {
+            ygopro.stoc_die(client, "${watch_denied}");
+          }
         } else {
           client.setTimeout(300000);
           client.rid = _.indexOf(ROOM_all, room);

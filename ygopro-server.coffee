@@ -980,6 +980,18 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         ygopro.stoc_die(client, "${server_full}")
       else if room.error
         ygopro.stoc_die(client, room.error)
+      else if room.started
+        if settings.modules.cloud_replay.enable_halfway_watch
+          client.setTimeout(300000) #连接后超时5分钟
+          client.rid = _.indexOf(ROOM_all, room)
+          client.is_post_watcher = true
+          ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
+          room.watchers.push client
+          ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
+          for buffer in room.watcher_buffers
+            client.write buffer
+        else
+          ygopro.stoc_die(client, "${watch_denied}")
       else
         #client.room = room
         client.setTimeout(300000) #连接后超时5分钟
