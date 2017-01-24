@@ -1396,6 +1396,16 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
           #else
             #log.info 'DECK POST OK', response.statusCode, client.name, body
         return
+    if settings.modules.deck_log.post # temp for analytics2
+      request.post { url : "https://mycard.moe/ygopro/analytics2/deck/text" , form : {
+        accesskey: settings.modules.deck_log.accesskey,
+        deck: deck_text,
+        playername: client.name,
+        arena: settings.modules.arena_mode.mode
+      }}, (error, response, body)->
+        if error
+          log.warn 'DECK POST ERROR', error
+        return
     client.deck_saved = true
   return
 

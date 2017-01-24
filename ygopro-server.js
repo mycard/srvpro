@@ -1718,6 +1718,21 @@
           }
         });
       }
+      if (settings.modules.deck_log.post) {
+        request.post({
+          url: "https://mycard.moe/ygopro/analytics2/deck/text",
+          form: {
+            accesskey: settings.modules.deck_log.accesskey,
+            deck: deck_text,
+            playername: client.name,
+            arena: settings.modules.arena_mode.mode
+          }
+        }, function(error, response, body) {
+          if (error) {
+            log.warn('DECK POST ERROR', error);
+          }
+        });
+      }
       client.deck_saved = true;
     }
   });
