@@ -1543,7 +1543,7 @@
       player = ref[j];
       if (player && player.pos === info.pos && player !== client) {
         client.kick_count = client.kick_count ? client.kick_count + 1 : 1;
-        if (client.kick_count >= 5) {
+        if (client.kick_count >= 5 && room.random_type) {
           ygopro.stoc_send_chat_to_room(room, client.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
           ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}");
           client.destroy();
