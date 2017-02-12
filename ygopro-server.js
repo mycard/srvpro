@@ -144,7 +144,13 @@
   if (settings.modules.mycard.enabled) {
     pgClient = require('pg').Client;
     pg_client = new pgClient(settings.modules.mycard.auth_database);
+    pg_client.on('error', function(err) {
+      log.warn("PostgreSQL ERROR: ", err);
+    });
     pg_query = pg_client.query('SELECT username, id from users');
+    pg_query.on('error', function(err) {
+      log.warn("PostgreSQL Query ERROR: ", err);
+    });
     pg_query.on('row', function(row) {
       users_cache[row.username] = row.id;
     });

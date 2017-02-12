@@ -103,7 +103,13 @@ users_cache = {}
 if settings.modules.mycard.enabled
   pgClient = require('pg').Client
   pg_client = new pgClient(settings.modules.mycard.auth_database)
+  pg_client.on 'error', (err) ->
+    log.warn "PostgreSQL ERROR: ", err
+    return
   pg_query = pg_client.query('SELECT username, id from users')
+  pg_query.on 'error', (err) ->
+    log.warn "PostgreSQL Query ERROR: ", err
+    return
   pg_query.on 'row', (row) ->
     #log.info "load user", row.username, row.id
     users_cache[row.username] = row.id
