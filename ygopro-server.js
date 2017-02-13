@@ -555,7 +555,7 @@
         this.process.stdout.once('data', (function(_this) {
           return function(data) {
             _this.established = true;
-            if (!_this["private"] && settings.modules.http.websocket_roomlist) {
+            if (settings.modules.http.websocket_roomlist) {
               roomlist.create(_this);
             }
             _this.port = parseInt(data);
@@ -682,7 +682,7 @@
       if (index !== -1) {
         ROOM_all[index] = null;
       }
-      if (!this["private"] && this.established && settings.modules.http.websocket_roomlist) {
+      if (this.established && settings.modules.http.websocket_roomlist) {
         roomlist["delete"](this);
       }
     };
@@ -737,7 +737,7 @@
         }
       }
       if (this.established) {
-        if (!this["private"] && !this.started && settings.modules.http.websocket_roomlist) {
+        if (!this.started && settings.modules.http.websocket_roomlist) {
           roomlist.update(this);
         }
         client.server.connect(this.port, '127.0.0.1', function() {
@@ -775,7 +775,7 @@
         }
         if (this.players.length && !(this.windbot && client.is_host)) {
           ygopro.stoc_send_chat_to_room(this, (client.name + " ${left_game}") + (error ? ": " + error : ''));
-          if (!this["private"] && !this.started && settings.modules.http.websocket_roomlist) {
+          if (!this.started && settings.modules.http.websocket_roomlist) {
             roomlist.update(this);
           }
         } else {
@@ -1674,7 +1674,7 @@
     if (!room.started) {
       room.started = true;
       room.start_time = moment().format();
-      if (settings.modules.http.websocket_roomlist && !room["private"]) {
+      if (settings.modules.http.websocket_roomlist) {
         roomlist.start(room);
       }
       room.dueling_players = [];

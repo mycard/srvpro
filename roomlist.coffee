@@ -20,23 +20,23 @@ init = (http_server, ROOM_all)->
     connection.filter = url.parse(connection.upgradeReq.url, true).query.filter || 'waiting'
     connection.send JSON.stringify
       event: 'init'
-      data: room_data(room) for room in ROOM_all when room and room.established and !room.private and (room.started == (connection.filter == 'started'))
+      data: room_data(room) for room in ROOM_all when room and room.established and (connection.filter == 'started' or !room.private) and (room.started == (connection.filter == 'started'))
 
 create = (room)->
-  broadcast('create', room_data(room), 'waiting')
+  broadcast('create', room_data(room), 'waiting') if !room.private
 
 update = (room)->
-  broadcast('update', room_data(room), 'waiting')
+  broadcast('update', room_data(room), 'waiting') if !room.private
 
 start = (room)->
-  broadcast('delete', room_data(room), 'waiting')
+  broadcast('delete', room_data(room), 'waiting') if !room.private
   broadcast('create', room_data(room), 'started')
 
 _delete = (room)->
   if(room.started)
     broadcast('delete', room.name, 'started')
   else
-    broadcast('delete', room.name, 'waiting')
+    broadcast('delete', room.name, 'waiting') if !room.private
 
 broadcast = (event, data, filter)->
   return if !server

@@ -50,7 +50,7 @@
           results = [];
           for (i = 0, len = ROOM_all.length; i < len; i++) {
             room = ROOM_all[i];
-            if (room && room.established && !room["private"] && (room.started === (connection.filter === 'started'))) {
+            if (room && room.established && (connection.filter === 'started' || !room["private"]) && (room.started === (connection.filter === 'started'))) {
               results.push(room_data(room));
             }
           }
@@ -61,15 +61,21 @@
   };
 
   create = function(room) {
-    return broadcast('create', room_data(room), 'waiting');
+    if (!room["private"]) {
+      return broadcast('create', room_data(room), 'waiting');
+    }
   };
 
   update = function(room) {
-    return broadcast('update', room_data(room), 'waiting');
+    if (!room["private"]) {
+      return broadcast('update', room_data(room), 'waiting');
+    }
   };
 
   start = function(room) {
-    broadcast('delete', room_data(room), 'waiting');
+    if (!room["private"]) {
+      broadcast('delete', room_data(room), 'waiting');
+    }
     return broadcast('create', room_data(room), 'started');
   };
 
@@ -77,7 +83,9 @@
     if (room.started) {
       return broadcast('delete', room.name, 'started');
     } else {
-      return broadcast('delete', room.name, 'waiting');
+      if (!room["private"]) {
+        return broadcast('delete', room.name, 'waiting');
+      }
     }
   };
 
