@@ -415,7 +415,7 @@ class Room
       @process.stdout.setEncoding('utf8')
       @process.stdout.once 'data', (data)=>
         @established = true
-        roomlist.create(this) if settings.modules.http.websocket_roomlist
+        roomlist.create(this) if !@windbot and settings.modules.http.websocket_roomlist
         @port = parseInt data
         _.each @players, (player)=>
           player.server.connect @port, '127.0.0.1', ->
@@ -509,7 +509,7 @@ class Room
     index = _.indexOf(ROOM_all, this)
     ROOM_all[index] = null unless index == -1
     #ROOM_all.splice(index, 1) unless index == -1
-    roomlist.delete this if @established and settings.modules.http.websocket_roomlist
+    roomlist.delete this if !@windbot and @established and settings.modules.http.websocket_roomlist
     return
 
   get_playing_player: ->
@@ -553,7 +553,7 @@ class Room
         ROOM_players_oppentlist[client.ip] = null
 
     if @established
-      roomlist.update(this) if !@started and settings.modules.http.websocket_roomlist
+      roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
       client.server.connect @port, '127.0.0.1', ->
         client.server.write buffer for buffer in client.pre_establish_buffers
         client.established = true
@@ -578,7 +578,7 @@ class Room
           ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
       if @players.length and !(@windbot and client.is_host)
         ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
-        roomlist.update(this) if !@started and settings.modules.http.websocket_roomlist
+        roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
         #client.room = null
       else
         @process.kill()
@@ -1370,7 +1370,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
   unless room.started #first start
     room.started = true
     room.start_time = moment().format()
-    roomlist.start room if settings.modules.http.websocket_roomlist
+    roomlist.start room if !room.windbot and settings.modules.http.websocket_roomlist
     #room.duels = []
     room.dueling_players = []
     for player in room.players when player.pos != 7
