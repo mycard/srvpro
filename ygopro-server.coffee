@@ -1462,6 +1462,11 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
 
     #when '/test'
     #  ygopro.stoc_send_hint_card_to_room(room, 2333365)
+  if (msg.length>100)
+    log.warn "SPAM WORD", client.name, client.ip, msg
+    client.abuse_count=client.abuse_count+2 if client.abuse_count
+    ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
+    cancel = true
   if !(room and room.random_type)
     return cancel
   if client.abuse_count>=5
@@ -1487,11 +1492,6 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   else if (client.rag and room.started)
     client.rag = false
     #ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
-    cancel = true
-  else if (msg.length>100)
-    log.warn "SPAM WORD", client.name, client.ip, oldmsg
-    client.abuse_count=client.abuse_count+2
-    ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
   else if (_.any(settings.ban.spam_word, (badword) ->
     regexp = new RegExp(badword, 'i')

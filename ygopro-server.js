@@ -1811,6 +1811,14 @@
           ygopro.stoc_send_chat(client, "${room_name} " + room.name, ygopro.constants.COLORS.BABYBLUE);
         }
     }
+    if (msg.length > 100) {
+      log.warn("SPAM WORD", client.name, client.ip, msg);
+      if (client.abuse_count) {
+        client.abuse_count = client.abuse_count + 2;
+      }
+      ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
+      cancel = true;
+    }
     if (!(room && room.random_type)) {
       return cancel;
     }
@@ -1839,11 +1847,6 @@
       }
     } else if (client.rag && room.started) {
       client.rag = false;
-      cancel = true;
-    } else if (msg.length > 100) {
-      log.warn("SPAM WORD", client.name, client.ip, oldmsg);
-      client.abuse_count = client.abuse_count + 2;
-      ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
       cancel = true;
     } else if (_.any(settings.ban.spam_word, function(badword) {
       var regexp;
