@@ -593,7 +593,7 @@
     }
 
     Room.prototype["delete"] = function() {
-      var index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref, replay_id, score, score_array;
+      var index, name, ref, score, score_array;
       if (this.deleted) {
         return;
       }
@@ -636,40 +636,10 @@
           })(this));
         }
       }
-      if (this.player_datas.length && settings.modules.cloud_replay.enabled) {
-        replay_id = this.cloud_replay_id;
-        if (this.has_ygopro_error) {
-          log_rep_id = true;
-        }
-        player_names = this.player_datas[0].name + (this.player_datas[2] ? "+" + this.player_datas[2].name : "") + " VS " + (this.player_datas[1] ? this.player_datas[1].name : "AI") + (this.player_datas[3] ? "+" + this.player_datas[3].name : "");
-        player_ips = [];
-        _.each(this.player_datas, function(player) {
-          player_ips.push(player.ip);
-        });
-        recorder_buffer = Buffer.concat(this.recorder_buffers);
-        zlib.deflate(recorder_buffer, function(err, replay_buffer) {
-          var date_time, recorded_ip;
-          replay_buffer = replay_buffer.toString('binary');
-          date_time = moment().format('YYYY-MM-DD HH:mm:ss');
-          redisdb.hmset("replay:" + replay_id, "replay_id", replay_id, "replay_buffer", replay_buffer, "player_names", player_names, "date_time", date_time);
-          if (!log_rep_id) {
-            redisdb.expire("replay:" + replay_id, 60 * 60 * 24);
-          }
-          recorded_ip = [];
-          _.each(player_ips, function(player_ip) {
-            if (_.contains(recorded_ip, player_ip)) {
-              return;
-            }
-            recorded_ip.push(player_ip);
-            redisdb.lpush(player_ip + ":replays", replay_id);
-          });
-          if (log_rep_id) {
-            log.info("error replay: R#" + replay_id);
-          }
-        });
-      }
       this.watcher_buffers = [];
       this.recorder_buffers = [];
+      this.replay_buffer = [];
+      this.cloud_replay_buffer = [];
       this.players = [];
       if (this.watcher) {
         this.watcher.destroy();
@@ -975,7 +945,7 @@
       }
     });
     server.on('data', function(stoc_buffer) {
-      var b, buffer, cancel, datas, j, len, looplimit, stanzas, stoc_message_length, stoc_proto, struct;
+      var b, cancel, datas, looplimit, stoc_message_length, stoc_proto, struct;
       stoc_message_length = 0;
       stoc_proto = 0;
       datas = [];
@@ -1000,7 +970,6 @@
         } else {
           if (stoc_buffer.length >= 2 + stoc_message_length) {
             cancel = false;
-            stanzas = stoc_proto;
             if (ygopro.stoc_follows[stoc_proto]) {
               b = stoc_buffer.slice(3, stoc_message_length - 1 + 3);
               if (struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]) {
@@ -1019,7 +988,7 @@
               }
             }
             if (!cancel) {
-              datas.push(stoc_buffer.slice(0, 2 + stoc_message_length));
+              client.write(stoc_buffer.slice(0, 2 + stoc_message_length));
             }
             stoc_buffer = stoc_buffer.slice(2 + stoc_message_length);
             stoc_message_length = 0;
@@ -1035,10 +1004,6 @@
           server.destroy();
           break;
         }
-      }
-      for (j = 0, len = datas.length; j < len; j++) {
-        buffer = datas[j];
-        client.write(buffer);
       }
     });
   }).listen(settings.port, function() {
@@ -1455,7 +1420,7 @@
   }
 
   ygopro.stoc_follow('GAME_MSG', false, function(buffer, info, client, server) {
-    var card, j, len, line, msg, playertype, pos, reason, ref, ref1, ref2, room, val;
+    var card, duel_win_buffer, j, len, line, msg, playertype, pos, reason, ref, ref1, ref2, room, val;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -1481,6 +1446,10 @@
       }
       reason = buffer.readUInt8(2);
       room.winner = pos;
+      duel_win_buffer = new Buffer(3);
+      duel_win_buffer.writeUInt16LE(4, 0);
+      duel_win_buffer.writeUInt8(1, 2);
+      room.win_buffer = Buffer.concat([duel_win_buffer, buffer]);
       if (room && !room.finished && room.dueling_players[pos]) {
         room.winner_name = room.dueling_players[pos].name;
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
@@ -2054,7 +2023,7 @@
   });
 
   ygopro.stoc_follow('REPLAY', true, function(buffer, info, client, server) {
-    var duellog, dueltime, i, j, len, player, ref, replay_filename, room;
+    var date_time, duel_end_buffer, duellog, dueltime, header, i, j, len, log_rep_id, mark, player, player_ips, player_names, recorded_ip, recorder_buffer, ref, replay, replay_buffer_text, replay_filename, replay_id, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe;
@@ -2102,6 +2071,54 @@
       }
       if (settings.modules.cloud_replay.enabled) {
         ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R#" + room.cloud_replay_id + "${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE);
+      }
+      return true;
+    } else if (settings.modules.cloud_replay.enabled) {
+      if (room.player_datas.length && client.is_host) {
+        replay_id = room.cloud_replay_id;
+        if (room.has_ygopro_error) {
+          log_rep_id = true;
+        }
+        player_names = room.player_datas[0].name + (room.player_datas[2] ? "+" + room.player_datas[2].name : "") + " VS " + (room.player_datas[1] ? room.player_datas[1].name : "AI") + (room.player_datas[3] ? "+" + room.player_datas[3].name : "");
+        player_ips = [];
+        _.each(room.player_datas, function(player) {
+          player_ips.push(player.ip);
+        });
+        duel_end_buffer = new Buffer(3);
+        duel_end_buffer.writeUInt16LE(1, 0);
+        duel_end_buffer.writeUInt8(22, 2);
+        if (room.recorder_buffers[room.recorder_buffers.length - 1][2] !== 22) {
+          room.recorder_buffers.push(room.win_buffer);
+          room.recorder_buffers.push(duel_end_buffer);
+        }
+        recorder_buffer = Buffer.concat(room.recorder_buffers);
+        room.cloud_replay_buffer = zlib.deflateSync(recorder_buffer);
+        replay_buffer_text = room.cloud_replay_buffer.toString('binary');
+        date_time = moment().format('YYYY-MM-DD HH:mm:ss');
+        redisdb.hmset("replay:" + replay_id, "replay_id", replay_id, "replay_buffer", replay_buffer_text, "player_names", player_names, "date_time", date_time);
+        if (!log_rep_id) {
+          redisdb.expire("replay:" + replay_id, 60 * 60 * 24);
+        }
+        recorded_ip = [];
+        _.each(player_ips, function(player_ip) {
+          if (_.contains(recorded_ip, player_ip)) {
+            return;
+          }
+          recorded_ip.push(player_ip);
+          redisdb.lpush(player_ip + ":replays", replay_id);
+        });
+        if (log_rep_id) {
+          log.info("error replay: R#" + replay_id);
+        }
+        header = new Buffer(3);
+        mark = new Buffer('crp!', 'ascii');
+        replay = Buffer.concat([buffer, mark, room.cloud_replay_buffer]);
+        header.writeUInt16LE(replay.length + 1, 0);
+        header.writeUInt8(23, 2);
+        room.replay_buffer = Buffer.concat([header, replay]);
+      }
+      if (room.replay_buffer) {
+        client.write(room.replay_buffer);
       }
       return true;
     } else {

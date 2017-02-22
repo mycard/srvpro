@@ -466,42 +466,10 @@ class Room
             else
               log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
-    if @player_datas.length and settings.modules.cloud_replay.enabled
-      replay_id = @cloud_replay_id
-      if @has_ygopro_error
-        log_rep_id = true
-      player_names=@player_datas[0].name + (if @player_datas[2] then "+" + @player_datas[2].name else "") +
-                    " VS " +
-                   (if @player_datas[1] then @player_datas[1].name else "AI") +
-                   (if @player_datas[3] then "+" + @player_datas[3].name else "")
-      player_ips=[]
-      _.each @player_datas, (player)->
-        player_ips.push(player.ip)
-        return
-      recorder_buffer=Buffer.concat(@recorder_buffers)
-      zlib.deflate recorder_buffer, (err, replay_buffer) ->
-        replay_buffer=replay_buffer.toString('binary')
-        #log.info err, replay_buffer
-        date_time=moment().format('YYYY-MM-DD HH:mm:ss')
-        #replay_id=Math.floor(Math.random()*100000000)
-        redisdb.hmset("replay:"+replay_id,
-                      "replay_id", replay_id,
-                      "replay_buffer", replay_buffer,
-                      "player_names", player_names,
-                      "date_time", date_time)
-        if !log_rep_id
-          redisdb.expire("replay:"+replay_id, 60*60*24)
-        recorded_ip=[]
-        _.each player_ips, (player_ip)->
-          return if _.contains(recorded_ip, player_ip)
-          recorded_ip.push player_ip
-          redisdb.lpush(player_ip+":replays", replay_id)
-          return
-        if log_rep_id
-          log.info "error replay: R#" + replay_id
-        return
     @watcher_buffers = []
     @recorder_buffers = []
+    @replay_buffer = []
+    @cloud_replay_buffer = []
     @players = []
     @watcher.destroy() if @watcher
     @recorder.destroy() if @recorder
@@ -785,7 +753,6 @@ net.createServer (client) ->
         if stoc_buffer.length >= 2 + stoc_message_length
           #console.log "STOC", ygopro.constants.STOC[stoc_proto]
           cancel = false
-          stanzas = stoc_proto
           if ygopro.stoc_follows[stoc_proto]
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
             if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
@@ -799,7 +766,8 @@ net.createServer (client) ->
                 cancel = ygopro.stoc_follows[stoc_proto].callback b, null, client, server
               else
                 ygopro.stoc_follows[stoc_proto].callback b, null, client, server
-          datas.push stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
+          #datas.push stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
+          client.write stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
           stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
           stoc_message_length = 0
           stoc_proto = 0
@@ -813,7 +781,7 @@ net.createServer (client) ->
         log.info("error stoc", client.name)
         server.destroy()
         break
-    client.write buffer for buffer in datas
+    #client.write buffer for buffer in datas
 
     return
   return
@@ -1234,6 +1202,10 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     #log.info {winner: pos, reason: reason}
     #room.duels.push {winner: pos, reason: reason}
     room.winner = pos
+    duel_win_buffer=new Buffer(3)
+    duel_win_buffer.writeUInt16LE(4, 0)
+    duel_win_buffer.writeUInt8(1, 2)
+    room.win_buffer = Buffer.concat([duel_win_buffer, buffer])
     if room and !room.finished and room.dueling_players[pos]
       room.winner_name = room.dueling_players[pos].name
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
@@ -1670,6 +1642,56 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       )
     if settings.modules.cloud_replay.enabled
       ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
+    return true
+  else if settings.modules.cloud_replay.enabled
+    if room.player_datas.length and client.is_host
+      replay_id = room.cloud_replay_id
+      if room.has_ygopro_error
+        log_rep_id = true
+      player_names=room.player_datas[0].name + (if room.player_datas[2] then "+" + room.player_datas[2].name else "") +
+                    " VS " +
+                    (if room.player_datas[1] then room.player_datas[1].name else "AI") +
+                    (if room.player_datas[3] then "+" + room.player_datas[3].name else "")
+      player_ips=[]
+      _.each room.player_datas, (player)->
+        player_ips.push(player.ip)
+        return
+      duel_end_buffer=new Buffer(3)
+      duel_end_buffer.writeUInt16LE(1, 0)
+      duel_end_buffer.writeUInt8(22, 2)
+      if room.recorder_buffers[room.recorder_buffers.length-1][2]!=22
+        room.recorder_buffers.push(room.win_buffer)
+        room.recorder_buffers.push(duel_end_buffer)
+      recorder_buffer=Buffer.concat(room.recorder_buffers)
+      room.cloud_replay_buffer = zlib.deflateSync recorder_buffer
+      #fs.writeFileSync("23333.crp", room.cloud_replay_buffer)
+      replay_buffer_text=room.cloud_replay_buffer.toString('binary')
+      #log.info err, replay_buffer
+      date_time=moment().format('YYYY-MM-DD HH:mm:ss')
+      #replay_id=Math.floor(Math.random()*100000000)
+      redisdb.hmset("replay:"+replay_id,
+                    "replay_id", replay_id,
+                    "replay_buffer", replay_buffer_text,
+                    "player_names", player_names,
+                    "date_time", date_time)
+      if !log_rep_id
+        redisdb.expire("replay:"+replay_id, 60*60*24)
+      recorded_ip=[]
+      _.each player_ips, (player_ip)->
+        return if _.contains(recorded_ip, player_ip)
+        recorded_ip.push player_ip
+        redisdb.lpush(player_ip+":replays", replay_id)
+        return
+      if log_rep_id
+        log.info "error replay: R#" + replay_id
+      
+      header=new Buffer(3)
+      mark=new Buffer('crp!', 'ascii')
+      replay=Buffer.concat([buffer, mark, room.cloud_replay_buffer])
+      header.writeUInt16LE(replay.length+1, 0)
+      header.writeUInt8(23, 2)
+      room.replay_buffer=Buffer.concat([header, replay])
+    client.write room.replay_buffer if room.replay_buffer
     return true
   else
     return false
