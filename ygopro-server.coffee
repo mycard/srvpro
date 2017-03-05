@@ -456,7 +456,7 @@ class Room
           userscoreB: score_array[1].score,
           start: @start_time,
           end: moment().format(),
-          arena: settings.modules.arena_mode.mode
+          arena: @arena
         }}, (error, response, body)=>
           if error
             log.warn 'SCORE POST ERROR', error
@@ -1379,20 +1379,31 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       room.player_datas.push ip: player.ip, name: player.name
   if settings.modules.tips.enabled
     ygopro.stoc_send_random_tip(client)
-  if settings.modules.deck_log.enabled and client.main and client.main.length and not client.deck_saved and client.ip != '::ffff:127.0.0.1'
+  if settings.modules.deck_log.enabled and client.main and client.main.length and not client.deck_saved and not room.windbot
     deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
+    deck_arena = settings.modules.deck_log.arena + '-'
+    if room.arena
+      deck_arena = deck_arena + room.arena
+    else if room.hostinfo.mode == 2
+      deck_arena = deck_arena + 'tag'
+    else if room.random_type == 'S'
+      deck_arena = deck_arena + 'entertain'
+    else if room.random_type == 'M'
+      deck_arena = deck_arena + 'atheletic'
+    else
+      deck_arena = deck_arena + 'custom'
     #log.info "DECK LOG START", client.name, room.arena
     if settings.modules.deck_log.local
       deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
         if err
           log.warn 'DECK SAVE ERROR', err
-    if settings.modules.deck_log.post and (room.arena or not settings.modules.arena_mode.enabled)
+    if settings.modules.deck_log.post
       request.post { url : settings.modules.deck_log.post , form : {
         accesskey: settings.modules.deck_log.accesskey,
         deck: deck_text,
         playername: client.name,
-        arena: settings.modules.arena_mode.mode
+        arena: deck_arena
       }}, (error, response, body)->
         if error
           log.warn 'DECK POST ERROR', error
@@ -1401,16 +1412,6 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
             log.warn 'DECK POST FAIL', response.statusCode, client.name, body
           #else
             #log.info 'DECK POST OK', response.statusCode, client.name, body
-        return
-    if settings.modules.deck_log.post # temp for analytics2
-      request.post { url : "https://mycard.moe/ygopro/analytics2/deck/text" , form : {
-        accesskey: settings.modules.deck_log.accesskey,
-        deck: deck_text,
-        playername: client.name,
-        arena: settings.modules.arena_mode.mode
-      }}, (error, response, body)->
-        if error
-          log.warn 'DECK POST ERROR', error
         return
     client.deck_saved = true
   return

@@ -21,7 +21,8 @@
       "enabled": true,
       "accesskey": "233",
       "local": false,
-      "post": "https://mycard.moe/ygopro/analytics/deck/text"
+      "post": "https://api.mycard.moe/ygopro/analytics/deck/text",
+      "arena": "mycard"
     },
     "arena_mode": {
       "enabled": true,

@@ -619,7 +619,7 @@
               userscoreB: score_array[1].score,
               start: this.start_time,
               end: moment().format(),
-              arena: settings.modules.arena_mode.mode
+              arena: this.arena
             }
           }, (function(_this) {
             return function(error, response, body) {
@@ -1666,7 +1666,7 @@
   }
 
   ygopro.stoc_follow('DUEL_START', false, function(buffer, info, client, server) {
-    var deck_name, deck_text, j, len, player, ref, room;
+    var deck_arena, deck_name, deck_text, j, len, player, ref, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -1695,8 +1695,20 @@
     if (settings.modules.tips.enabled) {
       ygopro.stoc_send_random_tip(client);
     }
-    if (settings.modules.deck_log.enabled && client.main && client.main.length && !client.deck_saved && client.ip !== '::ffff:127.0.0.1') {
+    if (settings.modules.deck_log.enabled && client.main && client.main.length && !client.deck_saved && !room.windbot) {
       deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n';
+      deck_arena = settings.modules.deck_log.arena + '-';
+      if (room.arena) {
+        deck_arena = deck_arena + room.arena;
+      } else if (room.hostinfo.mode === 2) {
+        deck_arena = deck_arena + 'tag';
+      } else if (room.random_type === 'S') {
+        deck_arena = deck_arena + 'entertain';
+      } else if (room.random_type === 'M') {
+        deck_arena = deck_arena + 'atheletic';
+      } else {
+        deck_arena = deck_arena + 'custom';
+      }
       if (settings.modules.deck_log.local) {
         deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/[\/\\\?\*]/g, '_');
         fs.writeFile(settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
@@ -1705,14 +1717,14 @@
           }
         });
       }
-      if (settings.modules.deck_log.post && (room.arena || !settings.modules.arena_mode.enabled)) {
+      if (settings.modules.deck_log.post) {
         request.post({
           url: settings.modules.deck_log.post,
           form: {
             accesskey: settings.modules.deck_log.accesskey,
             deck: deck_text,
             playername: client.name,
-            arena: settings.modules.arena_mode.mode
+            arena: deck_arena
           }
         }, function(error, response, body) {
           if (error) {
@@ -1721,21 +1733,6 @@
             if (response.statusCode !== 200) {
               log.warn('DECK POST FAIL', response.statusCode, client.name, body);
             }
-          }
-        });
-      }
-      if (settings.modules.deck_log.post) {
-        request.post({
-          url: "https://mycard.moe/ygopro/analytics2/deck/text",
-          form: {
-            accesskey: settings.modules.deck_log.accesskey,
-            deck: deck_text,
-            playername: client.name,
-            arena: settings.modules.arena_mode.mode
-          }
-        }, function(error, response, body) {
-          if (error) {
-            log.warn('DECK POST ERROR', error);
           }
         });
       }

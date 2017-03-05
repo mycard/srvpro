@@ -63,7 +63,8 @@
       "enabled": false,
       "accesskey": "233",
       "local": "./deck_log/",
-      "post": "https://mycard.moe/ygopro/analytics/deck/text"
+      "post": "https://api.mycard.moe/ygopro/analytics/deck/text",
+      "arena": "233"
     },
     "arena_mode": {
       "enabled": false,
