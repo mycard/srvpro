@@ -1705,7 +1705,7 @@
       } else if (room.random_type === 'S') {
         deck_arena = deck_arena + 'entertain';
       } else if (room.random_type === 'M') {
-        deck_arena = deck_arena + 'atheletic';
+        deck_arena = deck_arena + 'athletic';
       } else {
         deck_arena = deck_arena + 'custom';
       }
