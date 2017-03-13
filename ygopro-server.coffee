@@ -446,7 +446,7 @@ class Room
       score_array=[]
       for name, score of @scores
         score_array.push { name: name, score: score }
-      log.info 'SCORE', score_array, @start_time
+      #log.info 'SCORE', score_array, @start_time
       if score_array.length == 2
         request.post { url : settings.modules.arena_mode.post_score , form : {
           accesskey: settings.modules.arena_mode.accesskey,
@@ -463,8 +463,8 @@ class Room
           else
             if response.statusCode != 204 and response.statusCode != 200
               log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
-            else
-              log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
+            #else
+            #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
     if @player_datas.length and settings.modules.cloud_replay.enabled
       replay_id = @cloud_replay_id

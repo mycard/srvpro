@@ -607,7 +607,6 @@
             score: score
           });
         }
-        log.info('SCORE', score_array, this.start_time);
         if (score_array.length === 2) {
           request.post({
             url: settings.modules.arena_mode.post_score,
@@ -628,8 +627,6 @@
               } else {
                 if (response.statusCode !== 204 && response.statusCode !== 200) {
                   log.warn('SCORE POST FAIL', response.statusCode, response.statusMessage, _this.name, body);
-                } else {
-                  log.info('SCORE POST OK', response.statusCode, response.statusMessage, _this.name, body);
                 }
               }
             };
