@@ -143,7 +143,7 @@ var loadDb = function(db_file) {
                     cardRScale=parseInt(levelHex.slice(-6,-4), 16);
                 }
 
-                if (!result.type & constants.TYPES.TYPE_LINK) {
+                if (!(result.type & constants.TYPES.TYPE_LINK)) {
                     cardText+="[" + ((result.type & constants.TYPES.TYPE_XYZ) ? "☆" : "★") + cardLevel + "]";
                     cardText+=" " + (result.atk < 0 ? "?" : result.atk) + "/" + (result.def < 0 ? "?" : result.def);
                 }
