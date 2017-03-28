@@ -211,7 +211,9 @@
         "TYPE_FLIP": 2097152,
         "TYPE_TOON": 4194304,
         "TYPE_XYZ": 8388608,
-        "TYPE_PENDULUM": 16777216
+        "TYPE_PENDULUM": 16777216,
+        "TYPE_SPSUMMON": 33554432,
+        "TYPE_LINK": 67108864
     },
     "RACES": {
         "RACE_WARRIOR": 1,
@@ -237,7 +239,8 @@
         "RACE_PSYCHO": 1048576,
         "RACE_DEVINE": 2097152,
         "RACE_CREATORGOD": 4194304,
-        "RACE_PHANTOMDRAGON": 8388608
+        "RACE_WYRM": 8388608,
+        "RACE_CYBERS": 16777216
     },
     "ATTRIBUTES": {
         "ATTRIBUTE_EARTH": 1,
@@ -247,6 +250,16 @@
         "ATTRIBUTE_LIGHT": 16,
         "ATTRIBUTE_DARK": 32,
         "ATTRIBUTE_DEVINE": 64
+    },
+    "LINK_MARKERS": {
+        "LINK_MARKER_BOTTOM_LEFT": 1,
+        "LINK_MARKER_BOTTOM": 2,
+        "LINK_MARKER_BOTTOM_RIGHT": 4,
+        "LINK_MARKER_LEFT": 8,
+        "LINK_MARKER_RIGHT": 32,
+        "LINK_MARKER_TOP_LEFT": 64,
+        "LINK_MARKER_TOP": 128,
+        "LINK_MARKER_TOP_RIGHT": 256
     },
     "COLORS": {
         "LIGHTBLUE": 8,

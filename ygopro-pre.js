@@ -87,6 +87,8 @@ var loadDb = function(db_file) {
             if (result.type & constants.TYPES.TYPE_TOON) {cardTypes.push("卡通");}
             if (result.type & constants.TYPES.TYPE_XYZ) {cardTypes.push("超量");}
             if (result.type & constants.TYPES.TYPE_PENDULUM) {cardTypes.push("灵摆");}
+            if (result.type & constants.TYPES.TYPE_SPSUMMON) {cardTypes.push("特殊召唤");}
+            if (result.type & constants.TYPES.TYPE_LINK) {cardTypes.push("连接");}
             cardText+="["+ cardTypes.join('|') +"]";
             
             if (result.type & constants.TYPES.TYPE_MONSTER) {
@@ -114,7 +116,8 @@ var loadDb = function(db_file) {
                 if (result.race & constants.RACES.RACE_PSYCHO) {cardRace="念动力";}
                 if (result.race & constants.RACES.RACE_DEVINE) {cardRace="幻神兽";}
                 if (result.race & constants.RACES.RACE_CREATORGOD) {cardRace="创造神";}
-                if (result.race & constants.RACES.RACE_PHANTOMDRAGON) {cardRace="幻龙";}
+                if (result.race & constants.RACES.RACE_WYRM) {cardRace="幻龙";}
+                if (result.race & constants.RACES.RACE_CYBERS) {cardRace="电子界";}
                 cardText+=" "+ cardRace;
                 
                 var cardAttr="";
@@ -139,9 +142,32 @@ var loadDb = function(db_file) {
                     cardLScale=parseInt(levelHex.slice(-8,-6), 16);
                     cardRScale=parseInt(levelHex.slice(-6,-4), 16);
                 }
-                cardText+="[" + ((result.type & constants.TYPES.TYPE_XYZ) ? "☆" : "★") + cardLevel + "]";
-                
-                cardText+=" " + (result.atk < 0 ? "?" : result.atk) + "/" + (result.def < 0 ? "?" : result.def);
+
+                if (!result.type & constants.TYPES.TYPE_LINK) {
+                    cardText+="[" + ((result.type & constants.TYPES.TYPE_XYZ) ? "☆" : "★") + cardLevel + "]";
+                    cardText+=" " + (result.atk < 0 ? "?" : result.atk) + "/" + (result.def < 0 ? "?" : result.def);
+                }
+                else {
+                    cardText+="[LINK-" + cardLevel + "]";
+                    cardText += " " + (result.atk < 0 ? "?" : result.atk) + "/- ";
+                    
+                    if (result.def & constants.LINK_MARKERS.LINK_MARKER_TOP_LEFT)
+                        cardText += "[↖]";
+                    if (result.def & constants.LINK_MARKERS.LINK_MARKER_TOP)
+                        cardText += "[↑]";
+                    if (result.def & constants.LINK_MARKERS.LINK_MARKER_TOP_RIGHT)
+                        cardText += "[↗]";
+                    if (result.def & constants.LINK_MARKERS.LINK_MARKER_LEFT)
+                        cardText += "[←]";
+                    if (result.def & constants.LINK_MARKERS.LINK_MARKER_RIGHT)
+                        cardText += "[→]";
+                    if (result.def & constants.LINK_MARKERS.LINK_MARKER_BOTTOM_LEFT)
+                        cardText += "[↙]";
+                    if (result.def & constants.LINK_MARKERS.LINK_MARKER_BOTTOM)
+                        cardText += "[↓]";
+                    if (result.def & constants.LINK_MARKERS.LINK_MARKER_BOTTOM_RIGHT)
+                        cardText += "[↘]";
+                }
                 
                 if (cardLScale) {
                     cardText+="  " + cardLScale + "/" +cardRScale;
