@@ -1259,6 +1259,7 @@
       }, function(error, response, body) {
         var k, len1, ref1;
         if (body && body.user) {
+          users_cache[client.name] = body.user.id;
           secret = body.user.id % 65535 + 1;
           decrypted_buffer = new Buffer(6);
           ref1 = [0, 2, 4];
@@ -1274,7 +1275,6 @@
           ygopro.stoc_die(client, '${invalid_password_checksum}');
           return;
         }
-        users_cache[client.name] = body.user.id;
         return finish(buffer);
       });
     } else if (!client.name || client.name === "") {

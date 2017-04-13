@@ -1024,6 +1024,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       json: true
     , (error, response, body)->
       if body and body.user
+        users_cache[client.name] = body.user.id
         secret = body.user.id % 65535 + 1
         decrypted_buffer = new Buffer(6)
         for i in [0, 2, 4]
@@ -1036,7 +1037,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       if !check(buffer)
         ygopro.stoc_die(client, '${invalid_password_checksum}')
         return
-      users_cache[client.name] = body.user.id
+      
       finish(buffer)
   
   else if !client.name or client.name==""
