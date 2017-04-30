@@ -283,7 +283,8 @@ var pushDatas = function() {
 //将数据库文件夹里卡图复制到列表页对应文件夹里，同步
 var copyImages = function() {
     execSync('rm -rf "' + config.html_path+config.html_img_rel_path +'"');
-    execSync('cp -r "' + config.db_path + 'pics' + '" "' + config.html_path+config.html_img_rel_path + '"');
+    execSync('cp -r "' + config.db_path + 'pics' + '" "' + config.html_path + config.html_img_rel_path + '"');
+    execSync('rm -rf "' + config.html_path+config.html_img_rel_path +'field"');
     sendResponse("卡图复制完成。");
 }
 
@@ -301,7 +302,11 @@ var copyToYGOPRO = function() {
 
 //生成更新包，异步
 var packDatas = function() {
-    var proc = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "ygosrv233-pre.zip", "*"], { cwd: config.db_path, env: process.env });
+    execSync('cp -r "' + config.db_path +'expansions" "'+ config.db_path +'cdb"');
+    execSync('cp -r "' + config.db_path +'script" "'+ config.db_path +'expansions/script"');
+    execSync('cp -r "' + config.db_path +'pics" "'+ config.db_path +'expansions/pics"');
+    execSync('cp -r "' + config.db_path +'pics/field" "'+ config.db_path +'picture/field"');
+    var proc = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "-x!cdb", "-x!script", "-x!pics", "-x!picture", "ygosrv233-pre.zip", "*"], { cwd: config.db_path, env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
         //sendResponse("7z: "+data);
@@ -311,10 +316,11 @@ var packDatas = function() {
         sendResponse("7z error: "+data);
     });
     proc.on('close', function (code) {
-        execSync('mv -f "' + config.db_path +'ygosrv233-pre.zip" "'+ config.html_path +'"');
+        execSync('mv -f "' + config.db_path + 'ygosrv233-pre.zip" "' + config.html_path + '"');
+        execSync('rm -rf "' + config.db_path +'expansions/script" "'+ config.db_path +'expansions/pics"');
         sendResponse("电脑更新包打包完成。");
     });
-    var proc2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "-x!pics/thumbnail", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path, env: process.env });
+    var proc2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "-x!cdb", "-x!pics/thumbnail", "-x!picture", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path, env: process.env });
     proc2.stdout.setEncoding('utf8');
     proc2.stdout.on('data', function(data) {
         //sendResponse("7z: "+data);
@@ -326,6 +332,21 @@ var packDatas = function() {
     proc2.on('close', function (code) {
         execSync('mv -f "' + config.db_path +'ygosrv233-pre-mobile.zip" "'+ config.html_path +'"');
         sendResponse("手机更新包打包完成。");
+    });
+    var proc3 = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "-x!expansions", "-x!pics", "ygosrv233-pre-2.zip", "*"], { cwd: config.db_path, env: process.env });
+    proc3.stdout.setEncoding('utf8');
+    proc3.stdout.on('data', function(data) {
+        //sendResponse("7z: "+data);
+    });
+    proc3.stderr.setEncoding('utf8');
+    proc3.stderr.on('data', function(data) {
+        sendResponse("7z error: "+data);
+    });
+    proc3.on('close', function (code) {
+        execSync('mv -f "' + config.db_path + 'ygosrv233-pre-2.zip" "' + config.html_path + '"');
+        execSync('rm -rf "' + config.db_path +'cdb"');
+        execSync('rm -rf "' + config.db_path +'picture/field"');
+        sendResponse("PRO2更新包打包完成。");
     });
 }
 
