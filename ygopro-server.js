@@ -888,7 +888,7 @@
     }
     client.pre_establish_buffers = new Array();
     client.on('data', function(ctos_buffer) {
-      var b, bad_ip_count, buffer, cancel, ctos_message_length, ctos_proto, datas, j, k, len, len1, looplimit, room, struct;
+      var b, bad_ip_count, buffer, cancel, ctos_message_length, ctos_proto, datas, info, j, k, len, len1, looplimit, room, struct;
       if (client.is_post_watcher) {
         room = ROOM_all[client.rid];
         if (room) {
@@ -921,15 +921,15 @@
               cancel = false;
               if (ygopro.ctos_follows[ctos_proto]) {
                 b = ctos_buffer.slice(3, ctos_message_length - 1 + 3);
+                info = null;
                 if (struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]) {
                   struct._setBuff(b);
-                  if (ygopro.ctos_follows[ctos_proto].synchronous) {
-                    cancel = ygopro.ctos_follows[ctos_proto].callback(b, _.clone(struct.fields), client, server);
-                  } else {
-                    ygopro.ctos_follows[ctos_proto].callback(b, _.clone(struct.fields), client, server);
-                  }
+                  info = _.clone(struct.fields);
+                }
+                if (ygopro.ctos_follows[ctos_proto].synchronous) {
+                  cancel = ygopro.ctos_follows[ctos_proto].callback(b, info, client, server);
                 } else {
-                  ygopro.ctos_follows[ctos_proto].callback(b, null, client, server);
+                  ygopro.ctos_follows[ctos_proto].callback(b, info, client, server);
                 }
               }
               if (!cancel) {
@@ -972,7 +972,7 @@
       }
     });
     server.on('data', function(stoc_buffer) {
-      var b, buffer, cancel, datas, j, len, looplimit, stanzas, stoc_message_length, stoc_proto, struct;
+      var b, buffer, cancel, datas, info, j, len, looplimit, stanzas, stoc_message_length, stoc_proto, struct;
       stoc_message_length = 0;
       stoc_proto = 0;
       datas = [];
@@ -1000,19 +1000,15 @@
             stanzas = stoc_proto;
             if (ygopro.stoc_follows[stoc_proto]) {
               b = stoc_buffer.slice(3, stoc_message_length - 1 + 3);
+              info = null;
               if (struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]) {
                 struct._setBuff(b);
-                if (ygopro.stoc_follows[stoc_proto].synchronous) {
-                  cancel = ygopro.stoc_follows[stoc_proto].callback(b, _.clone(struct.fields), client, server);
-                } else {
-                  ygopro.stoc_follows[stoc_proto].callback(b, _.clone(struct.fields), client, server);
-                }
+                info = _.clone(struct.fields);
+              }
+              if (ygopro.stoc_follows[stoc_proto].synchronous) {
+                cancel = ygopro.stoc_follows[stoc_proto].callback(b, info, client, server);
               } else {
-                if (ygopro.stoc_follows[stoc_proto].synchronous) {
-                  cancel = ygopro.stoc_follows[stoc_proto].callback(b, null, client, server);
-                } else {
-                  ygopro.stoc_follows[stoc_proto].callback(b, null, client, server);
-                }
+                ygopro.stoc_follows[stoc_proto].callback(b, info, client, server);
               }
             }
             if (!cancel) {
@@ -1466,10 +1462,18 @@
       playertype = buffer.readUInt8(1);
       client.is_first = !(playertype & 0xf);
       client.lp = room.hostinfo.start_lp;
+      if (client.is_host) {
+        room.turn = 0;
+      }
     }
-    if (ygopro.constants.MSG[msg] === 'NEW_TURN' && client.surrend_confirm) {
-      client.surrend_confirm = false;
-      ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE);
+    if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
+      if (client.is_host) {
+        room.turn = room.turn + 1;
+      }
+      if (client.surrend_confirm) {
+        client.surrend_confirm = false;
+        ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE);
+      }
     }
     if (ygopro.constants.MSG[msg] === 'WIN' && client.is_host) {
       pos = buffer.readUInt8(1);
@@ -1737,6 +1741,22 @@
     }
   });
 
+  ygopro.ctos_follow('SURRENDER', true, function(buffer, info, client, server) {
+    var room;
+    room = ROOM_all[client.rid];
+    if (!room) {
+      return;
+    }
+    if (!room.started || room.hostinfo.mode === 2) {
+      return true;
+    }
+    if (room.random_type && room.turn < 3) {
+      ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE);
+      return true;
+    }
+    return false;
+  });
+
   ygopro.ctos_follow('CHAT', true, function(buffer, info, client, server) {
     var cancel, cmd, msg, name, oldmsg, room, struct, windbot;
     room = ROOM_all[client.rid];
@@ -1755,7 +1775,7 @@
         if (!room.started || room.hostinfo.mode === 2) {
           return cancel;
         }
-        if (room.random_type) {
+        if (room.random_type && room.turn < 3) {
           ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE);
           return cancel;
         }

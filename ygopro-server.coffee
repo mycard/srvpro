@@ -720,14 +720,14 @@ net.createServer (client) ->
             cancel = false
             if ygopro.ctos_follows[ctos_proto]
               b = ctos_buffer.slice(3, ctos_message_length - 1 + 3)
+              info = null
               if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
                 struct._setBuff(b)
-                if ygopro.ctos_follows[ctos_proto].synchronous
-                  cancel = ygopro.ctos_follows[ctos_proto].callback b, _.clone(struct.fields), client, server
-                else
-                  ygopro.ctos_follows[ctos_proto].callback b, _.clone(struct.fields), client, server
+                info = _.clone(struct.fields)
+              if ygopro.ctos_follows[ctos_proto].synchronous
+                cancel = ygopro.ctos_follows[ctos_proto].callback b, info, client, server
               else
-                ygopro.ctos_follows[ctos_proto].callback b, null, client, server
+                ygopro.ctos_follows[ctos_proto].callback b, info, client, server
             datas.push ctos_buffer.slice(0, 2 + ctos_message_length) unless cancel
             ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
             ctos_message_length = 0
@@ -788,17 +788,14 @@ net.createServer (client) ->
           stanzas = stoc_proto
           if ygopro.stoc_follows[stoc_proto]
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
+            info = null
             if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
               struct._setBuff(b)
-              if ygopro.stoc_follows[stoc_proto].synchronous
-                cancel = ygopro.stoc_follows[stoc_proto].callback b, _.clone(struct.fields), client, server
-              else
-                ygopro.stoc_follows[stoc_proto].callback b, _.clone(struct.fields), client, server
+              info = _.clone(struct.fields)
+            if ygopro.stoc_follows[stoc_proto].synchronous
+              cancel = ygopro.stoc_follows[stoc_proto].callback b, info, client, server
             else
-              if ygopro.stoc_follows[stoc_proto].synchronous
-                cancel = ygopro.stoc_follows[stoc_proto].callback b, null, client, server
-              else
-                ygopro.stoc_follows[stoc_proto].callback b, null, client, server
+              ygopro.stoc_follows[stoc_proto].callback b, info, client, server
           datas.push stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
           stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
           stoc_message_length = 0
@@ -1221,12 +1218,17 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
+    if client.is_host
+      room.turn = 0
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
 
-  if ygopro.constants.MSG[msg] == 'NEW_TURN' and client.surrend_confirm
-    client.surrend_confirm = false
-    ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
+  if ygopro.constants.MSG[msg] == 'NEW_TURN'
+    if client.is_host
+      room.turn = room.turn + 1
+    if client.surrend_confirm
+      client.surrend_confirm = false
+      ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
   
   if ygopro.constants.MSG[msg] == 'WIN' and client.is_host
     pos = buffer.readUInt8(1)
@@ -1417,6 +1419,17 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     client.deck_saved = true
   return
 
+
+ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room
+  if !room.started or room.hostinfo.mode==2
+    return true
+  if room.random_type and room.turn < 3
+    ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
+    return true
+  return false
+
 ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
@@ -1428,7 +1441,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     when '/投降', '/surrender'
       if !room.started or room.hostinfo.mode==2
         return cancel
-      if room.random_type
+      if room.random_type and room.turn < 3
         ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
         return cancel
       if client.surrend_confirm
