@@ -180,7 +180,7 @@ var loadDb = function(db_file) {
             }
             cardText+=result.desc;
             
-            cardHTML+='<td>'+ cardText.replace(/\n/g,"<br>") +'</td>';
+            cardHTML+='<td>'+ cardText.replace(/\r/g,"").replace(/\n/g,"<br>") +'</td>';
             cardHTML+='</tr>';
             
             cardHTMLs.push(cardHTML);
