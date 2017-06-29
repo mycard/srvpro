@@ -234,9 +234,10 @@ ROOM_find_or_create_ai = (name)->
   if name == ''
     name = 'AI'
   namea = name.split('#')
+  uname = name.toUpperCase()
   if room = ROOM_find_by_name(name)
     return room
-  else if name == 'AI'
+  else if uname == 'AI'
     windbot = _.sample settings.modules.windbots
     name = 'AI#' + Math.floor(Math.random() * 100000)
   else if namea.length>1
@@ -1425,7 +1426,7 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server)->
   return unless room
   if !room.started or room.hostinfo.mode==2
     return true
-  if room.random_type and room.turn < 3
+  if room.random_type and room.turn < 3 and not client.flee_free
     ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
     return true
   return false

@@ -179,7 +179,7 @@
     "unwelcome_warn_part1": "如果您经常",
     "unwelcome_warn_part2": "，您的对手可能会离你而去。",
     "unwelcome_tip_part1": "因为您的对手有",
-    "unwelcome_tip_part2": "行为，现在您可以直接离开游戏，不视为强退。"
+    "unwelcome_tip_part2": "行为，现在您可以直接离开游戏或投降，不视为强退。"
   },
  "ko-kr": {
     "random_duel_enter_room_waiting": "땅콩: 게임을 진행하게 준비 또는 시작을 하십시오.",
