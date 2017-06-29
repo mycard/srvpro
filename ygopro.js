@@ -258,7 +258,7 @@
     if (client) {
       this.stoc_send(client, 'ERROR_MSG', {
         msg: 1,
-        code: 2
+        code: 9
       });
     }
     if (client) {

@@ -1099,7 +1099,7 @@
       setTimeout((function() {
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 1,
-          code: 2
+          code: 9
         });
         client.destroy();
       }), 500);
@@ -1381,8 +1381,6 @@
         });
         ygopro.ctos_send(recorder, 'JOIN_GAME', {
           version: settings.version,
-          gameid: 2577,
-          some_unknown_mysterious_fucking_thing: 0,
           pass: ""
         });
         ygopro.ctos_send(recorder, 'HS_TOOBSERVER');
@@ -1403,8 +1401,6 @@
         });
         ygopro.ctos_send(watcher, 'JOIN_GAME', {
           version: settings.version,
-          gameid: 2577,
-          some_unknown_mysterious_fucking_thing: 0,
           pass: ""
         });
         ygopro.ctos_send(watcher, 'HS_TOOBSERVER');

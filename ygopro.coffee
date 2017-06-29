@@ -161,7 +161,7 @@ for name, declaration of structs_declaration
   @stoc_send_chat(client, msg, @constants.COLORS.RED)
   @stoc_send client, 'ERROR_MSG', {
     msg: 1
-    code: 2
+    code: 9
   } if client
   client.destroy() if client
   return

@@ -38,8 +38,8 @@
     ],
     "CTOS_JoinGame": [
         {"name": "version", "type": "unsigned short"},
+        {"name": "align", "type": "unsigned short"},
         {"name": "gameid", "type": "unsigned int"},
-        {"name": "some_unknown_mysterious_fucking_thing", "type": "unsigned short"},
         {"name": "pass", "type": "unsigned short", "length": 20, "encoding": "UTF-16LE"}
     ],
     "CTOS_Kick": [
@@ -47,7 +47,10 @@
     ],
     "STOC_ErrorMsg": [
         {"name": "msg", "type": "unsigned char"},
-        {"name": "code", "type": "word32Ube"}
+        {"name": "align1", "type": "unsigned char"},
+        {"name": "align2", "type": "unsigned char"},
+        {"name": "align3", "type": "unsigned char"},
+        {"name": "code", "type": "unsigned int"}
     ],
     "STOC_HandResult": [
         {"name": "res1", "type": "unsigned char"},
