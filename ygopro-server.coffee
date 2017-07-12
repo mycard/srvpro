@@ -261,7 +261,11 @@ ROOM_find_or_create_ai = (name)->
 ROOM_find_by_name = (name)->
   result = _.find ROOM_all, (room)->
     return room and room.name == name
-  #log.info 'find_by_name', name, result
+  return result
+
+ROOM_find_by_title = (title)->
+  result = _.find ROOM_all, (room)->
+    return room and room.title == title
   return result
 
 ROOM_find_by_port = (port)->
@@ -938,8 +942,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
       # 1 create public room
       # 2 create private room
-      # 3 join room
-      # 4 join match
+      # 3 join room by id
+      # 4 create or join room by id (use for match)
+      # 5 join room by title
       switch action
         when 1,2
           name = crypto.createHash('md5').update(info.pass + client.name).digest('base64')[0...10].replace('+', '-').replace('/', '_')
@@ -976,6 +981,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           room.private = true
           room.arena = settings.modules.arena_mode.mode
+        when 5
+          title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
+          room = ROOM_find_by_title(title)
+          if(!room)
+            ygopro.stoc_die(client, '${invalid_password_not_found}')
+            return
         else
           ygopro.stoc_die(client, '${invalid_password_action}')
           return
