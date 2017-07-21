@@ -1147,6 +1147,13 @@
         ygopro.stoc_die(client, '${invalid_password_length}');
         return;
       }
+      if (info.version >= 9016 && info.version <= 9019 && settings.version === 4926) {
+        info.version = settings.version;
+        struct = ygopro.structs["CTOS_JoinGame"];
+        struct._setBuff(buffer);
+        struct.set("version", info.version);
+        buffer = struct.buffer;
+      }
       buffer = new Buffer(info.pass.slice(0, 8), 'base64');
       if (buffer.length !== 6) {
         ygopro.stoc_die(client, '${invalid_password_payload}');

@@ -922,6 +922,13 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       ygopro.stoc_die(client, '${invalid_password_length}')
       return
 
+    if info.version >= 9016 and info.version <= 9019 and settings.version == 4926 #强行兼容23333版
+      info.version = settings.version
+      struct = ygopro.structs["CTOS_JoinGame"]
+      struct._setBuff(buffer)
+      struct.set("version", info.version)
+      buffer = struct.buffer
+
     buffer = new Buffer(info.pass[0...8], 'base64')
 
     if buffer.length != 6
