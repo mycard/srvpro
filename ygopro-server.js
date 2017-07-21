@@ -1778,7 +1778,7 @@
     }
     msg = _.trim(info.msg);
     cancel = _.startsWith(msg, "/");
-    if (!(cancel || !room.random_type)) {
+    if (!(cancel || !(room.random_type || room.arena))) {
       room.last_active_time = moment();
     }
     cmd = msg.split(' ');
@@ -2018,7 +2018,7 @@
   ygopro.ctos_follow('HAND_RESULT', false, function(buffer, info, client, server) {
     var room;
     room = ROOM_all[client.rid];
-    if (!(room && room.random_type)) {
+    if (!(room && (room.random_type || room.arena))) {
       return;
     }
     if (client.is_host) {
@@ -2030,7 +2030,7 @@
   ygopro.ctos_follow('TP_RESULT', false, function(buffer, info, client, server) {
     var room;
     room = ROOM_all[client.rid];
-    if (!(room && room.random_type)) {
+    if (!(room && (room.random_type || room.arena))) {
       return;
     }
     room.last_active_time = moment();
@@ -2039,7 +2039,7 @@
   ygopro.stoc_follow('SELECT_HAND', false, function(buffer, info, client, server) {
     var room;
     room = ROOM_all[client.rid];
-    if (!(room && room.random_type)) {
+    if (!(room && (room.random_type || room.arena))) {
       return;
     }
     if (client.is_host) {
@@ -2057,7 +2057,7 @@
       return;
     }
     room.changing_side = false;
-    if (room.random_type) {
+    if (room.random_type || room.arena) {
       room.waiting_for_player = client;
       room.last_active_time = moment();
     }

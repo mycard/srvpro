@@ -1443,7 +1443,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   return unless room
   msg = _.trim(info.msg)
   cancel = _.startsWith(msg, "/")
-  room.last_active_time = moment() unless cancel or not room.random_type
+  room.last_active_time = moment() unless cancel or not (room.random_type or room.arena)
   cmd = msg.split(' ')
   switch cmd[0]
     when '/投降', '/surrender'
@@ -1620,7 +1620,7 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
 
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return unless room and room.random_type
+  return unless room and (room.random_type or room.arena)
   if client.is_host
     room.waiting_for_player = room.waiting_for_player2
   room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
@@ -1628,13 +1628,13 @@ ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
 
 ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return unless room and room.random_type
+  return unless room and (room.random_type or room.arena)
   room.last_active_time = moment()
   return
 
 ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return unless room and room.random_type
+  return unless room and (room.random_type or room.arena)
   if client.is_host
     room.waiting_for_player = client
   else
@@ -1646,7 +1646,7 @@ ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
   room.changing_side = false
-  if room.random_type
+  if room.random_type or room.arena
     room.waiting_for_player = client
     room.last_active_time = moment()
   return
