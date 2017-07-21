@@ -2163,7 +2163,7 @@
       var j, len, room, time_passed;
       for (j = 0, len = ROOM_all.length; j < len; j++) {
         room = ROOM_all[j];
-        if (!(room && room.started && room.arena && room.changing_side && room.last_active_time && room.waiting_for_player)) {
+        if (!(room && room.started && room.arena && room.last_active_time && room.waiting_for_player)) {
           continue;
         }
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
