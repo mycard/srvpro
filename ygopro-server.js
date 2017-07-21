@@ -1132,7 +1132,7 @@
     } else if (info.pass.toUpperCase() === "W" && settings.modules.cloud_replay.enabled) {
       replay_id = Cloud_replay_ids[Math.floor(Math.random() * Cloud_replay_ids.length)];
       redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
-    } else if (info.version !== settings.version && (info.version !== 9018 || settings.version !== 9019 || client.name !== "Knight of Hanoi")) {
+    } else if (info.version !== settings.version && (!(info.version >= 9016 && info.version <= 9019) || settings.version !== 4926)) {
       ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
@@ -1326,13 +1326,12 @@
     } else if (info.pass.length && !ROOM_validate(info.pass)) {
       ygopro.stoc_die(client, "${invalid_password_room}");
     } else {
-      if (info.version === 9018 && settings.version === 9019 && client.name === "Knight of Hanoi") {
+      if (info.version >= 9016 && info.version <= 9019 && settings.version === 4926) {
         info.version = settings.version;
         struct = ygopro.structs["CTOS_JoinGame"];
         struct._setBuff(buffer);
         struct.set("version", info.version);
         buffer = struct.buffer;
-        ygopro.stoc_send_chat(client, "看起来你是YGOMobile的用户，请记得更新先行卡补丁，否则会看到白卡", ygopro.constants.COLORS.GREEN);
       }
       room = ROOM_find_or_create_by_name(info.pass, client.ip);
       if (!room) {
