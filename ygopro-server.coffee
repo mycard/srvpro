@@ -578,7 +578,7 @@ class Room
       #log.info(@started,@disconnector,@random_type)
       if @started and @disconnector != 'server' and (client.pos < 4 or client.is_host)
         @finished = true
-        @scores[client.name] = -1
+        @scores[client.name] = -9
         if @random_type and not client.flee_free
           ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
       if @players.length and !(@windbot and client.is_host)
@@ -905,7 +905,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     replay_id=Cloud_replay_ids[Math.floor(Math.random()*Cloud_replay_ids.length)]
     redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
 
-  else if info.version != settings.version and (!(info.version >= 9016 and info.version <= 9019) or settings.version != 4926) #强行兼容23333版
+  else if info.version != settings.version and (info.version < 9020 or settings.version != 4927) #强行兼容23333版
     ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED)
     ygopro.stoc_send client, 'ERROR_MSG', {
       msg: 4
@@ -922,7 +922,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       ygopro.stoc_die(client, '${invalid_password_length}')
       return
 
-    if info.version >= 9016 and info.version <= 9019 and settings.version == 4926 #强行兼容23333版
+    if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
       info.version = settings.version
       struct = ygopro.structs["CTOS_JoinGame"]
       struct._setBuff(buffer)
@@ -1097,7 +1097,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_die(client, "${invalid_password_room}")
   
   else
-    if info.version >= 9016 and info.version <= 9019 and settings.version == 4926 #强行兼容23333版
+    if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
       info.version = settings.version
       struct = ygopro.structs["CTOS_JoinGame"]
       struct._setBuff(buffer)
@@ -1254,6 +1254,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     room.winner = pos
     if room and !room.finished and room.dueling_players[pos]
       room.winner_name = room.dueling_players[pos].name
+      #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
 
   #lp跟踪
@@ -1728,7 +1729,8 @@ if settings.modules.mycard.enabled
       if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-        room.scores[room.waiting_for_player.name] = -1
+        room.scores[room.waiting_for_player.name] = -9
+        #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name]
         room.waiting_for_player.server.destroy()
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)

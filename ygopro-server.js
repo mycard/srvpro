@@ -774,7 +774,7 @@
         }
         if (this.started && this.disconnector !== 'server' && (client.pos < 4 || client.is_host)) {
           this.finished = true;
-          this.scores[client.name] = -1;
+          this.scores[client.name] = -9;
           if (this.random_type && !client.flee_free) {
             ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}");
           }
@@ -1132,7 +1132,7 @@
     } else if (info.pass.toUpperCase() === "W" && settings.modules.cloud_replay.enabled) {
       replay_id = Cloud_replay_ids[Math.floor(Math.random() * Cloud_replay_ids.length)];
       redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
-    } else if (info.version !== settings.version && (!(info.version >= 9016 && info.version <= 9019) || settings.version !== 4926)) {
+    } else if (info.version !== settings.version && (info.version < 9020 || settings.version !== 4927)) {
       ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
@@ -1147,7 +1147,7 @@
         ygopro.stoc_die(client, '${invalid_password_length}');
         return;
       }
-      if (info.version >= 9016 && info.version <= 9019 && settings.version === 4926) {
+      if (info.version >= 9020 && settings.version === 4927) {
         info.version = settings.version;
         struct = ygopro.structs["CTOS_JoinGame"];
         struct._setBuff(buffer);
@@ -1333,7 +1333,7 @@
     } else if (info.pass.length && !ROOM_validate(info.pass)) {
       ygopro.stoc_die(client, "${invalid_password_room}");
     } else {
-      if (info.version >= 9016 && info.version <= 9019 && settings.version === 4926) {
+      if (info.version >= 9020 && settings.version === 4927) {
         info.version = settings.version;
         struct = ygopro.structs["CTOS_JoinGame"];
         struct._setBuff(buffer);
@@ -2177,7 +2177,7 @@
         if (time_passed >= settings.modules.random_duel.hang_timeout) {
           room.last_active_time = moment();
           ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
-          room.scores[room.waiting_for_player.name] = -1;
+          room.scores[room.waiting_for_player.name] = -9;
           room.waiting_for_player.server.destroy();
         } else if (time_passed >= (settings.modules.random_duel.hang_timeout - 20) && !(time_passed % 10)) {
           ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${afk_warn_part1}" + (settings.modules.random_duel.hang_timeout - time_passed) + "${afk_warn_part2}", ygopro.constants.COLORS.RED);
