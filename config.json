@@ -95,6 +95,14 @@
       "db_path": "../ygopro-pre-data/unofficial/",
       "html_img_rel_path": "pre/pics/",
       "html_img_thumbnail": "thumbnail/",
+      "cdn": {
+        "enabled": false,
+        "exe": "upx",
+        "params": ["sync"],
+        "local": "./ygosrv233",
+        "remote": "/ygosrv233",
+        "pics_remote": "/ygopro/"
+      },
       "ygopro_path": "../ygopro-pre/",
       "only_show_dbs": {
         "news.cdb": true,

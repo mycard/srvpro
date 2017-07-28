@@ -12,6 +12,7 @@ config.*.json
 /decks_save*
 /node_modules/
 /ssl
+/ygosrv233
 
 test*
 *.heapsnapshot

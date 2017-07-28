@@ -206,7 +206,9 @@ var writeToFile = function(message) {
     }
     fs.writeFileSync(config.html_path+config.html_filename, fileContent);
     sendResponse("列表更新完成。");
-    copyImages();
+    if (!config.cdn.enabled) {
+        copyImages();
+    }
 }
 
 //读取指定文件夹里所有数据库，异步
@@ -251,6 +253,13 @@ var fetchDatas = function() {
 
 //更新本地网页到服务器，异步
 var pushDatas = function() {
+    if (config.cdn.enabled) {
+        uploadCDN(config.cdn.local, config.cdn.remote, function () {
+            uploadCDN(config.db_path + "pics", config.cdn.pics_remote + "pics", function () {
+                sendResponse("CDN上传全部完成。");
+            });
+        });
+    }
     try {
         execSync('git add --all .', { cwd: config.git_html_path, env: process.env });
         execSync('git commit -m update-auto', { cwd: config.git_html_path, env: process.env });
@@ -280,6 +289,31 @@ var pushDatas = function() {
     }
 }
 
+//上传到CDN，异步
+var uploadCDN = function(local, remote, callback) {
+    sendResponse("CDN " + remote + " 开始上传。");
+    var params = config.cdn.params.slice(0);
+    params.push(local);
+    params.push(remote);
+    var proc = spawn(config.cdn.exe, params, { cwd: ".", env: process.env });
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', function(data) {
+        data = data + "";
+        if (data.includes("fails")) {
+            var datas = data.split("\n");
+            sendResponse("CDN " + remote + " : " + datas[datas.length - 2]);
+        }
+    });
+    proc.stderr.setEncoding('utf8');
+    proc.stderr.on('data', function(data) {
+        sendResponse("CDN: "+data);
+    });
+    proc.on('close', function (code) {
+        sendResponse("CDN " + remote + " 上传完成。");
+        callback();
+    });
+}
+
 //将数据库文件夹里卡图复制到列表页对应文件夹里，同步
 var copyImages = function() {
     execSync('rm -rf "' + config.html_path+config.html_img_rel_path +'"');
@@ -301,7 +335,11 @@ var copyToYGOPRO = function() {
 }
 
 //生成更新包，异步
-var packDatas = function() {
+var packDatas = function () {
+    file_path = config.html_path;
+    if (config.cdn.enabled) {
+        file_path = config.cdn.local;
+    }
     execSync('cp -r "' + config.db_path +'expansions" "'+ config.db_path +'cdb"');
     execSync('cp -r "' + config.db_path +'script" "'+ config.db_path +'expansions/script"');
     execSync('cp -r "' + config.db_path +'pics" "'+ config.db_path +'expansions/pics"');
@@ -316,7 +354,7 @@ var packDatas = function() {
         sendResponse("7z error: "+data);
     });
     proc.on('close', function (code) {
-        execSync('mv -f "' + config.db_path + 'ygosrv233-pre.zip" "' + config.html_path + '"');
+        execSync('mv -f "' + config.db_path + 'ygosrv233-pre.zip" "' + file_path + '"');
         execSync('rm -rf "' + config.db_path +'expansions/script" "'+ config.db_path +'expansions/pics"');
         sendResponse("电脑更新包打包完成。");
     });
@@ -330,7 +368,7 @@ var packDatas = function() {
         sendResponse("7z error: "+data);
     });
     proc2.on('close', function (code) {
-        execSync('mv -f "' + config.db_path +'ygosrv233-pre-mobile.zip" "'+ config.html_path +'"');
+        execSync('mv -f "' + config.db_path +'ygosrv233-pre-mobile.zip" "'+ file_path +'"');
         sendResponse("手机更新包打包完成。");
     });
     var proc3 = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "-x!expansions", "-x!pics", "ygosrv233-pre-2.zip", "*"], { cwd: config.db_path, env: process.env });
@@ -343,7 +381,7 @@ var packDatas = function() {
         sendResponse("7z error: "+data);
     });
     proc3.on('close', function (code) {
-        execSync('mv -f "' + config.db_path + 'ygosrv233-pre-2.zip" "' + config.html_path + '"');
+        execSync('mv -f "' + config.db_path + 'ygosrv233-pre-2.zip" "' + file_path + '"');
         execSync('rm -rf "' + config.db_path +'cdb"');
         execSync('rm -rf "' + config.db_path +'picture/field"');
         sendResponse("PRO2更新包打包完成。");
