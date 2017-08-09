@@ -197,7 +197,7 @@ ROOM_find_or_create_random = (type, player_ip)->
   if bannedplayer
     if bannedplayer.count > 6 and moment() < bannedplayer.time
       return {"error": "${random_banned_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_banned_part2}#{moment(bannedplayer.time).fromNow(true)}${random_banned_part3}"}
-    if bannedplayer.count > 3 and moment() < bannedplayer.time and bannedplayer.need_tip
+    if bannedplayer.count > 3 and moment() < bannedplayer.time and bannedplayer.need_tip and type != 'T'
       bannedplayer.need_tip = false
       return {"error": "${random_deprecated_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_deprecated_part2}#{moment(bannedplayer.time).fromNow(true)}${random_deprecated_part3}"}
     else if bannedplayer.need_tip
@@ -212,7 +212,7 @@ ROOM_find_or_create_random = (type, player_ip)->
     ((type == '' and room.random_type != 'T') or room.random_type == type) and
     room.get_playing_player().length < max_player and
     (room.get_host() == null or room.get_host().ip != ROOM_players_oppentlist[player_ip]) and
-    (playerbanned == room.deprecated)
+    (playerbanned == room.deprecated or type == 'T')
   if result
     result.welcome = '${random_duel_enter_room_waiting}'
     #log.info 'found room', player_name
@@ -1396,6 +1396,9 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       room.dueling_players[player.pos] = player
       room.scores[player.name] = 0
       room.player_datas.push ip: player.ip, name: player.name
+      if room.random_type == 'T'
+        # 双打房不记录匹配过
+        ROOM_players_oppentlist[player.ip] = null
   if settings.modules.tips.enabled
     ygopro.stoc_send_random_tip(client)
   if settings.modules.deck_log.enabled and client.main and client.main.length and not client.deck_saved and not room.windbot

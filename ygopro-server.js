@@ -275,7 +275,7 @@
           "error": "${random_banned_part1}" + (bannedplayer.reasons.join('${random_ban_reason_separator}')) + "${random_banned_part2}" + (moment(bannedplayer.time).fromNow(true)) + "${random_banned_part3}"
         };
       }
-      if (bannedplayer.count > 3 && moment() < bannedplayer.time && bannedplayer.need_tip) {
+      if (bannedplayer.count > 3 && moment() < bannedplayer.time && bannedplayer.need_tip && type !== 'T') {
         bannedplayer.need_tip = false;
         return {
           "error": "${random_deprecated_part1}" + (bannedplayer.reasons.join('${random_ban_reason_separator}')) + "${random_deprecated_part2}" + (moment(bannedplayer.time).fromNow(true)) + "${random_deprecated_part3}"
@@ -292,7 +292,7 @@
     max_player = type === 'T' ? 4 : 2;
     playerbanned = bannedplayer && bannedplayer.count > 3 && moment() < bannedplayer.time;
     result = _.find(ROOM_all, function(room) {
-      return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated);
+      return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated || type === 'T');
     });
     if (result) {
       result.welcome = '${random_duel_enter_room_waiting}';
@@ -1709,6 +1709,9 @@
           ip: player.ip,
           name: player.name
         });
+        if (room.random_type === 'T') {
+          ROOM_players_oppentlist[player.ip] = null;
+        }
       }
     }
     if (settings.modules.tips.enabled) {
