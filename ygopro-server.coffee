@@ -1160,9 +1160,9 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       ygopro.ctos_send recorder, 'JOIN_GAME', {
         version: settings.version,
-        pass: ""
+        pass: "Marshtomp"
       }
-      ygopro.ctos_send recorder, 'HS_TOOBSERVER'
+      #ygopro.ctos_send recorder, 'HS_TOOBSERVER'
       return
 
     recorder.on 'data', (data)->
@@ -1181,9 +1181,9 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       ygopro.ctos_send watcher, 'JOIN_GAME', {
         version: settings.version,
-        pass: ""
+        pass: "the Big Brother"
       }
-      ygopro.ctos_send watcher, 'HS_TOOBSERVER'
+      #ygopro.ctos_send watcher, 'HS_TOOBSERVER'
       return
 
     watcher.on 'data', (data)->

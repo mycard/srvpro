@@ -1404,9 +1404,8 @@
         });
         ygopro.ctos_send(recorder, 'JOIN_GAME', {
           version: settings.version,
-          pass: ""
+          pass: "Marshtomp"
         });
-        ygopro.ctos_send(recorder, 'HS_TOOBSERVER');
       });
       recorder.on('data', function(data) {
         room = ROOM_all[client.rid];
@@ -1424,9 +1423,8 @@
         });
         ygopro.ctos_send(watcher, 'JOIN_GAME', {
           version: settings.version,
-          pass: ""
+          pass: "the Big Brother"
         });
-        ygopro.ctos_send(watcher, 'HS_TOOBSERVER');
       });
       watcher.on('data', function(data) {
         var j, len, ref, w;
