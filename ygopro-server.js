@@ -1406,6 +1406,7 @@
           version: settings.version,
           pass: "Marshtomp"
         });
+        ygopro.ctos_send(recorder, 'HS_TOOBSERVER');
       });
       recorder.on('data', function(data) {
         room = ROOM_all[client.rid];
@@ -1425,6 +1426,7 @@
           version: settings.version,
           pass: "the Big Brother"
         });
+        ygopro.ctos_send(watcher, 'HS_TOOBSERVER');
       });
       watcher.on('data', function(data) {
         var j, len, ref, w;

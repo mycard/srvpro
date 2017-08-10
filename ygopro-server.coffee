@@ -1162,7 +1162,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         version: settings.version,
         pass: "Marshtomp"
       }
-      #ygopro.ctos_send recorder, 'HS_TOOBSERVER'
+      ygopro.ctos_send recorder, 'HS_TOOBSERVER'
       return
 
     recorder.on 'data', (data)->
@@ -1183,7 +1183,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         version: settings.version,
         pass: "the Big Brother"
       }
-      #ygopro.ctos_send watcher, 'HS_TOOBSERVER'
+      ygopro.ctos_send watcher, 'HS_TOOBSERVER'
       return
 
     watcher.on 'data', (data)->
