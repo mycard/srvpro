@@ -1449,6 +1449,27 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server)->
     return true
   return false
 
+report_to_big_brother = (roomname, sender, ip, level, content, match) ->
+  return unless settings.modules.big_brother.enabled
+  request.post { url : settings.modules.big_brother.post , form : {
+    accesskey: settings.modules.big_brother.accesskey,
+    roomname: roomname,
+    sender: sender,
+    ip: ip,
+    level: level,
+    content: content,
+    match: match
+  }}, (error, response, body)->
+    if error
+      log.warn 'BIG BROTHER ERROR', error
+    else
+      if response.statusCode != 200
+        log.warn 'BIG BROTHER FAIL', response.statusCode, roomname, body
+      #else
+        #log.info 'BIG BROTHER OK', response.statusCode, roomname, body
+    return
+  return
+
 ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
@@ -1512,7 +1533,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     regexp = new RegExp(badword, 'i')
     return msg.match(regexp)
   , msg))
-    log.warn "BAD WORD LEVEL 3", client.name, client.ip, oldmsg
+    log.warn "BAD WORD LEVEL 3", client.name, client.ip, oldmsg, RegExp.$1
+    report_to_big_brother room.name, client.name, client.ip, 3, oldmsg, RegExp.$1
     cancel = true
     if client.abuse_count>0
       ygopro.stoc_send_chat(client, "${banned_duel_tip}", ygopro.constants.COLORS.RED)
@@ -1539,7 +1561,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     regexp = new RegExp(badword, 'i')
     return msg.match(regexp)
   , msg))
-    log.warn "BAD WORD LEVEL 2", client.name, client.ip, oldmsg
+    log.warn "BAD WORD LEVEL 2", client.name, client.ip, oldmsg, RegExp.$1
+    report_to_big_brother room.name, client.name, client.ip, 2, oldmsg, RegExp.$1
     client.abuse_count=client.abuse_count+3
     ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED)
     cancel = true
@@ -1551,7 +1574,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       return
     , msg)
     if oldmsg != msg
-      log.warn "BAD WORD LEVEL 1", client.name, client.ip, oldmsg
+      log.warn "BAD WORD LEVEL 1", client.name, client.ip, oldmsg, RegExp.$1
+      report_to_big_brother room.name, client.name, client.ip, 1, oldmsg, RegExp.$1
       client.abuse_count=client.abuse_count+1
       ygopro.stoc_send_chat(client, "${chat_warn_level1}")
       struct = ygopro.structs["chat"]
@@ -1562,7 +1586,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       regexp = new RegExp(badword, 'i')
       return msg.match(regexp)
     , msg))
-      log.info "BAD WORD LEVEL 0", client.name, client.ip, oldmsg
+      log.info "BAD WORD LEVEL 0", client.name, client.ip, oldmsg, RegExp.$1
+      report_to_big_brother room.name, client.name, client.ip, 0, oldmsg, RegExp.$1
   if client.abuse_count>=2
     ROOM_unwelcome(room, client, "${random_ban_reason_abuse}")
   if client.abuse_count>=5

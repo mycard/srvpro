@@ -160,7 +160,7 @@
     "room_name": "您当前的房间名是",
     "banned_chat_tip": "您已被禁言！",
     "banned_duel_tip": "您的发言存在严重不适当的内容，禁止您使用随机对战功能！",
-    "chat_warn_level0": "请不要发送垃圾信息！",
+    "chat_warn_level0": "请不要发送过长的消息或垃圾信息！",
     "chat_warn_level2": "您的发言存在不适当的内容，发送失败！",
     "chat_warn_level1": "请使用文明用语！",
     "chat_banned": "已被禁言！",

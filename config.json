@@ -66,6 +66,11 @@
       "post": "https://api.mycard.moe/ygopro/analytics/deck/text",
       "arena": "233"
     },
+    "big_brother": {
+      "enabled": false,
+      "accesskey": "233",
+      "post": "https://api.mycard.moe/ygopro/big-brother"
+    },
     "arena_mode": {
       "enabled": false,
       "mode": "entertain",
