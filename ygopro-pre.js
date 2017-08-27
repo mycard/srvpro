@@ -388,7 +388,7 @@ var packDatas = function () {
     });
 }
 //编译YGOPRO
-var ComplieYGOPRO = function(message) {
+var CompileYGOPRO = function(message) {
     execSync('premake4 gmake', { cwd: config.ygopro_path, env: process.env });
     sendResponse("make文件生成完成。");
     var proc = spawn("make", ["config=release"], { cwd: config.ygopro_path+"build/", env: process.env });
@@ -461,10 +461,10 @@ http.createServer(function (req, res) {
         res.end(u.query.callback+'({"message":"开始生成更新包。"});');
         packDatas();
     }
-    else if (u.pathname === '/api/complie_ygopro') {
+    else if (u.pathname === '/api/compile_ygopro') {
         res.writeHead(200);
         res.end(u.query.callback+'({"message":"开始编译YGOPRO。"});');
-        ComplieYGOPRO();
+        CompileYGOPRO();
     }
     else {
         res.writeHead(400);
