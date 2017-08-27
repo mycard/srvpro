@@ -387,6 +387,23 @@ var packDatas = function () {
         sendResponse("PRO2更新包打包完成。");
     });
 }
+//编译YGOPRO
+var ComplieYGOPRO = function(message) {
+    execSync('premake4 gmake', { cwd: config.ygopro_path, env: process.env });
+    sendResponse("make文件生成完成。");
+    var proc = spawn("make", ["config=release"], { cwd: config.ygopro_path+"build/", env: process.env });
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', function(data) {
+        sendResponse(data);
+    });
+    proc.stderr.setEncoding('utf8');
+    proc.stderr.on('data', function(data) {
+        sendResponse(data);
+    });
+    proc.on('close', function (code) {
+        sendResponse("YGOPRO编译完成。");
+    });
+}
 
 //建立一个http服务器，接收API操作
 http.createServer(function (req, res) {
@@ -443,6 +460,11 @@ http.createServer(function (req, res) {
         res.writeHead(200);
         res.end(u.query.callback+'({"message":"开始生成更新包。"});');
         packDatas();
+    }
+    else if (u.pathname === '/api/complie_ygopro') {
+        res.writeHead(200);
+        res.end(u.query.callback+'({"message":"开始编译YGOPRO。"});');
+        ComplieYGOPRO();
     }
     else {
         res.writeHead(400);
