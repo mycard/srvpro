@@ -389,9 +389,17 @@ var packDatas = function () {
 }
 //编译YGOPRO
 var CompileYGOPRO = function(message) {
-    execSync('premake4 gmake', { cwd: config.ygopro_path, env: process.env });
+    execSync('git pull origin server', { cwd: config.ygopro_path, env: process.env });
+	execSync('git pull origin master', { cwd: config.ygopro_path+"ocgcore/", env: process.env });
+	execSync('mkdir ygopro-temp', { cwd: config.ygopro_path, env: process.env });
+	execSync('cp -rf ocgcore ygopro-temp', { cwd: config.ygopro_path, env: process.env });
+	execSync('cp -rf gframe ygopro-temp', { cwd: config.ygopro_path, env: process.env });
+	execSync('cp -rf premake ygopro-temp', { cwd: config.ygopro_path, env: process.env });
+	execSync('cp -rf premake4.lua ygopro-temp', { cwd: config.ygopro_path, env: process.env });
+	execSync('cp -rf premake5.lua ygopro-temp', { cwd: config.ygopro_path, env: process.env });
+    execSync('premake4 gmake', { cwd: config.ygopro_path+"ygopro-temp/", env: process.env });
     sendResponse("make文件生成完成。");
-    var proc = spawn("make", ["config=release"], { cwd: config.ygopro_path+"build/", env: process.env });
+    var proc = spawn("make", ["config=release"], { cwd: config.ygopro_path+"ygopro-temp/build/", env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
         sendResponse(data);
@@ -401,6 +409,10 @@ var CompileYGOPRO = function(message) {
         sendResponse(data);
     });
     proc.on('close', function (code) {
+		execSync('cp -rf ygopro-temp/bin .', { cwd: config.ygopro_path, env: process.env });
+		execSync('cp -rf ygopro-temp/obj .', { cwd: config.ygopro_path, env: process.env });
+		execSync('cp -rf ygopro-temp/build .', { cwd: config.ygopro_path, env: process.env });
+		execSync('rm -rf ygopro-temp', { cwd: config.ygopro_path, env: process.env });
         sendResponse("YGOPRO编译完成。");
     });
 }
