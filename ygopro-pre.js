@@ -344,7 +344,7 @@ var packDatas = function () {
     execSync('cp -r "' + config.db_path +'script" "'+ config.db_path +'expansions/script"');
     execSync('cp -r "' + config.db_path +'pics" "'+ config.db_path +'expansions/pics"');
     execSync('cp -r "' + config.db_path +'pics/field" "'+ config.db_path +'picture/field"');
-    var proc = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "-x!cdb", "-x!script", "-x!pics", "-x!picture", "ygosrv233-pre.zip", "*"], { cwd: config.db_path, env: process.env });
+    var proc = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "-x!cdb", "-x!script", "-x!pics", "-x!expansions/pics/thumbnail", "-x!picture", "ygosrv233-pre.zip", "*"], { cwd: config.db_path, env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
         //sendResponse("7z: "+data);
@@ -358,7 +358,7 @@ var packDatas = function () {
         execSync('rm -rf "' + config.db_path +'expansions/script" "'+ config.db_path +'expansions/pics"');
         sendResponse("电脑更新包打包完成。");
     });
-    var proc2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "-x!cdb", "-x!pics/thumbnail", "-x!picture", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path, env: process.env });
+    var proc2 = spawn("7za", ["a", "-x!*.zip", "-x!expansions/pics", "-x!expansions/script", "-x!cdb", "-x!pics/thumbnail", "-x!picture", "ygosrv233-pre-mobile.zip", "*"], { cwd: config.db_path, env: process.env });
     proc2.stdout.setEncoding('utf8');
     proc2.stdout.on('data', function(data) {
         //sendResponse("7z: "+data);
@@ -371,7 +371,7 @@ var packDatas = function () {
         execSync('mv -f "' + config.db_path +'ygosrv233-pre-mobile.zip" "'+ file_path +'"');
         sendResponse("手机更新包打包完成。");
     });
-    var proc3 = spawn("7za", ["a", "-x!*.zip", "-x!mobile.cdb", "-x!expansions", "-x!pics", "ygosrv233-pre-2.zip", "*"], { cwd: config.db_path, env: process.env });
+    var proc3 = spawn("7za", ["a", "-x!*.zip", "-x!expansions", "-x!pics", "ygosrv233-pre-2.zip", "*"], { cwd: config.db_path, env: process.env });
     proc3.stdout.setEncoding('utf8');
     proc3.stdout.on('data', function(data) {
         //sendResponse("7z: "+data);
