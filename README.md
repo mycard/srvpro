@@ -1,7 +1,7 @@
-## ygopro-server
+## SRVPro
 一个YGOPro服务器。
 
-现用于[萌卡](https://mycard.moe/)和[YGOPRO 233服](http://mercury233.me/ygosrv233/)。
+现用于[萌卡](https://mycard.moe/)和[YGOPro 233服](https://ygo233.com/)。
 
 ### 支持功能
 * Linux上运行
@@ -12,7 +12,7 @@
 * 广播消息
 * 召唤台词
 * 先行卡一键更新
-* Windbot在线AI
+* WindBot在线AI
 * 萌卡用户登陆
 
 ### 不支持功能
@@ -27,7 +27,6 @@
   * `npm install`
 * 将`config.json`复制为`config.user.json`并进行修改
   * `port`为你想要的端口
-  * `modules.stop`为文本时，表示服务器关闭
   * ~~更多选项参见wiki~~
 * `node ygopro-server.js`即可运行
 * 简易的控制台在 http://mercury233.me/ygosrv233/dashboard.html
