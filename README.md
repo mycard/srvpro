@@ -21,9 +21,9 @@
 ### 使用方法
 * 可参考[wiki](https://github.com/mercury233/ygopro-server/wiki)安装
 * 手动安装：
-  * 安装修改后的YGOPro服务端：https://github.com/mycard/ygopro/tree/server
-  * `git clone https://github.com/mycard/ygopro-server.git`
-  * `cd ygopro-server`
+  * 安装修改后的YGOPro服务端：https://github.com/moecube/ygopro/tree/server
+  * `git clone https://github.com/moecube/srvpro.git`
+  * `cd srvpro`
   * `npm install`
 * 将`config.json`复制为`config.user.json`并进行修改
   * `port`为你想要的端口
@@ -63,6 +63,7 @@
 
 ### License
 SRVPro
+
 Copyright (C) 2013-2017  MoeCube Team
 
 This program is free software: you can redistribute it and/or modify
