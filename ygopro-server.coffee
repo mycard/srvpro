@@ -1770,7 +1770,15 @@ if settings.modules.mycard.enabled
 
 # spawn windbot
 if settings.modules.windbot.spawn
-  windbot_process = spawn 'mono', ['WindBot.exe', settings.modules.windbot.port], {cwd: 'windbot'}
+  if /^win/.test(process.platform)
+    windbot_bin = 'WindBot.exe'
+    windbot_parameters = []
+  else
+    windbot_bin = 'mono'
+    windbot_parameters = ['WindBot.exe']
+  windbot_parameters.push('ServerMode=true')
+  windbot_parameters.push('ServerPort='+settings.modules.windbot.port)
+  windbot_process = spawn windbot_bin, windbot_parameters, {cwd: 'windbot'}
   windbot_process.on 'error', (err)->
     log.warn 'WindBot ERROR', err
     return
