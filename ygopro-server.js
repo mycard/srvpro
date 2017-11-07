@@ -1090,6 +1090,7 @@
 
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
     var check, decrypted_buffer, finish, i, id, j, k, len, len1, name, ref, ref1, replay_id, room, secret, struct;
+    info.pass = info.pass.trim();
     if (settings.modules.stop) {
       ygopro.stoc_die(client, settings.modules.stop);
     } else if (info.pass.toUpperCase() === "R" && settings.modules.cloud_replay.enabled) {

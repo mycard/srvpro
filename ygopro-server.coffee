@@ -864,6 +864,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
 
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 #log.info info
+  info.pass=info.pass.trim()
   if settings.modules.stop
     ygopro.stoc_die(client, settings.modules.stop)
     
