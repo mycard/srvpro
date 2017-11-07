@@ -117,7 +117,7 @@ for name, declaration of structs_declaration
     return
   for line in _.lines(msg)
     if player>=10
-      line="[System]: "+line
+      line="[Server]: "+line
     for o,r of i18ns[client.lang]
       re=new RegExp("\\$\\{"+o+"\\}",'g')
       line=line.replace(re,r)

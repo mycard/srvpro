@@ -181,7 +181,7 @@
     for (j = 0, len1 = ref.length; j < len1; j++) {
       line = ref[j];
       if (player >= 10) {
-        line = "[System]: " + line;
+        line = "[Server]: " + line;
       }
       ref1 = i18ns[client.lang];
       for (o in ref1) {
