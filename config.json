@@ -40,6 +40,7 @@
     },
     "random_duel": {
       "enabled": false,
+      "no_rematch_check": false,
       "hang_timeout": 90
     },
     "cloud_replay": {
@@ -88,6 +89,11 @@
       "duel_log": [],
       "password": "123456",
       "port": 7933
+    },
+    "test_mode": {
+      "watch_public_hand": false,
+      "no_connect_count_limit": false,
+      "no_ban_player": false
     },
     "pre_util": {
       "enabled": false,

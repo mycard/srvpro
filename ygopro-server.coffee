@@ -163,6 +163,7 @@ ban_user = (name) ->
 
 # automatically ban user to use random duel
 ROOM_ban_player = (name, ip, reason, countadd = 1)->
+  return if settings.modules.test_mode.no_ban_player
   bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
     ip == bannedplayer.ip
   if bannedplayer
@@ -211,7 +212,8 @@ ROOM_find_or_create_random = (type, player_ip)->
     return room and room.random_type != '' and !room.started and
     ((type == '' and room.random_type != 'T') or room.random_type == type) and
     room.get_playing_player().length < max_player and
-    (room.get_host() == null or room.get_host().ip != ROOM_players_oppentlist[player_ip]) and
+    (settings.modules.random_duel.no_rematch_check or room.get_host() == null or
+    room.get_host().ip != ROOM_players_oppentlist[player_ip]) and
     (playerbanned == room.deprecated or type == 'T')
   if result
     result.welcome = '${random_duel_enter_room_waiting}'
@@ -596,7 +598,7 @@ class Room
 net.createServer (client) ->
   client.ip = client.remoteAddress
   connect_count = ROOM_connected_ip[client.ip] or 0
-  if client.ip != '::ffff:127.0.0.1'
+  if !settings.modules.test_mode.no_connect_count_limit and client.ip != '::ffff:127.0.0.1'
     connect_count++
   ROOM_connected_ip[client.ip] = connect_count
   #log.info "connect", client.ip, ROOM_connected_ip[client.ip]
@@ -1175,7 +1177,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       return
 
   if settings.modules.cloud_replay.enable_halfway_watch and !room.watcher
-    room.watcher = watcher = net.connect room.port, ->
+    room.watcher = watcher = if settings.modules.test_mode.watch_public_hand then room.recorder else net.connect room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
         name: "the Big Brother"
       }

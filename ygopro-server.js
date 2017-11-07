@@ -221,6 +221,9 @@
     if (countadd == null) {
       countadd = 1;
     }
+    if (settings.modules.test_mode.no_ban_player) {
+      return;
+    }
     bannedplayer = _.find(ROOM_players_banned, function(bannedplayer) {
       return ip === bannedplayer.ip;
     });
@@ -292,7 +295,7 @@
     max_player = type === 'T' ? 4 : 2;
     playerbanned = bannedplayer && bannedplayer.count > 3 && moment() < bannedplayer.time;
     result = _.find(ROOM_all, function(room) {
-      return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated || type === 'T');
+      return room && room.random_type !== '' && !room.started && ((type === '' && room.random_type !== 'T') || room.random_type === type) && room.get_playing_player().length < max_player && (settings.modules.random_duel.no_rematch_check || room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated || type === 'T');
     });
     if (result) {
       result.welcome = '${random_duel_enter_room_waiting}';
@@ -799,7 +802,7 @@
     var connect_count, server;
     client.ip = client.remoteAddress;
     connect_count = ROOM_connected_ip[client.ip] || 0;
-    if (client.ip !== '::ffff:127.0.0.1') {
+    if (!settings.modules.test_mode.no_connect_count_limit && client.ip !== '::ffff:127.0.0.1') {
       connect_count++;
     }
     ROOM_connected_ip[client.ip] = connect_count;
@@ -1418,7 +1421,7 @@
       recorder.on('error', function(error) {});
     }
     if (settings.modules.cloud_replay.enable_halfway_watch && !room.watcher) {
-      room.watcher = watcher = net.connect(room.port, function() {
+      room.watcher = watcher = settings.modules.test_mode.watch_public_hand ? room.recorder : net.connect(room.port, function() {
         ygopro.ctos_send(watcher, 'PLAYER_INFO', {
           name: "the Big Brother"
         });
