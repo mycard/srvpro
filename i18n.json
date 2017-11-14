@@ -152,6 +152,8 @@
     "kicked_by_player": "被请出了房间",
     "kicked_by_system": "被系统请出了房间",
     "kick_count_down": "秒后房主若不开始游戏将被请出房间",
+    "kick_count_down_arena_part1": "秒后",
+    "kick_count_down_arena_part2": "若不准备或开始游戏将视为投降",
     "chat_order_main": "Mycard YGOPro Server 指令帮助",
     "chat_order_help": "/help 显示这个帮助信息",
     "chat_order_roomname": "/roomname 显示当前房间的名字",
