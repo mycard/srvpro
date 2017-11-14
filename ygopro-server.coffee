@@ -448,13 +448,15 @@ class Room
   delete: ->
     return if @deleted
     #log.info 'room-delete', this.name, ROOM_all.length
-    if @started and settings.modules.arena_mode.enabled and @arena
-      #log.info @scores
-      score_array=[]
-      for name, score of @scores
-        score_array.push { name: name, score: score }
+    score_array=[]
+    for name, score of @scores
+      score_array.push { name: name, score: score }
+    if score_array.length > 0 and settings.modules.arena_mode.enabled and @arena
       #log.info 'SCORE', score_array, @start_time
       if score_array.length == 2
+        end_time = moment().format()
+        if !@start_time
+          @start_time = end_time
         request.post { url : settings.modules.arena_mode.post_score , form : {
           accesskey: settings.modules.arena_mode.accesskey,
           usernameA: score_array[0].name,
@@ -462,7 +464,7 @@ class Room
           userscoreA: score_array[0].score,
           userscoreB: score_array[1].score,
           start: @start_time,
-          end: moment().format(),
+          end: end_time,
           arena: @arena
         }}, (error, response, body)=>
           if error
@@ -575,9 +577,13 @@ class Room
       @watchers.splice(index, 1) unless index == -1
       #client.room = null
     else
+      #log.info(client.name, @started, @disconnector, @random_type, @players.length)
+      if @arena == "athletic" and !@started and @players.length == 2
+        for player in @players when player.pos != 7
+          @scores[player.name] = 0
+        @scores[client.name] = -9
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
-      #log.info(@started,@disconnector,@random_type)
       if @started and @disconnector != 'server' and (client.pos < 4 or client.is_host)
         @finished = true
         @scores[client.name] = -9
@@ -991,6 +997,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           room.private = true
           room.arena = settings.modules.arena_mode.mode
+          if room.arena == "athletic"
+            room.max_player = 2
+            room.welcome = "${athletic_arena_tip}"
         when 5
           title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room = ROOM_find_by_title(title)
@@ -1304,6 +1313,10 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
   return unless room
   for player in room.players
     if player and player.pos == info.pos and player != client
+      if room.arena == "athletic"
+        ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
+        client.destroy()
+        return true
       client.kick_count = if client.kick_count then client.kick_count+1 else 1
       if client.kick_count>=5 and room.random_type
         ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)

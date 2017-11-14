@@ -605,21 +605,25 @@
     }
 
     Room.prototype["delete"] = function() {
-      var index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref, replay_id, score, score_array;
+      var end_time, index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref, replay_id, score, score_array;
       if (this.deleted) {
         return;
       }
-      if (this.started && settings.modules.arena_mode.enabled && this.arena) {
-        score_array = [];
-        ref = this.scores;
-        for (name in ref) {
-          score = ref[name];
-          score_array.push({
-            name: name,
-            score: score
-          });
-        }
+      score_array = [];
+      ref = this.scores;
+      for (name in ref) {
+        score = ref[name];
+        score_array.push({
+          name: name,
+          score: score
+        });
+      }
+      if (score_array.length > 0 && settings.modules.arena_mode.enabled && this.arena) {
         if (score_array.length === 2) {
+          end_time = moment().format();
+          if (!this.start_time) {
+            this.start_time = end_time;
+          }
           request.post({
             url: settings.modules.arena_mode.post_score,
             form: {
@@ -629,7 +633,7 @@
               userscoreA: score_array[0].score,
               userscoreB: score_array[1].score,
               start: this.start_time,
-              end: moment().format(),
+              end: end_time,
               arena: this.arena
             }
           }, (function(_this) {
@@ -763,7 +767,7 @@
     };
 
     Room.prototype.disconnect = function(client, error) {
-      var index;
+      var index, j, len, player, ref;
       if (client.is_post_watcher) {
         ygopro.stoc_send_chat_to_room(this, (client.name + " ${quit_watch}") + (error ? ": " + error : ''));
         index = _.indexOf(this.watchers, client);
@@ -771,6 +775,16 @@
           this.watchers.splice(index, 1);
         }
       } else {
+        if (this.arena === "athletic" && !this.started && this.players.length === 2) {
+          ref = this.players;
+          for (j = 0, len = ref.length; j < len; j++) {
+            player = ref[j];
+            if (player.pos !== 7) {
+              this.scores[player.name] = 0;
+            }
+          }
+          this.scores[client.name] = -9;
+        }
         index = _.indexOf(this.players, client);
         if (index !== -1) {
           this.players.splice(index, 1);
@@ -1213,6 +1227,10 @@
             room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8));
             room["private"] = true;
             room.arena = settings.modules.arena_mode.mode;
+            if (room.arena === "athletic") {
+              room.max_player = 2;
+              room.welcome = "${athletic_arena_tip}";
+            }
             break;
           case 5:
             title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ');
@@ -1559,6 +1577,11 @@
     for (j = 0, len = ref.length; j < len; j++) {
       player = ref[j];
       if (player && player.pos === info.pos && player !== client) {
+        if (room.arena === "athletic") {
+          ygopro.stoc_send_chat_to_room(room, client.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
+          client.destroy();
+          return true;
+        }
         client.kick_count = client.kick_count ? client.kick_count + 1 : 1;
         if (client.kick_count >= 5 && room.random_type) {
           ygopro.stoc_send_chat_to_room(room, client.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
