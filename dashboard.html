@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SRVPro Dashboard</title>
+<link href="https://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+<link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+<header class="container">
+    <h1 class="title">SRVPro Dashboard</h1>
+</header>
+<div class="container">
+    <div class="row grid">
+        <div class="col-lg-1">
+            <input type="text" class="form-control" id="http" value="http" placeholder="http">
+        </div>
+        <div class="col-lg-3">
+            <input type="text" class="form-control" id="ip" value="" placeholder="IP">
+        </div>
+        <div class="col-lg-1">
+            <input type="text" class="form-control" id="port" value="" placeholder="port">
+        </div>
+        <div class="col-lg-3">
+            <input type="password" class="form-control" id="password" value="" placeholder="password">
+        </div>
+        <div class="col-lg-4">
+            <button class="btn btn-default" id="open_button">刷新</button>
+            <button class="btn btn-default" id="auto_button">自动刷新</button>
+            共有<span id="num">0</span>个房间
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-8">
+            <input type="text" class="form-control" id="shout" value="" placeholder="喊话">
+        </div>
+        <div class="col-lg-4">
+            <button class="btn btn-default" id="shout_button" data-toggle="tooltip" title="向全服所有房间喊话">喊话</button>
+            <button class="btn btn-default" id="stop_button" data-toggle="tooltip" title="停止新建房间，不影响现有的房间">停服</button>
+            <button class="btn btn-default" id="welcome_button" data-toggle="tooltip" title="更改欢迎信息">欢迎</button>
+            <span id="message_callback"></span>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <hr>
+    <div class="row">
+        <div class="col-lg-12">
+            <table class="table table-striped" id="rooms">
+                <thead>
+                    <th width="10%">房号</th>
+                    <th width="30%">房名</th>
+                    <th width="25%">玩家</th>
+                    <th width="25%">玩家</th>
+                    <th width="10%">状态</th>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.bootcss.com/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script>
+$(function(){
+    $("body").tooltip({selector: "[data-toggle='tooltip']", trigger: "hover"});
+    $("#open_button").click(loadrooms);
+    $("#auto_button").click(autoload);
+    $("#shout_button").click(shout);
+    $("#stop_button").click(stop);
+    $("#welcome_button").click(welcome);
+    var params=parseQueryString();
+    $("#ip").val(params["ip"]);
+    $("#port").val(params["port"]);
+    $("#password").val(params["password"]);
+});
+
+function parseQueryString() {
+    //http://stackoverflow.com/questions/523266/how-can-i-get-a-specific-parameter-from-location-search
+    var str = window.location.search;
+    var objURL = {};
+    str.replace(
+        new RegExp( "([^?=&]+)(=([^&]*))?", "g" ),
+        function( $0, $1, $2, $3 ){
+            objURL[ $1 ] = $3;
+        }
+    );
+    return objURL;
+}
+
+function loadrooms() {
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/getrooms?callback=?"+ ($("#password").val() ? "&pass="+$("#password").val() : "");
+    $.getJSON(url, listroom);
+    $("#open_button").removeClass("btn-success");
+}
+
+function autoload() {
+    if (window.autoLoad) {
+        window.clearInterval(window.autoLoad);
+        window.autoLoad=false;
+        $("#message_callback").text("关闭自动刷新");
+    }
+    else {
+        if (!$("#password").val()) {
+            alert("请输入密码");
+            return;
+        }
+        window.autoLoad=window.setInterval(loadrooms,1000);
+    }
+}
+
+function listroom(data) {
+
+    $("#open_button").addClass("btn-success");
+    $("#num").text(data.rooms.length);
+    var tbody=$("<tbody></tbody>");
+    for (i in data.rooms) {
+        var room=data.rooms[i];
+        var tr=$("<tr></tr>");
+        
+        room.duelers=[];
+        room.watchers=[];
+        for (j in room.users) {
+            if (room.users[j].pos==7) {
+                room.watchers.push(room.users[j]);
+            }
+            else {
+                room.duelers.push(room.users[j]);
+            }
+        }
+
+        
+        tr.append($("<td>"+room.roomid+"</td>"));
+        tr.append($("<td>"+ ((room.needpass == "true") ? "<span class='glyphicon glyphicon-lock'></span>" : "") + room.roomname+ "</td>"));
+
+        if (room.duelers.length<=2) {
+            tr.append($("<td>"+((room.duelers[0]) ? room.duelers[0].name : "")+"</td>"));
+            tr.append($("<td>"+((room.duelers[1]) ? room.duelers[1].name : "")+"</td>"));
+        }
+        else {
+            tr.append($("<td>"+((room.duelers[0]) ? room.duelers[0].name : "")+((room.duelers[2]) ? "<br>"+room.duelers[2].name : "")+"</td>"));
+            tr.append($("<td>"+((room.duelers[1]) ? room.duelers[1].name : "")+((room.duelers[3]) ? "<br>"+room.duelers[3].name : "")+"</td>"));
+        }
+        
+        var watchlist="";
+        
+        if (room.watchers.length) {
+            for (j in room.watchers) {
+                watchlist+=room.watchers[j].name+"\r\n";
+            }
+        }
+        
+        tr.append($("<td>"+ (watchlist ? "<span class='glyphicon glyphicon-eye-open' data-toggle='tooltip' title='" + watchlist + "'></span>" : "") + room.istart +"</td>"));
+        
+        tbody.append(tr);
+    }
+    $("#rooms tbody").remove();
+    $("#rooms").append(tbody);
+}
+
+function shout() {
+    $("#message_callback").text('...');
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?shout=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+    $.getJSON(url, shoutcallback);
+}
+function stop() {
+    if (confirm("确实要停服吗？")) {
+        $("#message_callback").text('...');
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?stop=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+        $.getJSON(url, shoutcallback);
+    }
+}
+function welcome() {
+    if ($("#shout").val().length) {
+        $("#message_callback").text('...');
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?welcome=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+        $.getJSON(url, shoutcallback);
+    }
+    else {
+        $("#message_callback").text('...');
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?getwelcome=1&pass=" + $("#password").val() + "&callback=?";
+        $.getJSON(url, shoutcallback);
+    }
+}
+
+function shoutcallback(data) {
+    $("#message_callback").text(data[0]);
+    if (data[1]) {
+        $("#shout").val(data[1]);
+    }
+}
+</script>
+
+<script src="http://s4.cnzz.com/z_stat.php?id=1255875151&web_id=1255875151"></script>
+</body>
+</html>
