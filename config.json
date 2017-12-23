@@ -106,6 +106,7 @@
       "db_path": "../ygopro-pre-data/unofficial/",
       "html_img_rel_path": "pre/pics/",
       "html_img_thumbnail": "thumbnail/",
+      "html_img_thumbnail_suffix": "!thumb",
       "cdn": {
         "enabled": false,
         "exe": "upx",
