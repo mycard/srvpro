@@ -914,7 +914,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     replay_id=Cloud_replay_ids[Math.floor(Math.random()*Cloud_replay_ids.length)]
     redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
 
-  else if info.version != settings.version # and (info.version < 9020 or settings.version != 4927) #强行兼容23333版
+  else if info.version != settings.version and (info.version < 9020 or settings.version != 4927) #强行兼容23333版
     ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED)
     ygopro.stoc_send client, 'ERROR_MSG', {
       msg: 4
@@ -931,12 +931,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       ygopro.stoc_die(client, '${invalid_password_length}')
       return
 
-    #if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
-    #  info.version = settings.version
-    #  struct = ygopro.structs["CTOS_JoinGame"]
-    #  struct._setBuff(buffer)
-    #  struct.set("version", info.version)
-    #  buffer = struct.buffer
+    if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
+      info.version = settings.version
+      struct = ygopro.structs["CTOS_JoinGame"]
+      struct._setBuff(buffer)
+      struct.set("version", info.version)
+      buffer = struct.buffer
 
     buffer = new Buffer(info.pass[0...8], 'base64')
 
@@ -1109,13 +1109,13 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_die(client, "${invalid_password_room}")
   
   else
-    #if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
-    #  info.version = settings.version
-    #  struct = ygopro.structs["CTOS_JoinGame"]
-    #  struct._setBuff(buffer)
-    #  struct.set("version", info.version)
-    #  buffer = struct.buffer
-    #  #ygopro.stoc_send_chat(client, "看起来你是YGOMobile的用户，请记得更新先行卡补丁，否则会看到白卡", ygopro.constants.COLORS.GREEN)
+    if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
+      info.version = settings.version
+      struct = ygopro.structs["CTOS_JoinGame"]
+      struct._setBuff(buffer)
+      struct.set("version", info.version)
+      buffer = struct.buffer
+      #ygopro.stoc_send_chat(client, "看起来你是YGOMobile的用户，请记得更新先行卡补丁，否则会看到白卡", ygopro.constants.COLORS.GREEN)
       
     #log.info 'join_game',info.pass, client.name
     room = ROOM_find_or_create_by_name(info.pass, client.ip)
