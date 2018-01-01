@@ -1150,7 +1150,7 @@
     } else if (info.pass.toUpperCase() === "W" && settings.modules.cloud_replay.enabled) {
       replay_id = Cloud_replay_ids[Math.floor(Math.random() * Cloud_replay_ids.length)];
       redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
-    } else if (info.version !== settings.version && (info.version < 9020 || settings.version !== 4927)) {
+    } else if (info.version !== settings.version && (info.version !== 4929 || settings.version !== 4930)) {
       ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
@@ -1165,7 +1165,7 @@
         ygopro.stoc_die(client, '${invalid_password_length}');
         return;
       }
-      if (info.version >= 9020 && settings.version === 4927) {
+      if (info.version === 9029 && settings.version === 4930) {
         info.version = settings.version;
         struct = ygopro.structs["CTOS_JoinGame"];
         struct._setBuff(buffer);
@@ -1355,7 +1355,7 @@
     } else if (info.pass.length && !ROOM_validate(info.pass)) {
       ygopro.stoc_die(client, "${invalid_password_room}");
     } else {
-      if (info.version >= 9020 && settings.version === 4927) {
+      if (info.version === 4929 && settings.version === 4930) {
         info.version = settings.version;
         struct = ygopro.structs["CTOS_JoinGame"];
         struct._setBuff(buffer);
