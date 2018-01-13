@@ -1490,12 +1490,12 @@
       playertype = buffer.readUInt8(1);
       client.is_first = !(playertype & 0xf);
       client.lp = room.hostinfo.start_lp;
-      if (client.is_host) {
+      if (client.pos === 0) {
         room.turn = 0;
       }
     }
     if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
-      if (client.is_host) {
+      if (client.pos === 0) {
         room.turn = room.turn + 1;
       }
       if (client.surrend_confirm) {
@@ -1503,7 +1503,7 @@
         ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE);
       }
     }
-    if (ygopro.constants.MSG[msg] === 'WIN' && client.is_host) {
+    if (ygopro.constants.MSG[msg] === 'WIN' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!(client.is_first || pos === 2)) {
         pos = 1 - pos;
@@ -1515,7 +1515,7 @@
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
       }
     }
-    if (ygopro.constants.MSG[msg] === 'DAMAGE' && client.is_host) {
+    if (ygopro.constants.MSG[msg] === 'DAMAGE' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -1526,7 +1526,7 @@
         ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK);
       }
     }
-    if (ygopro.constants.MSG[msg] === 'RECOVER' && client.is_host) {
+    if (ygopro.constants.MSG[msg] === 'RECOVER' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -1534,7 +1534,7 @@
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp += val;
     }
-    if (ygopro.constants.MSG[msg] === 'LPUPDATE' && client.is_host) {
+    if (ygopro.constants.MSG[msg] === 'LPUPDATE' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -1542,7 +1542,7 @@
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp = val;
     }
-    if (ygopro.constants.MSG[msg] === 'PAY_LPCOST' && client.is_host) {
+    if (ygopro.constants.MSG[msg] === 'PAY_LPCOST' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -2062,7 +2062,7 @@
     client.main = buff_main;
     client.side = buff_side;
     if (room.random_type || room.arena) {
-      if (client.is_host) {
+      if (client.pos === 0) {
         room.waiting_for_player = room.waiting_for_player2;
       }
       room.last_active_time = moment();
@@ -2134,7 +2134,7 @@
     if (!(room && (room.random_type || room.arena))) {
       return;
     }
-    if (client.is_host) {
+    if (client.pos === 0) {
       room.waiting_for_player = room.waiting_for_player2;
     }
     room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's');
@@ -2155,7 +2155,7 @@
     if (!(room && (room.random_type || room.arena))) {
       return;
     }
-    if (client.is_host) {
+    if (client.pos === 0) {
       room.waiting_for_player = client;
     } else {
       room.waiting_for_player2 = client;
@@ -2184,7 +2184,7 @@
     }
     room.changing_side = true;
     if (room.random_type || room.arena) {
-      if (client.is_host) {
+      if (client.pos === 0) {
         room.waiting_for_player = client;
       } else {
         room.waiting_for_player2 = client;
@@ -2203,7 +2203,7 @@
       Cloud_replay_ids.push(room.cloud_replay_id);
     }
     if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
-      if (client.is_host) {
+      if (client.pos === 0) {
         dueltime = moment().format('YYYY-MM-DD HH:mm:ss');
         replay_filename = dueltime;
         ref = room.dueling_players;

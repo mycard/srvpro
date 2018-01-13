@@ -1245,19 +1245,19 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
-    if client.is_host
+    if client.pos == 0
       room.turn = 0
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
 
   if ygopro.constants.MSG[msg] == 'NEW_TURN'
-    if client.is_host
+    if client.pos == 0
       room.turn = room.turn + 1
     if client.surrend_confirm
       client.surrend_confirm = false
       ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
   
-  if ygopro.constants.MSG[msg] == 'WIN' and client.is_host
+  if ygopro.constants.MSG[msg] == 'WIN' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2
     reason = buffer.readUInt8(2)
@@ -1270,7 +1270,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
 
   #lp跟踪
-  if ygopro.constants.MSG[msg] == 'DAMAGE' and client.is_host
+  if ygopro.constants.MSG[msg] == 'DAMAGE' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
@@ -1278,19 +1278,19 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
 
-  if ygopro.constants.MSG[msg] == 'RECOVER' and client.is_host
+  if ygopro.constants.MSG[msg] == 'RECOVER' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp += val
 
-  if ygopro.constants.MSG[msg] == 'LPUPDATE' and client.is_host
+  if ygopro.constants.MSG[msg] == 'LPUPDATE' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp = val
 
-  if ygopro.constants.MSG[msg] == 'PAY_LPCOST' and client.is_host
+  if ygopro.constants.MSG[msg] == 'PAY_LPCOST' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
@@ -1663,7 +1663,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
   client.main = buff_main
   client.side = buff_side
   if room.random_type or room.arena
-    if client.is_host
+    if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
     room.last_active_time = moment()
   else if !room.started and room.hostinfo.mode == 1 and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.deck_check
@@ -1716,7 +1716,7 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room and (room.random_type or room.arena)
-  if client.is_host
+  if client.pos == 0
     room.waiting_for_player = room.waiting_for_player2
   room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
   return
@@ -1730,7 +1730,7 @@ ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room and (room.random_type or room.arena)
-  if client.is_host
+  if client.pos == 0
     room.waiting_for_player = client
   else
     room.waiting_for_player2 = client
@@ -1751,7 +1751,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
   return unless room
   room.changing_side = true
   if room.random_type or room.arena
-    if client.is_host
+    if client.pos == 0
       room.waiting_for_player = client
     else
       room.waiting_for_player2 = client
@@ -1764,7 +1764,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
-    if client.is_host
+    if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH:mm:ss')
       replay_filename=dueltime
       for player,i in room.dueling_players
