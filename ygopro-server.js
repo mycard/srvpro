@@ -1567,6 +1567,26 @@
     }
   });
 
+  ygopro.ctos_follow('HS_TOOBSERVER', true, function(buffer, info, client, server) {
+    var j, len, player, ref, room;
+    room = ROOM_all[client.rid];
+    if (!room) {
+      return;
+    }
+    if (room.arena !== "athletic" || client.ip === "::ffff:127.0.0.1") {
+      return false;
+    }
+    ref = room.players;
+    for (j = 0, len = ref.length; j < len; j++) {
+      player = ref[j];
+      if (player === client) {
+        ygopro.stoc_send_chat(client, "${cannot_to_observer}", ygopro.constants.COLORS.BABYBLUE);
+        return true;
+      }
+    }
+    return false;
+  });
+  
   ygopro.ctos_follow('HS_KICK', true, function(buffer, info, client, server) {
     var j, len, player, ref, room;
     room = ROOM_all[client.rid];

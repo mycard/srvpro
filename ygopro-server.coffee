@@ -1308,6 +1308,17 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   return
 
 #房间管理
+ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room
+  if room.arena != "athletic" or client.ip == "::ffff:127.0.0.1"
+    return false
+  for player in room.players
+    if player == client
+      ygopro.stoc_send_chat(client, "${cannot_to_observer}", ygopro.constants.COLORS.BABYBLUE)
+      return true
+  return false
+
 ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
