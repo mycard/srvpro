@@ -1311,7 +1311,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
 ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
-  if room.arena != "athletic" or client.ip == "::ffff:127.0.0.1"
+  if not room.arena or client.ip == "::ffff:127.0.0.1"
     return false
   for player in room.players
     if player == client
