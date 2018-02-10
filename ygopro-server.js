@@ -432,6 +432,7 @@
       this.random_type = '';
       this.welcome = '';
       this.scores = {};
+      this.duel_count = 0;
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = JSON.parse(JSON.stringify(settings.hostinfo)));
       if (settings.lflist.length) {
@@ -1492,6 +1493,7 @@
       client.lp = room.hostinfo.start_lp;
       if (client.pos === 0) {
         room.turn = 0;
+        room.duel_count = room.duel_count + 1;
       }
     }
     if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
@@ -1827,7 +1829,7 @@
         deck_arena = deck_arena + 'custom';
       }
       if (settings.modules.deck_log.local) {
-        deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/[\/\\\?\*]/g, '_');
+        deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_');
         fs.writeFile(settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
           if (err) {
             return log.warn('DECK SAVE ERROR', err);
@@ -2234,7 +2236,7 @@
         replay_filename = replay_filename.replace(/[\/\\\?\*]/g, '_') + ".yrp";
         duellog = {
           time: dueltime,
-          name: room.name,
+          name: room.name + (settings.modules.tournament_mode.show_info ? " (Duel:" + room.duel_count + ")" : ""),
           roomid: room.port.toString(),
           cloud_replay_id: "R#" + room.cloud_replay_id,
           replay_filename: replay_filename,
@@ -2245,7 +2247,7 @@
             for (k = 0, len1 = ref1.length; k < len1; k++) {
               player = ref1[k];
               results.push({
-                name: player.name,
+                name: player.name + (settings.modules.tournament_mode.show_ip && player.ip !== '::ffff:127.0.0.1' ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
                 winner: player.pos === room.winner
               });
             }
@@ -2380,14 +2382,14 @@
                         if (player.pos != null) {
                           results1.push({
                             id: (-1).toString(),
-                            name: player.name,
+                            name: player.name + (settings.modules.http.show_ip && pass_validated && player.ip !== '::ffff:127.0.0.1' ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.http.show_info && room.started && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
                             pos: player.pos
                           });
                         }
                       }
                       return results1;
                     })(),
-                    istart: room.started ? 'start' : 'wait'
+                    istart: room.started ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " Turn:" + (room.turn != null ? room.turn : 0) : 'start') : 'wait'
                   });
                 }
               }

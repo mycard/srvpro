@@ -312,6 +312,7 @@ class Room
     @random_type = ''
     @welcome = ''
     @scores = {}
+    @duel_count = 0
     ROOM_all.push this
 
     @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
@@ -1247,6 +1248,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     client.lp = room.hostinfo.start_lp
     if client.pos == 0
       room.turn = 0
+      room.duel_count = room.duel_count + 1
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
 
@@ -1486,7 +1488,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       deck_arena = deck_arena + 'custom'
     #log.info "DECK LOG START", client.name, room.arena
     if settings.modules.deck_log.local
-      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
+      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.port + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
         if err
           log.warn 'DECK SAVE ERROR', err
@@ -1783,12 +1785,12 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       replay_filename=replay_filename.replace(/[\/\\\?\*]/g, '_')+".yrp"
       duellog = {
         time: dueltime,
-        name: room.name,
+        name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
         roomid: room.port.toString(),
         cloud_replay_id: "R#"+room.cloud_replay_id,
         replay_filename: replay_filename,
         players: (for player in room.dueling_players
-          name: player.name,
+          name: player.name + (if settings.modules.tournament_mode.show_ip and player.ip != '::ffff:127.0.0.1' then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos > 1) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
           winner: player.pos == room.winner
         )
       }
@@ -1886,10 +1888,10 @@ if settings.modules.http
           needpass: (room.name.indexOf('$') != -1).toString(),
           users: (for player in room.players when player.pos?
             id: (-1).toString(),
-            name: player.name,
+            name: player.name + (if settings.modules.http.show_ip and pass_validated and player.ip != '::ffff:127.0.0.1' then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.http.show_info and room.started and not (room.hostinfo.mode == 2 and player.pos > 1) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
             pos: player.pos
           ),
-          istart: if room.started then 'start' else 'wait'
+          istart: if room.started then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " Turn:" + (if room.turn? then room.turn else 0)) else 'start') else 'wait'
         ), null, 2
         response.end(addCallback(u.query.callback, roomsjson))
 
