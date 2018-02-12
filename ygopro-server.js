@@ -2420,7 +2420,7 @@
         } else {
           try {
             archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip";
-            archive_args = ["a", "-mx0", archive_name];
+            archive_args = ["a", "-mx0", "-y", archive_name];
             ref = settings.modules.tournament_mode.duel_log;
             for (j = 0, len = ref.length; j < len; j++) {
               replay = ref[j];

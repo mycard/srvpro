@@ -1917,7 +1917,7 @@ if settings.modules.http
       else
         try
           archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip"
-          archive_args = ["a", "-mx0", archive_name]
+          archive_args = ["a", "-mx0", "-y", archive_name]
           for replay in settings.modules.tournament_mode.duel_log
             archive_args.push(replay.replay_filename)
           archive_process = spawn settings.modules.tournament_mode.replay_archive_tool, archive_args, {cwd: settings.modules.tournament_mode.replay_path}
