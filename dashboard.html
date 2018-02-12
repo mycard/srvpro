@@ -38,6 +38,9 @@
             <button class="btn btn-default" id="shout_button" data-toggle="tooltip" title="向全服所有房间喊话">喊话</button>
             <button class="btn btn-default" id="stop_button" data-toggle="tooltip" title="停止新建房间，不影响现有的房间">停服</button>
             <button class="btn btn-default" id="welcome_button" data-toggle="tooltip" title="更改欢迎信息">欢迎</button>
+            <button class="btn btn-default" id="tips_button" data-toggle="tooltip" title="刷新提示信息">提示</button>
+            <button class="btn btn-default" id="dialogues_button" data-toggle="tooltip" title="刷新台词信息">台词</button>
+            <button class="btn btn-default" id="ban_button" data-toggle="tooltip" title="封禁玩家">封禁</button>
             <span id="message_callback"></span>
         </div>
     </div>
@@ -70,6 +73,9 @@ $(function(){
     $("#shout_button").click(shout);
     $("#stop_button").click(stop);
     $("#welcome_button").click(welcome);
+    $("#tips_button").click(load_tips);
+    $("#dialogues_button").click(load_dialogues);
+    $("#ban_button").click(ban_player);
     var params=parseQueryString();
     $("#ip").val(params["ip"]);
     $("#port").val(params["port"]);
@@ -180,6 +186,23 @@ function welcome() {
     else {
         $("#message_callback").text('...');
         var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?getwelcome=1&pass=" + $("#password").val() + "&callback=?";
+        $.getJSON(url, shoutcallback);
+    }
+}
+function load_tips() {
+    $("#message_callback").text('...');
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?loadtips=1&pass=" + $("#password").val() + "&callback=?";
+    $.getJSON(url, shoutcallback);
+}
+function load_dialogues() {
+    $("#message_callback").text('...');
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?loaddialogues=1&pass=" + $("#password").val() + "&callback=?";
+    $.getJSON(url, shoutcallback);
+}
+function ban_player() {
+    if (confirm("确实要封禁该玩家吗？")) {
+        $("#message_callback").text('...');
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?ban=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
         $.getJSON(url, shoutcallback);
     }
 }
