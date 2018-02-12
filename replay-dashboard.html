@@ -33,9 +33,9 @@
         <div class="col-lg-2">
             <button class="btn btn-default" id="empty_button">清空记录</button>
         </div>
-        <!--div class="col-lg-2">
+        <div class="col-lg-2">
             <button class="btn btn-default" id="pack_button">打包下载录像</button>
-        </div-->
+        </div>
         <div class="col-lg-2">
             <span id="message_callback"></span>
         </div>
@@ -67,6 +67,7 @@ $(function(){
     $("body").tooltip({selector: "[data-toggle='tooltip']", trigger: "hover"});
     $("#open_button").click(loadreplays);
     $("#empty_button").click(clearreplays);
+    $("#pack_button").click(packreplays);
     //$("#welcome_button").click(welcome);
     var params=parseQueryString();
     $("#ip").val(params["ip"]);
@@ -99,6 +100,15 @@ function clearreplays() {
         $.getJSON(url, clearreplays_success);
         $("#empty_button").removeClass("btn-success");
     }
+}
+
+function packreplays() {
+    var ar = document.createElement('ar');
+    var url = $("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/archive.zip" + ($("#password").val() ? "?pass="+$("#password").val() : "");
+    var filename = 'archive.zip';
+    ar.href = url;
+    ar.download = filename;
+    ar.click();
 }
 
 function clearreplays_success() {
