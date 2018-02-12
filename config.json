@@ -87,6 +87,8 @@
       "replay_safe": true,
       "replay_path": "./replays/",
       "replay_archive_tool": "7z",
+      "replay_archive_extension": "zip",
+      "replay_archive_args": ["a", "-mx0", "-y"],
       "show_ip": false,
       "show_info": true,
       "duel_log": [],

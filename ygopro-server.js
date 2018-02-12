@@ -2408,7 +2408,7 @@
           duellog = JSON.stringify(settings.modules.tournament_mode.duel_log, null, 2);
           response.end(addCallback(u.query.callback, duellog));
         }
-      } else if (u.pathname === '/api/archive.zip' && settings.modules.tournament_mode.enabled) {
+      } else if (u.pathname === '/api/archive.zip' && settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_archive_tool) {
         if (!(u.query.pass === settings.modules.tournament_mode.password)) {
           response.writeHead(403);
           response.end("Invalid password.");
@@ -2419,8 +2419,9 @@
           return;
         } else {
           try {
-            archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip";
-            archive_args = ["a", "-mx0", archive_name];
+            archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + '.' + settings.modules.tournament_mode.replay_archive_extension;
+            archive_args = settings.modules.tournament_mode.replay_archive_args;
+            archive_args.push(archive_name);
             ref = settings.modules.tournament_mode.duel_log;
             for (j = 0, len = ref.length; j < len; j++) {
               replay = ref[j];

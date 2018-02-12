@@ -1905,7 +1905,7 @@ if settings.modules.http
         duellog = JSON.stringify settings.modules.tournament_mode.duel_log, null, 2
         response.end(addCallback(u.query.callback, duellog))
 
-    else if u.pathname == '/api/archive.zip' and settings.modules.tournament_mode.enabled
+    else if u.pathname == '/api/archive.zip' and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_archive_tool
       if !(u.query.pass == settings.modules.tournament_mode.password)
         response.writeHead(403)
         response.end("Invalid password.")
@@ -1916,8 +1916,9 @@ if settings.modules.http
         return
       else
         try
-          archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip"
-          archive_args = ["a", "-mx0", archive_name]
+          archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + '.' + settings.modules.tournament_mode.replay_archive_extension
+          archive_args = settings.modules.tournament_mode.replay_archive_args
+          archive_args.push(archive_name)
           for replay in settings.modules.tournament_mode.duel_log
             archive_args.push(replay.replay_filename)
           archive_process = spawn settings.modules.tournament_mode.replay_archive_tool, archive_args, {cwd: settings.modules.tournament_mode.replay_path}
