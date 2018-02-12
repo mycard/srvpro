@@ -96,9 +96,16 @@ function loadreplays() {
 function clearreplays() {
     if (confirm("确实要清空记录吗？")) {
         var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/clearlog?callback=?"+ ($("#password").val() ? "&pass="+$("#password").val() : "");
-        $.getJSON(url, listreplay);
-        $("#open_button").removeClass("btn-success");
+        $.getJSON(url, clearreplays_success);
+        $("#empty_button").removeClass("btn-success");
     }
+}
+
+function clearreplays_success() {
+    $("#empty_button").addClass("btn-success");
+    $("#num").text(0);
+    $("#rooms tbody").remove();
+    $("#rooms").append($("<tbody></tbody>"));
 }
 
 function listreplay(data) {
