@@ -1905,6 +1905,17 @@ if settings.modules.http
         duellog = JSON.stringify settings.modules.tournament_mode.duel_log, null, 2
         response.end(addCallback(u.query.callback, duellog))
 
+    else if u.pathname == '/api/clearlog' and settings.modules.tournament_mode.enabled
+      if !(u.query.pass == settings.modules.tournament_mode.password)
+        response.writeHead(200)
+        response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
+        return
+      else
+        response.writeHead(200)
+        settings.modules.tournament_mode.duel_log = []
+        nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
+        response.end(addCallback(u.query.callback, "[{name:'Success'}]"))
+
     else if _.startsWith(u.pathname, '/api/replay') and settings.modules.tournament_mode.enabled
       if !(u.query.pass == settings.modules.tournament_mode.password)
         response.writeHead(403)
