@@ -103,11 +103,7 @@ function clearreplays() {
 }
 
 function packreplays() {
-    var ar = document.createElement('ar');
-    var url = $("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/archive.zip" + ($("#password").val() ? "?pass="+$("#password").val() : "");
-    var filename = 'archive.zip';
-    ar.href = url;
-    ar.download = filename;
+    var ar = $("<a href='"+$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/archive.zip?pass="+$("#password").val()+"' download><span class='glyphicon glyphicon-download-alt'></span></a>");
     ar.click();
 }
 
