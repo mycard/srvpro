@@ -103,8 +103,7 @@ function clearreplays() {
 }
 
 function packreplays() {
-    var ar = $("<a href='"+$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/archive.zip?pass="+$("#password").val()+"' download><span class='glyphicon glyphicon-download-alt'></span></a>");
-    ar.click();
+    window.open($("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/archive.zip?pass="+$("#password").val());
 }
 
 function clearreplays_success() {
