@@ -29,17 +29,17 @@
             共有<span id="num">0</span>场决斗
         </div>
     </div>
-    <!--div class="row">
+    <div class="row">
         <div class="col-lg-2">
-            <button class="btn btn-default" id="empty_button" data-toggle="tooltip" title="这个功能鸽了">清空记录</button>
+            <button class="btn btn-default" id="empty_button">清空记录</button>
         </div>
-        <div class="col-lg-2">
-            <button class="btn btn-default" id="pack_button" data-toggle="tooltip" title="这个功能也鸽了">打包下载录像</button>
-        </div>
+        <!--div class="col-lg-2">
+            <button class="btn btn-default" id="pack_button">打包下载录像</button>
+        </div-->
         <div class="col-lg-2">
             <span id="message_callback"></span>
         </div>
-    </div-->
+    </div>
 </div>
 <div class="container">
     <hr>
@@ -66,6 +66,7 @@
 $(function(){
     $("body").tooltip({selector: "[data-toggle='tooltip']", trigger: "hover"});
     $("#open_button").click(loadreplays);
+    $("#empty_button").click(clearreplays);
     //$("#welcome_button").click(welcome);
     var params=parseQueryString();
     $("#ip").val(params["ip"]);
@@ -88,6 +89,12 @@ function parseQueryString() {
 
 function loadreplays() {
     var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/duellog?callback=?"+ ($("#password").val() ? "&pass="+$("#password").val() : "");
+    $.getJSON(url, listreplay);
+    $("#open_button").removeClass("btn-success");
+}
+
+function clearreplays() {
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/clearlog?callback=?"+ ($("#password").val() ? "&pass="+$("#password").val() : "");
     $.getJSON(url, listreplay);
     $("#open_button").removeClass("btn-success");
 }
