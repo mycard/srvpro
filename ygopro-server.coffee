@@ -1910,7 +1910,7 @@ if settings.modules.http
         response.writeHead(403)
         response.end("Invalid password.")
         return
-      else if settings.modules.tournament_mode.duel_log.size <= 0
+      else if !settings.modules.tournament_mode.duel_log.size
         response.writeHead(403)
         response.end("Duel logs not found.")
         return
