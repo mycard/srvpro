@@ -86,6 +86,7 @@
       "deck_path": "./decks/",
       "replay_safe": true,
       "replay_path": "./replays/",
+      "replay_archive_tool": "7z",
       "show_ip": false,
       "show_info": true,
       "duel_log": [],

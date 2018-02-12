@@ -2351,7 +2351,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var duellog, filename, getpath, j, len, parseQueryString, pass_validated, player, room, roomsjson, u;
+      var archive_args, archive_name, archive_process, duellog, error, filename, getpath, j, k, len, len1, parseQueryString, pass_validated, player, ref, replay_file, room, roomsjson, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
@@ -2408,6 +2408,59 @@
           duellog = JSON.stringify(settings.modules.tournament_mode.duel_log, null, 2);
           response.end(addCallback(u.query.callback, duellog));
         }
+      } else if (u.pathname === '/api/archive.zip' && settings.modules.tournament_mode.enabled) {
+        if (!(u.query.pass === settings.modules.tournament_mode.password)) {
+          response.writeHead(403);
+          response.end("Invalid password.");
+          return;
+        } else if (settings.modules.tournament_mode.duel_log.size <= 0) {
+          response.writeHead(403);
+          response.end("Duel logs not found.");
+          return;
+        } else {
+          try {
+            archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip";
+            archive_args = ["a", "-mx0", archive_name];
+            ref = settings.modules.tournament_mode.duel_log;
+            for (j = 0, len = ref.length; j < len; j++) {
+              replay = ref[j];
+              archive_args.push(replay.replay_filename);
+            }
+            archive_process = spawn(settings.modules.tournament_mode.replay_archive_tool, archive_args, {
+              cwd: settings.modules.tournament_mode.replay_path
+            });
+            archive_process.on('error', (err) => {
+              response.writeHead(403);
+              response.end("Failed packing replays. " + err);
+            });
+            archive_process.on('exit', (code) => {
+              return fs.readFile(settings.modules.tournament_mode.replay_path + archive_name, function(error, buffer) {
+                if (error) {
+                  response.writeHead(403);
+                  response.end("Failed sending replays. " + error);
+                } else {
+                  response.writeHead(200, {
+                    "Content-Type": "application/octet-stream",
+                    "Content-Disposition": "attachment"
+                  });
+                  response.end(buffer);
+                }
+              });
+            });
+            archive_process.stdout.setEncoding('utf8');
+            archive_process.stdout.on('data', function(data) {
+              return log.info("archive process: " + data);
+            });
+            archive_process.stderr.setEncoding('utf8');
+            archive_process.stderr.on('data', function(data) {
+              return log.warn("archive error: " + data);
+            });
+          } catch (error1) {
+            error = error1;
+            response.writeHead(403);
+            response.end("Failed reading replays. " + error);
+          }
+        }
       } else if (u.pathname === '/api/clearlog' && settings.modules.tournament_mode.enabled) {
         if (!(u.query.pass === settings.modules.tournament_mode.password)) {
           response.writeHead(200);
@@ -2447,8 +2500,8 @@
           return;
         }
         if (u.query.shout) {
-          for (j = 0, len = ROOM_all.length; j < len; j++) {
-            room = ROOM_all[j];
+          for (k = 0, len1 = ROOM_all.length; k < len1; k++) {
+            room = ROOM_all[k];
             if (room && room.established) {
               ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW);
             }

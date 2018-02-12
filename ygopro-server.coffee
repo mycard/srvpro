@@ -1905,6 +1905,47 @@ if settings.modules.http
         duellog = JSON.stringify settings.modules.tournament_mode.duel_log, null, 2
         response.end(addCallback(u.query.callback, duellog))
 
+    else if u.pathname == '/api/archive.zip' and settings.modules.tournament_mode.enabled
+      if !(u.query.pass == settings.modules.tournament_mode.password)
+        response.writeHead(403)
+        response.end("Invalid password.")
+        return
+      else if settings.modules.tournament_mode.duel_log.size <= 0
+        response.writeHead(403)
+        response.end("Duel logs not found.")
+        return
+      else
+        try
+          archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip"
+          archive_args = ["a", "-mx0", archive_name]
+          for replay in settings.modules.tournament_mode.duel_log
+            archive_args.push(replay.replay_filename)
+          archive_process = spawn settings.modules.tournament_mode.replay_archive_tool, archive_args, {cwd: settings.modules.tournament_mode.replay_path}
+          archive_process.on 'error', (err)=>
+            response.writeHead(403)
+            response.end("Failed packing replays. " + err)
+            return
+          archive_process.on 'exit', (code)=>
+            fs.readFile(settings.modules.tournament_mode.replay_path + archive_name, (error, buffer)->
+              if error
+                response.writeHead(403)
+                response.end("Failed sending replays. " + error)
+                return
+              else
+                response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
+                response.end(buffer)
+                return
+            )
+          archive_process.stdout.setEncoding 'utf8'
+          archive_process.stdout.on 'data', (data)=>
+            log.info "archive process: " + data
+          archive_process.stderr.setEncoding 'utf8'
+          archive_process.stderr.on 'data', (data)=>
+            log.warn "archive error: " + data
+        catch error
+          response.writeHead(403)
+          response.end("Failed reading replays. " + error)
+
     else if u.pathname == '/api/clearlog' and settings.modules.tournament_mode.enabled
       if !(u.query.pass == settings.modules.tournament_mode.password)
         response.writeHead(200)
