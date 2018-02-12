@@ -2419,7 +2419,7 @@
           return;
         } else {
           try {
-            archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + '.' + settings.modules.tournament_mode.replay_archive_extension;
+            archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + '.zip';
             archive_args = settings.modules.tournament_mode.replay_archive_args;
             archive_args.push(archive_name);
             ref = settings.modules.tournament_mode.duel_log;
