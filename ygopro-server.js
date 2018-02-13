@@ -1496,18 +1496,17 @@
       if (client.pos === 0) {
         room.turn = 0;
         room.dueling = true;
-        if (room.death === -1) {
-          room.death = 5;
-        } else {
-          room.death = 0;
-        }
         room.duel_count = room.duel_count + 1;
+        if (room.death && room.duel_count > 1) {
+          room.death = -1;
+          ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE);
+        }
       }
     }
     if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
       if (client.pos === 0) {
         room.turn = room.turn + 1;
-        if (room.death > 0) {
+        if (room.death) {
           if (room.turn >= room.death) {
             if (room.dueling_players[0].lp !== room.dueling_players[1].lp) {
               ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + (room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[0] : room.dueling_players[1]).name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
@@ -1532,9 +1531,6 @@
       }
       reason = buffer.readUInt8(2);
       room.dueling = false;
-      if (room.death) {
-        room.death = -1;
-      }
       room.winner = pos;
       if (room && !room.finished && room.dueling_players[pos]) {
         room.winner_name = room.dueling_players[pos].name;
@@ -2413,7 +2409,7 @@
                       }
                       return results1;
                     })(),
-                    istart: room.started ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " Turn:" + (room.turn != null ? room.turn : 0) + (room.death > 0 ? "/" + (room.death - 1) : "") : 'start') : 'wait'
+                    istart: room.started ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " Turn:" + (room.turn != null ? room.turn : 0) + (room.death ? "/" + (room.death > 0 ? room.death - 1 : "Death") : "") : 'start') : 'wait'
                   });
                 }
               }
@@ -2574,7 +2570,7 @@
               continue;
             }
             death_room_found = true;
-            if (room.dueling) {
+            if (room.dueling || !room.duel_count) {
               room.death = (room.turn ? room.turn + 4 : 5);
               ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE);
             } else {
