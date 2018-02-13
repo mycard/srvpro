@@ -1588,7 +1588,7 @@
     }
     return false;
   });
-  
+
   ygopro.ctos_follow('HS_KICK', true, function(buffer, info, client, server) {
     var j, len, player, ref, room;
     room = ROOM_all[client.rid];
@@ -2351,7 +2351,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var archive_args, archive_name, archive_process, duellog, error, filename, getpath, j, k, len, len1, parseQueryString, pass_validated, player, ref, replay_file, room, roomsjson, u;
+      var archive_args, archive_name, archive_process, duellog, error, filename, getpath, j, k, len, len1, parseQueryString, pass_validated, player, ref, replay, room, roomsjson, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
@@ -2429,32 +2429,40 @@
             archive_process = spawn(settings.modules.tournament_mode.replay_archive_tool, archive_args, {
               cwd: settings.modules.tournament_mode.replay_path
             });
-            archive_process.on('error', (err) => {
-              response.writeHead(403);
-              response.end("Failed packing replays. " + err);
-            });
-            archive_process.on('exit', (code) => {
-              return fs.readFile(settings.modules.tournament_mode.replay_path + archive_name, function(error, buffer) {
-                if (error) {
-                  response.writeHead(403);
-                  response.end("Failed sending replays. " + error);
-                } else {
-                  response.writeHead(200, {
-                    "Content-Type": "application/octet-stream",
-                    "Content-Disposition": "attachment"
-                  });
-                  response.end(buffer);
-                }
-              });
-            });
+            archive_process.on('error', (function(_this) {
+              return function(err) {
+                response.writeHead(403);
+                response.end("Failed packing replays. " + err);
+              };
+            })(this));
+            archive_process.on('exit', (function(_this) {
+              return function(code) {
+                return fs.readFile(settings.modules.tournament_mode.replay_path + archive_name, function(error, buffer) {
+                  if (error) {
+                    response.writeHead(403);
+                    response.end("Failed sending replays. " + error);
+                  } else {
+                    response.writeHead(200, {
+                      "Content-Type": "application/octet-stream",
+                      "Content-Disposition": "attachment"
+                    });
+                    response.end(buffer);
+                  }
+                });
+              };
+            })(this));
             archive_process.stdout.setEncoding('utf8');
-            archive_process.stdout.on('data', function(data) {
-              return log.info("archive process: " + data);
-            });
+            archive_process.stdout.on('data', (function(_this) {
+              return function(data) {
+                return log.info("archive process: " + data);
+              };
+            })(this));
             archive_process.stderr.setEncoding('utf8');
-            archive_process.stderr.on('data', function(data) {
-              return log.warn("archive error: " + data);
-            });
+            archive_process.stderr.on('data', (function(_this) {
+              return function(data) {
+                return log.warn("archive error: " + data);
+              };
+            })(this));
           } catch (error1) {
             error = error1;
             response.writeHead(403);
