@@ -43,6 +43,8 @@
             <button class="btn btn-default" id="tips_button" data-toggle="tooltip" title="刷新提示信息">提示</button>
             <button class="btn btn-default" id="dialogues_button" data-toggle="tooltip" title="刷新台词信息">台词</button>
             <button class="btn btn-default" id="ban_button" data-toggle="tooltip" title="封禁玩家">封禁</button>
+            <button class="btn btn-default" id="death_button" data-toggle="tooltip" title="封禁玩家">加时赛</button>
+            <button class="btn btn-default" id="deathcancel_button" data-toggle="tooltip" title="封禁玩家">取消加时赛</button>
             <span id="message_callback"></span>
         </div>
     </div>
@@ -78,6 +80,8 @@ $(function(){
     $("#tips_button").click(load_tips);
     $("#dialogues_button").click(load_dialogues);
     $("#ban_button").click(ban_player);
+    $("#ban_button").click(start_death);
+    $("#ban_button").click(cancel_death);
     var params=parseQueryString();
     $("#ip").val(params["ip"]);
     $("#port").val(params["port"]);
@@ -206,6 +210,34 @@ function ban_player() {
         $("#message_callback").text('...');
         var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?ban=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
         $.getJSON(url, shoutcallback);
+    }
+}
+function start_death() {
+    if (confirm("确实要开始加时赛吗？")) {
+        if ($("#shout").val().length) {
+            $("#message_callback").text('...');
+            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?death=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+            $.getJSON(url, shoutcallback);
+        }
+        else {
+            $("#message_callback").text('...');
+            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?death=all&pass=" + $("#password").val() + "&callback=?";
+            $.getJSON(url, shoutcallback);
+        }
+    }
+}
+function cancel_death() {
+    if (confirm("确实要取消加时赛吗？")) {
+        if ($("#shout").val().length) {
+            $("#message_callback").text('...');
+            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?deathcancel=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+            $.getJSON(url, shoutcallback);
+        }
+        else {
+            $("#message_callback").text('...');
+            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?deathcancel=all&pass=" + $("#password").val() + "&callback=?";
+            $.getJSON(url, shoutcallback);
+        }
     }
 }
 
