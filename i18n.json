@@ -183,6 +183,14 @@
     "unwelcome_tip_part1": "因为您的对手有",
     "unwelcome_tip_part2": "行为，现在您可以直接离开游戏或投降，不视为强退。",
     "cannot_to_observer": "匹配模式中决斗者不允许观战。",
+    "death_cancel": "已取消本房间的加时赛状态。",
+    "death_start": "加时赛开始，从本回合开始计算4回合，基本分高的玩家获得本次决斗的胜利。",
+    "death_start_siding": "加时赛开始，下次决斗第4回合结束后，基本分高的玩家将获得本次决斗的胜利。",
+    "death_remain_part1": "本次决斗将在",
+    "death_remain_part2": "回合后结束，基本分高的玩家将获得本次决斗的胜利。",
+    "death_remain_final": "若本回合有双方的基本分发生变动，则基本分高的玩家将获得本次决斗的胜利。",
+    "death_finish_part1": "加时赛决斗结束，恭喜 ",
+    "death_finish_part2": " 获得本次决斗的胜利。",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。"
   },
  "ko-kr": {

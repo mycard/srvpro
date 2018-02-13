@@ -433,6 +433,8 @@
       this.welcome = '';
       this.scores = {};
       this.duel_count = 0;
+      this.death = 0;
+      this.dueling = false;
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = JSON.parse(JSON.stringify(settings.hostinfo)));
       if (settings.lflist.length) {
@@ -1493,12 +1495,30 @@
       client.lp = room.hostinfo.start_lp;
       if (client.pos === 0) {
         room.turn = 0;
+        room.dueling = true;
+        if (room.death === -1) {
+          room.death = 5;
+        } else {
+          room.death = 0;
+        }
         room.duel_count = room.duel_count + 1;
       }
     }
     if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
       if (client.pos === 0) {
         room.turn = room.turn + 1;
+        if (room.death > 0) {
+          if (room.turn >= room.death) {
+            if (room.dueling_players[0].lp !== room.dueling_players[1].lp) {
+              ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + (room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[0] : room.dueling_players[1]).name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
+              ygopro.ctos_send((room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[1] : room.dueling_players[0]).server, 'SURRENDER');
+            } else {
+              ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE);
+            }
+          } else {
+            ygopro.stoc_send_chat_to_room(room, "${death_remain_part1}" + (room.death - room.turn) + "${death_remain_part2}", ygopro.constants.COLORS.BABYBLUE);
+          }
+        }
       }
       if (client.surrend_confirm) {
         client.surrend_confirm = false;
@@ -1511,6 +1531,10 @@
         pos = 1 - pos;
       }
       reason = buffer.readUInt8(2);
+      room.dueling = false;
+      if (room.death) {
+        room.death = -1;
+      }
       room.winner = pos;
       if (room && !room.finished && room.dueling_players[pos]) {
         room.winner_name = room.dueling_players[pos].name;
@@ -2351,7 +2375,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var archive_args, archive_name, archive_process, duellog, error, filename, getpath, j, k, len, len1, parseQueryString, pass_validated, player, ref, replay, room, roomsjson, u;
+      var archive_args, archive_name, archive_process, death_room_found, duellog, error, filename, getpath, j, k, l, len, len1, len2, len3, m, parseQueryString, pass_validated, player, ref, replay, room, roomsjson, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
@@ -2389,7 +2413,7 @@
                       }
                       return results1;
                     })(),
-                    istart: room.started ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " Turn:" + (room.turn != null ? room.turn : 0) : 'start') : 'wait'
+                    istart: room.started ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " Turn:" + (room.turn != null ? room.turn : 0) + (room.death > 0 ? "/" + (room.death - 1) : "") : 'start') : 'wait'
                   });
                 }
               }
@@ -2542,6 +2566,45 @@
           ban_user(u.query.ban);
           response.writeHead(200);
           response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"));
+        } else if (u.query.death) {
+          death_room_found = false;
+          for (l = 0, len2 = ROOM_all.length; l < len2; l++) {
+            room = ROOM_all[l];
+            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.port.toString()))) {
+              continue;
+            }
+            death_room_found = true;
+            if (room.dueling) {
+              room.death = (room.turn ? room.turn + 4 : 5);
+              ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE);
+            } else {
+              room.death = -1;
+              ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE);
+            }
+          }
+          response.writeHead(200);
+          if (death_room_found) {
+            response.end(addCallback(u.query.callback, "['death ok', '" + u.query.death + "']"));
+          } else {
+            response.end(addCallback(u.query.callback, "['room not found', '" + u.query.death + "']"));
+          }
+        } else if (u.query.deathcancel) {
+          death_room_found = false;
+          for (m = 0, len3 = ROOM_all.length; m < len3; m++) {
+            room = ROOM_all[m];
+            if (!(room && room.established && room.started && room.death && (u.query.deathcancel === "all" || u.query.deathcancel === room.port.toString()))) {
+              continue;
+            }
+            death_room_found = true;
+            room.death = 0;
+            ygopro.stoc_send_chat_to_room(room, "${death_cancel}", ygopro.constants.COLORS.BABYBLUE);
+          }
+          response.writeHead(200);
+          if (death_room_found) {
+            response.end(addCallback(u.query.callback, "['death cancel ok', '" + u.query.deathcancel + "']"));
+          } else {
+            response.end(addCallback(u.query.callback, "['room not found', '" + u.query.deathcancel + "']"));
+          }
         } else {
           response.writeHead(400);
           response.end();
