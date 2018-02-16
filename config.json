@@ -141,6 +141,7 @@
       "public_roomlist": false,
       "show_ip": false,
       "show_info": true,
+      "quick_death_rule": false,
       "ssl": {
         "enabled": false,
         "port": 7923,

@@ -1252,9 +1252,13 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       room.turn = 0
       room.dueling = true
       room.duel_count = room.duel_count + 1
-      if room.death and room.duel_count > 1
-        room.death = -1
-        ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE)  		
+      if room.death 
+        if settings.modules.http.quick_death_rule and room.duel_count > 1
+          room.death = -1
+          ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE)
+        else
+          room.death = 5
+          ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE)
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
 
@@ -1267,6 +1271,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
             ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + (if room.dueling_players[0].lp > room.dueling_players[1].lp then room.dueling_players[0] else room.dueling_players[1]).name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
             ygopro.ctos_send((if room.dueling_players[0].lp > room.dueling_players[1].lp then room.dueling_players[1] else room.dueling_players[0]).server, 'SURRENDER')
           else
+            room.death = -1
             ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE)            
         else
           ygopro.stoc_send_chat_to_room(room, "${death_remain_part1}" + (room.death - room.turn) + "${death_remain_part2}", ygopro.constants.COLORS.BABYBLUE)
@@ -2040,9 +2045,12 @@ if settings.modules.http
           if room.dueling or !room.duel_count
             room.death = (if room.turn then room.turn + 4 else 5)
             ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE)   
-          else  
+          else
             room.death = -1
-            ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)			
+            if settings.modules.http.quick_death_rule
+              ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
+            else
+              ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)              
         response.writeHead(200)
         if death_room_found
           response.end(addCallback(u.query.callback, "['death ok', '" + u.query.death + "']"))

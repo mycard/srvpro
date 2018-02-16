@@ -1497,9 +1497,14 @@
         room.turn = 0;
         room.dueling = true;
         room.duel_count = room.duel_count + 1;
-        if (room.death && room.duel_count > 1) {
-          room.death = -1;
-          ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE);
+        if (room.death) {
+          if (settings.modules.http.quick_death_rule && room.duel_count > 1) {
+            room.death = -1;
+            ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE);
+          } else {
+            room.death = 5;
+            ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE);
+          }
         }
       }
     }
@@ -1512,6 +1517,7 @@
               ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + (room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[0] : room.dueling_players[1]).name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
               ygopro.ctos_send((room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[1] : room.dueling_players[0]).server, 'SURRENDER');
             } else {
+              room.death = -1;
               ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE);
             }
           } else {
@@ -2575,7 +2581,11 @@
               ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE);
             } else {
               room.death = -1;
-              ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE);
+              if (settings.modules.http.quick_death_rule) {
+                ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE);
+              } else {
+                ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE);
+              }
             }
           }
           response.writeHead(200);
