@@ -88,7 +88,20 @@
     "unwelcome_warn_part1": "If you keep doing ",
     "unwelcome_warn_part2": ", your opponent may leave you.",
     "unwelcome_tip_part1": "Your oppenent did ",
-    "unwelcome_tip_part2": ", so you can leave the game without being punished."
+    "unwelcome_tip_part2": ", so you can leave the game without being punished.",
+    "cannot_to_observer": "Spectating is not allowed in a matchup.",
+    "death_cancel": "Over-match has been canceled from this game.",
+    "death_start": "Over-time match has begun, player with higher LP will win the single game after 4 turns.",
+    "death_start_siding": "Extra time match starts, player with higher LP will win the single game after 4 turns.",
+    "death_start_quick": "Extra time match starts, you are getting into sudden-death match next round. The Duel continues until the first change in LP happens.",
+    "death_start_final": "You are getting into sudden-death match, the Duel continues until the first change in LP happens.",
+    "death_start_extra": "The Duel is counted as extra duel which will end in 4 turns, player with higher LP will win.",
+    "death_remain_part1": "The Duel will be ended in ",
+    "death_remain_part2": " turns. At the end of that turn, player with higher LP wins.",
+    "death_remain_final": "The Duel will continue until the first change in LP (and increase or a decrease), and at the end of the turn, the player with the highest LP total becomes the winner.",
+    "death_finish_part1": "Extra time duel ends, congratulations. ",
+    "death_finish_part2": ", You win the Duel.",
+    "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender."
   },
   "zh-cn": {
     "random_duel_enter_room_waiting": "对手已经在等你了，开始决斗吧！",
@@ -191,7 +204,7 @@
     "death_start_extra": "本次决斗为额外决斗，第4回合结束时，基本分高的玩家获得本次决斗的胜利。",
     "death_remain_part1": "本次决斗将在",
     "death_remain_part2": "回合后结束，基本分高的玩家将获得本次决斗的胜利。",
-    "death_remain_final": "若本回合有双方的基本分发生变动，则回合结束时基本分高的玩家将获得本次决斗的胜利。",
+    "death_remain_final": "若本回合基本分发生变动，在该回合结束时决斗即告结束，生命值多的玩家获得本场决斗的胜利。",
     "death_finish_part1": "加时赛决斗结束，恭喜 ",
     "death_finish_part2": " 获得本次决斗的胜利。",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。"
