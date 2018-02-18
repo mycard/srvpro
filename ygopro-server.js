@@ -1495,14 +1495,12 @@
       if (client.pos === 0) {
         room.turn = 0;
         room.duel_count = room.duel_count + 1;
-        if (room.death) {
-          if (settings.modules.http.quick_death_rule && room.duel_count > 1) {
-            room.death = -1;
-            ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE);
-          } else {
-            room.death = 5;
-            ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE);
-          }
+      }
+      if (room.death && room.duel_count) {
+        if (room.death === -1) {
+          ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE);
+        } else {
+          ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE);
         }
       }
     }
@@ -1539,6 +1537,13 @@
       if (room && !room.finished && room.dueling_players[pos]) {
         room.winner_name = room.dueling_players[pos].name;
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
+      }
+      if (room.death) {
+        if (settings.modules.http.quick_death_rule) {
+          room.death = -1;
+        } else {
+          room.death = 5;
+        }
       }
     }
     if (ygopro.constants.MSG[msg] === 'DAMAGE' && client.pos === 0) {

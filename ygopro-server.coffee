@@ -1250,13 +1250,11 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     if client.pos == 0
       room.turn = 0
       room.duel_count = room.duel_count + 1
-      if room.death 
-        if settings.modules.http.quick_death_rule and room.duel_count > 1
-          room.death = -1
-          ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE)
-        else
-          room.death = 5
-          ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE)
+    if room.death and room.duel_count
+      if room.death == -1
+        ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE)
+      else
+        ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE)
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
 
@@ -1289,6 +1287,11 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       room.winner_name = room.dueling_players[pos].name
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
+    if room.death 
+      if settings.modules.http.quick_death_rule
+        room.death = -1
+      else
+        room.death = 5
 
   #lp跟踪
   if ygopro.constants.MSG[msg] == 'DAMAGE' and client.pos == 0
