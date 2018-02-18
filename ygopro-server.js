@@ -1513,7 +1513,7 @@
         room.turn = room.turn + 1;
         if (room.death) {
           if (room.turn >= room.death) {
-            if (room.dueling_players[0].lp !== room.dueling_players[1].lp) {
+            if (room.dueling_players[0].lp !== room.dueling_players[1].lp && room.turn > 1) {
               ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + (room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[0] : room.dueling_players[1]).name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
               ygopro.ctos_send((room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[1] : room.dueling_players[0]).server, 'SURRENDER');
             } else {
