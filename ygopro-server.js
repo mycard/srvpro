@@ -2377,7 +2377,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var archive_args, archive_name, archive_process, death_room_found, duellog, error, filename, getpath, j, k, l, len, len1, len2, len3, m, parseQueryString, pass_validated, player, ref, replay, room, roomsjson, u;
+      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, j, k, l, len, len1, len2, len3, m, parseQueryString, pass_validated, player, ref, replay, room, roomsjson, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
@@ -2447,10 +2447,17 @@
           try {
             archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip";
             archive_args = ["a", "-mx0", "-y", archive_name];
+            check = false;
             ref = settings.modules.tournament_mode.duel_log;
             for (j = 0, len = ref.length; j < len; j++) {
               replay = ref[j];
+              check = true;
               archive_args.push(replay.replay_filename);
+            }
+            if (!check) {
+              response.writeHead(403);
+              response.end("Duel logs not found.");
+              return;
             }
             archive_process = spawn(settings.modules.tournament_mode.replay_archive_tool, archive_args, {
               cwd: settings.modules.tournament_mode.replay_path
