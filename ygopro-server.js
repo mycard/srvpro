@@ -1495,6 +1495,13 @@
       if (client.pos === 0) {
         room.turn = 0;
         room.duel_count = room.duel_count + 1;
+        if (room.death && room.duel_count > 1) {
+          if (room.death === -1) {
+            ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE);
+          } else {
+            ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE);
+          }
+        }
       }
     }
     if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
