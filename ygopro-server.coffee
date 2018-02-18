@@ -1250,7 +1250,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     if client.pos == 0
       room.turn = 0
       room.duel_count = room.duel_count + 1
-    if room.death and room.duel_count
+    if room.death and room.duel_count > 0
       if room.death == -1
         ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE)
       else
