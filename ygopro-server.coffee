@@ -1931,10 +1931,6 @@ if settings.modules.http
         response.writeHead(403)
         response.end("Invalid password.")
         return
-      else if !settings.modules.tournament_mode.duel_log.size
-        response.writeHead(403)
-        response.end("Duel logs not found.")
-        return
       else
         try
           archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip"
