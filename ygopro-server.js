@@ -434,7 +434,6 @@
       this.scores = {};
       this.duel_count = 0;
       this.death = 0;
-      this.dueling = false;
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = JSON.parse(JSON.stringify(settings.hostinfo)));
       if (settings.lflist.length) {
@@ -1495,7 +1494,6 @@
       client.lp = room.hostinfo.start_lp;
       if (client.pos === 0) {
         room.turn = 0;
-        room.dueling = true;
         room.duel_count = room.duel_count + 1;
         if (room.death) {
           if (settings.modules.http.quick_death_rule && room.duel_count > 1) {
@@ -1536,8 +1534,8 @@
         pos = 1 - pos;
       }
       reason = buffer.readUInt8(2);
-      room.dueling = false;
       room.winner = pos;
+      room.turn = 0;
       if (room && !room.finished && room.dueling_players[pos]) {
         room.winner_name = room.dueling_players[pos].name;
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
@@ -2415,7 +2413,7 @@
                       }
                       return results1;
                     })(),
-                    istart: room.started ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " Turn:" + (room.turn != null ? room.turn : 0) + (room.death ? "/" + (room.death > 0 ? room.death - 1 : "Death") : "") : 'start') : 'wait'
+                    istart: room.started ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " " + (room.changing_side ? "Siding" : "Turn:" + (room.turn != null ? room.turn : 0) + (room.death ? "/" + (room.death > 0 ? room.death - 1 : "Death") : "")) : 'start') : 'wait'
                   });
                 }
               }
@@ -2579,7 +2577,7 @@
               continue;
             }
             death_room_found = true;
-            if (room.dueling || !room.duel_count) {
+            if (!room.changing_side) {
               room.death = (room.turn ? room.turn + 4 : 5);
               ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE);
             } else {
