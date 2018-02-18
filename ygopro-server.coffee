@@ -2048,10 +2048,11 @@ if settings.modules.http
             room.death = (if room.turn then room.turn + 4 else 5)
             ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE)   
           else
-            room.death = -1
             if settings.modules.http.quick_death_rule
+              room.death = -1
               ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
             else
+              room.death = 5
               ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)              
         response.writeHead(200)
         if death_room_found

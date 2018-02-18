@@ -2583,10 +2583,11 @@
               room.death = (room.turn ? room.turn + 4 : 5);
               ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE);
             } else {
-              room.death = -1;
               if (settings.modules.http.quick_death_rule) {
+                room.death = -1;
                 ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE);
               } else {
+                room.death = 5;
                 ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE);
               }
             }
