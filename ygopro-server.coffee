@@ -2045,7 +2045,7 @@ if settings.modules.http
         death_room_found = false
         for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString())
           death_room_found = true
-          if !room.changing_side
+          if !room.changing_side and (!room.duel_count or room.turn)
             room.death = (if room.turn then room.turn + 4 else 5)
             ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE)   
           else

@@ -2582,7 +2582,7 @@
               continue;
             }
             death_room_found = true;
-            if (!room.changing_side) {
+            if (!room.changing_side && (!room.duel_count || room.turn)) {
               room.death = (room.turn ? room.turn + 4 : 5);
               ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE);
             } else {
