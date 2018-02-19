@@ -518,6 +518,9 @@ class Room
         log.info "YGOPRO " + data
         ygopro.stoc_send_chat_to_room this, data, ygopro.constants.COLORS.RED
         @has_ygopro_error = true
+        @ygopro_error_length = if @ygopro_error_length then @ygopro_error_length + data.length else data.length
+        if @ygopro_error_length > 10000
+          @process.kill()
         return
     catch
       @error = "${create_room_failed}"

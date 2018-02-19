@@ -695,6 +695,10 @@
             log.info("YGOPRO " + data);
             ygopro.stoc_send_chat_to_room(_this, data, ygopro.constants.COLORS.RED);
             _this.has_ygopro_error = true;
+            _this.ygopro_error_length = _this.ygopro_error_length ? _this.ygopro_error_length + data.length : data.length;
+            if (_this.ygopro_error_length > 10000) {
+              _this.process.kill();
+            }
           };
         })(this));
       } catch (error1) {
