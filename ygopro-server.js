@@ -930,7 +930,7 @@
   net.createServer(function(client) {
     var connect_count, server;
     client.ip = client.remoteAddress;
-    client.is_local = client.ip.includes('127.0.0.1') || client.ip.includes(settings.modules.windbot.server_ip);
+    client.is_local = client.ip && (client.ip.includes('127.0.0.1') || client.ip.includes(settings.modules.windbot.server_ip));
     connect_count = ROOM_connected_ip[client.ip] || 0;
     if (!settings.modules.test_mode.no_connect_count_limit && !client.is_local) {
       connect_count++;

@@ -692,7 +692,7 @@ class Room
 # 网络连接
 net.createServer (client) ->
   client.ip = client.remoteAddress
-  client.is_local = client.ip.includes('127.0.0.1') or client.ip.includes(settings.modules.windbot.server_ip)
+  client.is_local = client.ip and (client.ip.includes('127.0.0.1') or client.ip.includes(settings.modules.windbot.server_ip))
 
   connect_count = ROOM_connected_ip[client.ip] or 0
   if !settings.modules.test_mode.no_connect_count_limit and !client.is_local
