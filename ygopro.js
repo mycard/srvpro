@@ -10,15 +10,15 @@
 
   Struct = require('./struct.js').Struct;
 
-  i18ns = require('./i18n.json');
+  i18ns = require('./data/i18n.json');
 
-  structs_declaration = require('./structs.json');
+  structs_declaration = require('./data/structs.json');
 
-  typedefs = require('./typedefs.json');
+  typedefs = require('./data/typedefs.json');
 
-  this.proto_structs = require('./proto_structs.json');
+  this.proto_structs = require('./data/proto_structs.json');
 
-  this.constants = require('./constants.json');
+  this.constants = require('./data/constants.json');
 
   this.structs = {};
 

@@ -16,7 +16,7 @@ var url = require('url');
 var moment = require('moment');
 moment.locale('zh-cn');
 
-var constants = require('./constants.json');
+var constants = require('./data/constants.json');
 
 var nconf = require('nconf');
 nconf.file('./config.user.json');

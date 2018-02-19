@@ -4,13 +4,13 @@ _.mixin(_.str.exports())
 
 Struct = require('./struct.js').Struct
 
-i18ns = require './i18n.json'
+i18ns = require './data/i18n.json'
 
 #常量/类型声明
-structs_declaration = require './structs.json'  #结构体声明
-typedefs = require './typedefs.json'            #类型声明
-@proto_structs = require './proto_structs.json' #消息与结构体的对应，未完成，对着duelclient.cpp加
-@constants = require './constants.json'          #network.h里定义的常量
+structs_declaration = require './data/structs.json'  #结构体声明
+typedefs = require './data/typedefs.json'            #类型声明
+@proto_structs = require './data/proto_structs.json' #消息与结构体的对应，未完成，对着duelclient.cpp加
+@constants = require './data/constants.json'          #network.h里定义的常量
 
 #结构体定义
 @structs = {}
