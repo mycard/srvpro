@@ -6,6 +6,7 @@ path = require 'path'
 fs = require 'fs'
 os = require 'os'
 crypto = require 'crypto'
+exec = require('child_process').exec
 execFile = require('child_process').execFile
 spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
@@ -196,20 +197,26 @@ if settings.modules.mycard.enabled
   pg_client.connect()
 
 # 获取可用内存
+memory_usage = 0
 get_memory_usage = ()->
-  prc_free = spawnSync("free", [])
-  if (prc_free.stdout)
-    lines = prc_free.stdout.toString().split(/\n/g)
+  prc_free = exec("free")
+  prc_free.stdout.on 'data', (data)->
+    lines = data.toString().split(/\n/g)
+    line = lines[0].split(/\s+/)
+    new_free = if line[6] == 'available' then true else false
     line = lines[1].split(/\s+/)
     total = parseInt(line[1], 10)
     free = parseInt(line[3], 10)
     buffers = parseInt(line[5], 10)
-    cached = parseInt(line[6], 10)
-    actualFree = free + buffers + cached
+    if new_free
+      actualFree = parseInt(line[6], 10)
+    else
+      cached = parseInt(line[6], 10)
+      actualFree = free + buffers + cached
     percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2))
-  else
-    percentUsed = 0
-  return percentUsed
+    memory_usage = percentUsed
+get_memory_usage()
+setInterval(get_memory_usage, 3000)
 
 Cloud_replay_ids = []
 
@@ -261,7 +268,7 @@ ROOM_find_or_create_by_name = (name, player_ip)->
     return ROOM_find_or_create_random(uname, player_ip)
   if room = ROOM_find_by_name(name)
     return room
-  else if get_memory_usage() >= 90
+  else if memory_usage >= 90
     return null
   else
     return new Room(name)
@@ -292,7 +299,7 @@ ROOM_find_or_create_random = (type, player_ip)->
   if result
     result.welcome = '${random_duel_enter_room_waiting}'
     #log.info 'found room', player_name
-  else if get_memory_usage() < 90
+  else if memory_usage < 90
     type = if type then type else 'S'
     name = type + ',RANDOM#' + Math.floor(Math.random() * 100000)
     result = new Room(name)
