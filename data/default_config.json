@@ -1,7 +1,7 @@
 {
   "file": "./config/config.json",
   "port": 7911,
-  "version": 4924,
+  "version": 4930,
   "hostinfo": {
     "lflist": 0,
     "rule": 0,
@@ -114,7 +114,9 @@
       "cdn": {
         "enabled": false,
         "exe": "upx",
-        "params": ["sync"],
+        "params": [
+          "sync"
+        ],
         "local": "./ygosrv233",
         "remote": "/ygosrv233",
         "pics_remote": "/ygopro/"
@@ -123,15 +125,22 @@
       "only_show_dbs": {
         "news.cdb": true,
         "pre-release.cdb": true
-        },
+      },
       "html_gits": [
         {
           "name": "GitHub",
-          "push": ["push", "origin"]
+          "push": [
+            "push",
+            "origin"
+          ]
         },
         {
           "name": "Coding",
-          "push": ["push", "coding", "master:master"]
+          "push": [
+            "push",
+            "coding",
+            "master:master"
+          ]
         }
       ]
     },
@@ -145,11 +154,18 @@
       "html_gits": [
         {
           "name": "GitHub",
-          "push": ["push", "origin"]
+          "push": [
+            "push",
+            "origin"
+          ]
         },
         {
           "name": "Coding",
-          "push": ["push", "coding", "master:master"]
+          "push": [
+            "push",
+            "coding",
+            "master:master"
+          ]
         }
       ]
     },
@@ -172,7 +188,12 @@
   "ban": {
     "banned_user": [],
     "banned_ip": [],
-    "illegal_id": ["^Lv\\.-*\\d+\\s*(.*)", "^VIP\\.\\d+\\s*(.*)"],
-    "spam_word": ["——"]
+    "illegal_id": [
+      "^Lv\\.-*\\d+\\s*(.*)",
+      "^VIP\\.\\d+\\s*(.*)"
+    ],
+    "spam_word": [
+      "——"
+    ]
   }
 }

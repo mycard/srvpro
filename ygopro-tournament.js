@@ -15,11 +15,7 @@ var _ = require('underscore');
 _.str = require('underscore.string');
 _.mixin(_.str.exports());
 
-var nconf = require('nconf');
-nconf.file('./config/config.json');
-var defaultconfig = require('./data/default_config.json');
-nconf.defaults(defaultconfig);
-var settings = nconf.get();
+var settings = require('./config/config.json');
 config=settings.modules.tournament_mode;
 
 //http长连接

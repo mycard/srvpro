@@ -18,11 +18,7 @@ moment.locale('zh-cn');
 
 var constants = require('./data/constants.json');
 
-var nconf = require('nconf');
-nconf.file('./config.user.json');
-var defaultconfig = require('./config.json');
-nconf.defaults(defaultconfig);
-var settings = nconf.get();
+var settings = require('./config/config.json');
 config=settings.modules.pre_util;
 
 //全卡HTML列表

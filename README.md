@@ -21,19 +21,16 @@
 ### 使用方法
 * 可参考[wiki](https://github.com/mercury233/ygopro-server/wiki)安装
 * 手动安装：
-  * 安装修改后的YGOPro服务端：https://github.com/moecube/ygopro/tree/server
   * `git clone https://github.com/moecube/srvpro.git`
   * `cd srvpro`
   * `npm install`
-* 将`config.json`复制为`config.user.json`并进行修改
-  * `port`为你想要的端口
-  * ~~更多选项参见wiki~~
+  * 安装修改后的YGOPro服务端：https://github.com/moecube/ygopro/tree/server
 * `node ygopro-server.js`即可运行
-* 简易的控制台在 http://mercury233.me/ygosrv233/dashboard.html
+* 简易的控制台在 http://srvpro.ygo233.com/dashboard.html
 
 ### 高级功能
 * 待补充说明
-* 简易的先行卡更新控制台在 http://mercury233.me/ygosrv233/pre-dashboard.html
+* 简易的先行卡更新控制台在 http://srvpro.ygo233.com/pre-dashboard.html
 
 ### 开发计划
 * 重做CTOS和STOC部分
@@ -64,7 +61,7 @@
 ### License
 SRVPro
 
-Copyright (C) 2013-2017  MoeCube Team
+Copyright (C) 2013-2018  MoeCube Team
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as

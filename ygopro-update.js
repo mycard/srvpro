@@ -19,11 +19,7 @@ moment.locale('zh-cn');
 
 var constants = require('./data/constants.json');
 
-var nconf = require('nconf');
-nconf.file('./config/config.json');
-var defaultconfig = require('./data/default_config.json');
-nconf.defaults(defaultconfig);
-var settings = nconf.get();
+var settings = require('./config/config.json');
 config=settings.modules.update_util;
 
 //全卡名称列表
