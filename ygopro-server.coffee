@@ -42,11 +42,13 @@ moment.locale('zh-cn', {
 #heapdump = require 'heapdump'
 
 # 配置
-# use nconf to save user config.user.json .
-# config.json shouldn't be changed
+# use nconf to save user config.json .
+# default_config.json shouldn't be changed
+if not fs.existsSync('./config')
+  fs.mkdirSync('./config')
 nconf = require 'nconf'
-nconf.file('./config.user.json')
-defaultconfig = require('./config.json')
+nconf.file('./config/config.json')
+defaultconfig = require('./data/default_config.json')
 nconf.defaults(defaultconfig)
 settings = global.settings = nconf.get()
 nconf.myset = (settings, path, val) ->

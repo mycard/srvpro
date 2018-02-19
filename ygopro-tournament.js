@@ -16,8 +16,8 @@ _.str = require('underscore.string');
 _.mixin(_.str.exports());
 
 var nconf = require('nconf');
-nconf.file('./config.user.json');
-var defaultconfig = require('./config.json');
+nconf.file('./config/config.json');
+var defaultconfig = require('./data/default_config.json');
 nconf.defaults(defaultconfig);
 var settings = nconf.get();
 config=settings.modules.tournament_mode;

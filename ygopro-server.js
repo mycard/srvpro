@@ -56,11 +56,15 @@
     }
   });
 
+  if (!fs.existsSync('./config')) {
+    fs.mkdirSync('./config');
+  }
+
   nconf = require('nconf');
 
-  nconf.file('./config.user.json');
+  nconf.file('./config/config.json');
 
-  defaultconfig = require('./config.json');
+  defaultconfig = require('./data/default_config.json');
 
   nconf.defaults(defaultconfig);
 

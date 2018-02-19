@@ -4,8 +4,9 @@ coffeelint.json
 .vscode/
 
 password.json
-config.*.json
 
+/bak
+/config
 /ygopro
 /windbot
 /decks/
