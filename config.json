@@ -134,6 +134,24 @@
         }
       ]
     },
+    "update_util": {
+      "enabled": false,
+      "port": 7955,
+      "password": "123456",
+      "git_html_path": "../ygo233-web/",
+      "html_path": "../ygo233-web/",
+      "changelog_filename": "changelog.json",
+      "html_gits": [
+        {
+          "name": "GitHub",
+          "push": ["push", "origin"]
+        },
+        {
+          "name": "Coding",
+          "push": ["push", "coding", "master:master"]
+        }
+      ]
+    },
     "http": {
       "port": 7922,
       "password": "123456",
