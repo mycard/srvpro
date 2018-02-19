@@ -11,8 +11,8 @@
   "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>",
   "dependencies": {
     "bunyan": "latest",
+    "deepmerge": "latest",
     "moment": "latest",
-    "nconf": "latest",
     "request": "latest",
     "underscore": "latest",
     "underscore.string": "latest"

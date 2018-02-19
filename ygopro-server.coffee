@@ -39,22 +39,58 @@ moment.locale('zh-cn', {
   }
 })
 
+merge = require 'deepmerge'
+
 #heapdump = require 'heapdump'
 
 # 配置
-# use nconf to save user config.json .
-# default_config.json shouldn't be changed
+# 导入旧配置
 if not fs.existsSync('./config')
   fs.mkdirSync('./config')
-nconf = require 'nconf'
-nconf.file('./config/config.json')
-defaultconfig = require('./data/default_config.json')
-nconf.defaults(defaultconfig)
-settings = global.settings = nconf.get()
-nconf.myset = (settings, path, val) ->
+try
+  oldconfig=require('./config.user.json')
+  if oldconfig.tips
+    oldtips = {}
+    oldtips.file = './config/tips.json'
+    oldtips.tips = oldconfig.tips
+    fs.writeFileSync(oldtips.file, JSON.stringify(oldtips, null, 2))
+    delete oldconfig.tips
+  if oldconfig.dialogues
+    olddialogues = {}
+    olddialogues.file = './config/dialogues.json'
+    olddialogues.dialogues = oldconfig.dialogues
+    fs.writeFileSync(olddialogues.file, JSON.stringify(olddialogues, null, 2))
+    delete oldconfig.dialogues
+  oldbadwords={}
+  if oldconfig.ban.badword_level0
+    oldbadwords.level0 = oldconfig.ban.badword_level0
+  if oldconfig.ban.badword_level1
+    oldbadwords.level1 = oldconfig.ban.badword_level1
+  if oldconfig.ban.badword_level2
+    oldbadwords.level2 = oldconfig.ban.badword_level2
+  if oldconfig.ban.badword_level3
+    oldbadwords.level3 = oldconfig.ban.badword_level3
+  if not _.isEmpty(oldbadwords)
+    oldbadwords.file = './config/badwords.json'
+    fs.writeFileSync(oldbadwords.file, JSON.stringify(oldbadwords, null, 2))
+    delete oldconfig.ban.badword_level0
+    delete oldconfig.ban.badword_level1
+    delete oldconfig.ban.badword_level2
+    delete oldconfig.ban.badword_level3
+  if not _.isEmpty(oldconfig)
+    # log.info oldconfig
+    fs.writeFileSync('./config/config.json', JSON.stringify(oldconfig, null, 2))
+    log.info 'imported old config from config.user.json'
+  fs.renameSync('./config.user.json', './config.user.bak')
+catch e
+  log.info e unless e.code == 'MODULE_NOT_FOUND'
+
+setting_save = (settings) ->
+  fs.writeFileSync(settings.file, JSON.stringify(settings, null, 2))
+  return
+
+setting_change = (settings, path, val) ->
   # path should be like "modules:welcome"
-  nconf.set(path, val)
-  nconf.save()
   log.info("setting changed", path, val) if _.isString(val)
   path=path.split(':')
   if path.length == 0
@@ -66,17 +102,44 @@ nconf.myset = (settings, path, val) ->
       target=target[key]
     key = path.shift()
     target[key] = val
+  setting_save(settings)
   return
+
+# 读取配置
+default_config = require('./data/default_config.json')
+try
+  config = require('./config/config.json')
+catch
+  config = {}
+settings = global.settings = merge(default_config, config, { arrayMerge: (destination, source) -> source })
+
+# 读取数据
+default_data = require('./data/default_data.json')
+try
+  tips = require('./config/tips.json')
+catch
+  tips = default_data.tips
+  setting_save(tips)
+try
+  dialogues = require('./config/dialogues.json')
+catch
+  dialogues = default_data.dialogues
+  setting_save(dialogues)
+try
+  badwords = require('./config/badwords.json')
+catch
+  badwords = default_data.badwords
+  setting_save(badwords)
 
 try
   cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
-  nconf.myset(settings, "version", cppversion)
+  setting_change(settings, "version", cppversion)
   log.info "ygopro version 0x"+settings.version.toString(16), "(from source code)"
 catch
   #settings.version = settings.version_default
   log.info "ygopro version 0x"+settings.version.toString(16), "(from config)"
 # load the lflist of current date
-settings.lflist = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
+lflists = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
   date=list.match(/!([\d\.]+)/)
   continue unless date
   {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
@@ -90,7 +153,16 @@ if settings.modules.cloud_replay.enabled
     return
 
 if settings.modules.windbot.enabled
-  settings.modules.windbots = require(settings.modules.windbot.botlist).windbots
+  windbots = require(settings.modules.windbot.botlist).windbots
+
+if settings.modules.tournament_mode.enabled
+  duel_log = {}
+  clearlog = () ->
+    duel_log = {}
+    duel_log.file = 'duel_log.' + moment().format('YYYY-MM-DD HH-mm-ss') + '.json'
+    duel_log.duel_log = []
+    setting_save(duel_log)
+  clearlog()
 
 # 组件
 ygopro = require './ygopro.js'
@@ -150,7 +222,7 @@ ROOM_bad_ip = {}
 # ban a user manually and permanently
 ban_user = (name) ->
   settings.ban.banned_user.push(name)
-  nconf.myset(settings, "ban:banned_user", settings.ban.banned_user)
+  setting_save(settings)
   bad_ip=0
   for room in ROOM_all when room and room.established
     for player in room.players
@@ -242,17 +314,17 @@ ROOM_find_or_create_ai = (name)->
   if room = ROOM_find_by_name(name)
     return room
   else if uname == 'AI'
-    windbot = _.sample settings.modules.windbots
+    windbot = _.sample windbots
     name = 'AI#' + Math.floor(Math.random() * 100000)
   else if namea.length>1
     ainame = namea[namea.length-1]
-    windbot = _.sample _.filter settings.modules.windbots, (w)->
+    windbot = _.sample _.filter windbots, (w)->
       w.name == ainame or w.deck == ainame
     if !windbot
       return { "error": "${windbot_deck_not_found}" }
     name = name + ',' + Math.floor(Math.random() * 100000)
   else
-    windbot = _.sample settings.modules.windbots
+    windbot = _.sample windbots
     name = name + '#' + Math.floor(Math.random() * 100000)
   if name.replace(/[^\x00-\xff]/g,"00").length>20
     log.info "long ai name", name
@@ -319,9 +391,9 @@ class Room
     ROOM_all.push this
 
     @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
-    if settings.lflist.length
+    if lflists.length
       if @hostinfo.rule == 1 and @hostinfo.lflist == 0
-        @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
+        @hostinfo.lflist = _.findIndex lflists, (list)-> list.tcg
     else
       @hostinfo.lflist =  -1
     @hostinfo.replay_mode = if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe then 1 else 0
@@ -357,7 +429,7 @@ class Room
 
       if (rule.match /(^|，|,)(TCGONLY|TO)(，|,|$)/)
         @hostinfo.rule = 1
-        @hostinfo.lflist = _.findIndex settings.lflist, (list)-> list.tcg
+        @hostinfo.lflist = _.findIndex lflists, (list)-> list.tcg
 
       if (rule.match /(^|，|,)(OCGONLY|OO)(，|,|$)/)
         @hostinfo.rule = 0
@@ -835,6 +907,9 @@ net.createServer (client) ->
   log.info "server started", settings.port
   return
 
+if settings.modules.stop
+  log.info "NOTE: server not open due to config, ", settings.modules.stop
+
 # 功能模块
 # return true to cancel a synchronous message
 
@@ -987,7 +1062,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             start_hand: opt3 >> 4
             draw_count: opt3 & 0xF
           }
-          options.lflist = _.findIndex settings.lflist, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
+          options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room = new Room(name, options)
           room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room.private = action == 2
@@ -1081,6 +1156,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
   else if _.indexOf(settings.ban.banned_user, client.name) > -1 #账号被封
     settings.ban.banned_ip.push(client.ip)
+    setting_save(settings)
     log.warn("BANNED USER LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${banned_user_login}")
 
@@ -1088,21 +1164,21 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     log.warn("BANNED IP LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${banned_ip_login}")
 
-  else if _.any(settings.ban.badword_level3, (badword) ->
+  else if _.any(badwords.level3, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 3", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level3}")
 
-  else if _.any(settings.ban.badword_level2, (badword) ->
+  else if _.any(badwords.level2, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 2", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level2}")
 
-  else if _.any(settings.ban.badword_level1, (badword) ->
+  else if _.any(badwords.level1, (badword) ->
     regexp = new RegExp(badword, 'i')
     return name.match(regexp)
   , name = client.name)
@@ -1226,8 +1302,8 @@ load_dialogues = () ->
     else if error or !body
       log.warn 'dialogues error', error, response
     else
-      nconf.myset(settings, "dialogues", body)
-      log.info "dialogues loaded", _.size body
+      setting_change(dialogues, "dialogues", body)
+      log.info "dialogues loaded", _.size dialogues.dialogues
     return
   return
 
@@ -1328,8 +1404,8 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   if settings.modules.dialogues.enabled
     if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING'
       card = buffer.readUInt32LE(1)
-      if settings.dialogues[card]
-        for line in _.lines settings.dialogues[card][Math.floor(Math.random() * settings.dialogues[card].length)]
+      if dialogues.dialogues[card]
+        for line in _.lines dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]
           ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK)
   return
 
@@ -1448,12 +1524,12 @@ wait_room_start_arena = (room)->
 
 #tip
 ygopro.stoc_send_random_tip = (client)->
-  if settings.modules.tips.enabled && settings.tips.length
-    ygopro.stoc_send_chat(client, "Tip: " + settings.tips[Math.floor(Math.random() * settings.tips.length)])
+  if settings.modules.tips.enabled && tips.tips.length
+    ygopro.stoc_send_chat(client, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
   return
 ygopro.stoc_send_random_tip_to_room = (room)->
-  if settings.modules.tips.enabled && settings.tips.length
-    ygopro.stoc_send_chat_to_room(room, "Tip: " + settings.tips[Math.floor(Math.random() * settings.tips.length)])
+  if settings.modules.tips.enabled && tips.tips.length
+    ygopro.stoc_send_chat_to_room(room, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
   return
 
 load_tips = ()->
@@ -1466,8 +1542,8 @@ load_tips = ()->
     else if error or !body
       log.warn 'tips error', error, response
     else
-      nconf.myset(settings, "tips", body)
-      log.info "tips loaded", settings.tips.length
+      setting_change(tips, "tips", body)
+      log.info "tips loaded", tips.tips.length
     return
   return
 
@@ -1599,13 +1675,13 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     when '/ai'
       if settings.modules.windbot.enabled
         if name = cmd[1]
-          windbot = _.sample _.filter settings.modules.windbots, (w)->
+          windbot = _.sample _.filter windbots, (w)->
             w.name == name or w.deck == name
           if !windbot
             ygopro.stoc_send_chat(client, "${windbot_deck_not_found}", ygopro.constants.COLORS.RED)
             return
         else
-          windbot = _.sample settings.modules.windbots
+          windbot = _.sample windbots
         room.add_windbot(windbot)
 
     when '/roomname'
@@ -1625,7 +1701,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client, "${banned_chat_tip}", ygopro.constants.COLORS.RED)
     return true
   oldmsg = msg
-  if (_.any(settings.ban.badword_level3, (badword) ->
+  if (_.any(badwords.level3, (badword) ->
     regexp = new RegExp(badword, 'i')
     return msg.match(regexp)
   , msg))
@@ -1653,7 +1729,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     client.abuse_count=client.abuse_count+2
     ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
-  else if (_.any(settings.ban.badword_level2, (badword) ->
+  else if (_.any(badwords.level2, (badword) ->
     regexp = new RegExp(badword, 'i')
     return msg.match(regexp)
   , msg))
@@ -1663,7 +1739,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED)
     cancel = true
   else
-    _.each(settings.ban.badword_level1, (badword) ->
+    _.each(badwords.level1, (badword) ->
       #log.info msg
       regexp = new RegExp(badword, "ig")
       msg = msg.replace(regexp, "**")
@@ -1678,7 +1754,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       struct._setBuff(buffer)
       struct.set("msg", msg)
       buffer = struct.buffer
-    else if (_.any(settings.ban.badword_level0, (badword) ->
+    else if (_.any(badwords.level0, (badword) ->
       regexp = new RegExp(badword, 'i')
       return msg.match(regexp)
     , msg))
@@ -1818,8 +1894,8 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
           winner: player.pos == room.winner
         )
       }
-      settings.modules.tournament_mode.duel_log.unshift duellog
-      nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
+      duel_log.duel_log.unshift duellog
+      setting_save(duel_log)
       fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
@@ -1926,7 +2002,7 @@ if settings.modules.http
         return
       else
         response.writeHead(200)
-        duellog = JSON.stringify settings.modules.tournament_mode.duel_log, null, 2
+        duellog = JSON.stringify duel_log.duel_log, null, 2
         response.end(addCallback(u.query.callback, duellog))
 
     else if u.pathname == '/api/archive.zip' and settings.modules.tournament_mode.enabled
@@ -1939,7 +2015,7 @@ if settings.modules.http
           archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip"
           archive_args = ["a", "-mx0", "-y", archive_name]
           check = false
-          for replay in settings.modules.tournament_mode.duel_log
+          for replay in duel_log.duel_log
             check = true
             archive_args.push(replay.replay_filename)
           if !check
@@ -1979,8 +2055,7 @@ if settings.modules.http
         return
       else
         response.writeHead(200)
-        settings.modules.tournament_mode.duel_log = []
-        nconf.myset(settings, "modules:tournament_mode:duel_log", settings.modules.tournament_mode.duel_log)
+        clearlog()
         response.end(addCallback(u.query.callback, "[{name:'Success'}]"))
 
     else if _.startsWith(u.pathname, '/api/replay') and settings.modules.tournament_mode.enabled
@@ -2015,12 +2090,12 @@ if settings.modules.http
       else if u.query.stop
         if u.query.stop == 'false'
           u.query.stop = false
-        settings.modules.stop = u.query.stop
+        setting_change(settings, 'modules:stop', u.query.stop)
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
 
       else if u.query.welcome
-        nconf.myset(settings, 'modules:welcome', u.query.welcome)
+        setting_change(settings, 'modules:welcome', u.query.welcome)
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
 
