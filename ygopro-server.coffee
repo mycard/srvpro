@@ -627,7 +627,7 @@ class Room
   add_windbot: (botdata)->
     @windbot = botdata
     request
-      url: "http://127.0.0.1:#{settings.modules.windbot.port}/?name=#{encodeURIComponent(botdata.name)}&deck=#{encodeURIComponent(botdata.deck)}&host=127.0.0.1&port=#{settings.port}&dialog=#{encodeURIComponent(botdata.dialog)}&version=#{settings.version}&password=#{encodeURIComponent(@name)}"
+      url: "http://#{settings.modules.windbot.server_ip}:#{settings.modules.windbot.port}/?name=#{encodeURIComponent(botdata.name)}&deck=#{encodeURIComponent(botdata.deck)}&host=#{settings.modules.windbot.my_ip}&port=#{settings.port}&dialog=#{encodeURIComponent(botdata.dialog)}&version=#{settings.version}&password=#{encodeURIComponent(@name)}"
     , (error, response, body)=>
       if error
         log.warn 'windbot add error', error, this.name
@@ -692,8 +692,10 @@ class Room
 # 网络连接
 net.createServer (client) ->
   client.ip = client.remoteAddress
+  client.is_local = client.ip.includes('127.0.0.1') or client.ip.includes(settings.modules.windbot.server_ip)
+
   connect_count = ROOM_connected_ip[client.ip] or 0
-  if !settings.modules.test_mode.no_connect_count_limit and client.ip != '::ffff:127.0.0.1'
+  if !settings.modules.test_mode.no_connect_count_limit and !client.is_local
     connect_count++
   ROOM_connected_ip[client.ip] = connect_count
   #log.info "connect", client.ip, ROOM_connected_ip[client.ip]
@@ -783,7 +785,7 @@ net.createServer (client) ->
           return
         return
       return
-    
+      
   # 需要重构
   # 客户端到服务端(ctos)协议分析
   
@@ -945,7 +947,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   buffer = struct.buffer
   client.name = name
 
-  if not settings.modules.i18n.auto_pick or client.ip=="::ffff:127.0.0.1"
+  if not settings.modules.i18n.auto_pick or client.is_local
     client.lang=settings.modules.i18n.default
   else
     geo = geoip.lookup(client.ip)
@@ -1242,7 +1244,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome
     ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
-  if settings.modules.arena_mode.enabled and client.ip != '::ffff:127.0.0.1' #and not client.score_shown
+  if settings.modules.arena_mode.enabled and !client.is_local #and not client.score_shown
     request
       url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
       json: true
@@ -1426,7 +1428,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
 ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
-  if not room.arena or client.ip == "::ffff:127.0.0.1"
+  if not room.arena or client.is_local
     return false
   for player in room.players
     if player == client
@@ -1622,7 +1624,6 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
         return
     client.deck_saved = true
   return
-
 
 ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
@@ -1903,7 +1904,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
         cloud_replay_id: "R#"+room.cloud_replay_id,
         replay_filename: replay_filename,
         players: (for player in room.dueling_players
-          name: player.name + (if settings.modules.tournament_mode.show_ip and player.ip != '::ffff:127.0.0.1' then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos > 1) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
+          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos > 1) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
           winner: player.pos == room.winner
         )
       }
@@ -2001,7 +2002,7 @@ if settings.modules.http
           needpass: (room.name.indexOf('$') != -1).toString(),
           users: (for player in room.players when player.pos?
             id: (-1).toString(),
-            name: player.name + (if settings.modules.http.show_ip and pass_validated and player.ip != '::ffff:127.0.0.1' then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.http.show_info and room.started and not (room.hostinfo.mode == 2 and player.pos > 1) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
+            name: player.name + (if settings.modules.http.show_ip and pass_validated and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.http.show_info and room.started and not (room.hostinfo.mode == 2 and player.pos > 1) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
             pos: player.pos
           ),
           istart: if room.started then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " " + (if room.changing_side then "Siding" else "Turn:" + (if room.turn? then room.turn else 0) + (if room.death then "/" + (if room.death > 0 then room.death - 1 else "Death") else ""))) else 'start') else 'wait'

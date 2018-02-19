@@ -840,7 +840,7 @@
     Room.prototype.add_windbot = function(botdata) {
       this.windbot = botdata;
       request({
-        url: "http://127.0.0.1:" + settings.modules.windbot.port + "/?name=" + (encodeURIComponent(botdata.name)) + "&deck=" + (encodeURIComponent(botdata.deck)) + "&host=127.0.0.1&port=" + settings.port + "&dialog=" + (encodeURIComponent(botdata.dialog)) + "&version=" + settings.version + "&password=" + (encodeURIComponent(this.name))
+        url: "http://" + settings.modules.windbot.server_ip + ":" + settings.modules.windbot.port + "/?name=" + (encodeURIComponent(botdata.name)) + "&deck=" + (encodeURIComponent(botdata.deck)) + "&host=" + settings.modules.windbot.my_ip + "&port=" + settings.port + "&dialog=" + (encodeURIComponent(botdata.dialog)) + "&version=" + settings.version + "&password=" + (encodeURIComponent(this.name))
       }, (function(_this) {
         return function(error, response, body) {
           if (error) {
@@ -930,8 +930,9 @@
   net.createServer(function(client) {
     var connect_count, server;
     client.ip = client.remoteAddress;
+    client.is_local = client.ip.includes('127.0.0.1') || client.ip.includes(settings.modules.windbot.server_ip);
     connect_count = ROOM_connected_ip[client.ip] || 0;
-    if (!settings.modules.test_mode.no_connect_count_limit && client.ip !== '::ffff:127.0.0.1') {
+    if (!settings.modules.test_mode.no_connect_count_limit && !client.is_local) {
       connect_count++;
     }
     ROOM_connected_ip[client.ip] = connect_count;
@@ -1203,7 +1204,7 @@
     struct.set("name", name);
     buffer = struct.buffer;
     client.name = name;
-    if (!settings.modules.i18n.auto_pick || client.ip === "::ffff:127.0.0.1") {
+    if (!settings.modules.i18n.auto_pick || client.is_local) {
       client.lang = settings.modules.i18n["default"];
     } else {
       geo = geoip.lookup(client.ip);
@@ -1509,7 +1510,7 @@
     if (room.welcome) {
       ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE);
     }
-    if (settings.modules.arena_mode.enabled && client.ip !== '::ffff:127.0.0.1') {
+    if (settings.modules.arena_mode.enabled && !client.is_local) {
       request({
         url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
         json: true
@@ -1722,7 +1723,7 @@
     if (!room) {
       return;
     }
-    if (!room.arena || client.ip === "::ffff:127.0.0.1") {
+    if (!room.arena || client.is_local) {
       return false;
     }
     ref = room.players;
@@ -2394,7 +2395,7 @@
             for (k = 0, len1 = ref1.length; k < len1; k++) {
               player = ref1[k];
               results.push({
-                name: player.name + (settings.modules.tournament_mode.show_ip && player.ip !== '::ffff:127.0.0.1' ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
+                name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
                 winner: player.pos === room.winner
               });
             }
@@ -2529,7 +2530,7 @@
                         if (player.pos != null) {
                           results1.push({
                             id: (-1).toString(),
-                            name: player.name + (settings.modules.http.show_ip && pass_validated && player.ip !== '::ffff:127.0.0.1' ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.http.show_info && room.started && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
+                            name: player.name + (settings.modules.http.show_ip && pass_validated && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.http.show_info && room.started && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
                             pos: player.pos
                           });
                         }

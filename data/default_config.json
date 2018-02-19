@@ -53,7 +53,9 @@
       "enabled": false,
       "botlist": "./windbot/bots.json",
       "spawn": false,
-      "port": 2399
+      "port": 2399,
+      "server_ip": "127.0.0.1",
+      "my_ip": "127.0.0.1"
     },
     "mycard": {
       "enabled": false,
