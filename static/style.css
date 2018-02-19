@@ -255,6 +255,10 @@ p.buttons {
     line-height: 40px;
 }
 
+div.buttons {
+    line-height: 50px;
+}
+
 #pre_update_log .auto-generated {
     max-height: 300px;
     overflow-y: scroll;
@@ -295,4 +299,8 @@ p.buttons {
 
 #pre_faq p:hover {
     border-color: #AAAAAA;
+}
+
+#output .add {
+	background-color:#94fbb1;
 }
