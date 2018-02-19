@@ -222,7 +222,7 @@
       duel_log = {};
       duel_log.file = 'duel_log.' + moment().format('YYYY-MM-DD HH-mm-ss') + '.json';
       duel_log.duel_log = [];
-      return setting_save(duel_log);
+      setting_save(duel_log);
     };
     clearlog();
   }
@@ -265,7 +265,7 @@
   get_memory_usage = function() {
     var prc_free;
     prc_free = exec("free");
-    return prc_free.stdout.on('data', function(data) {
+    prc_free.stdout.on('data', function(data) {
       var actualFree, buffers, cached, free, line, lines, new_free, percentUsed, total;
       lines = data.toString().split(/\n/g);
       line = lines[0].split(/\s+/);
@@ -281,7 +281,7 @@
         actualFree = free + buffers + cached;
       }
       percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2));
-      return memory_usage = percentUsed;
+      memory_usage = percentUsed;
     });
   };
 
@@ -2640,13 +2640,13 @@
           fs.readFile(settings.modules.tournament_mode.replay_path + filename, function(error, buffer) {
             if (error) {
               response.writeHead(404);
-              return response.end("未找到文件 " + filename);
+              response.end("未找到文件 " + filename);
             } else {
               response.writeHead(200, {
                 "Content-Type": "application/octet-stream",
                 "Content-Disposition": "attachment"
               });
-              return response.end(buffer);
+              response.end(buffer);
             }
           });
         }

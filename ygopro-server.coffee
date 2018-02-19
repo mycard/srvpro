@@ -163,6 +163,7 @@ if settings.modules.tournament_mode.enabled
     duel_log.file = 'duel_log.' + moment().format('YYYY-MM-DD HH-mm-ss') + '.json'
     duel_log.duel_log = []
     setting_save(duel_log)
+    return
   clearlog()
 
 # 组件
@@ -215,6 +216,8 @@ get_memory_usage = ()->
       actualFree = free + buffers + cached
     percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2))
     memory_usage = percentUsed
+    return
+  return
 get_memory_usage()
 setInterval(get_memory_usage, 3000)
 
@@ -2083,6 +2086,7 @@ if settings.modules.http
           else
             response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
             response.end(buffer)
+          return
         )
 
     else if u.pathname == '/api/message'
