@@ -92,7 +92,6 @@
       "replay_archive_tool": "7z",
       "show_ip": false,
       "show_info": true,
-      "duel_log": [],
       "password": "123456",
       "port": 7933
     },

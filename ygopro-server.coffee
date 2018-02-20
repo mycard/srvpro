@@ -62,6 +62,12 @@ try
     olddialogues.dialogues = oldconfig.dialogues
     fs.writeFileSync(olddialogues.file, JSON.stringify(olddialogues, null, 2))
     delete oldconfig.dialogues
+  if oldconfig.modules.tournament_mode and oldconfig.modules.tournament_mode.duel_log
+    oldduellog = {}
+    oldduellog.file = './config/duel_log.json'
+    oldduellog.duel_log = oldconfig.modules.tournament_mode.duel_log
+    fs.writeFileSync(oldduellog.file, JSON.stringify(oldduellog, null, 2))
+    delete oldconfig.oldduellog
   oldbadwords={}
   if oldconfig.ban.badword_level0
     oldbadwords.level0 = oldconfig.ban.badword_level0
@@ -131,6 +137,11 @@ try
 catch
   badwords = default_data.badwords
   setting_save(badwords)
+try
+  duel_log = require('./config/duel_log.json')
+catch
+  duel_log = default_data.duel_log
+  setting_save(duel_log)
 
 try
   cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
@@ -155,16 +166,6 @@ if settings.modules.cloud_replay.enabled
 
 if settings.modules.windbot.enabled
   windbots = require(settings.modules.windbot.botlist).windbots
-
-if settings.modules.tournament_mode.enabled
-  duel_log = {}
-  clearlog = () ->
-    duel_log = {}
-    duel_log.file = 'duel_log.' + moment().format('YYYY-MM-DD HH-mm-ss') + '.json'
-    duel_log.duel_log = []
-    setting_save(duel_log)
-    return
-  clearlog()
 
 # 组件
 ygopro = require './ygopro.js'
@@ -2069,7 +2070,8 @@ if settings.modules.http
         return
       else
         response.writeHead(200)
-        clearlog()
+        duel_log.duel_log = []
+        setting_save(duel_log)
         response.end(addCallback(u.query.callback, "[{name:'Success'}]"))
 
     else if _.startsWith(u.pathname, '/api/replay') and settings.modules.tournament_mode.enabled
