@@ -92,6 +92,7 @@
       "replay_archive_tool": "7z",
       "show_ip": false,
       "show_info": true,
+      "log_save_path": "./config/",
       "password": "123456",
       "port": 7933
     },

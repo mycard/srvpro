@@ -2630,6 +2630,13 @@
           return;
         } else {
           response.writeHead(200);
+          if (settings.modules.tournament_mode.log_save_path) {
+            fs.writeFile(settings.modules.tournament_mode.log_save_path + 'duel_log.' + moment().format('YYYY-MM-DD HH-mm-ss') + '.json', JSON.stringify(duel_log, null, 2), function(err) {
+              if (err) {
+                return log.warn('DUEL LOG SAVE ERROR', err);
+              }
+            });
+          }
           duel_log.duel_log = [];
           setting_save(duel_log);
           response.end(addCallback(u.query.callback, "[{name:'Success'}]"));
