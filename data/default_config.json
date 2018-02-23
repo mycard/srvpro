@@ -19,6 +19,7 @@
     "welcome": "MyCard YGOPro Server",
     "update": "请更新游戏版本",
     "stop": false,
+    "side_timeout": 3,
     "i18n": {
       "auto_pick": false,
       "default": "zh-cn",

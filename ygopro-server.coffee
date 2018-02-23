@@ -1790,6 +1790,10 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
   buff_side = (info.deckbuf[i] for i in [info.mainc...info.mainc + info.sidec])
   client.main = buff_main
   client.side = buff_side
+  if client.side_tcount
+    clearInterval client.side_interval
+    client.side_interval = null
+    client.side_tcount = null
   if room.random_type or room.arena
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
@@ -1878,6 +1882,22 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
   room.changing_side = true
+  if settings.modules.side_timeout
+    client.side_tcount = settings.modules.side_timeout
+    ygopro.stoc_send_chat(client, "${side_timeout_part1}#{settings.modules.side_timeout}${side_timeout_part2}", ygopro.constants.COLORS.BABYBLUE)
+    sinterval = setInterval ()->
+      if not (room and room.started and client and client.side_tcount and room.changing_side)
+        clearInterval sinterval
+        return
+      if client.side_tcount == 1
+        ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED) 
+        client.destroy()
+        clearInterval sinterval        
+      else
+        client.side_tcount = client.side_tcount - 1
+        ygopro.stoc_send_chat(client, "${side_remain_part1}#{settings.modules.side_timeout}${side_remain_part2}", ygopro.constants.COLORS.BABYBLUE)        
+    , 60000
+    client.side_interval = sinterval
   if room.random_type or room.arena
     if client.pos == 0
       room.waiting_for_player = client
