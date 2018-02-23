@@ -2370,12 +2370,13 @@
           return;
         }
         if (client.side_tcount === 1) {
+          ygopro.stoc_send_chat_to_room(room, client.name + "${side_overtime_room}", ygopro.constants.COLORS.BLUE);
           ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED);
           client.destroy();
           return clearInterval(sinterval);
         } else {
           client.side_tcount = client.side_tcount - 1;
-          return ygopro.stoc_send_chat(client, "${side_remain_part1}" + settings.modules.side_timeout + "${side_remain_part2}", ygopro.constants.COLORS.BABYBLUE);
+          return ygopro.stoc_send_chat(client, "${side_remain_part1}" + client.side_tcount + "${side_remain_part2}", ygopro.constants.COLORS.BABYBLUE);
         }
       }, 60000);
       client.side_interval = sinterval;
