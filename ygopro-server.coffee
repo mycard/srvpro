@@ -142,6 +142,11 @@ try
 catch
   duel_log = default_data.duel_log
   setting_save(duel_log)
+try
+  chat_color = require('./config/chat_color.json')
+catch
+  chat_color = default_data.chat_color
+  setting_save(chat_color)
 
 try
   cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
@@ -1683,6 +1688,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       ygopro.stoc_send_chat(client, "${chat_order_roomname}") if !settings.modules.mycard.enabled
       ygopro.stoc_send_chat(client, "${chat_order_windbot}") if settings.modules.windbot.enabled
       ygopro.stoc_send_chat(client, "${chat_order_tip}") if settings.modules.tips.enabled
+      ygopro.stoc_send_chat(client, "${chat_order_chatcolor_1}") if settings.modules.chat_color.enabled
+      ygopro.stoc_send_chat(client, "${chat_order_chatcolor_2}") if settings.modules.chat_color.enabled
 
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips.enabled
@@ -1701,6 +1708,29 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
 
     when '/roomname'
       ygopro.stoc_send_chat(client, "${room_name} " + room.name, ygopro.constants.COLORS.BABYBLUE) if room
+
+    when '/color'
+      if settings.modules.chat_color.enabled
+        if cmsg = cmd[1]
+          if cmsg.toLowerCase() == "help"
+            ygopro.stoc_send_chat(client, "${show_color_list}", ygopro.constants.COLORS.BABYBLUE)
+            for cname,cvalue of ygopro.constants.COLORS when cvalue > 10
+              ygopro.stoc_send_chat(client, cname, cvalue)
+          else if cmsg.toLowerCase() == "default"
+            setting_change(chat_color, 'save_list:' + client.name, false)
+            ygopro.stoc_send_chat(client, "${set_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
+          else
+            ccolor = cmsg.toUpperCase()
+            if ygopro.constants.COLORS[ccolor] and ygopro.constants.COLORS[ccolor] > 10
+              setting_change(chat_color, 'save_list:' + client.name, ccolor)
+              ygopro.stoc_send_chat(client, "${set_chat_color_part1}" + ccolor + "${set_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
+            else
+              ygopro.stoc_send_chat(client, "${color_not_found_part1}" + ccolor + "${color_not_found_part2}", ygopro.constants.COLORS.RED)              
+        else
+          if color = chat_color.save_list[client.name]
+            ygopro.stoc_send_chat(client, "${get_chat_color_part1}" + color + "${get_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
+          else
+            ygopro.stoc_send_chat(client, "${get_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
 
     #when '/test'
     #  ygopro.stoc_send_hint_card_to_room(room, 2333365)
@@ -1857,6 +1887,22 @@ ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room and (room.random_type or room.arena)
   room.last_active_time = moment()
+  return
+
+ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  pid = info.player
+  return unless room and pid < 4 and settings.modules.chat_color.enabled
+  for player in room.players when player and player.pos == pid
+    tplayer = player
+  return unless tplayer
+  tcolor = chat_color.save_list[tplayer.name]
+  if tcolor
+    ygopro.stoc_send client, 'CHAT', {
+        player: ygopro.constants.COLORS[tcolor]
+        msg: tplayer.name + ": " + info.msg
+      }
+    return true
   return
 
 ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server)->

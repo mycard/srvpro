@@ -58,6 +58,9 @@
       "server_ip": "127.0.0.1",
       "my_ip": "127.0.0.1"
     },
+    "chat_color": {
+      "enabled": false
+    },
     "mycard": {
       "enabled": false,
       "auth_base_url": "https://ygobbs.com",
