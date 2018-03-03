@@ -1717,17 +1717,17 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
             for cname,cvalue of ygopro.constants.COLORS when cvalue > 10
               ygopro.stoc_send_chat(client, cname, cvalue)
           else if cmsg.toLowerCase() == "default"
-            setting_change(chat_color, 'save_list:' + client.name, false)
+            setting_change(chat_color, 'save_list:' + client.ip, false)
             ygopro.stoc_send_chat(client, "${set_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
           else
             ccolor = cmsg.toUpperCase()
             if ygopro.constants.COLORS[ccolor] and ygopro.constants.COLORS[ccolor] > 10
-              setting_change(chat_color, 'save_list:' + client.name, ccolor)
+              setting_change(chat_color, 'save_list:' + client.ip, ccolor)
               ygopro.stoc_send_chat(client, "${set_chat_color_part1}" + ccolor + "${set_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
             else
               ygopro.stoc_send_chat(client, "${color_not_found_part1}" + ccolor + "${color_not_found_part2}", ygopro.constants.COLORS.RED)              
         else
-          if color = chat_color.save_list[client.name]
+          if color = chat_color.save_list[client.ip]
             ygopro.stoc_send_chat(client, "${get_chat_color_part1}" + color + "${get_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
           else
             ygopro.stoc_send_chat(client, "${get_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
@@ -1896,7 +1896,7 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server)->
   for player in room.players when player and player.pos == pid
     tplayer = player
   return unless tplayer
-  tcolor = chat_color.save_list[tplayer.name]
+  tcolor = chat_color.save_list[tplayer.ip]
   if tcolor
     ygopro.stoc_send client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor]
