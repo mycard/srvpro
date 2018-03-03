@@ -2385,14 +2385,11 @@
       if (room.hostinfo.mode === 2) {
         if (pid === 0) {
           pid = 2;
-        }
-        if (pid === 1) {
+        } else if (pid = 1) {
           pid = 3;
-        }
-        if (pid === 2) {
+        } else if (pid = 2) {
           pid = 0;
-        }
-        if (pid === 3) {
+        } else if (pid = 3) {
           pid = 1;
         }
       } else {

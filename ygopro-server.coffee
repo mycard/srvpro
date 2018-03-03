@@ -1896,10 +1896,14 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server)->
   return unless room and pid < 4 and settings.modules.chat_color.enabled
   if room.started and room.turn > 0 and !room.dueling_players[0].is_first
     if room.hostinfo.mode == 2
-      pid = 2 if pid == 0
-      pid = 3 if pid == 1
-      pid = 0 if pid == 2
-      pid = 1 if pid == 3
+      if pid == 0
+        pid = 2
+      else if pid = 1
+        pid = 3
+      else if pid = 2
+        pid = 0
+      else if pid = 3
+        pid = 1
     else
       pid = 1 - pid
   for player in room.players when player and player.pos == pid
