@@ -2135,7 +2135,7 @@
         break;
       case '/color':
         if (settings.modules.chat_color.enabled) {
-          cip = client.ip.slice(7);
+          cip = (settings.modules.mycard.enabled ? client.name : client.ip.slice(7));
           if (cmsg = cmd[1]) {
             if (cmsg.toLowerCase() === "help") {
               ygopro.stoc_send_chat(client, "${show_color_list}", ygopro.constants.COLORS.BABYBLUE);
@@ -2406,7 +2406,7 @@
     if (!tplayer) {
       return;
     }
-    tcolor = chat_color.save_list[tplayer.ip.slice(7)];
+    tcolor = chat_color.save_list[(settings.modules.mycard.enabled ? tplayer.name : tplayer.ip.slice(7))];
     if (tcolor) {
       ygopro.stoc_send(client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor],
