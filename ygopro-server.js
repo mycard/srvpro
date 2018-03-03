@@ -441,7 +441,7 @@
       name = 'AI';
     }
     namea = name.split('#');
-    uname = name.toUpperCase();
+    uname = namea[0].toUpperCase();
     if (room = ROOM_find_by_name(name)) {
       return room;
     } else if (uname === 'AI') {
