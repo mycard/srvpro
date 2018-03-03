@@ -2060,7 +2060,7 @@
   };
 
   ygopro.ctos_follow('CHAT', true, function(buffer, info, client, server) {
-    var cancel, ccolor, cmd, cmsg, cname, color, cvalue, msg, name, oldmsg, ref, room, struct, windbot;
+    var cancel, ccolor, cip, cmd, cmsg, cname, color, cvalue, msg, name, oldmsg, ref, room, struct, windbot;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -2135,6 +2135,7 @@
         break;
       case '/color':
         if (settings.modules.chat_color.enabled) {
+          cip = client.ip.slice(7);
           if (cmsg = cmd[1]) {
             if (cmsg.toLowerCase() === "help") {
               ygopro.stoc_send_chat(client, "${show_color_list}", ygopro.constants.COLORS.BABYBLUE);
@@ -2146,19 +2147,19 @@
                 }
               }
             } else if (cmsg.toLowerCase() === "default") {
-              setting_change(chat_color, 'save_list:' + client.ip, false);
+              setting_change(chat_color, 'save_list:' + cip, false);
               ygopro.stoc_send_chat(client, "${set_chat_color_default}", ygopro.constants.COLORS.BABYBLUE);
             } else {
               ccolor = cmsg.toUpperCase();
               if (ygopro.constants.COLORS[ccolor] && ygopro.constants.COLORS[ccolor] > 10) {
-                setting_change(chat_color, 'save_list:' + client.ip, ccolor);
+                setting_change(chat_color, 'save_list:' + cip, ccolor);
                 ygopro.stoc_send_chat(client, "${set_chat_color_part1}" + ccolor + "${set_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE);
               } else {
                 ygopro.stoc_send_chat(client, "${color_not_found_part1}" + ccolor + "${color_not_found_part2}", ygopro.constants.COLORS.RED);
               }
             }
           } else {
-            if (color = chat_color.save_list[client.ip]) {
+            if (color = chat_color.save_list[cip]) {
               ygopro.stoc_send_chat(client, "${get_chat_color_part1}" + color + "${get_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE);
             } else {
               ygopro.stoc_send_chat(client, "${get_chat_color_default}", ygopro.constants.COLORS.BABYBLUE);
@@ -2390,7 +2391,7 @@
     if (!tplayer) {
       return;
     }
-    tcolor = chat_color.save_list[tplayer.ip];
+    tcolor = chat_color.save_list[tplayer.ip.slice(7)];
     if (tcolor) {
       ygopro.stoc_send(client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor],
