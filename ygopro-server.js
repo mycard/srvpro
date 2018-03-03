@@ -2381,6 +2381,24 @@
     if (!(room && pid < 4 && settings.modules.chat_color.enabled)) {
       return;
     }
+    if (room.started && room.turn > 0 && !room.dueling_players[0].is_first) {
+      if (room.hostinfo.mode === 2) {
+        if (pid === 0) {
+          pid = 2;
+        }
+        if (pid === 1) {
+          pid = 3;
+        }
+        if (pid === 2) {
+          pid = 0;
+        }
+        if (pid === 3) {
+          pid = 1;
+        }
+      } else {
+        pid = 1 - pid;
+      }
+    }
     ref = room.players;
     for (j = 0, len = ref.length; j < len; j++) {
       player = ref[j];
