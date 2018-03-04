@@ -14,8 +14,9 @@ var formidable = require('formidable');
 var _ = require('underscore');
 _.str = require('underscore.string');
 _.mixin(_.str.exports());
+var loadJSON = require('load-json-file').sync;
 
-var settings = require('./config/config.json');
+var settings = loadJSON('./config/config.json');
 config=settings.modules.tournament_mode;
 
 //http长连接

@@ -13,6 +13,7 @@
   "dependencies": {
     "bunyan": "latest",
     "deepmerge": "latest",
+    "load-json-file": "latest",
     "moment": "latest",
     "request": "latest",
     "underscore": "latest",

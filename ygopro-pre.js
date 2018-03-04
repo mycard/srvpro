@@ -15,10 +15,11 @@ var spawn = require('child_process').spawn;
 var url = require('url');
 var moment = require('moment');
 moment.locale('zh-cn');
+var loadJSON = require('load-json-file').sync;
 
-var constants = require('./data/constants.json');
+var constants = loadJSON('./data/constants.json');
 
-var settings = require('./config/config.json');
+var settings = loadJSON('./config/config.json');
 config=settings.modules.pre_util;
 
 //全卡HTML列表
