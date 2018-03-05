@@ -13,6 +13,7 @@ config.user.bak
 /windbot
 /decks/
 /decks_save*
+/replays
 /node_modules/
 /ssl
 /ygosrv233
