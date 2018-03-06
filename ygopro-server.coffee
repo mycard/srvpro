@@ -1400,6 +1400,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp -= val
+    room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
 
@@ -1420,6 +1421,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     pos = 1 - pos unless client.is_first
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp -= val
+    room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK)
 
@@ -1900,14 +1902,12 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server)->
   return unless room and pid < 4 and settings.modules.chat_color.enabled
   if room.started and room.turn > 0 and !room.dueling_players[0].is_first
     if room.hostinfo.mode == 2
-      if pid == 0
-        pid = 2
-      else if pid = 1
-        pid = 3
-      else if pid = 2
-        pid = 0
-      else if pid = 3
-        pid = 1
+      pid = {
+        0: 2,
+        1: 3,
+        2: 0,
+        3: 1
+      }[pid]
     else
       pid = 1 - pid
   for player in room.players when player and player.pos == pid
