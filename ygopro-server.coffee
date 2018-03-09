@@ -42,6 +42,8 @@ moment.locale('zh-cn', {
 
 merge = require 'deepmerge'
 
+loadJSON = require('load-json-file').sync
+
 #heapdump = require 'heapdump'
 
 # 配置
@@ -49,7 +51,7 @@ merge = require 'deepmerge'
 if not fs.existsSync('./config')
   fs.mkdirSync('./config')
 try
-  oldconfig=require('./config.user.json')
+  oldconfig=loadJSON('./config.user.json')
   if oldconfig.tips
     oldtips = {}
     oldtips.file = './config/tips.json'
@@ -90,7 +92,7 @@ try
     log.info 'imported old config from config.user.json'
   fs.renameSync('./config.user.json', './config.user.bak')
 catch e
-  log.info e unless e.code == 'MODULE_NOT_FOUND'
+  log.info e unless e.code == 'ENOENT'
 
 setting_save = (settings) ->
   fs.writeFileSync(settings.file, JSON.stringify(settings, null, 2))
@@ -113,37 +115,37 @@ setting_change = (settings, path, val) ->
   return
 
 # 读取配置
-default_config = require('./data/default_config.json')
+default_config = loadJSON('./data/default_config.json')
 try
-  config = require('./config/config.json')
+  config = loadJSON('./config/config.json')
 catch
   config = {}
 settings = global.settings = merge(default_config, config, { arrayMerge: (destination, source) -> source })
 
 # 读取数据
-default_data = require('./data/default_data.json')
+default_data = loadJSON('./data/default_data.json')
 try
-  tips = require('./config/tips.json')
+  tips = loadJSON('./config/tips.json')
 catch
   tips = default_data.tips
   setting_save(tips)
 try
-  dialogues = require('./config/dialogues.json')
+  dialogues = loadJSON('./config/dialogues.json')
 catch
   dialogues = default_data.dialogues
   setting_save(dialogues)
 try
-  badwords = require('./config/badwords.json')
+  badwords = loadJSON('./config/badwords.json')
 catch
   badwords = default_data.badwords
   setting_save(badwords)
 try
-  duel_log = require('./config/duel_log.json')
+  duel_log = loadJSON('./config/duel_log.json')
 catch
   duel_log = default_data.duel_log
   setting_save(duel_log)
 try
-  chat_color = require('./config/chat_color.json')
+  chat_color = loadJSON('./config/chat_color.json')
 catch
   chat_color = default_data.chat_color
   setting_save(chat_color)
@@ -170,7 +172,7 @@ if settings.modules.cloud_replay.enabled
     return
 
 if settings.modules.windbot.enabled
-  windbots = require(settings.modules.windbot.botlist).windbots
+  windbots = loadJSON(settings.modules.windbot.botlist).windbots
 
 # 组件
 ygopro = require './ygopro.js'
@@ -1401,6 +1403,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp -= val
+    room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
 
@@ -1424,6 +1427,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp -= val
+    room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK)
 
@@ -1904,14 +1908,12 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server)->
   return unless room and pid < 4 and settings.modules.chat_color.enabled
   if room.started and room.turn > 0 and !room.dueling_players[0].is_first
     if room.hostinfo.mode == 2
-      if pid == 0
-        pid = 2
-      else if pid = 1
-        pid = 3
-      else if pid = 2
-        pid = 0
-      else if pid = 3
-        pid = 1
+      pid = {
+        0: 2,
+        1: 3,
+        2: 0,
+        3: 1
+      }[pid]
     else
       pid = 1 - pid
   for player in room.players when player and player.pos == pid

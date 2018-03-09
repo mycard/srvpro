@@ -15,16 +15,19 @@ var spawn = require('child_process').spawn;
 var url = require('url');
 var moment = require('moment');
 moment.locale('zh-cn');
+var loadJSON = require('load-json-file').sync;
 
-var constants = require('./data/constants.json');
+var constants = loadJSON('./data/constants.json');
 
-var settings = require('./config/config.json');
+var settings = loadJSON('./config/config.json');
 config=settings.modules.pre_util;
 
 //全卡HTML列表
 var cardHTMLs=[];
 //http长连接
 var responder;
+//URL里的更新时间戳
+var dataver = moment().format("YYYYMMDDHHmmss");
 
 //输出反馈信息，如有http长连接则输出到http，否则输出到控制台
 var sendResponse = function(text) {
@@ -186,6 +189,7 @@ var loadDb = function(db_file) {
             sendResponse(db_file + ":" + err);
         }
         else {
+            dataver = moment().format("YYYYMMDDHHmmss");
             sendResponse("已加载数据库"+db_file+"，共"+num+"张卡。");
         }
     });
@@ -196,6 +200,8 @@ var writeToFile = function(message) {
     var fileContent=fs.readFileSync(config.html_path+config.html_filename, {"encoding":"utf-8"});
     var newContent=cardHTMLs.join("\n");
     fileContent=fileContent.replace(/<tbody class="auto-generated">[\w\W]*<\/tbody>/,'<tbody class="auto-generated">\n'+newContent+'\n</tbody>');
+    fileContent = fileContent.replace(/data-ygosrv233-download="(http.+)" href="http.+"/g, 'data-ygosrv233-download="$1" href="$1"');
+    fileContent = fileContent.replace(/href="(http.+)dataver/g, 'href="$1' + dataver);
     if (message) {
         message="<li>"+moment().format('L HH:mm')+"<ul><li>"+message.split("！换行符！").join("</li><li>")+"</li></ul></li>";
         fileContent=fileContent.replace(/<ul class="auto-generated">/,'<ul class="auto-generated">\n'+message);
@@ -250,12 +256,17 @@ var fetchDatas = function() {
 //更新本地网页到服务器，异步
 var pushDatas = function() {
     if (config.cdn.enabled) {
-        uploadCDN(config.cdn.local, config.cdn.remote, function () {
+        uploadCDN(config.cdn.local, config.cdn.remote + "/" + dataver, function () {
             uploadCDN(config.db_path + "pics", config.cdn.pics_remote + "pics", function () {
                 sendResponse("CDN上传全部完成。");
+                pushHTMLs();
             });
         });
     }
+}
+
+var pushHTMLs = function() {
+    sendResponse("开始上传到网页。");
     try {
         execSync('git add --all .', { cwd: config.git_html_path, env: process.env });
         execSync('git commit -m update-auto', { cwd: config.git_html_path, env: process.env });
@@ -427,7 +438,7 @@ http.createServer(function (req, res) {
     }
     else if (u.pathname === '/api/push_datas') {
         res.writeHead(200);
-        res.end(u.query.callback+'({"message":"开始上传到网页。"});');
+        res.end(u.query.callback+'({"message":"开始上传数据。"});');
         pushDatas();
     }
     else if (u.pathname === '/api/write_to_file') {

@@ -11,9 +11,10 @@ config.user.bak
 /config
 /ygopro
 /windbot
-/decks/
+/decks
 /decks_save*
-/node_modules/
+/replays
+/node_modules
 /ssl
 /ygosrv233
 

@@ -1,17 +1,19 @@
 {
-  "name": "ygopro-server",
+  "name": "srvpro",
   "version": "2.3.3",
   "description": "a server for ygopro",
-  "repository": "github:mycard/ygopro-server",
+  "repository": "github:mycard/srvpro",
   "keywords": [
     "mycard",
     "ygopro",
+    "srvpro",
     "server"
   ],
   "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>",
   "dependencies": {
     "bunyan": "latest",
     "deepmerge": "latest",
+    "load-json-file": "latest",
     "moment": "latest",
     "request": "latest",
     "underscore": "latest",
