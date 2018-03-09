@@ -2516,7 +2516,7 @@
       if (client.pos === 0) {
         dueltime = moment().format('YYYY-MM-DD HH:mm:ss');
         replay_filename = dueltime;
-        if (room.hostinfo.mode === 2) {
+        if (room.hostinfo.mode !== 2) {
           ref = room.dueling_players;
           for (i = j = 0, len = ref.length; j < len; i = ++j) {
             player = ref[i];
@@ -2668,6 +2668,7 @@
                     pid: room.process.pid.toString(),
                     roomid: room.port.toString(),
                     roomname: pass_validated ? room.name : room.name.split('$', 2)[0],
+                    roommode: room.hostinfo.mode,
                     needpass: (room.name.indexOf('$') !== -1).toString(),
                     users: (function() {
                       var k, len1, ref, results1;

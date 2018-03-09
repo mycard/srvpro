@@ -1985,7 +1985,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
     if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH:mm:ss')
       replay_filename=dueltime
-      if room.hostinfo.mode == 2
+      if room.hostinfo.mode != 2
         for player,i in room.dueling_players
           replay_filename=replay_filename + (if i > 0 then " VS " else " ") + player.name
       else
@@ -2094,6 +2094,7 @@ if settings.modules.http
           pid: room.process.pid.toString(),
           roomid: room.port.toString(),
           roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
+          roommode: room.hostinfo.mode,
           needpass: (room.name.indexOf('$') != -1).toString(),
           users: (for player in room.players when player.pos?
             id: (-1).toString(),
