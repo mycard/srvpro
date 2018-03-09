@@ -1607,7 +1607,7 @@
   }
 
   ygopro.stoc_follow('GAME_MSG', false, function(buffer, info, client, server) {
-    var card, j, len, line, msg, playertype, pos, reason, ref, ref1, ref2, room, val;
+    var card, j, len, line, msg, oppo_pos, playertype, pos, reason, ref, ref1, ref2, room, val;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -1638,9 +1638,10 @@
         room.turn = room.turn + 1;
         if (room.death) {
           if (room.turn >= room.death) {
-            if (room.dueling_players[0].lp !== room.dueling_players[1].lp && room.turn > 1) {
-              ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + (room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[0] : room.dueling_players[1]).name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
-              ygopro.ctos_send((room.dueling_players[0].lp > room.dueling_players[1].lp ? room.dueling_players[1] : room.dueling_players[0]).server, 'SURRENDER');
+            oppo_pos = room.hostinfo.mode === 2 ? 2 : 1;
+            if (room.dueling_players[0].lp !== room.dueling_players[oppo_pos].lp && room.turn > 1) {
+              ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + (room.dueling_players[0].lp > room.dueling_players[oppo_pos].lp ? room.dueling_players[0] : room.dueling_players[oppo_pos]).name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
+              ygopro.ctos_send((room.dueling_players[0].lp > room.dueling_players[oppo_pos].lp ? room.dueling_players[oppo_pos] : room.dueling_players[0]).server, 'SURRENDER');
             } else {
               room.death = -1;
               ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE);
@@ -1659,6 +1660,9 @@
       pos = buffer.readUInt8(1);
       if (!(client.is_first || pos === 2)) {
         pos = 1 - pos;
+      }
+      if (pos >= 0 && room.hostinfo.mode === 2) {
+        pos = pos * 2;
       }
       reason = buffer.readUInt8(2);
       room.winner = pos;
@@ -1680,6 +1684,9 @@
       if (!client.is_first) {
         pos = 1 - pos;
       }
+      if (pos >= 0 && room.hostinfo.mode === 2) {
+        pos = pos * 2;
+      }
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp -= val;
       if ((0 < (ref = room.dueling_players[pos].lp) && ref <= 100)) {
@@ -1691,6 +1698,9 @@
       if (!client.is_first) {
         pos = 1 - pos;
       }
+      if (pos >= 0 && room.hostinfo.mode === 2) {
+        pos = pos * 2;
+      }
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp += val;
     }
@@ -1699,6 +1709,9 @@
       if (!client.is_first) {
         pos = 1 - pos;
       }
+      if (pos >= 0 && room.hostinfo.mode === 2) {
+        pos = pos * 2;
+      }
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp = val;
     }
@@ -1706,6 +1719,9 @@
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
+      }
+      if (pos >= 0 && room.hostinfo.mode === 2) {
+        pos = pos * 2;
       }
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp -= val;
@@ -2483,7 +2499,7 @@
   });
 
   ygopro.stoc_follow('REPLAY', true, function(buffer, info, client, server) {
-    var duellog, dueltime, i, j, len, player, ref, replay_filename, room;
+    var duellog, dueltime, i, j, k, len, len1, player, ref, ref1, replay_filename, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe;
@@ -2495,10 +2511,18 @@
       if (client.pos === 0) {
         dueltime = moment().format('YYYY-MM-DD HH:mm:ss');
         replay_filename = dueltime;
-        ref = room.dueling_players;
-        for (i = j = 0, len = ref.length; j < len; i = ++j) {
-          player = ref[i];
-          replay_filename = replay_filename + (i > 0 ? " VS " : " ") + player.name;
+        if (room.hostinfo.mode === 2) {
+          ref = room.dueling_players;
+          for (i = j = 0, len = ref.length; j < len; i = ++j) {
+            player = ref[i];
+            replay_filename = replay_filename + (i > 0 ? " VS " : " ") + player.name;
+          }
+        } else {
+          ref1 = room.dueling_players;
+          for (i = k = 0, len1 = ref1.length; k < len1; i = ++k) {
+            player = ref1[i];
+            replay_filename = replay_filename + (i > 0 ? (i === 2 ? " VS " : " & ") : " ") + player.name;
+          }
         }
         replay_filename = replay_filename.replace(/[\/\\\?\*]/g, '_') + ".yrp";
         duellog = {
@@ -2508,11 +2532,11 @@
           cloud_replay_id: "R#" + room.cloud_replay_id,
           replay_filename: replay_filename,
           players: (function() {
-            var k, len1, ref1, results;
-            ref1 = room.dueling_players;
+            var l, len2, ref2, results;
+            ref2 = room.dueling_players;
             results = [];
-            for (k = 0, len1 = ref1.length; k < len1; k++) {
-              player = ref1[k];
+            for (l = 0, len2 = ref2.length; l < len2; l++) {
+              player = ref2[l];
               results.push({
                 name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
                 winner: player.pos === room.winner
@@ -2649,7 +2673,7 @@
                         if (player.pos != null) {
                           results1.push({
                             id: (-1).toString(),
-                            name: player.name + (settings.modules.http.show_ip && pass_validated && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.http.show_info && room.started && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
+                            name: player.name + (settings.modules.http.show_ip && pass_validated && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.http.show_info && room.started && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
                             pos: player.pos
                           });
                         }
