@@ -127,9 +127,13 @@ function listreplay(data) {
         tr.append($("<td>"+duellog.time+"</td>"));
         tr.append($("<td>"+duellog.name+"</td>"));
 
-        tr.append($("<td>"+((duellog.players) ? (duellog.players[0].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[0].name : "")+"</td>"));
-        tr.append($("<td>"+((duellog.players) ? (duellog.players[1].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[1].name : "")+"</td>"));
-
+        if(duellog.roommode != 2) {
+            tr.append($("<td>"+((duellog.players) ? (duellog.players[0].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[0].name : "")+"</td>"));
+            tr.append($("<td>"+((duellog.players) ? (duellog.players[1].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[1].name : "")+"</td>"));
+        } else {
+            tr.append($("<td>"+((duellog.players) ? (duellog.players[0].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[0].name+"<br>"+duellog.players[1].name+ : "")+"</td>"));
+            tr.append($("<td>"+((duellog.players) ? (duellog.players[2].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[2].name+"<br>"+duellog.players[3].name+ : "")+"</td>"));
+        }
         tr.append($("<td>"+duellog.cloud_replay_id+"</td>"));
         tr.append($("<td><a href='"+$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/replay/"+duellog.replay_filename+"?pass="+$("#password").val()+"' download><span class='glyphicon glyphicon-download-alt'></span></a></td>"));
 
