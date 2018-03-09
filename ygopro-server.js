@@ -2536,6 +2536,7 @@
           roomid: room.port.toString(),
           cloud_replay_id: "R#" + room.cloud_replay_id,
           replay_filename: replay_filename,
+          roommode: room.hostinfo.mode,
           players: (function() {
             var l, len2, ref2, results;
             ref2 = room.dueling_players;
@@ -2543,7 +2544,7 @@
             for (l = 0, len2 = ref2.length; l < len2; l++) {
               player = ref2[l];
               results.push({
-                name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos > 1) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
+                name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
                 winner: player.pos === room.winner
               });
             }
@@ -2853,7 +2854,7 @@
           death_room_found = false;
           for (l = 0, len2 = ROOM_all.length; l < len2; l++) {
             room = ROOM_all[l];
-            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.port.toString()))) {
+            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.port.toString()) && room.hostinfo.mode !== 2)) {
               continue;
             }
             death_room_found = true;

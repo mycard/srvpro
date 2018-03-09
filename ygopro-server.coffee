@@ -1998,8 +1998,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
         roomid: room.port.toString(),
         cloud_replay_id: "R#"+room.cloud_replay_id,
         replay_filename: replay_filename,
+        roommode: room.hostinfo.mode,
         players: (for player in room.dueling_players
-          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos > 1) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
+          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
           winner: player.pos == room.winner
         )
       }
@@ -2237,7 +2238,7 @@ if settings.modules.http
 
       else if u.query.death
         death_room_found = false
-        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString())
+        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString()) and room.hostinfo.mode != 2
           death_room_found = true
           if !room.changing_side and (!room.duel_count or room.turn)
             room.death = (if room.turn then room.turn + 4 else 5)
