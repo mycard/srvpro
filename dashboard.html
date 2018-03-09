@@ -146,7 +146,7 @@ function listroom(data) {
         tr.append($("<td>"+room.roomid+"</td>"));
         tr.append($("<td>"+ ((room.needpass == "true") ? "<span class='glyphicon glyphicon-lock'></span>" : "") + room.roomname+ "</td>"));
 
-        if (room.duelers.length<=2) {
+        if (room.roommode != 2) {
             tr.append($("<td>"+((room.duelers[0]) ? room.duelers[0].name : "")+"</td>"));
             tr.append($("<td>"+((room.duelers[1]) ? room.duelers[1].name : "")+"</td>"));
         }
