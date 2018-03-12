@@ -167,7 +167,7 @@ http.createServer(function (req, res) {
 		}
 		var ref = infodata.ref;
 		if (!ref) {
-			return return_error(res, "Not a push trigger.");
+			return return_success(res, "Not a push trigger. Skipped.");
 		}
 		var branch = ref.split("/")[2];
 		if (!branch) {
