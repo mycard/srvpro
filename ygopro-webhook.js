@@ -133,7 +133,7 @@ http.createServer(function (req, res) {
 	if (!hook) {
 		return return_error(res, "Invalid format.");
 	}
-	var hook_info = hooks[hook];
+	var hook_info = config.hooks[hook];
 	if (!hook_info) {
 		return return_error(res, "Hooked repo not found.");
 	}
