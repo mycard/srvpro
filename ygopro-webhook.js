@@ -112,13 +112,13 @@ var process_callback = function(name, info) {
 var add_process = function(name, info) {
 	if (status[name]) {
 		status[name] = 2;
-		return "Another process in repo "+name+" is running. The process will start after this.";
+		return "Another process in webhook "+name+" is running. The process will start after this.";
 	}
 	status[name] = 1;
 	pull_data(info.path, info.remote, info.branch, function() {
 		pull_callback(name, info);
 	});
-	return "Started a process in repo "+name+".";
+	return "Started a process in webhook "+name+".";
 }
 
 //returns
@@ -152,7 +152,7 @@ http.createServer(function (req, res) {
 	}
 	var hook_info = config.hooks[hook];
 	if (!hook_info) {
-		return return_error(res, "Hooked repo not found.");
+		return return_error(res, "Webhook "+hook+" not found.");
 	}
 	var info = "";	
 	req.addListener('data', function(chunk) {
@@ -163,17 +163,17 @@ http.createServer(function (req, res) {
 		try {
 			infodata = JSON.parse(info);
 		} catch (err) {
-			return return_error(res, "Error parsing JSON: " + err);
+			return return_error(res, "Error parsing JSON in webhook "+hook+": " + err);
 		}
 		var ref = infodata.ref;
 		if (!ref) {
-			return return_success(res, "Not a push trigger. Skipped.");
+			return return_success(res, "Not a push trigger in webhook "+hook+". Skipped.");
 		}
 		var branch = ref.split("/")[2];
 		if (!branch) {
 			return return_error(res, "Invalid branch.");
 		} else if (branch !== hook_info.branch) {
-			return return_success(res, "Branch "+branch+" in repo "+hook+" is not the current branch. Skipped.");		
+			return return_success(res, "Branch "+branch+" in webhook "+hook+" is not the current branch "+hook_info.branch+". Skipped.");		
 		} else {
 			var return_msg = add_process(hook, hook_info);
 			return return_success(res, return_msg);	
