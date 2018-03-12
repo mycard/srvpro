@@ -48,7 +48,7 @@ var pull_data = function(path, remote, branch, callback) {
 				callback();
 			}
 		});
-	catch (err) {
+	} catch (err) {
 		sendResponse("Errored pulling on branch "+branch+" at "+path+" from "+remote+".");
 		if (callback) {
 			callback();
