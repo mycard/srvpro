@@ -150,6 +150,43 @@
         }
       ]
     },
+    "webhook": {
+      "enabled": false,
+      "port": 7966,
+      "password": "123456",
+      "hooks": {
+        "script": {
+          "path": "./ygopro/script/",
+          "remote": "origin",
+          "branch": "master",
+          "callback": false
+        },
+        "ocgcore": {
+          "path": "./ygopro/ocgcore/",
+          "remote": "origin",
+          "branch": "master",
+          "callback": {
+            "command": "make",
+            "args": [
+              "config=release"
+            ],
+            "path": "./ygopro/build/"
+          }
+        },
+        "ygopro": {
+          "path": "./ygopro/",
+          "remote": "origin",
+          "branch": "server",
+          "callback": {
+            "command": "make",
+            "args": [
+              "config=release"
+            ],
+            "path": "./ygopro/build/"
+          }
+        }
+      }
+    },
     "update_util": {
       "enabled": false,
       "port": 7955,
