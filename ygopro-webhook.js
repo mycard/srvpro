@@ -78,7 +78,7 @@ var pull_callback = function(name, info) {
 	return;
 }
 
-var process_callback = (name, info) {
+var process_callback = function(name, info) {
 	if (status[name] === 2) {
 		status[name] = 1;
 		sendResponse("The Process "+name+" was triggered during running. It will be ran again.");
