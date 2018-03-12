@@ -158,7 +158,7 @@ http.createServer(function (req, res) {
 	req.setEncoding("utf8");
 	req.addListener('data', function(chunk) {
 		info += chunk;
-	})
+	});
 	req.addListener('end', function() {
 		var infodata;
 		try {
@@ -179,7 +179,7 @@ http.createServer(function (req, res) {
 			var return_msg = add_process(hook, hook_info);
 			return return_success(res, return_msg);	
 		}
-	})
+	});
 	return;
 }).listen(config.port);
 
