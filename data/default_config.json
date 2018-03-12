@@ -186,6 +186,18 @@
             ],
             "path": "./ygopro/"
           }
+        },
+        "srvpro": {
+          "path": ".",
+          "remote": "origin",
+          "branch": "master"
+          "callback": {
+            "command": "npm",
+            "args": [
+              "install"
+            ],
+            "path": "."
+          }
         }
       }
     },
