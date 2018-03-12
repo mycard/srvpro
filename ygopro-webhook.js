@@ -143,9 +143,13 @@ http.createServer(function (req, res) {
 	})
 	req.addListener('end', function() {
 		info = querystring.parse(info);
-		var branch = info.ref.split("/")[2];
+		var ref = info.ref;
+		if (!ref) {
+			return return_error(res, "Not a push trigger.");
+		}
+		var branch = ref.split("/")[2];
 		if (!branch) {
-			return return_error(res, "Invalid branch.");		
+			return return_error(res, "Invalid branch.");
 		} else if (branch !== hook_info.branch) {
 			return return_success(res, "Branch "+branch+" in repo "+hook+" is not the current branch. Skipped.");		
 		} else {
