@@ -32,41 +32,55 @@ var sendResponse = function(text) {
 
 var pull_data = function(path, remote, branch, callback) {
 	sendResponse("Started pulling on branch "+branch+" at "+path+" from "+remote+".");
-	var proc = spawn("git", ["pull", remote, branch], { cwd: path, env: process.env });
-	proc.stdout.setEncoding('utf8');
-	proc.stdout.on('data', function(data) {
-		sendResponse("git pull stdout: "+data);
-	});
-	proc.stderr.setEncoding('utf8');
-	proc.stderr.on('data', function(data) {
-		sendResponse("git pull stderr: "+data);
-	});
-	proc.on('close', function (code) {
-		sendResponse("Finished pulling on branch "+branch+" at "+path+" from "+remote+".");
+	try {
+		var proc = spawn("git", ["pull", remote, branch], { cwd: path, env: process.env });
+		proc.stdout.setEncoding('utf8');
+		proc.stdout.on('data', function(data) {
+			sendResponse("git pull stdout: "+data);
+		});
+		proc.stderr.setEncoding('utf8');
+		proc.stderr.on('data', function(data) {
+			sendResponse("git pull stderr: "+data);
+		});
+		proc.on('close', function (code) {
+			sendResponse("Finished pulling on branch "+branch+" at "+path+" from "+remote+".");
+			if (callback) {
+				callback();
+			}
+		});
+	catch (err) {
+		sendResponse("Errored pulling on branch "+branch+" at "+path+" from "+remote+".");
 		if (callback) {
 			callback();
 		}
-	});
-	return proc;
+	}
+	return;
 }
 
 var run_custom_callback = function(command, args, path, callback) {
 	sendResponse("Started running custom callback.");
-	var proc = spawn(command, args, { cwd: path, env: process.env });
-	proc.stdout.setEncoding('utf8');
-	proc.stdout.on('data', function(data) {
-		sendResponse("custom callback stdout: "+data);
-	});
-	proc.stderr.setEncoding('utf8');
-	proc.stderr.on('data', function(data) {
-		sendResponse("custom callback stderr: "+data);
-	});
-	proc.on('close', function (code) {
-		sendResponse("Finished running custom callback.");
+	try {
+		var proc = spawn(command, args, { cwd: path, env: process.env });
+		proc.stdout.setEncoding('utf8');
+		proc.stdout.on('data', function(data) {
+			sendResponse("custom callback stdout: "+data);
+		});
+		proc.stderr.setEncoding('utf8');
+		proc.stderr.on('data', function(data) {
+			sendResponse("custom callback stderr: "+data);
+		});
+		proc.on('close', function (code) {
+			sendResponse("Finished running custom callback.");
+			if (callback) {
+				callback();
+			}
+		});
+	} catch (err) {
+		sendResponse("Errored running custom callback.");
 		if (callback) {
 			callback();
 		}
-	});
+	}
 	return;
 }
 
