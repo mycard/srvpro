@@ -1,6 +1,10 @@
 /*
  ygopro-webhook.js
  ygopro webhook auto update
+ 
+ To use this, add a webhook of http://(server_ip):(port)/api/(password)/(repo) into the related github repos.
+ eg. Set http://tiramisu.mycard.moe:7966/api/123456/script in ygopro-scripts to make the server script synced with github FOREVER.
+ 
  Author: Nanahira
  License: MIT
  
