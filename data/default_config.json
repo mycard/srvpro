@@ -159,13 +159,13 @@
           "path": "./ygopro/script/",
           "remote": "origin",
           "branch": "master",
-		  "callback": false
+          "callback": false
         },
         "ocgcore": {
           "path": "./ygopro/ocgcore/",
           "remote": "origin",
           "branch": "master",
-		  "callback": {
+          "callback": {
             "command": "make",
             "args": [
               "config=release"
