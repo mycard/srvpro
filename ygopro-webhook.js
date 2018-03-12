@@ -82,7 +82,7 @@ var process_callback = function(name, info) {
 		status[name] = 1;
 		sendResponse("The Process "+name+" was triggered during running. It will be ran again.");
 		pull_data(info.path, info.remote, info.branch, function() {
-			pull_callback(info);
+			pull_callback(name, info);
 		});
 	} else {
 		status[name] = false;
@@ -98,7 +98,7 @@ var add_process = function(name, info) {
 	}
 	status[name] = 1;
 	pull_data(info.path, info.remote, info.branch, function() {
-		pull_callback(info);
+		pull_callback(name, info);
 	});
 	return "Started a process in repo "+name+".";
 }
