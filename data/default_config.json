@@ -166,11 +166,12 @@
           "remote": "origin",
           "branch": "master",
           "callback": {
-            "command": "make",
+            "command": "bash",
             "args": [
-              "config=release"
+              "-c",
+              "premake4 gmake ; cd build ; make config=release ; cd .. ; strip ygopro"
             ],
-            "path": "./ygopro/build/"
+            "path": "./ygopro/"
           }
         },
         "ygopro": {
@@ -178,11 +179,12 @@
           "remote": "origin",
           "branch": "server",
           "callback": {
-            "command": "make",
+            "command": "bash",
             "args": [
-              "config=release"
+              "-c",
+              "premake4 gmake ; cd build ; make config=release ; cd .. ; strip ygopro"
             ],
-            "path": "./ygopro/build/"
+            "path": "./ygopro/"
           }
         }
       }
