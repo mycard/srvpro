@@ -14,7 +14,6 @@ var url = require('url');
 var moment = require('moment');
 moment.locale('zh-cn');
 var loadJSON = require('load-json-file').sync;
-var querystring = require('querystring');
 
 var constants = loadJSON('./data/constants.json');
 
@@ -142,8 +141,13 @@ http.createServer(function (req, res) {
 		info += chunk;
 	})
 	req.addListener('end', function() {
-		info = querystring.parse(info);
-		var ref = info.ref;
+		var infodata;
+		try {
+			infodata = JSON.parse(info);
+		} catch (err) {
+			return return_error(res, "Error parsing JSON: " + err);
+		}
+		var ref = infodata.ref;
 		if (!ref) {
 			return return_error(res, "Not a push trigger.");
 		}
