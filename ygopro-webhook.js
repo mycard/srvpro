@@ -154,7 +154,8 @@ http.createServer(function (req, res) {
 	if (!hook_info) {
 		return return_error(res, "Webhook "+hook+" not found.");
 	}
-	var info = "";	
+	var info = "";
+	req.setEncoding("utf8");
 	req.addListener('data', function(chunk) {
 		info += chunk;
 	})
