@@ -207,6 +207,8 @@
       "password": "123456",
       "git_html_path": "../ygo233-web/",
       "html_path": "../ygo233-web/",
+      "cdb_path": "./ygopro/cards.cdb",
+      "script_path": "./ygopro/script",
       "changelog_filename": "changelog.json",
       "html_gits": [
         {
