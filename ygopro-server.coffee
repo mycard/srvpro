@@ -2011,7 +2011,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       )
     if settings.modules.cloud_replay.enabled
       ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
-    return settings.modules.block_replay_to_player
+    return settings.modules.tournament_mode.block_replay_to_player
   else
     return false
 
