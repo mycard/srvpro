@@ -1738,9 +1738,9 @@
       }
     }
     if (settings.modules.dialogues.enabled) {
-      if (ygopro.constants.MSG[msg] === 'SUMMONING' || ygopro.constants.MSG[msg] === 'SPSUMMONING') {
+      if (ygopro.constants.MSG[msg] === 'SUMMONING' || ygopro.constants.MSG[msg] === 'SPSUMMONING' || ygopro.constants.MSG[msg] === 'CHAINING') {
         card = buffer.readUInt32LE(1);
-        if (dialogues.dialogues[card]) {
+        if (dialogues.dialogues[card] && (ygopro.constants.MSG[msg] !== 'CHAINING' || (buffer.readUInt8(4) & 0x8) !== 0)) {
           ref2 = _.lines(dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]);
           for (j = 0, len = ref2.length; j < len; j++) {
             line = ref2[j];
