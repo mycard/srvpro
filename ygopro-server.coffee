@@ -1435,7 +1435,8 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
   if settings.modules.dialogues.enabled
     if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING' or ygopro.constants.MSG[msg] == 'CHAINING'
       card = buffer.readUInt32LE(1)
-      if dialogues.dialogues[card] and (ygopro.constants.MSG[msg] != 'CHAINING' or (buffer.readUInt8(4) & 0x8) != 0)
+      trigger_location = buffer.readUInt8(4)
+      if dialogues.dialogues[card] and (ygopro.constants.MSG[msg] != 'CHAINING' or (trigger_location & 0x8) != 0 and (trigger_location & 0x200) == 0)
         for line in _.lines dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]
           ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK)
   return

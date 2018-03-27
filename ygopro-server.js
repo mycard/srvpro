@@ -1609,7 +1609,7 @@
   }
 
   ygopro.stoc_follow('GAME_MSG', false, function(buffer, info, client, server) {
-    var card, j, len, line, msg, oppo_pos, playertype, pos, reason, ref, ref1, ref2, room, val;
+    var card, j, len, line, msg, oppo_pos, playertype, pos, reason, ref, ref1, ref2, room, trigger_location, val;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -1740,7 +1740,8 @@
     if (settings.modules.dialogues.enabled) {
       if (ygopro.constants.MSG[msg] === 'SUMMONING' || ygopro.constants.MSG[msg] === 'SPSUMMONING' || ygopro.constants.MSG[msg] === 'CHAINING') {
         card = buffer.readUInt32LE(1);
-        if (dialogues.dialogues[card] && (ygopro.constants.MSG[msg] !== 'CHAINING' || (buffer.readUInt8(4) & 0x8) !== 0)) {
+        trigger_location = buffer.readUInt8(4);
+        if (dialogues.dialogues[card] && (ygopro.constants.MSG[msg] !== 'CHAINING' || (trigger_location & 0x8) !== 0 && (trigger_location & 0x200) === 0)) {
           ref2 = _.lines(dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]);
           for (j = 0, len = ref2.length; j < len; j++) {
             line = ref2[j];
