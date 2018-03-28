@@ -1740,8 +1740,8 @@
     if (settings.modules.dialogues.enabled) {
       if (ygopro.constants.MSG[msg] === 'SUMMONING' || ygopro.constants.MSG[msg] === 'SPSUMMONING' || ygopro.constants.MSG[msg] === 'CHAINING') {
         card = buffer.readUInt32LE(1);
-        trigger_location = buffer.readUInt8(4);
-        if (dialogues.dialogues[card] && (ygopro.constants.MSG[msg] !== 'CHAINING' || (trigger_location & 0x8) !== 0 && (trigger_location & 0x200) === 0)) {
+        trigger_location = buffer.readUInt8(2);
+        if (dialogues.dialogues[card] && (ygopro.constants.MSG[msg] !== 'CHAINING' || (trigger_location & 0x8) && !(trigger_location & 0x200))) {
           ref2 = _.lines(dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]);
           for (j = 0, len = ref2.length; j < len; j++) {
             line = ref2[j];
