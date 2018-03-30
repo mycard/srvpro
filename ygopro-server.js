@@ -160,6 +160,11 @@
     }
   });
 
+  if (settings.modules.http.quick_death_rule === true) {
+    settings.modules.http.quick_death_rule = 1;
+    setting_save(settings);
+  }
+
   default_data = loadJSON('./data/default_data.json');
 
   try {
@@ -1674,7 +1679,7 @@
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
       }
       if (room.death) {
-        if (settings.modules.http.quick_death_rule && settings.modules.http.quick_death_rule !== 2) {
+        if (settings.modules.http.quick_death_rule === 1) {
           room.death = -1;
         } else {
           room.death = 5;
@@ -2863,8 +2868,8 @@
               room.death = (room.turn ? room.turn + 4 : 5);
               ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE);
             } else {
-              if (settings.modules.http.quick_death_rule) {
-                if (settings.modules.http.quick_death_rule === 2) {
+              switch (settings.modules.http.quick_death_rule) {
+                case 2:
                   if (room.scores[room.dueling_players[0].name] === room.scores[room.dueling_players[1].name]) {
                     room.death = 5;
                     ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE);
@@ -2873,13 +2878,14 @@
                     ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
                     room.dueling_players[1 - win_pos].destroy();
                   }
-                } else {
+                  break;
+                case 1:
                   room.death = -1;
                   ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE);
-                }
-              } else {
-                room.death = 5;
-                ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE);
+                  break;
+                default:
+                  room.death = 5;
+                  ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE);
               }
             }
           }
