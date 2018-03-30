@@ -1364,10 +1364,10 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       room.turn = room.turn + 1
       if room.death
         if room.turn >= room.death
-          oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
-          if room.dueling_players[0].lp != room.dueling_players[oppo_pos].lp and room.turn > 1
-            ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + (if room.dueling_players[0].lp > room.dueling_players[oppo_pos].lp then room.dueling_players[0] else room.dueling_players[oppo_pos]).name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
-            ygopro.ctos_send((if room.dueling_players[0].lp > room.dueling_players[oppo_pos].lp then room.dueling_players[oppo_pos] else room.dueling_players[0]).server, 'SURRENDER')
+          if room.dueling_players[0].lp != room.dueling_players[1].lp and room.turn > 1
+            win_pos = if room.dueling_players[0].lp > room.dueling_players[1].lp then 0 else 1
+            ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + room.dueling_players[win_pos].name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
+            ygopro.ctos_send(room.dueling_players[1 - win_pos].server, 'SURRENDER')
           else
             room.death = -1
             ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE)            
@@ -1391,7 +1391,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
     if room.death 
-      if settings.modules.http.quick_death_rule
+      if settings.modules.http.quick_death_rule and settings.modules.http.quick_death_rule != 2
         room.death = -1
       else
         room.death = 5
@@ -2246,8 +2246,17 @@ if settings.modules.http
             ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE)   
           else
             if settings.modules.http.quick_death_rule
-              room.death = -1
-              ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
+              if settings.modules.http.quick_death_rule == 2
+                if room.scores[room.dueling_players[0].name] == room.scores[room.dueling_players[1].name]
+                  room.death = 5
+                  ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)  
+                else
+                  win_pos = if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name] then 0 else 1
+                  ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
+                  room.dueling_players[1 - win_pos].destroy()
+              else
+                room.death = -1
+                ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
             else
               room.death = 5
               ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)              
