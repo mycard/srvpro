@@ -2290,7 +2290,7 @@
   });
 
   ygopro.ctos_follow('UPDATE_DECK', true, function(buffer, info, client, server) {
-    var buff_main, buff_side, card, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, j, k, len, len1, line, room, struct;
+    var buff_main, buff_side, card, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, j, k, len, len1, line, room, struct, win_pos;
     room = ROOM_all[client.rid];
     if (!room) {
       return false;
@@ -2317,6 +2317,12 @@
       clearInterval(client.side_interval);
       client.side_interval = null;
       client.side_tcount = null;
+    }
+    if (settings.modules.http.quick_death_rule === 2 && room.started && room.death && room.scores[room.dueling_players[0].name] !== room.scores[room.dueling_players[1].name]) {
+      win_pos = room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name] ? 0 : 1;
+      ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
+      room.dueling_players[1 - win_pos].destroy();
+      return true;
     }
     if (room.random_type || room.arena) {
       if (client.pos === 0) {

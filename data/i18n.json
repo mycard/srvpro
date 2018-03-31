@@ -209,7 +209,7 @@
     "death_remain_final": "若本回合基本分发生变动，在该回合结束时决斗即告结束，生命值多的玩家获得本场决斗的胜利。",
     "death_finish_part1": "加时赛决斗结束，恭喜 ",
     "death_finish_part2": " 获得本次决斗的胜利。",
-    "death2_finish_part1": "加时赛开始，恭喜 ",
+    "death2_finish_part1": "加时赛结束，恭喜 ",
     "death2_finish_part2": " 获得本次比赛的胜利。",
     "side_timeout_part1": "你现在有",
     "side_timeout_part2": "分钟来更换副卡组。",
