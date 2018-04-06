@@ -156,25 +156,6 @@
       "port": 7966,
       "password": "123456",
       "hooks": {
-        "script": {
-          "path": "./ygopro/script/",
-          "remote": "origin",
-          "branch": "master",
-          "callback": false
-        },
-        "ocgcore": {
-          "path": "./ygopro/ocgcore/",
-          "remote": "origin",
-          "branch": "master",
-          "callback": {
-            "command": "bash",
-            "args": [
-              "-c",
-              "premake4 gmake ; cd build ; make config=release ; cd .. ; strip ygopro"
-            ],
-            "path": "./ygopro/"
-          }
-        },
         "ygopro": {
           "path": "./ygopro/",
           "remote": "origin",
@@ -183,7 +164,7 @@
             "command": "bash",
             "args": [
               "-c",
-              "premake4 gmake ; cd build ; make config=release ; cd .. ; strip ygopro"
+              "cd ocgcore ; git pull origin master ; cd ../script ; git pull origin master ; cd .. ; premake4 gmake ; cd build ; make config=release ; cd .. ; strip ygopro"
             ],
             "path": "./ygopro/"
           }
