@@ -163,10 +163,21 @@ catch
   #settings.version = settings.version_default
   log.info "ygopro version 0x"+settings.version.toString(16), "(from config)"
 # load the lflist of current date
-lflists = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
-  date=list.match(/!([\d\.]+)/)
-  continue unless date
-  {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
+lflists = []
+# expansions/lflist
+try
+  for list in fs.readFileSync('ygopro/expansions/lflist.conf', 'utf8').match(/!.*/g)
+    date=list.match(/!([\d\.]+)/)
+    continue unless date
+    lflists.push({date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
+catch
+# lflist
+try
+  for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
+    date=list.match(/!([\d\.]+)/)
+    continue unless date
+    lflists.push({date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
+catch
 
 if settings.modules.cloud_replay.enabled
   redis = require 'redis'
