@@ -2225,7 +2225,7 @@
       ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
       cancel = true;
     }
-    if (!(room && room.random_type)) {
+    if (!(room && (room.random_type || room.arena))) {
       return cancel;
     }
     if (client.abuse_count >= 5) {

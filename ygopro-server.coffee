@@ -1769,7 +1769,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     client.abuse_count=client.abuse_count+2 if client.abuse_count
     ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
-  if !(room and room.random_type)
+  if !(room and (room.random_type or room.arena))
     return cancel
   if client.abuse_count>=5
     log.warn "BANNED CHAT", client.name, client.ip, msg
