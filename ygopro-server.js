@@ -1638,7 +1638,7 @@
       return;
     }
     msg = buffer.readInt8(0);
-    if (msg >= 10 && msg < 30) {
+    if ((msg >= 10 && msg < 30) || msg === 132 || (msg >= 140 && msg < 144)) {
       room.waiting_for_player = client;
       room.last_active_time = moment();
     }
