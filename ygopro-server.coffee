@@ -163,10 +163,21 @@ catch
   #settings.version = settings.version_default
   log.info "ygopro version 0x"+settings.version.toString(16), "(from config)"
 # load the lflist of current date
-lflists = (for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
-  date=list.match(/!([\d\.]+)/)
-  continue unless date
-  {date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
+lflists = []
+# expansions/lflist
+try
+  for list in fs.readFileSync('ygopro/expansions/lflist.conf', 'utf8').match(/!.*/g)
+    date=list.match(/!([\d\.]+)/)
+    continue unless date
+    lflists.push({date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
+catch
+# lflist
+try
+  for list in fs.readFileSync('ygopro/lflist.conf', 'utf8').match(/!.*/g)
+    date=list.match(/!([\d\.]+)/)
+    continue unless date
+    lflists.push({date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
+catch
 
 if settings.modules.cloud_replay.enabled
   redis = require 'redis'
@@ -1758,7 +1769,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     client.abuse_count=client.abuse_count+2 if client.abuse_count
     ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
-  if !(room and room.random_type)
+  if !(room and (room.random_type or room.arena))
     return cancel
   if client.abuse_count>=5
     log.warn "BANNED CHAT", client.name, client.ip, msg
