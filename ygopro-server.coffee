@@ -1364,6 +1364,7 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
+    client.card_count = 0 if room.hostinfo.mode != 2
     if client.pos == 0
       room.turn = 0
       room.duel_count = room.duel_count + 1
@@ -1446,6 +1447,25 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
     room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK)
+
+  #track card count
+  #todo: track card count in tag mode
+  if ygopro.constants.MSG[msg] == 'MOVE' and client.pos == 0 and room.hostinfo.mode != 2
+    pos = buffer.readUInt8(5)
+    pos = 1 - pos unless client.is_first
+    loc = buffer.readUInt8(6)
+    room.dueling_players[pos].card_count-- if (loc & 0xe)
+    pos = buffer.readUInt8(9)
+    pos = 1 - pos unless client.is_first
+    loc = buffer.readUInt8(10)
+    room.dueling_players[pos].card_count++ if (loc & 0xe)
+
+  if ygopro.constants.MSG[msg] == 'DRAW' and room.hostinfo.mode != 2
+    pos = buffer.readUInt8(1)
+    pos = 1 - pos unless client.is_first
+    if pos == 0
+      count = buffer.readInt8(2)
+      client.card_count += count
 
   #登场台词
   if settings.modules.dialogues.enabled
@@ -2022,7 +2042,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
         replay_filename: replay_filename,
         roommode: room.hostinfo.mode,
         players: (for player in room.dueling_players
-          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
+          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
           winner: player.pos == room.winner
         )
       }
@@ -2121,7 +2141,7 @@ if settings.modules.http
           needpass: (room.name.indexOf('$') != -1).toString(),
           users: (for player in room.players when player.pos?
             id: (-1).toString(),
-            name: player.name + (if settings.modules.http.show_ip and pass_validated and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.http.show_info and room.started and player.pos != 7 and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
+            name: player.name + (if settings.modules.http.show_ip and pass_validated and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.http.show_info and room.started and player.pos != 7 and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
             pos: player.pos
           ),
           istart: if room.started then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " " + (if room.changing_side then "Siding" else "Turn:" + (if room.turn? then room.turn else 0) + (if room.death then "/" + (if room.death > 0 then room.death - 1 else "Death") else ""))) else 'start') else 'wait'
