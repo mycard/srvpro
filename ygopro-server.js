@@ -2774,7 +2774,7 @@
           return;
         } else {
           try {
-            archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip";
+            archive_name = moment().format('YYYY-MM-DD HH-mm-ss') + ".zip";
             archive_args = ["a", "-mx0", "-y", archive_name];
             check = false;
             ref2 = duel_log.duel_log;

@@ -2165,7 +2165,7 @@ if settings.modules.http
         return
       else
         try
-          archive_name = moment().format('YYYY-MM-DD HH:mm:ss') + ".zip"
+          archive_name = moment().format('YYYY-MM-DD HH-mm-ss') + ".zip"
           archive_args = ["a", "-mx0", "-y", archive_name]
           check = false
           for replay in duel_log.duel_log
