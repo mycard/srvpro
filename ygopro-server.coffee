@@ -2025,7 +2025,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
     Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
     if client.pos == 0
-      dueltime=moment().format('YYYY-MM-DD HH:mm:ss')
+      dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
       replay_filename=dueltime
       if room.hostinfo.mode != 2
         for player,i in room.dueling_players

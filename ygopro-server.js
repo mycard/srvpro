@@ -2575,7 +2575,7 @@
     }
     if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
       if (client.pos === 0) {
-        dueltime = moment().format('YYYY-MM-DD HH:mm:ss');
+        dueltime = moment().format('YYYY-MM-DD HH-mm-ss');
         replay_filename = dueltime;
         if (room.hostinfo.mode !== 2) {
           ref2 = room.dueling_players;
