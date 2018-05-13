@@ -64,21 +64,23 @@ try
     olddialogues.dialogues = oldconfig.dialogues
     fs.writeFileSync(olddialogues.file, JSON.stringify(olddialogues, null, 2))
     delete oldconfig.dialogues
-  if oldconfig.modules.tournament_mode and oldconfig.modules.tournament_mode.duel_log
-    oldduellog = {}
-    oldduellog.file = './config/duel_log.json'
-    oldduellog.duel_log = oldconfig.modules.tournament_mode.duel_log
-    fs.writeFileSync(oldduellog.file, JSON.stringify(oldduellog, null, 2))
-    delete oldconfig.oldduellog
+  if oldconfig.modules
+    if oldconfig.modules.tournament_mode and oldconfig.modules.tournament_mode.duel_log
+      oldduellog = {}
+      oldduellog.file = './config/duel_log.json'
+      oldduellog.duel_log = oldconfig.modules.tournament_mode.duel_log
+      fs.writeFileSync(oldduellog.file, JSON.stringify(oldduellog, null, 2))
+      delete oldconfig.oldduellog
   oldbadwords={}
-  if oldconfig.ban.badword_level0
-    oldbadwords.level0 = oldconfig.ban.badword_level0
-  if oldconfig.ban.badword_level1
-    oldbadwords.level1 = oldconfig.ban.badword_level1
-  if oldconfig.ban.badword_level2
-    oldbadwords.level2 = oldconfig.ban.badword_level2
-  if oldconfig.ban.badword_level3
-    oldbadwords.level3 = oldconfig.ban.badword_level3
+  if oldconfig.ban
+    if oldconfig.ban.badword_level0
+      oldbadwords.level0 = oldconfig.ban.badword_level0
+    if oldconfig.ban.badword_level1
+      oldbadwords.level1 = oldconfig.ban.badword_level1
+    if oldconfig.ban.badword_level2
+      oldbadwords.level2 = oldconfig.ban.badword_level2
+    if oldconfig.ban.badword_level3
+      oldbadwords.level3 = oldconfig.ban.badword_level3
   if not _.isEmpty(oldbadwords)
     oldbadwords.file = './config/badwords.json'
     fs.writeFileSync(oldbadwords.file, JSON.stringify(oldbadwords, null, 2))
