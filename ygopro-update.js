@@ -98,7 +98,7 @@ var makeChangelogs = function(dir, since) {
             var log = logs[i].split(",");
             var date = log[1];
             if (date) {
-                var prc_git_diff = spawnSync("git", [ "diff-tree", "--no-commit-id", "--name-only" ,"--diff-filter=ad" , "-r", log[0] ], { "cwd" : dir });
+                var prc_git_diff = spawnSync("git", [ "diff-tree", "--no-commit-id", "--name-only" ,"--diff-filter=CMR" , "-r", log[0] ], { "cwd" : dir });
                 if (prc_git_diff.stdout) {
                     var lines = prc_git_diff.stdout.toString().split(/\n/g);
                     for (var j in lines) {
