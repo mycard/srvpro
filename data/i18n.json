@@ -456,7 +456,7 @@
     "side_remain_part2": " 分だよ。",
     "get_chat_color_part1": "貴方のチャットカラーは ",
     "get_chat_color_part2": " 。",
-    "get_chat_color_default": "貴方のチャットカラーは設定されていません、「/color colorname」で設定してね。",
+    "get_chat_color_default": "貴方のチャットカラーは設定されていません、「/color 色の名前」で設定してね。",
     "set_chat_color_part1": "現在のチャットカラーは ",
     "set_chat_color_part2": " 、",
     "set_chat_color_default": "チャットカラーをデフォルトに戻します。",
