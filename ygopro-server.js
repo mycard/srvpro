@@ -1767,22 +1767,22 @@
         ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK);
       }
     }
-    if (ygopro.constants.MSG[msg] === 'MOVE' && client.pos === 0 && room.hostinfo.mode !== 2) {
+    if (ygopro.constants.MSG[msg] === 'MOVE' && room.hostinfo.mode !== 2) {
       pos = buffer.readUInt8(5);
       if (!client.is_first) {
         pos = 1 - pos;
       }
       loc = buffer.readUInt8(6);
-      if (loc & 0xe) {
-        room.dueling_players[pos].card_count--;
+      if ((loc & 0xe) && pos === 0) {
+        client.card_count--;
       }
       pos = buffer.readUInt8(9);
       if (!client.is_first) {
         pos = 1 - pos;
       }
       loc = buffer.readUInt8(10);
-      if (loc & 0xe) {
-        room.dueling_players[pos].card_count++;
+      if ((loc & 0xe) && pos === 0) {
+        client.card_count++;
       }
     }
     if (ygopro.constants.MSG[msg] === 'DRAW' && room.hostinfo.mode !== 2) {

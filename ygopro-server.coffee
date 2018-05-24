@@ -1452,15 +1452,15 @@ ygopro.stoc_follow 'GAME_MSG', false, (buffer, info, client, server)->
 
   #track card count
   #todo: track card count in tag mode
-  if ygopro.constants.MSG[msg] == 'MOVE' and client.pos == 0 and room.hostinfo.mode != 2
+  if ygopro.constants.MSG[msg] == 'MOVE' and room.hostinfo.mode != 2
     pos = buffer.readUInt8(5)
     pos = 1 - pos unless client.is_first
     loc = buffer.readUInt8(6)
-    room.dueling_players[pos].card_count-- if (loc & 0xe)
+    client.card_count-- if (loc & 0xe) and pos == 0
     pos = buffer.readUInt8(9)
     pos = 1 - pos unless client.is_first
     loc = buffer.readUInt8(10)
-    room.dueling_players[pos].card_count++ if (loc & 0xe)
+    client.card_count++ if (loc & 0xe) and pos == 0
 
   if ygopro.constants.MSG[msg] == 'DRAW' and room.hostinfo.mode != 2
     pos = buffer.readUInt8(1)
