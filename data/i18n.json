@@ -194,7 +194,7 @@
     "chat_order_windbot": "/ai Agrega un IA, /ai nombre para agregar un IA definida ",
     "chat_order_tip": "/tip muestra consejos",
     "chat_order_chatcolor_1": "/color muestra el color del chat actual, /color Nombre Color estable el color del chat",
-    "chat_order_chatcolor_2": "/color Defecto restaura el color por defecto del chat, /color Ayuda muestra la lista de colores",
+    "chat_order_chatcolor_2": "/color default restaura el color por defecto del chat, /color Ayuda muestra la lista de colores",
     "room_name": "El nombre de la Sala es ",
     "banned_chat_tip": "Estas Prohibido chatear.",
     "banned_duel_tip": "Estas Baneado del Sistema de Duelos por enviar mensajes inapropiados.",
