@@ -83,8 +83,8 @@
       "enabled": false
     },
     "retry_handle": {
-      "enabled": false,
-      "max_retry_count": 3
+      "enabled": true,
+      "max_retry_count": false
     },
     "mycard": {
       "enabled": false,

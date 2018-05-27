@@ -122,6 +122,14 @@
     "color_not_found_part1": "Color ",
     "color_not_found_part2": " is not available, enter /color help to list all available color.",
     "show_color_list": "Available chat colors: ",
+    "retry_not_counted": "Your operation is beyond the rules.",
+    "retry_part1": "You have broken the rules for ",
+    "retry_part2": " times. You will be kicked from the room if you break the rules for ",
+    "retry_part3": " times.",
+    "retry_too_much_part1": "You are kicked from the room for having broken the rules for ",
+    "retry_too_much_part2": " times.",
+    "retry_too_much_room_part1": " is kicked from the room for having broken the rules for ",
+    "retry_too_much_room_part2": " times.",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender."
   },
   "es-es": {
