@@ -1635,13 +1635,39 @@
     load_dialogues();
   }
 
-  ygopro.stoc_follow('GAME_MSG', false, function(buffer, info, client, server) {
+  ygopro.stoc_follow('GAME_MSG', true, function(buffer, info, client, server) {
     var card, count, l, len2, line, loc, msg, playertype, pos, reason, ref2, ref3, ref4, room, trigger_location, val, win_pos;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
     }
     msg = buffer.readInt8(0);
+    if (settings.modules.retry_handle.enabled) {
+      if (ygopro.constants.MSG[msg] === 'RETRY') {
+        if (client.retry_count == null) {
+          client.retry_count = 0;
+        }
+        client.retry_count++;
+        log.warn("MSG_RETRY detected", client.name, client.ip, msg, client.retry_count);
+        if (settings.modules.retry_handle.max_retry_count && client.retry_count >= settings.modules.retry_handle.max_retry_count) {
+          ygopro.stoc_send_chat_to_room(room, client.name + "${retry_too_much_room_part1}" + settings.modules.retry_handle.max_retry_count + "${retry_too_much_room_part2}", ygopro.constants.COLORS.BABYBLUE);
+          ygopro.stoc_send_chat(client, "${retry_too_much_part1}" + settings.modules.retry_handle.max_retry_count + "${retry_too_much_part2}", ygopro.constants.COLORS.RED);
+          client.destroy();
+          return true;
+        }
+        if (client.last_game_msg) {
+          if (settings.modules.retry_handle.max_retry_count) {
+            ygopro.stoc_send_chat(client, "${retry_part1}" + client.retry_count + "${retry_part2}" + settings.modules.retry_handle.max_retry_count + "${retry_part3}", ygopro.constants.COLORS.RED);
+          } else {
+            ygopro.stoc_send_chat(client, "${retry_not_counted}", ygopro.constants.COLORS.BABYBLUE);
+          }
+          ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
+          return true;
+        }
+      } else {
+        client.last_game_msg = buffer;
+      }
+    }
     if ((msg >= 10 && msg < 30) || msg === 132 || (msg >= 140 && msg < 144)) {
       room.waiting_for_player = client;
       room.last_active_time = moment();
@@ -1663,6 +1689,10 @@
             ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE);
           }
         }
+      }
+      if (settings.modules.retry_handle.enabled) {
+        client.retry_count = 0;
+        client.last_game_msg = null;
       }
     }
     if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
@@ -1808,6 +1838,7 @@
         }
       }
     }
+    return false;
   });
 
   ygopro.ctos_follow('HS_TOOBSERVER', true, function(buffer, info, client, server) {

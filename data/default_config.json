@@ -82,6 +82,10 @@
     "chat_color": {
       "enabled": false
     },
+    "retry_handle": {
+      "enabled": false,
+      "max_retry_count": 3
+    },
     "mycard": {
       "enabled": false,
       "auth_base_url": "https://ygobbs.com",

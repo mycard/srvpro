@@ -372,6 +372,14 @@
     "color_not_found_part1": "颜色 ",
     "color_not_found_part2": " 不存在，输入 /color help 查看所有可用的颜色。",
     "show_color_list": "可用的聊天字体颜色有：",
+    "retry_not_counted": "你的操作不符合规则。",
+    "retry_part1": "你的操作第",
+    "retry_part2": "次不符合规则。若违规操作",
+    "retry_part3": "次，将被请出房间。",
+    "retry_too_much_part1": "你由于在决斗中违规操作",
+    "retry_too_much_part2": "次，已被请出房间。",
+    "retry_too_much_room_part1": " 由于在决斗中违规操作",
+    "retry_too_much_room_part2": "次，已被请出房间。",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。"
   },
  "ko-kr": {
