@@ -612,6 +612,14 @@
     "color_not_found_part1": "カラー ",
     "color_not_found_part2": " 色は使用出来ないよ、「/color help」と入力して利用可能なチャットカラーを表示だ。",
     "show_color_list": "利用可能なチャットカラー：",
+    "retry_not_counted": "貴方は一度、不正行為を行っています。",
+    "retry_part1": "貴方は不正行為を ",
+    "retry_part2": " 回行っています。 ",
+    "retry_part3": " 回目の不正行為で貴方を部屋からキックします。",
+    "retry_too_much_part1": "貴方は不正行為を ",
+    "retry_too_much_part2": " 回行った為、部屋からキックされています。",
+    "retry_too_much_room_part1": " は不正行為を ",
+    "retry_too_much_room_part2": " 回行った為、部屋からキックされました。",
     "athletic_arena_tip": "アスレチック戦では、ゲーム終了行為はサレンダーと見なされます。"
   }
 }
