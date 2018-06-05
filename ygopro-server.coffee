@@ -1431,17 +1431,21 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
   if ygopro.constants.MSG[msg] == 'NEW_PHASE'
     phase = buffer.readInt16LE(1)
     oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
-    if client.pos == 0 and room.death == -2 and not (phase == 0x1 and room.turn < 2) and room.dueling_players[0].lp != room.dueling_players[oppo_pos].lp
-      win_pos = if room.dueling_players[0].lp > room.dueling_players[oppo_pos].lp then 0 else oppo_pos
-      ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + room.dueling_players[win_pos].name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
-      if room.hostinfo.mode == 2
-        ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
-        ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END')
-        room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
-        room.dueling_players[oppo_pos - win_pos].destroy()
-        room.dueling_players[oppo_pos - win_pos + 1].destroy()
+    if client.pos == 0 and room.death == -2 and not (phase == 0x1 and room.turn < 2)
+      if room.dueling_players[0].lp != room.dueling_players[oppo_pos].lp
+        win_pos = if room.dueling_players[0].lp > room.dueling_players[oppo_pos].lp then 0 else oppo_pos
+        ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + room.dueling_players[win_pos].name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
+        if room.hostinfo.mode == 2
+          ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
+          ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END')
+          room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
+          room.dueling_players[oppo_pos - win_pos].destroy()
+          room.dueling_players[oppo_pos - win_pos + 1].destroy()
+        else
+          ygopro.ctos_send(room.dueling_players[oppo_pos - win_pos].server, 'SURRENDER')
       else
-        ygopro.ctos_send(room.dueling_players[oppo_pos - win_pos].server, 'SURRENDER')
+        room.death = -1
+        ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE) 
  
   if ygopro.constants.MSG[msg] == 'WIN' and client.pos == 0
     pos = buffer.readUInt8(1)
