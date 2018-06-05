@@ -1636,7 +1636,7 @@
   }
 
   ygopro.stoc_follow('GAME_MSG', true, function(buffer, info, client, server) {
-    var card, count, l, len2, line, loc, msg, playertype, pos, reason, ref2, ref3, ref4, room, trigger_location, val, win_pos;
+    var card, count, l, len2, line, loc, msg, oppo_pos, playertype, pos, reason, ref2, ref3, ref4, room, trigger_location, val, win_pos;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -1700,10 +1700,18 @@
         room.turn = room.turn + 1;
         if (room.death) {
           if (room.turn >= room.death) {
-            if (room.dueling_players[0].lp !== room.dueling_players[1].lp && room.turn > 1) {
-              win_pos = room.dueling_players[0].lp > room.dueling_players[1].lp ? 0 : 1;
+            oppo_pos = room.hostinfo.mode === 2 ? 2 : 1;
+            if (room.dueling_players[0].lp !== room.dueling_players[oppo_pos].lp && room.turn > 1) {
+              win_pos = room.dueling_players[0].lp > room.dueling_players[oppo_pos].lp ? 0 : oppo_pos;
               ygopro.stoc_send_chat_to_room(room, "${death_finish_part1}" + room.dueling_players[win_pos].name + "${death_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
-              ygopro.ctos_send(room.dueling_players[1 - win_pos].server, 'SURRENDER');
+              if (room.hostinfo.mode === 2) {
+                ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END');
+                ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END');
+                room.dueling_players[oppo_pos - win_pos].destroy();
+                room.dueling_players[oppo_pos - win_pos + 1].destroy();
+              } else {
+                ygopro.ctos_send(room.dueling_players[oppo_pos - win_pos].server, 'SURRENDER');
+              }
             } else {
               room.death = -1;
               ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE);
@@ -2374,7 +2382,7 @@
   });
 
   ygopro.ctos_follow('UPDATE_DECK', true, function(buffer, info, client, server) {
-    var buff_main, buff_side, card, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, l, len2, len3, line, m, room, struct, win_pos;
+    var buff_main, buff_side, card, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, l, len2, len3, line, m, oppo_pos, room, struct, win_pos;
     room = ROOM_all[client.rid];
     if (!room) {
       return false;
@@ -2402,11 +2410,18 @@
       client.side_interval = null;
       client.side_tcount = null;
     }
-    if (settings.modules.http.quick_death_rule === 2 && room.started && room.death && room.scores[room.dueling_players[0].name] !== room.scores[room.dueling_players[1].name]) {
-      win_pos = room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name] ? 0 : 1;
+    oppo_pos = room.hostinfo.mode === 2 ? 2 : 1;
+    if (settings.modules.http.quick_death_rule === 2 && room.started && room.death && room.scores[room.dueling_players[0].name] !== room.scores[room.dueling_players[oppo_pos].name]) {
+      win_pos = room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[oppo_pos].name] ? 0 : oppo_pos;
       ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
-      ygopro.stoc_send(room.dueling_players[1 - win_pos], 'DUEL_END');
-      room.dueling_players[1 - win_pos].destroy();
+      ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END');
+      if (room.hostinfo.mode === 2) {
+        ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END');
+      }
+      room.dueling_players[oppo_pos - win_pos].destroy();
+      if (room.hostinfo.mode === 2) {
+        room.dueling_players[oppo_pos - win_pos + 1].destroy();
+      }
       return true;
     }
     if (room.random_type || room.arena) {
@@ -2745,7 +2760,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, l, len2, len3, len4, len5, m, n, o, parseQueryString, pass_validated, player, ref2, replay, room, roomsjson, u, win_pos;
+      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, l, len2, len3, len4, len5, m, n, o, oppo_pos, parseQueryString, pass_validated, player, ref2, replay, room, roomsjson, u, win_pos;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
@@ -2951,7 +2966,7 @@
           death_room_found = false;
           for (n = 0, len4 = ROOM_all.length; n < len4; n++) {
             room = ROOM_all[n];
-            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.port.toString()) && room.hostinfo.mode !== 2)) {
+            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.port.toString()))) {
               continue;
             }
             death_room_found = true;
@@ -2961,14 +2976,21 @@
             } else {
               switch (settings.modules.http.quick_death_rule) {
                 case 2:
-                  if (room.scores[room.dueling_players[0].name] === room.scores[room.dueling_players[1].name]) {
+                  oppo_pos = room.hostinfo.mode === 2 ? 2 : 1;
+                  if (room.scores[room.dueling_players[0].name] === room.scores[room.dueling_players[oppo_pos].name]) {
                     room.death = 5;
                     ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE);
                   } else {
-                    win_pos = room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name] ? 0 : 1;
+                    win_pos = room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[oppo_pos].name] ? 0 : oppo_pos;
                     ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE);
-                    ygopro.stoc_send(room.dueling_players[1 - win_pos], 'DUEL_END');
-                    room.dueling_players[1 - win_pos].destroy();
+                    ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END');
+                    if (room.hostinfo.mode === 2) {
+                      ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END');
+                    }
+                    room.dueling_players[oppo_pos - win_pos].destroy();
+                    if (room.hostinfo.mode === 2) {
+                      room.dueling_players[oppo_pos - win_pos + 1].destroy();
+                    }
                   }
                   break;
                 case 1:
