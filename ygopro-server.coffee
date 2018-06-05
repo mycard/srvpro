@@ -1414,7 +1414,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
             if room.hostinfo.mode == 2
               ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
               ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END')
-              room.scores[room.dueling_players[oppo_pos - win_pos].name] = 0
+              room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
               room.dueling_players[oppo_pos - win_pos].destroy()
               room.dueling_players[oppo_pos - win_pos + 1].destroy()
             else
@@ -1437,7 +1437,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       if room.hostinfo.mode == 2
         ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
         ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END')
-        room.scores[room.dueling_players[oppo_pos - win_pos].name] = 0
+        room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
         room.dueling_players[oppo_pos - win_pos].destroy()
         room.dueling_players[oppo_pos - win_pos + 1].destroy()
       else
@@ -1929,7 +1929,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
     ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
     ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
     ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END') if room.hostinfo.mode == 2
-    room.scores[room.dueling_players[oppo_pos - win_pos].name] = 0
+    room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
     room.dueling_players[oppo_pos - win_pos].destroy()
     room.dueling_players[oppo_pos - win_pos + 1].destroy() if room.hostinfo.mode == 2
     return true
@@ -2057,6 +2057,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
       if client.side_tcount == 1
         ygopro.stoc_send_chat_to_room(room, client.name + "${side_overtime_room}", ygopro.constants.COLORS.BABYBLUE)
         ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED)
+        room.scores[client.name] = -9
         client.destroy()
         clearInterval sinterval        
       else
@@ -2360,7 +2361,7 @@ if settings.modules.http
                   ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
                   ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
                   ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END') if room.hostinfo.mode == 2
-                  room.scores[room.dueling_players[oppo_pos - win_pos].name] = 0
+                  room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
                   room.dueling_players[oppo_pos - win_pos].destroy()
                   room.dueling_players[oppo_pos - win_pos + 1].destroy() if room.hostinfo.mode == 2
               when 1

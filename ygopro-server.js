@@ -1707,7 +1707,7 @@
               if (room.hostinfo.mode === 2) {
                 ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END');
                 ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END');
-                room.scores[room.dueling_players[oppo_pos - win_pos].name] = 0;
+                room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1;
                 room.dueling_players[oppo_pos - win_pos].destroy();
                 room.dueling_players[oppo_pos - win_pos + 1].destroy();
               } else {
@@ -1736,7 +1736,7 @@
         if (room.hostinfo.mode === 2) {
           ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END');
           ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END');
-          room.scores[room.dueling_players[oppo_pos - win_pos].name] = 0;
+          room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1;
           room.dueling_players[oppo_pos - win_pos].destroy();
           room.dueling_players[oppo_pos - win_pos + 1].destroy();
         } else {
@@ -2436,7 +2436,7 @@
       if (room.hostinfo.mode === 2) {
         ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END');
       }
-      room.scores[room.dueling_players[oppo_pos - win_pos].name] = 0;
+      room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1;
       room.dueling_players[oppo_pos - win_pos].destroy();
       if (room.hostinfo.mode === 2) {
         room.dueling_players[oppo_pos - win_pos + 1].destroy();
@@ -2615,6 +2615,7 @@
         if (client.side_tcount === 1) {
           ygopro.stoc_send_chat_to_room(room, client.name + "${side_overtime_room}", ygopro.constants.COLORS.BABYBLUE);
           ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED);
+          room.scores[client.name] = -9;
           client.destroy();
           return clearInterval(sinterval);
         } else {
@@ -3019,7 +3020,7 @@
                     if (room.hostinfo.mode === 2) {
                       ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END');
                     }
-                    room.scores[room.dueling_players[oppo_pos - win_pos].name] = 0;
+                    room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1;
                     room.dueling_players[oppo_pos - win_pos].destroy();
                     if (room.hostinfo.mode === 2) {
                       room.dueling_players[oppo_pos - win_pos + 1].destroy();
