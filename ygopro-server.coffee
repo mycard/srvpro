@@ -1903,6 +1903,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
   if settings.modules.http.quick_death_rule == 2 and room.started and room.death and room.scores[room.dueling_players[0].name] != room.scores[room.dueling_players[1].name]
     win_pos = if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name] then 0 else 1
     ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
+    ygopro.stoc_send(room.dueling_players[1 - win_pos], 'DUEL_END')
     room.dueling_players[1 - win_pos].destroy()
     return true
   if room.random_type or room.arena
@@ -2320,6 +2321,7 @@ if settings.modules.http
                 else
                   win_pos = if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name] then 0 else 1
                   ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
+                  ygopro.stoc_send(room.dueling_players[1 - win_pos], 'DUEL_END')
                   room.dueling_players[1 - win_pos].destroy()
               when 1
                 room.death = -1
