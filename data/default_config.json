@@ -185,6 +185,7 @@
           "path": "./ygopro/",
           "remote": "origin",
           "branch": "server",
+          "forced": false,
           "callback": {
             "command": "bash",
             "args": [
@@ -198,6 +199,7 @@
           "path": ".",
           "remote": "origin",
           "branch": "master",
+          "forced": false,
           "callback": {
             "command": "npm",
             "args": [

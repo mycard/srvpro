@@ -45,13 +45,40 @@ var pull_data = function(path, remote, branch, callback) {
 		proc.on('close', function (code) {
 			sendResponse("Finished pulling on branch "+branch+" at "+path+" from "+remote+".");
 			if (callback) {
-				callback();
+				callback(false);
 			}
 		});
 	} catch (err) {
 		sendResponse("Errored pulling on branch "+branch+" at "+path+" from "+remote+".");
 		if (callback) {
-			callback();
+			callback(true);
+		}
+	}
+	return;
+}
+
+var reset_repo = function(path, remote, branch, callback) {
+	sendResponse("Started resetting on branch "+branch+" at "+path+" from "+remote+".");
+	try {
+		var proc = spawn("git", ["reset", "--hard", remote + "/" + branch], { cwd: path, env: process.env });
+		proc.stdout.setEncoding('utf8');
+		proc.stdout.on('data', function(data) {
+			sendResponse("git reset stdout: "+data);
+		});
+		proc.stderr.setEncoding('utf8');
+		proc.stderr.on('data', function(data) {
+			sendResponse("git reset stderr: "+data);
+		});
+		proc.on('close', function (code) {
+			sendResponse("Finished resetting on branch "+branch+" at "+path+" from "+remote+".");
+			if (callback) {
+				callback(false);
+			}
+		});
+	} catch (err) {
+		sendResponse("Errored resetting on branch "+branch+" at "+path+" from "+remote+".");
+		if (callback) {
+			callback(true);
 		}
 	}
 	return;
@@ -85,8 +112,19 @@ var run_custom_callback = function(command, args, path, callback) {
 }
 
 var pull_callback = function(name, info) {
+	if (info.forced) {
+		reset_repo(info.path, info.remote, info.branch, function(fail) {
+			reset_callback(name, info);
+		});
+	} else {
+		reset_callback(name, info);
+	}
+	return;
+}
+
+var reset_callback = function(name, info) {
 	if (info.callback) {
-		run_custom_callback(info.callback.command, info.callback.args, info.callback.path, function() {
+		run_custom_callback(info.callback.command, info.callback.args, info.callback.path, function(fail) {
 			process_callback(name, info);
 		});
 	} else {
@@ -99,7 +137,7 @@ var process_callback = function(name, info) {
 	if (status[name] === 2) {
 		status[name] = 1;
 		sendResponse("The Process "+name+" was triggered during running. It will be ran again.");
-		pull_data(info.path, info.remote, info.branch, function() {
+		pull_data(info.path, info.remote, info.branch, function(fail) {
 			pull_callback(name, info);
 		});
 	} else {
@@ -115,7 +153,7 @@ var add_process = function(name, info) {
 		return "Another process in webhook "+name+" is running. The process will start after this.";
 	}
 	status[name] = 1;
-	pull_data(info.path, info.remote, info.branch, function() {
+	pull_data(info.path, info.remote, info.branch, function(fail) {
 		pull_callback(name, info);
 	});
 	return "Started a process in webhook "+name+".";
