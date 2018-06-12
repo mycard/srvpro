@@ -189,7 +189,7 @@
             "command": "bash",
             "args": [
               "-c",
-              "cd ocgcore ; git pull origin master ; cd ../script ; git pull origin master ; cd .. ; premake4 gmake ; cd build ; make config=release ; cd .. ; strip ygopro"
+              "cd ocgcore ; git pull origin master ; cd ../script ; git pull origin master ; cd .. ; premake5 gmake ; cd build ; make config=release ; cd .. ; strip ygopro"
             ],
             "path": "./ygopro/"
           }
