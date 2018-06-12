@@ -57,10 +57,10 @@ var pull_data = function(path, remote, branch, callback) {
 	return;
 }
 
-var reset_repo = function(path, remote, branch, callback) {
-	sendResponse("Started resetting on branch "+branch+" at "+path+" from "+remote+".");
+var reset_repo = function(path, callback) {
+	sendResponse("Started resetting at "+path+".");
 	try {
-		var proc = spawn("git", ["reset", "--hard", remote + "/" + branch], { cwd: path, env: process.env });
+		var proc = spawn("git", ["reset", "--hard", "FETCH_HEAD"], { cwd: path, env: process.env });
 		proc.stdout.setEncoding('utf8');
 		proc.stdout.on('data', function(data) {
 			sendResponse("git reset stdout: "+data);
@@ -70,13 +70,13 @@ var reset_repo = function(path, remote, branch, callback) {
 			sendResponse("git reset stderr: "+data);
 		});
 		proc.on('close', function (code) {
-			sendResponse("Finished resetting on branch "+branch+" at "+path+" from "+remote+".");
+			sendResponse("Finished resetting at "+path+".");
 			if (callback) {
 				callback(false);
 			}
 		});
 	} catch (err) {
-		sendResponse("Errored resetting on branch "+branch+" at "+path+" from "+remote+".");
+		sendResponse("Errored resetting at "+path+".");
 		if (callback) {
 			callback(true);
 		}
@@ -113,7 +113,7 @@ var run_custom_callback = function(command, args, path, callback) {
 
 var pull_callback = function(name, info) {
 	if (info.forced) {
-		reset_repo(info.path, info.remote, info.branch, function(fail) {
+		reset_repo(info.path, function(fail) {
 			reset_callback(name, info);
 		});
 	} else {
