@@ -87,7 +87,7 @@ function load_database(callback) {
             card.alias=result.alias;
             
             if (result.type & constants.TYPES.TYPE_MONSTER) {
-                if ((result.type & constants.TYPES.TYPE_FUSION) || (result.type & constants.TYPES.TYPE_SYNCHRO) || (result.type & constants.TYPES.TYPE_XYZ))
+                if ((result.type & constants.TYPES.TYPE_FUSION) || (result.type & constants.TYPES.TYPE_SYNCHRO) || (result.type & constants.TYPES.TYPE_XYZ) || (result.type & constants.TYPES.TYPE_LINK))
                     card.type="额外";
                 else
                     card.type="怪兽";
