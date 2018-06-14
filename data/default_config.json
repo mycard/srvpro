@@ -131,6 +131,16 @@
       "no_connect_count_limit": false,
       "no_ban_player": false
     },
+    "ygosharp": {
+      "enabled": false,
+      "path": "./ygosharp/",
+      "param": {
+        "root": ".",
+        "database": "cards.cdb",
+        "lflist": "lflist.conf",
+        "script": "script"
+      }
+    },
     "pre_util": {
       "enabled": false,
       "port": 7944,

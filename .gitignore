@@ -18,6 +18,7 @@ config.user.bak
 /node_modules
 /ssl
 /ygosrv233
+/ygosharp
 
 test*
 *.heapsnapshot
