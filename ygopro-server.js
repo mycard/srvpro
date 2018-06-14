@@ -272,7 +272,7 @@
 
   }
 
-  if (settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled) {
+  if (settings.modules.cloud_replay.enabled) {
     redis = require('redis');
     zlib = require('zlib');
     redisdb = redis.createClient({
@@ -855,7 +855,7 @@
           })(this));
         }
       }
-      if (this.player_datas.length && settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled) {
+      if (this.player_datas.length && settings.modules.cloud_replay.enabled) {
         replay_id = this.cloud_replay_id;
         if (this.has_ygopro_error) {
           log_rep_id = true;
@@ -1096,7 +1096,7 @@
       client.destroy();
       return;
     }
-    if (settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled) {
+    if (settings.modules.cloud_replay.enabled) {
       client.open_cloud_replay = function(err, replay) {
         var buffer;
         if (err || !replay) {
@@ -1318,7 +1318,7 @@
     info.pass = info.pass.trim();
     if (settings.modules.stop) {
       ygopro.stoc_die(client, settings.modules.stop);
-    } else if (info.pass.toUpperCase() === "R" && settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled) {
+    } else if (info.pass.toUpperCase() === "R" && settings.modules.cloud_replay.enabled) {
       ygopro.stoc_send_chat(client, "${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE);
       redisdb.lrange(client.ip + ":replays", 0, 2, function(err, result) {
         _.each(result, function(replay_id, id) {
@@ -1340,7 +1340,7 @@
         });
         client.destroy();
       }), 500);
-    } else if (info.pass.slice(0, 2).toUpperCase() === "R#" && settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled) {
+    } else if (info.pass.slice(0, 2).toUpperCase() === "R#" && settings.modules.cloud_replay.enabled) {
       replay_id = info.pass.split("#")[1];
       if (replay_id > 0 && replay_id <= 9) {
         redisdb.lindex(client.ip + ":replays", replay_id - 1, function(err, replay_id) {
@@ -1358,7 +1358,7 @@
       } else {
         ygopro.stoc_die(client, "${cloud_replay_no}");
       }
-    } else if (info.pass.toUpperCase() === "W" && settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled) {
+    } else if (info.pass.toUpperCase() === "W" && settings.modules.cloud_replay.enabled) {
       replay_id = Cloud_replay_ids[Math.floor(Math.random() * Cloud_replay_ids.length)];
       redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
     } else if (info.version !== settings.version) {
@@ -1629,7 +1629,7 @@
         }
       });
     }
-    if (!room.recorder && !settings.modules.ygosharp.enabled) {
+    if (!room.recorder) {
       room.recorder = recorder = net.connect(room.port, function() {
         ygopro.ctos_send(recorder, 'PLAYER_INFO', {
           name: "Marshtomp"
@@ -1642,7 +1642,7 @@
       });
       recorder.on('data', function(data) {
         room = ROOM_all[client.rid];
-        if (!(room && settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled)) {
+        if (!(room && settings.modules.cloud_replay.enabled)) {
           return;
         }
         room.recorder_buffers.push(data);
@@ -2710,7 +2710,7 @@
     if (!room) {
       return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe;
     }
-    if (settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled && !settings.modules.ygosharp.enabled && room.random_type) {
+    if (settings.modules.cloud_replay.enabled && room.random_type) {
       Cloud_replay_ids.push(room.cloud_replay_id);
     }
     if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
@@ -2760,7 +2760,7 @@
           }
         });
       }
-      if (settings.modules.cloud_replay.enabled && !settings.modules.ygosharp.enabled) {
+      if (settings.modules.cloud_replay.enabled) {
         ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R#" + room.cloud_replay_id + "${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE);
       }
       return settings.modules.tournament_mode.block_replay_to_player;

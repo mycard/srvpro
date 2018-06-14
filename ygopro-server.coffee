@@ -190,7 +190,7 @@ try
     lflists.push({date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
 catch
 
-if settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled
+if settings.modules.cloud_replay.enabled
   redis = require 'redis'
   zlib = require 'zlib'
   redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.cloud_replay.redis_port
@@ -627,7 +627,7 @@ class Room
             #else
             #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
-    if @player_datas.length and settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled
+    if @player_datas.length and settings.modules.cloud_replay.enabled
       replay_id = @cloud_replay_id
       if @has_ygopro_error
         log_rep_id = true
@@ -829,7 +829,7 @@ net.createServer (client) ->
     client.destroy()
     return
 
-  if settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled
+  if settings.modules.cloud_replay.enabled
     client.open_cloud_replay= (err, replay)->
       if err or !replay
         ygopro.stoc_die(client, "${cloud_replay_no}")
@@ -1031,7 +1031,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   if settings.modules.stop
     ygopro.stoc_die(client, settings.modules.stop)
     
-  else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled
+  else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled
     ygopro.stoc_send_chat(client,"${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
     redisdb.lrange client.ip+":replays", 0, 2, (err, result)->
       _.each result, (replay_id,id)->
@@ -1052,7 +1052,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       client.destroy()
       return), 500
       
-  else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled
+  else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.cloud_replay.enabled
     replay_id=info.pass.split("#")[1]
     if (replay_id>0 and replay_id<=9)
       redisdb.lindex client.ip+":replays", replay_id-1, (err, replay_id)->
@@ -1067,7 +1067,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       ygopro.stoc_die(client, "${cloud_replay_no}")
 
-  else if info.pass.toUpperCase()=="W" and settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled
+  else if info.pass.toUpperCase()=="W" and settings.modules.cloud_replay.enabled
     replay_id=Cloud_replay_ids[Math.floor(Math.random()*Cloud_replay_ids.length)]
     redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
 
@@ -1333,7 +1333,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         #client.score_shown = true
       return
 
-  if !room.recorder and !settings.modules.ygosharp.enabled
+  if !room.recorder
     room.recorder = recorder = net.connect room.port, ->
       ygopro.ctos_send recorder, 'PLAYER_INFO', {
         name: "Marshtomp"
@@ -1347,7 +1347,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
     recorder.on 'data', (data)->
       room=ROOM_all[client.rid]
-      return unless room and settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled
+      return unless room and settings.modules.cloud_replay.enabled
       room.recorder_buffers.push data
       return
 
@@ -2127,7 +2127,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe unless room
-  if settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled and !settings.modules.ygosharp.enabled and room.random_type
+  if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
     if client.pos == 0
@@ -2157,7 +2157,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
-    if settings.modules.cloud_replay.enabled and !settings.modules.ygosharp.enabled
+    if settings.modules.cloud_replay.enabled
       ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
     return settings.modules.tournament_mode.block_replay_to_player
   else
