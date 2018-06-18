@@ -104,6 +104,9 @@
 
   this.stoc_send = function(socket, proto, info) {
     var buffer, header, key, ref, struct, value;
+    if (socket.closed) {
+      return;
+    }
     if (typeof info === 'undefined') {
       buffer = "";
     } else if (Buffer.isBuffer(info)) {
@@ -138,6 +141,9 @@
 
   this.ctos_send = function(socket, proto, info) {
     var buffer, header, key, ref, struct, value;
+    if (socket.closed) {
+      return;
+    }
     if (typeof info === 'undefined') {
       buffer = "";
     } else if (Buffer.isBuffer(info)) {
@@ -264,6 +270,7 @@
       });
     }
     if (client) {
+      client.system_kicked = true;
       client.destroy();
     }
   };

@@ -131,6 +131,10 @@
     "retry_too_much_part2": " times.",
     "retry_too_much_room_part1": " was kicked from the room for performing an illegal operation ",
     "retry_too_much_room_part2": " times.",
+    "pre_reconnecting_to_room": "You will be reconnected to your previous game. Please pick your Previous deck.",
+    "deck_incorrect_reconnect": "Please pick your Previous deck.",
+    "reconnect_failed": "Reconnect failed.",
+    "reconnecting_to_room": "Reconnecting to server...",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender."
   },
   "es-es": {
@@ -398,6 +402,10 @@
     "retry_too_much_part2": "次，已被请出房间。",
     "retry_too_much_room_part1": " 由于在决斗中违规操作",
     "retry_too_much_room_part2": "次，已被请出房间。",
+    "pre_reconnecting_to_room": "你有未完成的对局，即将重新连接，请选择你在本局决斗中使用的卡组并准备。",
+    "deck_incorrect_reconnect": "请选择你在本局决斗中使用的卡组。",
+    "reconnect_failed": "重新连接失败。",
+    "reconnecting_to_room": "正在重新连接到服务器……",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。"
   },
  "ko-kr": {

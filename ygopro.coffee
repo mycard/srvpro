@@ -60,6 +60,8 @@ for name, declaration of structs_declaration
 
 #消息发送函数,至少要把俩合起来....
 @stoc_send = (socket, proto, info)->
+  if socket.closed
+    return
   #console.log proto, proto_structs.STOC[proto], structs[proto_structs.STOC[proto]]
   if typeof info == 'undefined'
     buffer = ""
@@ -86,6 +88,8 @@ for name, declaration of structs_declaration
   return
 
 @ctos_send = (socket, proto, info)->
+  if socket.closed
+    return
   #console.log proto, proto_structs.CTOS[proto], structs[proto_structs.CTOS[proto]]
   if typeof info == 'undefined'
     buffer = ""
@@ -164,5 +168,7 @@ for name, declaration of structs_declaration
     msg: 1
     code: 9
   } if client
-  client.destroy() if client
+  if client
+    client.system_kicked = true
+    client.destroy()
   return

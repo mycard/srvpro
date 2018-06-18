@@ -29,7 +29,8 @@
         "34": "HS_READY",
         "35": "HS_NOTREADY",
         "36": "HS_KICK",
-        "37": "HS_START"
+        "37": "HS_START",
+        "48": "REQUEST_FIELD"
     },
     "STOC": {
         "1": "GAME_MSG",
@@ -51,7 +52,8 @@
         "25": "CHAT",
         "32": "HS_PLAYER_ENTER",
         "33": "HS_PLAYER_CHANGE",
-        "34": "HS_WATCH_CHANGE"
+        "34": "HS_WATCH_CHANGE",
+        "48": "FIELD_FINISH"
     },
     "PLAYERCHANGE":{
         "8": "OBSERVE",

@@ -86,6 +86,10 @@
       "enabled": true,
       "max_retry_count": false
     },
+    "reconnect": {
+      "enabled": true,
+      "wait_time": 300000
+    },
     "mycard": {
       "enabled": false,
       "auth_base_url": "https://ygobbs.com",

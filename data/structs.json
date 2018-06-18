@@ -3,7 +3,7 @@
         {"name": "lflist", "type": "unsigned int"},
         {"name": "rule", "type": "unsigned char"},
         {"name": "mode", "type": "unsigned char"},
-        {"name": "enable_priority", "type": "bool"},
+        {"name": "duel_rule", "type": "unsigned char"},
         {"name": "no_check_deck", "type": "bool"},
         {"name": "no_shuffle_deck", "type": "bool"},
         {"name": "start_lp", "type": "unsigned int"},
