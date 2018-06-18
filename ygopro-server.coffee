@@ -577,6 +577,7 @@ CLIENT_pre_reconnect = (client) ->
   client.pre_deckbuf = dinfo.deckbuf
   client.pre_reconnecting = true
   client.pos = dinfo.old_client.pos
+  client.setTimeout(300000)
   CLIENT_send_pre_reconnect_info(client, dinfo.room, dinfo.old_client)
 
 CLIENT_reconnect = (client) ->
@@ -595,7 +596,6 @@ CLIENT_reconnect = (client) ->
   current_old_server.destroy()
   client.established = true
   client.pre_establish_buffers = []
-  client.setTimeout(300000)
   CLIENT_import_data(client, dinfo.old_client, dinfo.room)
   CLIENT_send_reconnect_info(client, client.server, dinfo.room)
   CLIENT_reconnect_unregister(client, true)
