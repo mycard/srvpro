@@ -437,7 +437,7 @@ CLIENT_reconnect_unregister = (client, reconnected) ->
 CLIENT_reconnect_register = (client, room, error) ->
   if client.had_new_reconnection
     return false
-  if !settings.modules.reconnect.enabled or client.system_kicked or client.is_post_watcher or !CLIENT_is_player(client, room) or !room.started or (room.windbot and client.is_local)
+  if !settings.modules.reconnect.enabled or client.system_kicked or client.is_post_watcher or !CLIENT_is_player(client, room) or !room.started or (room.windbot and client.is_local) or (settings.modules.reconnect.auto_surrender_after_disconnect and room.hostinfo.mode != 1)
     return false
   old_dinfo = disconnect_list[CLIENT_get_authorize_key(client)]
   if old_dinfo
@@ -455,6 +455,8 @@ CLIENT_reconnect_register = (client, room, error) ->
   , settings.modules.reconnect.wait_time)
   dinfo.timeout = tmot
   disconnect_list[CLIENT_get_authorize_key(client)] = dinfo
+  if settings.modules.reconnect.auto_surrender_after_disconnect and room.turn and room.turn > 0
+    ygopro.ctos_send(client.server, 'SURRENDER')
   return true
 
 CLIENT_import_data = (client, old_client, room) ->
@@ -493,7 +495,6 @@ CLIENT_import_data = (client, old_client, room) ->
   client.last_game_msg = old_client.last_game_msg
   client.last_game_msg_title = old_client.last_game_msg_title
   client.start_deckbuf = old_client.start_deckbuf
-  client.join_game_buffer = old_client.join_game_buffer
   old_client.had_new_reconnection = true
   return
 
@@ -533,7 +534,7 @@ CLIENT_is_able_to_reconnect = (client) ->
 
 CLIENT_send_pre_reconnect_info = (client, room, old_client) ->
   ygopro.stoc_send_chat(client, "${pre_reconnecting_to_room}", ygopro.constants.COLORS.BABYBLUE)
-  ygopro.stoc_send(client, 'JOIN_GAME', old_client.join_game_buffer)
+  ygopro.stoc_send(client, 'JOIN_GAME', room.join_game_buffer)
   req_pos = old_client.pos
   if old_client.is_host
     req_pos += 0x10
@@ -1494,7 +1495,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #欢迎信息
   room=ROOM_all[client.rid]
   return unless room and !client.reconnecting
-  client.join_game_buffer = buffer
+  if !room.join_game_buffer
+    room.join_game_buffer = buffer
   if settings.modules.welcome
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome

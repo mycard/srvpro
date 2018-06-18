@@ -88,6 +88,7 @@
     },
     "reconnect": {
       "enabled": true,
+      "auto_surrender_after_disconnect": false,
       "wait_time": 300000
     },
     "mycard": {
