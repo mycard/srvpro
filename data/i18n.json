@@ -630,6 +630,10 @@
     "retry_too_much_part2": " 回行った為、部屋からキックされています。",
     "retry_too_much_room_part1": " は不正行為を ",
     "retry_too_much_room_part2": " 回行った為、部屋からキックされました。",
+    "pre_reconnecting_to_room": "これから先程のゲームに再接続します。　前回のデッキを選択して下さい。",
+    "deck_incorrect_reconnect": "前回のデッキを選択して下さい。",
+    "reconnect_failed": "再接続が失敗しました。",
+    "reconnecting_to_room": "サーバーに再接続中・・・",
     "athletic_arena_tip": "アスレチック戦では、ゲーム終了行為はサレンダーと見なされます。"
   }
 }
