@@ -1855,7 +1855,7 @@ ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server)->
     setTimeout( () ->
       ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
       return
-    , 1000)
+    , 200)
   return true
 
 wait_room_start = (room, time)->
