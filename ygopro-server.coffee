@@ -425,10 +425,12 @@ CLIENT_get_authorize_key = (client) ->
   else
     return client.ip
 
-CLIENT_reconnect_unregister = (client, reconnected) ->
+CLIENT_reconnect_unregister = (client, reconnected, exact) ->
   if !settings.modules.reconnect.enabled
     return false
   if disconnect_list[CLIENT_get_authorize_key(client)]
+    if exact and disconnect_list[CLIENT_get_authorize_key(client)].old_client != client
+      return false
     release_disconnect(disconnect_list[CLIENT_get_authorize_key(client)], reconnected)
     delete disconnect_list[CLIENT_get_authorize_key(client)]
     return true
@@ -438,8 +440,11 @@ CLIENT_reconnect_register = (client, room_id, error) ->
   room = ROOM_all[room_id]
   if client.had_new_reconnection
     return false
-  if !settings.modules.reconnect.enabled or client.system_kicked or disconnect_list[CLIENT_get_authorize_key(client)] or client.is_post_watcher or !CLIENT_is_player(client, room) or !room.started or (room.windbot and client.is_local) or (settings.modules.reconnect.auto_surrender_after_disconnect and room.hostinfo.mode != 1)
+  if !settings.modules.reconnect.enabled or !room or client.system_kicked or disconnect_list[CLIENT_get_authorize_key(client)] or client.is_post_watcher or !CLIENT_is_player(client, room) or !room.started or (room.windbot and client.is_local) or (settings.modules.reconnect.auto_surrender_after_disconnect and room.hostinfo.mode != 1)
     return false
+  for player in room.players
+    if player != client and CLIENT_get_authorize_key(player) == CLIENT_get_authorize_key(client)
+      return false # some issues may occur in this case, so return false
   dinfo = {
     room_id: room_id,
     old_client: client,
@@ -497,13 +502,22 @@ CLIENT_import_data = (client, old_client, room) ->
   return
 
 SERVER_clear_disconnect = (server) ->
-  return unless settings.modules.reconnect.enabled
+  return false unless settings.modules.reconnect.enabled
   for k,v of disconnect_list
     if v and server == v.old_server
       release_disconnect(v)
       delete disconnect_list[k]
-      return
-  return
+      return true
+  return false
+
+ROOM_clear_disconnect = (room_id) ->
+  return false unless settings.modules.reconnect.enabled
+  for k,v of disconnect_list
+    if v and room_id == v.room_id
+      release_disconnect(v)
+      delete disconnect_list[k]
+      return true
+  return false
 
 CLIENT_is_player = (client, room) ->
   is_player = false
@@ -836,11 +850,7 @@ class Room
     @deleted = true
     index = _.indexOf(ROOM_all, this)
     if settings.modules.reconnect.enabled
-      for k,v of disconnect_list
-        if v and index == v.room_id
-          release_disconnect(v)
-          delete disconnect_list[k]
-          break
+      ROOM_clear_disconnect(index)
     ROOM_all[index] = null unless index == -1
     #ROOM_all.splice(index, 1) unless index == -1
     roomlist.delete this if !@windbot and @established and settings.modules.http.websocket_roomlist
@@ -925,7 +935,7 @@ class Room
         @process.kill()
         #client.room = null
         this.delete()
-      if !CLIENT_reconnect_unregister(client)
+      if !CLIENT_reconnect_unregister(client, false, true)
         client.server.destroy()
     return
 
