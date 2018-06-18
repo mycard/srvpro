@@ -131,8 +131,8 @@
     "retry_too_much_part2": " times.",
     "retry_too_much_room_part1": " was kicked from the room for performing an illegal operation ",
     "retry_too_much_room_part2": " times.",
-    "pre_reconnecting_to_room": "You will be reconnected to your previous game. Please pick your Previous deck.",
-    "deck_incorrect_reconnect": "Please pick your Previous deck.",
+    "pre_reconnecting_to_room": "You will be reconnected to your previous game. Please pick your previous deck.",
+    "deck_incorrect_reconnect": "Please pick your previous deck.",
     "reconnect_failed": "Reconnect failed.",
     "reconnecting_to_room": "Reconnecting to server...",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender."
@@ -268,6 +268,10 @@
     "retry_too_much_part2": " vez.",
     "retry_too_much_room_part1": " fue expulsado de la sala por hacer operaciones ilegales por la ",
     "retry_too_much_room_part2": " vez.",
+    "pre_reconnecting_to_room": "Vas a ser reconectado a tu juego anterior. Por favor, escoja tu Deck anterior.",
+    "deck_incorrect_reconnect": "Por favor, escoja tu Deck anterior.",
+    "reconnect_failed": "Fallo al reconectar.",
+    "reconnecting_to_room": "Reconectando al servidor...",
     "athletic_arena_tip": "Durante una Partdida deportiva, un comportamiento de abandono se considera una rendición."
   },
   "zh-cn": {
