@@ -434,16 +434,14 @@ CLIENT_reconnect_unregister = (client, reconnected) ->
     return true
   return false
 
-CLIENT_reconnect_register = (client, room, error) ->
+CLIENT_reconnect_register = (client, room_id, error) ->
+  room = ROOM_all[room_id]
   if client.had_new_reconnection
     return false
-  if !settings.modules.reconnect.enabled or client.system_kicked or client.is_post_watcher or !CLIENT_is_player(client, room) or !room.started or (room.windbot and client.is_local) or (settings.modules.reconnect.auto_surrender_after_disconnect and room.hostinfo.mode != 1)
+  if !settings.modules.reconnect.enabled or client.system_kicked or disconnect_list[CLIENT_get_authorize_key(client)] or client.is_post_watcher or !CLIENT_is_player(client, room) or !room.started or (room.windbot and client.is_local) or (settings.modules.reconnect.auto_surrender_after_disconnect and room.hostinfo.mode != 1)
     return false
-  old_dinfo = disconnect_list[CLIENT_get_authorize_key(client)]
-  if old_dinfo
-    old_dinfo.room.disconnect(old_dinfo.old_client)
   dinfo = {
-    room: room,
+    room_id: room_id,
     old_client: client,
     old_server: client.server,
     deckbuf: client.start_deckbuf
@@ -523,6 +521,10 @@ CLIENT_is_able_to_reconnect = (client) ->
   disconnect_info = disconnect_list[CLIENT_get_authorize_key(client)]
   unless disconnect_info
     return false
+  room = ROOM_all[disconnect_info.room_id]
+  if !room
+    CLIENT_reconnect_unregister(client)
+    return false
   # if disconnect_info.old_server.closed
   #   return false
   # current_room = disconnect_info.room
@@ -579,7 +581,7 @@ CLIENT_pre_reconnect = (client) ->
   client.pre_reconnecting = true
   client.pos = dinfo.old_client.pos
   client.setTimeout(300000)
-  CLIENT_send_pre_reconnect_info(client, dinfo.room, dinfo.old_client)
+  CLIENT_send_pre_reconnect_info(client, ROOM_all[dinfo.room_id], dinfo.old_client)
 
 CLIENT_reconnect = (client) ->
   if !CLIENT_is_able_to_reconnect(client)
@@ -588,6 +590,7 @@ CLIENT_reconnect = (client) ->
     return
   client.pre_reconnecting = false
   dinfo = disconnect_list[CLIENT_get_authorize_key(client)]
+  room = ROOM_all[dinfo.room_id]
   current_old_server = client.server
   client.server = dinfo.old_server
   client.server.client = client
@@ -597,13 +600,13 @@ CLIENT_reconnect = (client) ->
   current_old_server.destroy()
   client.established = true
   client.pre_establish_buffers = []
-  CLIENT_import_data(client, dinfo.old_client, dinfo.room)
-  CLIENT_send_reconnect_info(client, client.server, dinfo.room)
+  CLIENT_import_data(client, dinfo.old_client, room)
+  CLIENT_send_reconnect_info(client, client.server, room)
   CLIENT_reconnect_unregister(client, true)
   return
 
 if settings.modules.reconnect.enabled
-  disconnect_list = {} # {old_client, old_server, room, timeout, deckbuf}
+  disconnect_list = {} # {old_client, old_server, room_id, timeout, deckbuf}
 
 class Room
   constructor: (name, @hostinfo) ->
@@ -832,6 +835,12 @@ class Room
     @recorder.destroy() if @recorder
     @deleted = true
     index = _.indexOf(ROOM_all, this)
+    if settings.modules.reconnect.enabled
+      for k,v of disconnect_list
+        if v and index == v.room_id
+          release_disconnect(v)
+          delete disconnect_list[k]
+          break
     ROOM_all[index] = null unless index == -1
     #ROOM_all.splice(index, 1) unless index == -1
     roomlist.delete this if !@windbot and @established and settings.modules.http.websocket_roomlist
@@ -951,7 +960,7 @@ net.createServer (client) ->
     unless client.closed
       client.closed = true
       if room
-        if !CLIENT_reconnect_register(client, room)
+        if !CLIENT_reconnect_register(client, client.rid)
           room.disconnect(client)
       else if !client.had_new_reconnection
         client.server.destroy()
@@ -968,7 +977,7 @@ net.createServer (client) ->
     unless client.closed
       client.closed = true
       if room
-        if !CLIENT_reconnect_register(client, room, error)
+        if !CLIENT_reconnect_register(client, client.rid, error)
           room.disconnect(client, error)
       else if !client.had_new_reconnection
         client.server.destroy()

@@ -597,20 +597,17 @@
     return false;
   };
 
-  CLIENT_reconnect_register = function(client, room, error) {
-    var dinfo, old_dinfo, tmot;
+  CLIENT_reconnect_register = function(client, room_id, error) {
+    var dinfo, room, tmot;
+    room = ROOM_all[room_id];
     if (client.had_new_reconnection) {
       return false;
     }
-    if (!settings.modules.reconnect.enabled || client.system_kicked || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || (room.windbot && client.is_local) || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1)) {
+    if (!settings.modules.reconnect.enabled || client.system_kicked || disconnect_list[CLIENT_get_authorize_key(client)] || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || (room.windbot && client.is_local) || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1)) {
       return false;
     }
-    old_dinfo = disconnect_list[CLIENT_get_authorize_key(client)];
-    if (old_dinfo) {
-      old_dinfo.room.disconnect(old_dinfo.old_client);
-    }
     dinfo = {
-      room: room,
+      room_id: room_id,
       old_client: client,
       old_server: client.server,
       deckbuf: client.start_deckbuf
@@ -702,7 +699,7 @@
   };
 
   CLIENT_is_able_to_reconnect = function(client) {
-    var disconnect_info;
+    var disconnect_info, room;
     if (!settings.modules.reconnect.enabled) {
       return false;
     }
@@ -711,6 +708,11 @@
     }
     disconnect_info = disconnect_list[CLIENT_get_authorize_key(client)];
     if (!disconnect_info) {
+      return false;
+    }
+    room = ROOM_all[disconnect_info.room_id];
+    if (!room) {
+      CLIENT_reconnect_unregister(client);
       return false;
     }
     return true;
@@ -777,11 +779,11 @@
     client.pre_reconnecting = true;
     client.pos = dinfo.old_client.pos;
     client.setTimeout(300000);
-    return CLIENT_send_pre_reconnect_info(client, dinfo.room, dinfo.old_client);
+    return CLIENT_send_pre_reconnect_info(client, ROOM_all[dinfo.room_id], dinfo.old_client);
   };
 
   CLIENT_reconnect = function(client) {
-    var current_old_server, dinfo;
+    var current_old_server, dinfo, room;
     if (!CLIENT_is_able_to_reconnect(client)) {
       ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED);
       CLIENT_kick(client);
@@ -789,6 +791,7 @@
     }
     client.pre_reconnecting = false;
     dinfo = disconnect_list[CLIENT_get_authorize_key(client)];
+    room = ROOM_all[dinfo.room_id];
     current_old_server = client.server;
     client.server = dinfo.old_server;
     client.server.client = client;
@@ -798,8 +801,8 @@
     current_old_server.destroy();
     client.established = true;
     client.pre_establish_buffers = [];
-    CLIENT_import_data(client, dinfo.old_client, dinfo.room);
-    CLIENT_send_reconnect_info(client, client.server, dinfo.room);
+    CLIENT_import_data(client, dinfo.old_client, room);
+    CLIENT_send_reconnect_info(client, client.server, room);
     CLIENT_reconnect_unregister(client, true);
   };
 
@@ -1006,7 +1009,7 @@
     }
 
     Room.prototype["delete"] = function() {
-      var end_time, index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref2, replay_id, score, score_array;
+      var end_time, index, k, log_rep_id, name, player_ips, player_names, recorder_buffer, ref2, replay_id, score, score_array, v;
       if (this.deleted) {
         return;
       }
@@ -1093,6 +1096,16 @@
       }
       this.deleted = true;
       index = _.indexOf(ROOM_all, this);
+      if (settings.modules.reconnect.enabled) {
+        for (k in disconnect_list) {
+          v = disconnect_list[k];
+          if (v && index === v.room_id) {
+            release_disconnect(v);
+            delete disconnect_list[k];
+            break;
+          }
+        }
+      }
       if (index !== -1) {
         ROOM_all[index] = null;
       }
@@ -1244,7 +1257,7 @@
       if (!client.closed) {
         client.closed = true;
         if (room) {
-          if (!CLIENT_reconnect_register(client, room)) {
+          if (!CLIENT_reconnect_register(client, client.rid)) {
             room.disconnect(client);
           }
         } else if (!client.had_new_reconnection) {
@@ -1263,7 +1276,7 @@
       if (!client.closed) {
         client.closed = true;
         if (room) {
-          if (!CLIENT_reconnect_register(client, room, error)) {
+          if (!CLIENT_reconnect_register(client, client.rid, error)) {
             room.disconnect(client, error);
           }
         } else if (!client.had_new_reconnection) {
