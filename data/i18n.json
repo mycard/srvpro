@@ -268,6 +268,10 @@
     "retry_too_much_part2": " vez.",
     "retry_too_much_room_part1": " fue expulsado de la sala por hacer operaciones ilegales por la ",
     "retry_too_much_room_part2": " vez.",
+    "pre_reconnecting_to_room": "Vas a ser reconectado a tu juego anterior. Por favor, escoja tu Deck anterior..",
+    "deck_incorrect_reconnect": "Por favor, escoja tu Deck anterior.",
+    "reconnect_failed": "Fallo al reconectar.",
+    "reconnecting_to_room": "Reconectando al servidor...",
     "athletic_arena_tip": "Durante una Partdida deportiva, un comportamiento de abandono se considera una rendición."
   },
   "zh-cn": {
