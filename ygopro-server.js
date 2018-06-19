@@ -601,20 +601,13 @@
   };
 
   CLIENT_reconnect_register = function(client, room_id, error) {
-    var dinfo, len2, m, player, ref2, room, tmot;
+    var dinfo, room, tmot;
     room = ROOM_all[room_id];
     if (client.had_new_reconnection) {
       return false;
     }
     if (!settings.modules.reconnect.enabled || !room || client.system_kicked || disconnect_list[CLIENT_get_authorize_key(client)] || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || (room.windbot && client.is_local) || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1)) {
       return false;
-    }
-    ref2 = room.players;
-    for (m = 0, len2 = ref2.length; m < len2; m++) {
-      player = ref2[m];
-      if (player !== client && CLIENT_get_authorize_key(player) === CLIENT_get_authorize_key(client)) {
-        return false;
-      }
     }
     dinfo = {
       room_id: room_id,
@@ -675,6 +668,7 @@
     client.selected_preduel = old_client.selected_preduel;
     client.last_game_msg = old_client.last_game_msg;
     client.last_game_msg_title = old_client.last_game_msg_title;
+    client.last_hint_msg = old_client.last_hint_msg;
     client.start_deckbuf = old_client.start_deckbuf;
     old_client.had_new_reconnection = true;
   };
@@ -1957,7 +1951,7 @@
   }
 
   ygopro.stoc_follow('GAME_MSG', true, function(buffer, info, client, server) {
-    var card, count, len2, line, loc, m, msg, oppo_pos, phase, playertype, pos, reason, ref2, ref3, ref4, room, trigger_location, val, win_pos;
+    var card, count, hint_type, len2, line, loc, m, msg, oppo_pos, phase, playertype, pos, reason, ref2, ref3, ref4, room, trigger_location, val, win_pos;
     room = ROOM_all[client.rid];
     if (!(room && !client.reconnecting)) {
       return;
@@ -1981,6 +1975,9 @@
             ygopro.stoc_send_chat(client, "${retry_part1}" + client.retry_count + "${retry_part2}" + settings.modules.retry_handle.max_retry_count + "${retry_part3}", ygopro.constants.COLORS.RED);
           } else {
             ygopro.stoc_send_chat(client, "${retry_not_counted}", ygopro.constants.COLORS.BABYBLUE);
+          }
+          if (client.last_hint_msg) {
+            ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
           }
           ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
           return true;
@@ -2019,6 +2016,12 @@
       if (settings.modules.retry_handle.enabled) {
         client.retry_count = 0;
         client.last_game_msg = null;
+      }
+    }
+    if (ygopro.constants.MSG[msg] === 'HINT') {
+      hint_type = buffer.readUInt8(1);
+      if (hint_type = 3) {
+        client.last_hint_msg = buffer;
       }
     }
     if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
@@ -2331,10 +2334,16 @@
       return;
     }
     client.reconnecting = false;
-    if (client.last_game_msg && client.last_game_msg_title !== 'WAITING') {
+    if (!client.last_game_msg) {
+      return true;
+    }
+    if (client.last_game_msg_title !== 'WAITING') {
       setTimeout(function() {
+        if (client.last_hint_msg) {
+          ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
+        }
         ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
-      }, 200);
+      }, 50);
     }
     return true;
   });
