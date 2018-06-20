@@ -716,7 +716,7 @@
         break;
       }
     }
-    return is_player;
+    return is_player && client.pos <= 3;
   };
 
   CLIENT_is_able_to_reconnect = function(client) {

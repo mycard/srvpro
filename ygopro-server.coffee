@@ -526,7 +526,7 @@ CLIENT_is_player = (client, room) ->
     if client == player
       is_player = true 
       break
-  return is_player
+  return is_player and client.pos <= 3
 
 CLIENT_is_able_to_reconnect = (client) ->
   unless settings.modules.reconnect.enabled
