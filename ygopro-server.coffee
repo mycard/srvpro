@@ -562,7 +562,8 @@ CLIENT_send_pre_reconnect_info = (client, room, old_client) ->
     ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
       name: player.name,
       pos: player.pos,
-    })  
+    })
+  return
 
 CLIENT_send_reconnect_info = (client, server, room) ->
   client.reconnecting = true
@@ -597,6 +598,7 @@ CLIENT_pre_reconnect = (client) ->
   client.pos = dinfo.old_client.pos
   client.setTimeout(300000)
   CLIENT_send_pre_reconnect_info(client, ROOM_all[dinfo.room_id], dinfo.old_client)
+  return
 
 CLIENT_reconnect = (client) ->
   if !CLIENT_is_able_to_reconnect(client)

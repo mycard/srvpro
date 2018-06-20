@@ -740,7 +740,7 @@
   };
 
   CLIENT_send_pre_reconnect_info = function(client, room, old_client) {
-    var len2, m, player, ref2, req_pos, results;
+    var len2, m, player, ref2, req_pos;
     ygopro.stoc_send_chat(client, "${pre_reconnecting_to_room}", ygopro.constants.COLORS.BABYBLUE);
     ygopro.stoc_send(client, 'JOIN_GAME', room.join_game_buffer);
     req_pos = old_client.pos;
@@ -751,15 +751,13 @@
       type: req_pos
     });
     ref2 = room.players;
-    results = [];
     for (m = 0, len2 = ref2.length; m < len2; m++) {
       player = ref2[m];
-      results.push(ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
+      ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
         name: player.name,
         pos: player.pos
-      }));
+      });
     }
-    return results;
   };
 
   CLIENT_send_reconnect_info = function(client, server, room) {
@@ -800,7 +798,7 @@
     client.pre_reconnecting = true;
     client.pos = dinfo.old_client.pos;
     client.setTimeout(300000);
-    return CLIENT_send_pre_reconnect_info(client, ROOM_all[dinfo.room_id], dinfo.old_client);
+    CLIENT_send_pre_reconnect_info(client, ROOM_all[dinfo.room_id], dinfo.old_client);
   };
 
   CLIENT_reconnect = function(client) {
