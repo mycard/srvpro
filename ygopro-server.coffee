@@ -997,10 +997,8 @@ net.createServer (client) ->
     return
 
   client.on 'timeout', ()->
-    if !client.server
-      return
     unless settings.modules.reconnect.enabled and (disconnect_list[CLIENT_get_authorize_key(client)] or client.had_new_reconnection)
-      client.server.destroy()
+      client.destroy()
     return
 
   server.on 'close', (had_error) ->

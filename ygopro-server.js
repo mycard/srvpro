@@ -1297,11 +1297,8 @@
       }
     });
     client.on('timeout', function() {
-      if (!client.server) {
-        return;
-      }
       if (!(settings.modules.reconnect.enabled && (disconnect_list[CLIENT_get_authorize_key(client)] || client.had_new_reconnection))) {
-        client.server.destroy();
+        client.destroy();
       }
     });
     server.on('close', function(had_error) {
