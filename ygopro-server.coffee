@@ -40,6 +40,33 @@ moment.locale('zh-cn', {
   }
 })
 
+import_datas = [
+  "abuse_count",
+  "rag",
+  "rid",
+  "is_post_watcher",
+  "retry_count",
+  "name",
+  "is_first",
+  "lp",
+  "card_count",
+  "is_host",
+  "pos",
+  "surrend_confirm",
+  "kick_count",
+  "deck_saved",
+  "main",
+  "side",
+  "side_interval",
+  "side_tcount",
+  "selected_preduel",
+  "last_game_msg",
+  "last_game_msg_title",
+  "last_hint_msg",
+  "start_deckbuf",
+  "ready_trap"
+]
+
 merge = require 'deepmerge'
 
 loadJSON = require('load-json-file').sync
@@ -468,37 +495,14 @@ CLIENT_import_data = (client, old_client, room) ->
       room.players[index] = client
       break
   room.dueling_players[old_client.pos] = client
-  if room.waiting_for_player = old_client
+  if room.waiting_for_player == old_client
     room.waiting_for_player = client
-  if room.waiting_for_player2 = old_client
+  if room.waiting_for_player2 == old_client
     room.waiting_for_player2 = client
-  if room.selecting_tp = old_client
+  if room.selecting_tp == old_client
     room.selecting_tp = client
-  client.abuse_count = old_client.abuse_count
-  # client.established = old_client.established
-  # client.pre_establish_buffers = old_client.pre_establish_buffers
-  client.rag = old_client.rag
-  client.rid = old_client.rid
-  client.is_post_watcher = old_client.is_post_watcher
-  client.retry_count = old_client.retry_count
-  client.name = old_client.name
-  client.is_first = old_client.is_first
-  client.lp = old_client.lp
-  client.card_count = old_client.card_count
-  client.is_host = old_client.is_host
-  client.pos = old_client.pos
-  client.surrend_confirm = old_client.surrend_confirm
-  client.kick_count = old_client.kick_count
-  client.deck_saved = old_client.deck_saved
-  client.main = old_client.main
-  client.side = old_client.side
-  client.side_interval = old_client.side_interval
-  client.side_tcount = old_client.side_tcount
-  client.selected_preduel = old_client.selected_preduel
-  client.last_game_msg = old_client.last_game_msg
-  client.last_game_msg_title = old_client.last_game_msg_title
-  client.last_hint_msg = old_client.last_hint_msg
-  client.start_deckbuf = old_client.start_deckbuf
+  for key in import_datas
+    client[key] = old_client[key]
   old_client.had_new_reconnection = true
   return
 
@@ -1789,9 +1793,16 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
     if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING' or ygopro.constants.MSG[msg] == 'CHAINING'
       card = buffer.readUInt32LE(1)
       trigger_location = buffer.readUInt8(6)
-      if dialogues.dialogues[card] and (ygopro.constants.MSG[msg] != 'CHAINING' or (trigger_location & 0x8) and !(trigger_location & 0x200))
+      if dialogues.dialogues[card] and (ygopro.constants.MSG[msg] != 'CHAINING' or (trigger_location & 0x8) and client.ready_trap)
         for line in _.lines dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]
           ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK)
+    if ygopro.constants.MSG[msg] == 'POS_CHANGE'
+      loc = buffer.readUInt8(6)
+      ppos = buffer.readUInt8(8)
+      cpos = buffer.readUInt8(9)
+      client.ready_trap = !!(loc & 0x8) and !!(ppos & 0xa) and !!(cpos & 0x5)
+    else if ygopro.constants.MSG[msg] != 'UPDATE_CARD' and ygopro.constants.MSG[msg] != 'WAITING'
+      client.ready_trap = false
   return false
 
 #房间管理
