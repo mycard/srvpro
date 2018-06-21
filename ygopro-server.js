@@ -606,7 +606,7 @@
     if (client.had_new_reconnection) {
       return false;
     }
-    if (!settings.modules.reconnect.enabled || !room || client.system_kicked || disconnect_list[CLIENT_get_authorize_key(client)] || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || (room.windbot && client.is_local) || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1)) {
+    if (!settings.modules.reconnect.enabled || !room || client.system_kicked || client.flee_free || disconnect_list[CLIENT_get_authorize_key(client)] || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || (room.windbot && client.is_local) || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1)) {
       return false;
     }
     dinfo = {
