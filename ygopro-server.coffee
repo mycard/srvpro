@@ -447,10 +447,10 @@ release_disconnect = (dinfo, reconnected) ->
   return
 
 CLIENT_get_authorize_key = (client) ->
-  if settings.modules.mycard.enabled or client.is_local
+  if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or client.is_local
     return client.name
   else
-    return client.ip
+    return client.ip + ":" + client.name
 
 CLIENT_reconnect_unregister = (client, reconnected, exact) ->
   if !settings.modules.reconnect.enabled

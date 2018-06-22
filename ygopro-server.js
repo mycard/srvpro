@@ -580,10 +580,10 @@
   };
 
   CLIENT_get_authorize_key = function(client) {
-    if (settings.modules.mycard.enabled || client.is_local) {
+    if (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || client.is_local) {
       return client.name;
     } else {
-      return client.ip;
+      return client.ip + ":" + client.name;
     }
   };
 
