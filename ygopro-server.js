@@ -623,6 +623,7 @@
     }, settings.modules.reconnect.wait_time);
     dinfo.timeout = tmot;
     disconnect_list[CLIENT_get_authorize_key(client)] = dinfo;
+    ygopro.stoc_send_chat_to_room(room, (client.name + " ${disconnect_from_game}") + (error ? ": " + error : ''));
     if (settings.modules.reconnect.auto_surrender_after_disconnect && room.turn && room.turn > 0) {
       ygopro.ctos_send(client.server, 'SURRENDER');
     }
@@ -805,6 +806,7 @@
     client.pre_establish_buffers = [];
     CLIENT_import_data(client, dinfo.old_client, room);
     CLIENT_send_reconnect_info(client, client.server, room);
+    ygopro.stoc_send_chat_to_room(room, client.name + " ${reconnect_to_game}");
     CLIENT_reconnect_unregister(client, true);
   };
 
