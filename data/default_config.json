@@ -98,7 +98,7 @@
       "auth_key": "233333"
     },
     "challonge": {
-      "enabled": true,
+      "enabled": false,
       "api_key": "123",
       "tournament_id": "456"
     },
