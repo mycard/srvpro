@@ -1066,7 +1066,7 @@
           })(this));
         }
       }
-      if (settings.modules.challonge.enabled && this.started) {
+      if (settings.modules.challonge.enabled && this.started && !this.kicked) {
         challonge.matches.update({
           id: settings.modules.challonge.tournament_id,
           matchId: this.challonge_info.id,
@@ -2212,12 +2212,12 @@
         room.winner_name = room.dueling_players[pos].name;
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
       }
-      if (settings.modules.challonge.enabled) {
+      if (settings.modules.challonge.enabled && !room.kicked) {
         if (room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]) {
           room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id;
         } else if (room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]) {
           room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id;
-        } else if (room.scores[room.dueling_players[0].name] !== 0 || room.scores[room.dueling_players[1].name] !== 0) {
+        } else {
           room.challonge_duel_log.winnerId = "tie";
         }
         if (settings.modules.challonge.post_detailed_score) {
@@ -3545,6 +3545,7 @@
               room.scores[room.dueling_players[0].name] = 0;
               room.scores[room.dueling_players[1].name] = 0;
             }
+            room.kicked = true;
             room.process.kill();
             room["delete"]();
           }

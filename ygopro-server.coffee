@@ -825,7 +825,7 @@ class Room
             #else
             #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
-    if settings.modules.challonge.enabled and @started
+    if settings.modules.challonge.enabled and @started and !@kicked
       challonge.matches.update({
         id: settings.modules.challonge.tournament_id,
         matchId: @challonge_info.id,
@@ -1838,12 +1838,12 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       room.winner_name = room.dueling_players[pos].name
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
-    if settings.modules.challonge.enabled
+    if settings.modules.challonge.enabled and !room.kicked
       if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]
         room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id
       else if room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]
         room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
-      else if room.scores[room.dueling_players[0].name] != 0 or room.scores[room.dueling_players[1].name] != 0
+      else
         room.challonge_duel_log.winnerId = "tie"
       if settings.modules.challonge.post_detailed_score
         if room.dueling_players[0].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[1].challonge_info.id == room.challonge_info.player2Id
@@ -2798,6 +2798,7 @@ if settings.modules.http
           if room.started
             room.scores[room.dueling_players[0].name] = 0
             room.scores[room.dueling_players[1].name] = 0
+          room.kicked = true
           room.process.kill()
           room.delete()
         response.writeHead(200)
