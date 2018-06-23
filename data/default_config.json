@@ -99,6 +99,7 @@
     },
     "challonge": {
       "enabled": false,
+      "post_detailed_score": true,
       "api_key": "123",
       "tournament_id": "456"
     },

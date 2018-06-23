@@ -2517,12 +2517,21 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
     else
       room.challonge_duel_log.winnerId = "tie"
-    if room.challonge_duel_log.winnerId == room.challonge_info.player1Id
-      room.challonge_duel_log.scoresCsv = "1-0"
-    else if room.challonge_duel_log.winnerId == room.challonge_info.player2Id
-      room.challonge_duel_log.scoresCsv = "0-1"
+    if settings.modules.challonge.post_detailed_score
+      if room.dueling_players[0].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[1].challonge_info.id == room.challonge_info.player2Id
+        room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name]
+      else if room.dueling_players[1].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[0].challonge_info.id == room.challonge_info.player2Id
+        room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name]
+      else
+        room.challonge_duel_log.scoresCsv = "0-0"
+        log.warn("Score mismatch.", room.name)
     else
-      room.challonge_duel_log.scoresCsv = "0-0"
+      if room.challonge_duel_log.winnerId == room.challonge_info.player1Id
+        room.challonge_duel_log.scoresCsv = "1-0"
+      else if room.challonge_duel_log.winnerId == room.challonge_info.player2Id
+        room.challonge_duel_log.scoresCsv = "0-1"
+      else
+        room.challonge_duel_log.scoresCsv = "0-0"
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
     if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
