@@ -1460,7 +1460,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       if !check(buffer)
         ygopro.stoc_die(client, '${invalid_password_checksum}')
         return
-        
+
       finish(buffer)
   
   else if settings.modules.challonge.enabled
