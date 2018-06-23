@@ -1069,7 +1069,7 @@
           challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id;
         } else if (room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]) {
           challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id;
-        } else if (room.scores[room.dueling_players[0].name] > 0 && room.scores[room.dueling_players[1].name]) {
+        } else if (room.scores[room.dueling_players[0].name] !== 0 || room.scores[room.dueling_players[1].name] !== 0) {
           challonge_duel_log.winnerId = "tie";
         }
         if (settings.modules.challonge.post_detailed_score) {
