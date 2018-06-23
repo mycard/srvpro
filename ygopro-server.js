@@ -1843,7 +1843,7 @@
                 found = false;
                 for (k in data) {
                   match = data[k];
-                  if (match && match.match && !match.winnerId && (match.match.player1Id === client.challonge_info.id || match.match.player2Id === client.challonge_info.id)) {
+                  if (match && match.match && !match.match.winnerId && (match.match.player1Id === client.challonge_info.id || match.match.player2Id === client.challonge_info.id)) {
                     found = match.match;
                     break;
                   }
