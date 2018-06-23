@@ -825,7 +825,7 @@ class Room
             #else
             #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
-    if settings.modules.challonge.enabled and @started and !@kicked
+    if settings.modules.challonge.enabled and @started and !@kicked and @disconnector != 'server'
       challonge.matches.update({
         id: settings.modules.challonge.tournament_id,
         matchId: @challonge_info.id,
