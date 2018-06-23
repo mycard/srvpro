@@ -12,7 +12,6 @@
   "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>",
   "dependencies": {
     "bunyan": "latest",
-    "challonge": "^2.1.1",
     "deepmerge": "latest",
     "load-json-file": "latest",
     "moment": "latest",
