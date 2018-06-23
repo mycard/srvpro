@@ -1510,7 +1510,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               if !found
                 ygopro.stoc_die(client, '${challonge_match_not_found}')
                 return
-              if found.winner_id
+              if found.winnerId
                 ygopro.stoc_die(client, '${challonge_match_already_finished}')
                 return
               room = ROOM_find_or_create_by_name('M#' + found.id)

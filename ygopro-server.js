@@ -1852,7 +1852,7 @@
                   ygopro.stoc_die(client, '${challonge_match_not_found}');
                   return;
                 }
-                if (found.winner_id) {
+                if (found.winnerId) {
                   ygopro.stoc_die(client, '${challonge_match_already_finished}');
                   return;
                 }
