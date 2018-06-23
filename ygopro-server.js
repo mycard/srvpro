@@ -1652,6 +1652,9 @@
       };
       finish = function(buffer) {
         var action, len2, m, name, opt1, opt2, opt3, options, ref2, room, title;
+        if (client.closed) {
+          return;
+        }
         action = buffer.readUInt8(1) >> 4;
         if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
           ygopro.stoc_die(client, '${invalid_password_unauthorized}');
@@ -1833,6 +1836,9 @@
               id: settings.modules.challonge.tournament_id,
               callback: function(err, data) {
                 var len4, len5, match, o, p, player, ref4, ref5;
+                if (client.closed) {
+                  return;
+                }
                 if (err || !data) {
                   if (err) {
                     log.warn("Failed loading Challonge match info", err);

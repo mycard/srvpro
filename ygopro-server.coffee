@@ -1344,6 +1344,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       (checksum & 0xFF) == 0
 
     finish = (buffer)->
+      if client.closed
+        return
       action = buffer.readUInt8(1) >> 4
       if buffer != decrypted_buffer and action in [1, 2, 4]
         ygopro.stoc_die(client, '${invalid_password_unauthorized}')
@@ -1497,6 +1499,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           challonge.matches.index({
             id: settings.modules.challonge.tournament_id,
             callback: (err, data) ->
+              if client.closed
+                return
               if err or !data
                 if err
                   log.warn("Failed loading Challonge match info", err)
