@@ -841,6 +841,9 @@
       this.duel_count = 0;
       this.death = 0;
       this.turn = 0;
+      if (settings.modules.challonge.enabled) {
+        this.challonge_duel_log = {};
+      }
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = JSON.parse(JSON.stringify(settings.hostinfo)));
       delete this.hostinfo.comment;
@@ -1019,7 +1022,7 @@
     }
 
     Room.prototype["delete"] = function() {
-      var challonge_duel_log, end_time, index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref2, replay_id, score, score_array;
+      var end_time, index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref2, replay_id, score, score_array;
       if (this.deleted) {
         return;
       }
@@ -1064,36 +1067,10 @@
         }
       }
       if (settings.modules.challonge.enabled && this.started) {
-        challonge_duel_log = {};
-        if (room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]) {
-          challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id;
-        } else if (room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]) {
-          challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id;
-        } else if (room.scores[room.dueling_players[0].name] !== 0 || room.scores[room.dueling_players[1].name] !== 0) {
-          challonge_duel_log.winnerId = "tie";
-        }
-        if (settings.modules.challonge.post_detailed_score) {
-          if (room.dueling_players[0].challonge_info.id === room.challonge_info.player1Id && room.dueling_players[1].challonge_info.id === room.challonge_info.player2Id) {
-            challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name];
-          } else if (room.dueling_players[1].challonge_info.id === room.challonge_info.player1Id && room.dueling_players[0].challonge_info.id === room.challonge_info.player2Id) {
-            challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name];
-          } else {
-            challonge_duel_log.scoresCsv = "0-0";
-            log.warn("Score mismatch.", room.name);
-          }
-        } else {
-          if (challonge_duel_log.winnerId === room.challonge_info.player1Id) {
-            challonge_duel_log.scoresCsv = "1-0";
-          } else if (challonge_duel_log.winnerId === room.challonge_info.player2Id) {
-            challonge_duel_log.scoresCsv = "0-1";
-          } else {
-            challonge_duel_log.scoresCsv = "0-0";
-          }
-        }
         challonge.matches.update({
           id: settings.modules.challonge.tournament_id,
           matchId: this.challonge_info.id,
-          match: challonge_duel_log,
+          match: this.challonge_duel_log,
           callback: function(err, data) {
             if (err) {
               log.warn("Errored pushing scores to Challonge.", err);
@@ -2229,6 +2206,33 @@
       if (room && !room.finished && room.dueling_players[pos]) {
         room.winner_name = room.dueling_players[pos].name;
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
+      }
+      if (settings.modules.challonge.enabled) {
+        if (room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]) {
+          room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id;
+        } else if (room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]) {
+          room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id;
+        } else if (room.scores[room.dueling_players[0].name] !== 0 || room.scores[room.dueling_players[1].name] !== 0) {
+          room.challonge_duel_log.winnerId = "tie";
+        }
+        if (settings.modules.challonge.post_detailed_score) {
+          if (room.dueling_players[0].challonge_info.id === room.challonge_info.player1Id && room.dueling_players[1].challonge_info.id === room.challonge_info.player2Id) {
+            room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name];
+          } else if (room.dueling_players[1].challonge_info.id === room.challonge_info.player1Id && room.dueling_players[0].challonge_info.id === room.challonge_info.player2Id) {
+            room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name];
+          } else {
+            room.challonge_duel_log.scoresCsv = "0-0";
+            log.warn("Score mismatch.", room.name);
+          }
+        } else {
+          if (room.challonge_duel_log.winnerId === room.challonge_info.player1Id) {
+            room.challonge_duel_log.scoresCsv = "1-0";
+          } else if (room.challonge_duel_log.winnerId === room.challonge_info.player2Id) {
+            room.challonge_duel_log.scoresCsv = "0-1";
+          } else {
+            room.challonge_duel_log.scoresCsv = "0-0";
+          }
+        }
       }
       if (room.death) {
         if (settings.modules.http.quick_death_rule === 1 || settings.modules.http.quick_death_rule === 3) {
