@@ -1504,15 +1504,15 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
                 return
               found = false
               for k,match of data
-                if match and match.match and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
+                if match and match.match and !match.winnerId and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
                   found = match.match
                   break
               if !found
                 ygopro.stoc_die(client, '${challonge_match_not_found}')
                 return
-              if found.winnerId
-                ygopro.stoc_die(client, '${challonge_match_already_finished}')
-                return
+              #if found.winnerId
+              #  ygopro.stoc_die(client, '${challonge_match_already_finished}')
+              #  return
               room = ROOM_find_or_create_by_name('M#' + found.id)
               if room
                 room.challonge_info = found
