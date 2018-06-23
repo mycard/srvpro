@@ -1629,7 +1629,7 @@
         code: settings.version
       });
       CLIENT_kick(client);
-    } else if (!info.pass.length && !settings.modules.random_duel.enabled && !settings.modules.windbot.enabled) {
+    } else if (!info.pass.length && !settings.modules.random_duel.enabled && !settings.modules.windbot.enabled && !settings.modules.challonge.enabled) {
       ygopro.stoc_die(client, "${blank_room_name}");
     } else if (info.pass.length && settings.modules.mycard.enabled && info.pass.slice(0, 3) !== 'AI#') {
       ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE);

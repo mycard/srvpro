@@ -1315,7 +1315,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     CLIENT_kick(client)
 
-  else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled
+  else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled and !settings.modules.challonge.enabled
     ygopro.stoc_die(client, "${blank_room_name}")
 
   else if info.pass.length and settings.modules.mycard.enabled and info.pass[0...3] != 'AI#'
