@@ -656,8 +656,6 @@ class Room
     @duel_count = 0
     @death = 0
     @turn = 0
-    if settings.modules.challonge.enabled
-      @challonge_duel_log = {}
     ROOM_all.push this
 
     @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
@@ -826,10 +824,32 @@ class Room
             #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
     if settings.modules.challonge.enabled and @started
+      challonge_duel_log = {}
+      if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]
+        challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id
+      else if room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]
+        challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
+      else if room.scores[room.dueling_players[0].name] > 0 and room.scores[room.dueling_players[1].name]
+        challonge_duel_log.winnerId = "tie"
+      if settings.modules.challonge.post_detailed_score
+        if room.dueling_players[0].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[1].challonge_info.id == room.challonge_info.player2Id
+          challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name]
+        else if room.dueling_players[1].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[0].challonge_info.id == room.challonge_info.player2Id
+          challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name]
+        else
+          challonge_duel_log.scoresCsv = "0-0"
+          log.warn("Score mismatch.", room.name)
+      else
+        if challonge_duel_log.winnerId == room.challonge_info.player1Id
+          challonge_duel_log.scoresCsv = "1-0"
+        else if challonge_duel_log.winnerId == room.challonge_info.player2Id
+          challonge_duel_log.scoresCsv = "0-1"
+        else
+          challonge_duel_log.scoresCsv = "0-0"
       challonge.matches.update({
         id: settings.modules.challonge.tournament_id,
         matchId: @challonge_info.id,
-        match: @challonge_duel_log,
+        match: challonge_duel_log,
         callback: (err, data) ->
           if err
             log.warn("Errored pushing scores to Challonge.", err)
@@ -1504,7 +1524,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
                 return
               found = false
               for k,match of data
-                if match and match.match and !match.match.winnerId and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
+                if match and match.match and !match.match.winnerId and match.match.player1Id and match.match.player2Id and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
                   found = match.match
                   break
               if !found
@@ -2510,28 +2530,6 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player unless room
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
-  if settings.modules.challonge.enabled and client.pos == 0
-    if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]
-      room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id
-    else if room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]
-      room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
-    else
-      room.challonge_duel_log.winnerId = "tie"
-    if settings.modules.challonge.post_detailed_score
-      if room.dueling_players[0].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[1].challonge_info.id == room.challonge_info.player2Id
-        room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name]
-      else if room.dueling_players[1].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[0].challonge_info.id == room.challonge_info.player2Id
-        room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name]
-      else
-        room.challonge_duel_log.scoresCsv = "0-0"
-        log.warn("Score mismatch.", room.name)
-    else
-      if room.challonge_duel_log.winnerId == room.challonge_info.player1Id
-        room.challonge_duel_log.scoresCsv = "1-0"
-      else if room.challonge_duel_log.winnerId == room.challonge_info.player2Id
-        room.challonge_duel_log.scoresCsv = "0-1"
-      else
-        room.challonge_duel_log.scoresCsv = "0-0"
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
     if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
@@ -2787,9 +2785,24 @@ if settings.modules.http
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"))
 
+      else if u.query.kick
+        kick_room_found = false
+        for room in ROOM_all when room and room.established and (u.query.kick == "all" or u.query.kick == room.port.toString() or u.query.kick == room.name)
+          kick_room_found = true
+          if room.started
+            room.scores[room.dueling_players[0].name] = 0
+            room.scores[room.dueling_players[1].name] = 0
+          room.process.kill()
+          room.delete()
+        response.writeHead(200)
+        if kick_room_found
+          response.end(addCallback(u.query.callback, "['kick ok', '" + u.query.kick + "']"))
+        else
+          response.end(addCallback(u.query.callback, "['room not found', '" + u.query.kick + "']"))
+
       else if u.query.death
         death_room_found = false
-        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString())
+        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString() or u.query.death == room.name)
           death_room_found = true
           oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
           if !room.changing_side and (!room.duel_count or room.turn)

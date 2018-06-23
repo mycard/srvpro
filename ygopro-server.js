@@ -841,9 +841,6 @@
       this.duel_count = 0;
       this.death = 0;
       this.turn = 0;
-      if (settings.modules.challonge.enabled) {
-        this.challonge_duel_log = {};
-      }
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = JSON.parse(JSON.stringify(settings.hostinfo)));
       delete this.hostinfo.comment;
@@ -1022,7 +1019,7 @@
     }
 
     Room.prototype["delete"] = function() {
-      var end_time, index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref2, replay_id, score, score_array;
+      var challonge_duel_log, end_time, index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref2, replay_id, score, score_array;
       if (this.deleted) {
         return;
       }
@@ -1067,10 +1064,36 @@
         }
       }
       if (settings.modules.challonge.enabled && this.started) {
+        challonge_duel_log = {};
+        if (room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]) {
+          challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id;
+        } else if (room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]) {
+          challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id;
+        } else if (room.scores[room.dueling_players[0].name] > 0 && room.scores[room.dueling_players[1].name]) {
+          challonge_duel_log.winnerId = "tie";
+        }
+        if (settings.modules.challonge.post_detailed_score) {
+          if (room.dueling_players[0].challonge_info.id === room.challonge_info.player1Id && room.dueling_players[1].challonge_info.id === room.challonge_info.player2Id) {
+            challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name];
+          } else if (room.dueling_players[1].challonge_info.id === room.challonge_info.player1Id && room.dueling_players[0].challonge_info.id === room.challonge_info.player2Id) {
+            challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name];
+          } else {
+            challonge_duel_log.scoresCsv = "0-0";
+            log.warn("Score mismatch.", room.name);
+          }
+        } else {
+          if (challonge_duel_log.winnerId === room.challonge_info.player1Id) {
+            challonge_duel_log.scoresCsv = "1-0";
+          } else if (challonge_duel_log.winnerId === room.challonge_info.player2Id) {
+            challonge_duel_log.scoresCsv = "0-1";
+          } else {
+            challonge_duel_log.scoresCsv = "0-0";
+          }
+        }
         challonge.matches.update({
           id: settings.modules.challonge.tournament_id,
           matchId: this.challonge_info.id,
-          match: this.challonge_duel_log,
+          match: challonge_duel_log,
           callback: function(err, data) {
             if (err) {
               log.warn("Errored pushing scores to Challonge.", err);
@@ -1843,7 +1866,7 @@
                 found = false;
                 for (k in data) {
                   match = data[k];
-                  if (match && match.match && !match.match.winnerId && (match.match.player1Id === client.challonge_info.id || match.match.player2Id === client.challonge_info.id)) {
+                  if (match && match.match && !match.match.winnerId && match.match.player1Id && match.match.player2Id && (match.match.player1Id === client.challonge_info.id || match.match.player2Id === client.challonge_info.id)) {
                     found = match.match;
                     break;
                   }
@@ -3163,33 +3186,6 @@
     if (settings.modules.cloud_replay.enabled && room.random_type) {
       Cloud_replay_ids.push(room.cloud_replay_id);
     }
-    if (settings.modules.challonge.enabled && client.pos === 0) {
-      if (room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]) {
-        room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id;
-      } else if (room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]) {
-        room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id;
-      } else {
-        room.challonge_duel_log.winnerId = "tie";
-      }
-      if (settings.modules.challonge.post_detailed_score) {
-        if (room.dueling_players[0].challonge_info.id === room.challonge_info.player1Id && room.dueling_players[1].challonge_info.id === room.challonge_info.player2Id) {
-          room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name];
-        } else if (room.dueling_players[1].challonge_info.id === room.challonge_info.player1Id && room.dueling_players[0].challonge_info.id === room.challonge_info.player2Id) {
-          room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name];
-        } else {
-          room.challonge_duel_log.scoresCsv = "0-0";
-          log.warn("Score mismatch.", room.name);
-        }
-      } else {
-        if (room.challonge_duel_log.winnerId === room.challonge_info.player1Id) {
-          room.challonge_duel_log.scoresCsv = "1-0";
-        } else if (room.challonge_duel_log.winnerId === room.challonge_info.player2Id) {
-          room.challonge_duel_log.scoresCsv = "0-1";
-        } else {
-          room.challonge_duel_log.scoresCsv = "0-0";
-        }
-      }
-    }
     if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
       if (client.pos === 0) {
         dueltime = moment().format('YYYY-MM-DD HH-mm-ss');
@@ -3326,7 +3322,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, len2, len3, len4, len5, m, n, o, oppo_pos, p, parseQueryString, pass_validated, player, ref2, replay, room, roomsjson, u, win_pos;
+      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, kick_room_found, len2, len3, len4, len5, len6, m, n, o, oppo_pos, p, parseQueryString, pass_validated, player, q, ref2, replay, room, roomsjson, u, win_pos;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       pass_validated = u.query.pass === settings.modules.http.password;
@@ -3528,11 +3524,32 @@
           ban_user(u.query.ban);
           response.writeHead(200);
           response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"));
-        } else if (u.query.death) {
-          death_room_found = false;
+        } else if (u.query.kick) {
+          kick_room_found = false;
           for (o = 0, len4 = ROOM_all.length; o < len4; o++) {
             room = ROOM_all[o];
-            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.port.toString()))) {
+            if (!(room && room.established && (u.query.kick === "all" || u.query.kick === room.port.toString() || u.query.kick === room.name))) {
+              continue;
+            }
+            kick_room_found = true;
+            if (room.started) {
+              room.scores[room.dueling_players[0].name] = 0;
+              room.scores[room.dueling_players[1].name] = 0;
+            }
+            room.process.kill();
+            room["delete"]();
+          }
+          response.writeHead(200);
+          if (kick_room_found) {
+            response.end(addCallback(u.query.callback, "['kick ok', '" + u.query.kick + "']"));
+          } else {
+            response.end(addCallback(u.query.callback, "['room not found', '" + u.query.kick + "']"));
+          }
+        } else if (u.query.death) {
+          death_room_found = false;
+          for (p = 0, len5 = ROOM_all.length; p < len5; p++) {
+            room = ROOM_all[p];
+            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.port.toString() || u.query.death === room.name))) {
               continue;
             }
             death_room_found = true;
@@ -3591,8 +3608,8 @@
           }
         } else if (u.query.deathcancel) {
           death_room_found = false;
-          for (p = 0, len5 = ROOM_all.length; p < len5; p++) {
-            room = ROOM_all[p];
+          for (q = 0, len6 = ROOM_all.length; q < len6; q++) {
+            room = ROOM_all[q];
             if (!(room && room.established && room.started && room.death && (u.query.deathcancel === "all" || u.query.deathcancel === room.port.toString()))) {
               continue;
             }
