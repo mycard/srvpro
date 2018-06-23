@@ -1480,34 +1480,43 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       challonge.participants.index({
         id: settings.modules.challonge.tournament_id,
         callback: (err, data) ->
-          if err or !data or !data.participant or client.name != data.participant.name
+          log.info("user info", client.name, data)
+          if err or !data
             if err
               log.warn("Failed loading Challonge user info", err)
+            ygopro.stoc_die(client, '${challonge_match_load_failed}')
+            return
+          found = false
+          for user in data
+            if user.participant.name == client.name
+              found = user.participant
+              break
+          if !found
             ygopro.stoc_die(client, '${challonge_user_not_found}')
             return
-          client.challonge_info = data.participant
+          client.challonge_info = found
           challonge.participants.index({
             id: settings.modules.challonge.tournament_id,
             callback: (err, data) ->
-              if err or !data or !data.match_list
+              if err or !data
                 if err
                   log.warn("Failed loading Challonge match info", err)
                 ygopro.stoc_die(client, '${challonge_match_load_failed}')
                 return
-              found_match = false
-              for match in data.match_list
-                if data.match_list.player1_id == client.challonge_info.id or data.match_list.player2_id == client.challonge_info.id
-                 found_match = data.match_list
+              found = false
+              for match in data
+                if data.match.player1_id == client.challonge_info.id or data.match.player2_id == client.challonge_info.id
+                 found = data.match_list
                  break
-              if !found_match
+              if !found
                 ygopro.stoc_die(client, '${challonge_match_not_found}')
                 return
-              if found_match.winner_id
+              if found.winner_id
                 ygopro.stoc_die(client, '${challonge_match_already_finished}')
                 return
-              room = ROOM_find_or_create_by_name('M#' + found_match.id)
+              room = ROOM_find_or_create_by_name('M#' + found.id)
               if room
-                room.challonge_info = found_match
+                room.challonge_info = found
                 room.max_player = 2
                 room.welcome = "${challonge_match_created}"
               if !room

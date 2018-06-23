@@ -1808,45 +1808,58 @@
         challonge.participants.index({
           id: settings.modules.challonge.tournament_id,
           callback: function(err, data) {
-            if (err || !data || !data.participant || client.name !== data.participant.name) {
+            var found, len4, o, user;
+            log.info("user info", client.name, data);
+            if (err || !data) {
               if (err) {
                 log.warn("Failed loading Challonge user info", err);
               }
+              ygopro.stoc_die(client, '${challonge_match_load_failed}');
+              return;
+            }
+            found = false;
+            for (o = 0, len4 = data.length; o < len4; o++) {
+              user = data[o];
+              if (user.participant.name === client.name) {
+                found = user.participant;
+                break;
+              }
+            }
+            if (!found) {
               ygopro.stoc_die(client, '${challonge_user_not_found}');
               return;
             }
-            client.challonge_info = data.participant;
+            client.challonge_info = found;
             challonge.participants.index({
               id: settings.modules.challonge.tournament_id,
               callback: function(err, data) {
-                var found_match, len4, len5, match, o, p, ref4, ref5;
-                if (err || !data || !data.match_list) {
+                var len5, len6, match, p, q, ref4;
+                if (err || !data) {
                   if (err) {
                     log.warn("Failed loading Challonge match info", err);
                   }
                   ygopro.stoc_die(client, '${challonge_match_load_failed}');
                   return;
                 }
-                found_match = false;
-                ref4 = data.match_list;
-                for (o = 0, len4 = ref4.length; o < len4; o++) {
-                  match = ref4[o];
-                  if (data.match_list.player1_id === client.challonge_info.id || data.match_list.player2_id === client.challonge_info.id) {
-                    found_match = data.match_list;
+                found = false;
+                for (p = 0, len5 = data.length; p < len5; p++) {
+                  match = data[p];
+                  if (data.match.player1_id === client.challonge_info.id || data.match.player2_id === client.challonge_info.id) {
+                    found = data.match_list;
                     break;
                   }
                 }
-                if (!found_match) {
+                if (!found) {
                   ygopro.stoc_die(client, '${challonge_match_not_found}');
                   return;
                 }
-                if (found_match.winner_id) {
+                if (found.winner_id) {
                   ygopro.stoc_die(client, '${challonge_match_already_finished}');
                   return;
                 }
-                room = ROOM_find_or_create_by_name('M#' + found_match.id);
+                room = ROOM_find_or_create_by_name('M#' + found.id);
                 if (room) {
-                  room.challonge_info = found_match;
+                  room.challonge_info = found;
                   room.max_player = 2;
                   room.welcome = "${challonge_match_created}";
                 }
@@ -1862,9 +1875,9 @@
                     ygopro.stoc_send_chat_to_room(room, client.name + " ${watch_join}");
                     room.watchers.push(client);
                     ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE);
-                    ref5 = room.watcher_buffers;
-                    for (p = 0, len5 = ref5.length; p < len5; p++) {
-                      buffer = ref5[p];
+                    ref4 = room.watcher_buffers;
+                    for (q = 0, len6 = ref4.length; q < len6; q++) {
+                      buffer = ref4[q];
                       client.write(buffer);
                     }
                   } else {
