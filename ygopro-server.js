@@ -1855,7 +1855,6 @@
                 room = ROOM_find_or_create_by_name('M#' + found.id);
                 if (room) {
                   room.challonge_info = found;
-                  room.max_player = 2;
                   room.welcome = "${challonge_match_created}";
                 }
                 if (!room) {
