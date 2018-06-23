@@ -64,6 +64,7 @@ import_datas = [
   "last_game_msg_title",
   "last_hint_msg",
   "start_deckbuf",
+  "challonge_info",
   "ready_trap"
 ]
 
@@ -249,6 +250,11 @@ if settings.modules.mycard.enabled
   pg_client.on 'drain', pg_client.end.bind(pg_client)
   log.info "loading mycard user..."
   pg_client.connect()
+
+if settings.modules.challonge.enabled
+  challonge = require('challonge').createClient({
+    apiKey: settings.modules.challonge.api_key
+  })
 
 # 获取可用内存
 memory_usage = 0
@@ -650,6 +656,8 @@ class Room
     @duel_count = 0
     @death = 0
     @turn = 0
+    if settings.modules.challonge.enabled
+      @challonge_duel_log = {}
     ROOM_all.push this
 
     @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
@@ -817,6 +825,16 @@ class Room
             #else
             #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
+    if settings.modules.challonge.enabled
+      challonge.matches.update({
+        id: settings.modules.challonge.tournament_id,
+        matchId: room.challonge_info.id,
+        match: room.challonge_duel_log,
+        callback: (err, data) ->
+          if err
+            log.warn("Errored pushing scores to Challonge.", err)
+          return
+      })
     if @player_datas.length and settings.modules.cloud_replay.enabled
       replay_id = @cloud_replay_id
       if @has_ygopro_error
@@ -1360,8 +1378,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           }
           options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room = new Room(name, options)
-          room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
-          room.private = action == 2
+          if room
+            room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
+            room.private = action == 2
         when 3
           name = info.pass.slice(8)
           room = ROOM_find_by_name(name)
@@ -1370,11 +1389,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             return
         when 4
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
-          room.private = true
-          room.arena = settings.modules.arena_mode.mode
-          if room.arena == "athletic"
-            room.max_player = 2
-            room.welcome = "${athletic_arena_tip}"
+          if room
+            room.private = true
+            room.arena = settings.modules.arena_mode.mode
+            if room.arena == "athletic"
+              room.max_player = 2
+              room.welcome = "${athletic_arena_tip}"
         when 5
           title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room = ROOM_find_by_title(title)
@@ -1440,8 +1460,81 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       if !check(buffer)
         ygopro.stoc_die(client, '${invalid_password_checksum}')
         return
-      
+        
       finish(buffer)
+  
+  else if settings.modules.challonge.enabled
+    pre_room = ROOM_find_by_name(info.pass)
+    if pre_room and pre_room.started and settings.modules.cloud_replay.enable_halfway_watch
+      room = pre_room
+      client.setTimeout(300000) #连接后超时5分钟
+      client.rid = _.indexOf(ROOM_all, room)
+      client.is_post_watcher = true
+      ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
+      room.watchers.push client
+      ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
+      for buffer in room.watcher_buffers
+        client.write buffer
+    else
+      ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
+      challonge.participants.index({
+        id: settings.modules.challonge.tournament_id,
+        callback: (err, data) ->
+          if err or !data or !data.participant or client.name != data.participant.name
+            if err
+              log.warn("Failed loading Challonge user info", err)
+            ygopro.stoc_die(client, '${challonge_user_not_found}')
+            return
+          client.challonge_info = data.participant
+          challonge.participants.index({
+            id: settings.modules.challonge.tournament_id,
+            callback: (err, data) ->
+              if err or !data or !data.match_list
+                if err
+                  log.warn("Failed loading Challonge match info", err)
+                ygopro.stoc_die(client, '${challonge_match_load_failed}')
+                return
+              found_match = false
+              for match in data.match_list
+                if data.match_list.player1_id == client.challonge_info.id or data.match_list.player2_id == client.challonge_info.id
+                 found_match = data.match_list
+                 break
+              if !found_match
+                ygopro.stoc_die(client, '${challonge_match_not_found}')
+                return
+              if found_match.winner_id
+                ygopro.stoc_die(client, '${challonge_match_already_finished}')
+                return
+              room = ROOM_find_or_create_by_name('M#' + found_match.id)
+              if room
+                room.challonge_info = found_match
+                room.max_player = 2
+                room.welcome = "${challonge_match_created}"
+              if !room
+                ygopro.stoc_die(client, "${server_full}")
+              else if room.error
+                ygopro.stoc_die(client, room.error)
+              else if room.started
+                if settings.modules.cloud_replay.enable_halfway_watch
+                  client.setTimeout(300000) #连接后超时5分钟
+                  client.rid = _.indexOf(ROOM_all, room)
+                  client.is_post_watcher = true
+                  ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
+                  room.watchers.push client
+                  ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
+                  for buffer in room.watcher_buffers
+                    client.write buffer
+                else
+                  ygopro.stoc_die(client, "${watch_denied}")
+              else
+                #client.room = room
+                client.setTimeout(300000) #连接后超时5分钟
+                client.rid = _.indexOf(ROOM_all, room)
+                room.connect(client)
+              return
+          })
+          return
+      })
   
   else if !client.name or client.name==""
     ygopro.stoc_die(client, "${bad_user_name}")
@@ -2403,9 +2496,22 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe unless room
+  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player unless room
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
+  if settings.modules.challonge.enabled and client.pos == 0
+    if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]
+      room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id
+    else if room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]
+      room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
+    else
+      room.challonge_duel_log.winnerId = "tie"
+    if room.challonge_duel_log.winnerId == room.challonge_info.player1_id
+      room.challonge_duel_log.scoresCsv = "1-0"
+    else if room.challonge_duel_log.winnerId == room.challonge_info.player2_id
+      room.challonge_duel_log.scoresCsv = "0-1"
+    else
+      room.challonge_duel_log.scoresCsv = "0-0"
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
     if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
