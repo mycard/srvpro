@@ -2356,7 +2356,7 @@
     if (!room) {
       return;
     }
-    if (!room.arena || client.is_local) {
+    if ((!room.arena && !settings.modules.challonge.enabled) || client.is_local) {
       return false;
     }
     ref2 = room.players;
@@ -2380,7 +2380,7 @@
     for (m = 0, len2 = ref2.length; m < len2; m++) {
       player = ref2[m];
       if (player && player.pos === info.pos && player !== client) {
-        if (room.arena === "athletic") {
+        if (room.arena === "athletic" || settings.modules.challonge.enabled) {
           ygopro.stoc_send_chat_to_room(room, client.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
           CLIENT_kick(client);
           return true;

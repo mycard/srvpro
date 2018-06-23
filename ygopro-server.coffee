@@ -1937,7 +1937,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
 ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
-  if not room.arena or client.is_local
+  if (!room.arena and !settings.modules.challonge.enabled) or client.is_local
     return false
   for player in room.players
     if player == client
@@ -1950,7 +1950,7 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
   return unless room
   for player in room.players
     if player and player.pos == info.pos and player != client
-      if room.arena == "athletic"
+      if room.arena == "athletic" or settings.modules.challonge.enabled
         ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         CLIENT_kick(client)
         return true
