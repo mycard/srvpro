@@ -97,6 +97,12 @@
       "auth_database": "postgres://233@233.mycard.moe/233",
       "auth_key": "233333"
     },
+    "challonge": {
+      "enabled": false,
+      "post_detailed_score": true,
+      "api_key": "123",
+      "tournament_id": "456"
+    },
     "deck_log": {
       "enabled": false,
       "accesskey": "233",

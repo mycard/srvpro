@@ -137,6 +137,12 @@
     "deck_incorrect_reconnect": "Please pick your previous deck.",
     "reconnect_failed": "Reconnect failed.",
     "reconnecting_to_room": "Reconnecting to server...",
+    "challonge_user_not_found": "You are not a participant of the tournament.",
+    "challonge_match_load_failed": "Failed loading tournament info.",
+    "challonge_match_not_found": "Your current match was not found.",
+    "challonge_match_already_finished": "Your current match was already finished. Please call the judge for any help.",
+    "challonge_match_created": "A room for match only is created. Your opponent will join in automatically.",
+    "challonge_player_already_in": "Please do not enter the room you are already in.",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender."
   },
   "es-es": {
@@ -414,6 +420,12 @@
     "deck_incorrect_reconnect": "请选择你在本局决斗中使用的卡组。",
     "reconnect_failed": "重新连接失败。",
     "reconnecting_to_room": "正在重新连接到服务器……",
+    "challonge_user_not_found": "未找到你的参赛信息。",
+    "challonge_match_load_failed": "读取比赛信息失败。",
+    "challonge_match_not_found": "你没有当前轮次的比赛。",
+    "challonge_match_already_finished": "你在当前轮次的比赛已经结束，如需重赛，请联系裁判。",
+    "challonge_match_created": "已建立比赛专用房间，将会自动匹配你的对手。",
+    "challonge_player_already_in": "请不要重复加入比赛房间。",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。"
   },
  "ko-kr": {

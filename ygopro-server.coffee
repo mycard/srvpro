@@ -64,6 +64,7 @@ import_datas = [
   "last_game_msg_title",
   "last_hint_msg",
   "start_deckbuf",
+  "challonge_info",
   "ready_trap"
 ]
 
@@ -249,6 +250,11 @@ if settings.modules.mycard.enabled
   pg_client.on 'drain', pg_client.end.bind(pg_client)
   log.info "loading mycard user..."
   pg_client.connect()
+
+if settings.modules.challonge.enabled
+  challonge = require('challonge').createClient({
+    apiKey: settings.modules.challonge.api_key
+  })
 
 # 获取可用内存
 memory_usage = 0
@@ -447,7 +453,7 @@ release_disconnect = (dinfo, reconnected) ->
   return
 
 CLIENT_get_authorize_key = (client) ->
-  if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or client.is_local
+  if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or settings.modules.challonge.enabled or client.is_local
     return client.name
   else
     return client.ip + ":" + client.name
@@ -650,6 +656,8 @@ class Room
     @duel_count = 0
     @death = 0
     @turn = 0
+    if settings.modules.challonge.enabled
+      @challonge_duel_log = {}
     ROOM_all.push this
 
     @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
@@ -817,6 +825,16 @@ class Room
             #else
             #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
+    if settings.modules.challonge.enabled and @started
+      challonge.matches.update({
+        id: settings.modules.challonge.tournament_id,
+        matchId: @challonge_info.id,
+        match: @challonge_duel_log,
+        callback: (err, data) ->
+          if err
+            log.warn("Errored pushing scores to Challonge.", err)
+          return
+      })
     if @player_datas.length and settings.modules.cloud_replay.enabled
       replay_id = @cloud_replay_id
       if @has_ygopro_error
@@ -1297,7 +1315,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     CLIENT_kick(client)
 
-  else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled
+  else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled and !settings.modules.challonge.enabled
     ygopro.stoc_die(client, "${blank_room_name}")
 
   else if info.pass.length and settings.modules.mycard.enabled and info.pass[0...3] != 'AI#'
@@ -1360,8 +1378,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           }
           options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room = new Room(name, options)
-          room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
-          room.private = action == 2
+          if room
+            room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
+            room.private = action == 2
         when 3
           name = info.pass.slice(8)
           room = ROOM_find_by_name(name)
@@ -1370,11 +1389,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             return
         when 4
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
-          room.private = true
-          room.arena = settings.modules.arena_mode.mode
-          if room.arena == "athletic"
-            room.max_player = 2
-            room.welcome = "${athletic_arena_tip}"
+          if room
+            room.private = true
+            room.arena = settings.modules.arena_mode.mode
+            if room.arena == "athletic"
+              room.max_player = 2
+              room.welcome = "${athletic_arena_tip}"
         when 5
           title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room = ROOM_find_by_title(title)
@@ -1440,8 +1460,92 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       if !check(buffer)
         ygopro.stoc_die(client, '${invalid_password_checksum}')
         return
-      
+        
       finish(buffer)
+  
+  else if settings.modules.challonge.enabled
+    pre_room = ROOM_find_by_name(info.pass)
+    if pre_room and pre_room.started and settings.modules.cloud_replay.enable_halfway_watch
+      room = pre_room
+      client.setTimeout(300000) #连接后超时5分钟
+      client.rid = _.indexOf(ROOM_all, room)
+      client.is_post_watcher = true
+      ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
+      room.watchers.push client
+      ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
+      for buffer in room.watcher_buffers
+        client.write buffer
+    else
+      ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
+      challonge.participants.index({
+        id: settings.modules.challonge.tournament_id,
+        callback: (err, data) ->
+          if err or !data
+            if err
+              log.warn("Failed loading Challonge user info", err)
+            ygopro.stoc_die(client, '${challonge_match_load_failed}')
+            return
+          found = false
+          for k,user of data
+            if user.participant and user.participant.name == client.name
+              found = user.participant
+              break
+          if !found
+            ygopro.stoc_die(client, '${challonge_user_not_found}')
+            return
+          client.challonge_info = found
+          challonge.matches.index({
+            id: settings.modules.challonge.tournament_id,
+            callback: (err, data) ->
+              if err or !data
+                if err
+                  log.warn("Failed loading Challonge match info", err)
+                ygopro.stoc_die(client, '${challonge_match_load_failed}')
+                return
+              found = false
+              for k,match of data
+                if match and match.match and !match.match.winnerId and match.match.player1Id and match.match.player2Id and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
+                  found = match.match
+                  break
+              if !found
+                ygopro.stoc_die(client, '${challonge_match_not_found}')
+                return
+              #if found.winnerId
+              #  ygopro.stoc_die(client, '${challonge_match_already_finished}')
+              #  return
+              room = ROOM_find_or_create_by_name('M#' + found.id)
+              if room
+                room.challonge_info = found
+                room.max_player = 2
+                room.welcome = "${challonge_match_created}"
+              if !room
+                ygopro.stoc_die(client, "${server_full}")
+              else if room.error
+                ygopro.stoc_die(client, room.error)
+              else if room.started
+                if settings.modules.cloud_replay.enable_halfway_watch
+                  client.setTimeout(300000) #连接后超时5分钟
+                  client.rid = _.indexOf(ROOM_all, room)
+                  client.is_post_watcher = true
+                  ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
+                  room.watchers.push client
+                  ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
+                  for buffer in room.watcher_buffers
+                    client.write buffer
+                else
+                  ygopro.stoc_die(client, "${watch_denied}")
+              else
+                for player in room.players when player and player != client and player.name == client.name
+                  ygopro.stoc_die(client, "${challonge_player_already_in}")
+                  return
+                #client.room = room
+                client.setTimeout(300000) #连接后超时5分钟
+                client.rid = _.indexOf(ROOM_all, room)
+                room.connect(client)
+              return
+          })
+          return
+      })
   
   else if !client.name or client.name==""
     ygopro.stoc_die(client, "${bad_user_name}")
@@ -1730,6 +1834,28 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       room.winner_name = room.dueling_players[pos].name
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
+    if settings.modules.challonge.enabled
+      if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]
+        room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id
+      else if room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]
+        room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
+      else if room.scores[room.dueling_players[0].name] != 0 or room.scores[room.dueling_players[1].name] != 0
+        room.challonge_duel_log.winnerId = "tie"
+      if settings.modules.challonge.post_detailed_score
+        if room.dueling_players[0].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[1].challonge_info.id == room.challonge_info.player2Id
+          room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name]
+        else if room.dueling_players[1].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[0].challonge_info.id == room.challonge_info.player2Id
+          room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name]
+        else
+          room.challonge_duel_log.scoresCsv = "0-0"
+          log.warn("Score mismatch.", room.name)
+      else
+        if room.challonge_duel_log.winnerId == room.challonge_info.player1Id
+          room.challonge_duel_log.scoresCsv = "1-0"
+        else if room.challonge_duel_log.winnerId == room.challonge_info.player2Id
+          room.challonge_duel_log.scoresCsv = "0-1"
+        else
+          room.challonge_duel_log.scoresCsv = "0-0"
     if room.death 
       if settings.modules.http.quick_death_rule == 1 or settings.modules.http.quick_death_rule == 3
         room.death = -1
@@ -1811,7 +1937,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
 ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
-  if not room.arena or client.is_local
+  if (!room.arena and !settings.modules.challonge.enabled) or client.is_local
     return false
   for player in room.players
     if player == client
@@ -1824,7 +1950,7 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
   return unless room
   for player in room.players
     if player and player.pos == info.pos and player != client
-      if room.arena == "athletic"
+      if room.arena == "athletic" or settings.modules.challonge.enabled
         ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         CLIENT_kick(client)
         return true
@@ -2403,7 +2529,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe unless room
+  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player unless room
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
@@ -2661,9 +2787,24 @@ if settings.modules.http
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"))
 
+      else if u.query.kick
+        kick_room_found = false
+        for room in ROOM_all when room and room.established and (u.query.kick == "all" or u.query.kick == room.port.toString() or u.query.kick == room.name)
+          kick_room_found = true
+          if room.started
+            room.scores[room.dueling_players[0].name] = 0
+            room.scores[room.dueling_players[1].name] = 0
+          room.process.kill()
+          room.delete()
+        response.writeHead(200)
+        if kick_room_found
+          response.end(addCallback(u.query.callback, "['kick ok', '" + u.query.kick + "']"))
+        else
+          response.end(addCallback(u.query.callback, "['room not found', '" + u.query.kick + "']"))
+
       else if u.query.death
         death_room_found = false
-        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString())
+        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString() or u.query.death == room.name)
           death_room_found = true
           oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
           if !room.changing_side and (!room.duel_count or room.turn)
