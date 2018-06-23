@@ -453,7 +453,7 @@ release_disconnect = (dinfo, reconnected) ->
   return
 
 CLIENT_get_authorize_key = (client) ->
-  if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or client.is_local
+  if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or settings.modules.challonge.enabled or client.is_local
     return client.name
   else
     return client.ip + ":" + client.name
@@ -825,11 +825,11 @@ class Room
             #else
             #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
-    if settings.modules.challonge.enabled
+    if settings.modules.challonge.enabled and @started
       challonge.matches.update({
         id: settings.modules.challonge.tournament_id,
-        matchId: room.challonge_info.id,
-        match: room.challonge_duel_log,
+        matchId: @challonge_info.id,
+        match: @challonge_duel_log,
         callback: (err, data) ->
           if err
             log.warn("Errored pushing scores to Challonge.", err)
@@ -1480,22 +1480,21 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       challonge.participants.index({
         id: settings.modules.challonge.tournament_id,
         callback: (err, data) ->
-          log.info("user info", client.name, data)
           if err or !data
             if err
               log.warn("Failed loading Challonge user info", err)
             ygopro.stoc_die(client, '${challonge_match_load_failed}')
             return
           found = false
-          for user in data
-            if user.participant.name == client.name
+          for k,user of data
+            if user.participant and user.participant.name == client.name
               found = user.participant
               break
           if !found
             ygopro.stoc_die(client, '${challonge_user_not_found}')
             return
           client.challonge_info = found
-          challonge.participants.index({
+          challonge.matches.index({
             id: settings.modules.challonge.tournament_id,
             callback: (err, data) ->
               if err or !data
@@ -1504,10 +1503,10 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
                 ygopro.stoc_die(client, '${challonge_match_load_failed}')
                 return
               found = false
-              for match in data
-                if data.match.player1_id == client.challonge_info.id or data.match.player2_id == client.challonge_info.id
-                 found = data.match_list
-                 break
+              for k,match of data
+                if match and match.match and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
+                  found = match.match
+                  break
               if !found
                 ygopro.stoc_die(client, '${challonge_match_not_found}')
                 return
@@ -1536,6 +1535,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
                 else
                   ygopro.stoc_die(client, "${watch_denied}")
               else
+                for player in room.players when player and player != client and player.name == client.name
+                  ygopro.stoc_die(client, "${challonge_player_already_in}")
+                  return
                 #client.room = room
                 client.setTimeout(300000) #连接后超时5分钟
                 client.rid = _.indexOf(ROOM_all, room)
@@ -2515,9 +2517,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
     else
       room.challonge_duel_log.winnerId = "tie"
-    if room.challonge_duel_log.winnerId == room.challonge_info.player1_id
+    if room.challonge_duel_log.winnerId == room.challonge_info.player1Id
       room.challonge_duel_log.scoresCsv = "1-0"
-    else if room.challonge_duel_log.winnerId == room.challonge_info.player2_id
+    else if room.challonge_duel_log.winnerId == room.challonge_info.player2Id
       room.challonge_duel_log.scoresCsv = "0-1"
     else
       room.challonge_duel_log.scoresCsv = "0-0"
