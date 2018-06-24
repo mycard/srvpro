@@ -2464,7 +2464,7 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server)->
   for player in room.players when player and player.pos == pid
     tplayer = player
   return unless tplayer
-  tcolor = chat_color.save_list[if settings.modules.mycard.enabled then tplayer.name else tplayer.ip]
+  tcolor = chat_color.save_list[CLIENT_get_authorize_key(tplayer)]
   if tcolor
     ygopro.stoc_send client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor]

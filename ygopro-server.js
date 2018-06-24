@@ -3099,7 +3099,7 @@
     if (!tplayer) {
       return;
     }
-    tcolor = chat_color.save_list[settings.modules.mycard.enabled ? tplayer.name : tplayer.ip];
+    tcolor = chat_color.save_list[CLIENT_get_authorize_key(tplayer)];
     if (tcolor) {
       ygopro.stoc_send(client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor],
