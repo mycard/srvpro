@@ -1827,7 +1827,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
  
   if ygopro.constants.MSG[msg] == 'WIN' and client.pos == 0
     pos = buffer.readUInt8(1)
-    pos = 1 - pos unless client.is_first or pos == 2
+    pos = 1 - pos unless client.is_first or pos == 2 or room.turn == 0 or !room.turn
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     reason = buffer.readUInt8(2)
     #log.info {winner: pos, reason: reason}

@@ -2199,7 +2199,7 @@
     }
     if (ygopro.constants.MSG[msg] === 'WIN' && client.pos === 0) {
       pos = buffer.readUInt8(1);
-      if (!(client.is_first || pos === 2)) {
+      if (!(client.is_first || pos === 2 || room.turn === 0 || !room.turn)) {
         pos = 1 - pos;
       }
       if (pos >= 0 && room.hostinfo.mode === 2) {
