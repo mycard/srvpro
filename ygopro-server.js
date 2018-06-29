@@ -810,6 +810,9 @@
     current_old_server.destroy();
     client.established = true;
     client.pre_establish_buffers = [];
+    if (room.random_type || room.arena) {
+      room.last_active_time = moment();
+    }
     CLIENT_import_data(client, dinfo.old_client, room);
     CLIENT_send_reconnect_info(client, client.server, room);
     ygopro.stoc_send_chat_to_room(room, client.name + " ${reconnect_to_game}");
@@ -3260,12 +3263,12 @@
           continue;
         }
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
-        if (time_passed >= settings.modules.random_duel.hang_timeout) {
+        if (time_passed >= settings.modules.random_duel.hang_timeout && !room.waiting_for_player.closed) {
           room.last_active_time = moment();
           ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}");
           ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
           room.waiting_for_player.server.destroy();
-        } else if (time_passed >= (settings.modules.random_duel.hang_timeout - 20) && !(time_passed % 10)) {
+        } else if (time_passed >= (settings.modules.random_duel.hang_timeout - 20) && !(time_passed % 10) && !room.waiting_for_player.closed) {
           ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${afk_warn_part1}" + (settings.modules.random_duel.hang_timeout - time_passed) + "${afk_warn_part2}", ygopro.constants.COLORS.RED);
           ROOM_unwelcome(room, room.waiting_for_player, "${random_ban_reason_AFK}");
         }
@@ -3282,12 +3285,12 @@
           continue;
         }
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
-        if (time_passed >= settings.modules.random_duel.hang_timeout) {
+        if (time_passed >= settings.modules.random_duel.hang_timeout && !room.waiting_for_player.closed) {
           room.last_active_time = moment();
           ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
           room.scores[room.waiting_for_player.name] = -9;
           room.waiting_for_player.server.destroy();
-        } else if (time_passed >= (settings.modules.random_duel.hang_timeout - 20) && !(time_passed % 10)) {
+        } else if (time_passed >= (settings.modules.random_duel.hang_timeout - 20) && !(time_passed % 10) && !room.waiting_for_player.closed) {
           ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${afk_warn_part1}" + (settings.modules.random_duel.hang_timeout - time_passed) + "${afk_warn_part2}", ygopro.constants.COLORS.RED);
         }
       }
