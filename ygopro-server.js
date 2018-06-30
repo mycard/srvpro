@@ -845,7 +845,7 @@
     client.heartbeat_responsed = false;
     if (send) {
       ygopro.stoc_send(client, "TIME_LIMIT", {
-        player: (client.is_first || client.is_reconnect_recovering ? 0 : 1),
+        player: (client.is_first && !client.is_reconnect_recovering ? 0 : 1),
         left_time: 0
       });
     }
@@ -3423,11 +3423,11 @@
       var len2, len3, m, n, player, ref2, room;
       for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
         room = ROOM_all[m];
-        if (room && room.started && (room.hostinfo.time_limit === 0 || !room.turn || room.turn <= 0) && room.duel_count && room.duel_count > 0) {
+        if (room && room.started && (room.hostinfo.time_limit === 0 || !room.turn || room.turn <= 0)) {
           ref2 = room.players;
           for (n = 0, len3 = ref2.length; n < len3; n++) {
             player = ref2[n];
-            if ((!player.is_local || !room.windbot) && (!room.changing_side || player.selected_preduel)) {
+            if ((!player.is_local || !room.windbot) && (((!room.changing_side || player.selected_preduel) && room.duel_count && room.duel_count > 0) || player.is_reconnect_recovering)) {
               CLIENT_heartbeat_register(player, true);
             }
           }

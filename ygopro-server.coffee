@@ -660,7 +660,7 @@ CLIENT_heartbeat_register = (client, send, extend_time) ->
   client.heartbeat_responsed = false
   if send
     ygopro.stoc_send(client, "TIME_LIMIT", {
-      player: (if client.is_first or client.is_reconnect_recovering then 0 else 1),
+      player: (if client.is_first and !client.is_reconnect_recovering then 0 else 1),
       left_time: 0
     })
   client.heartbeat_timeout = setTimeout(() ->
@@ -2703,8 +2703,8 @@ if settings.modules.mycard.enabled
 
 if settings.modules.heartbeat_detection.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.started and (room.hostinfo.time_limit == 0 or !room.turn or room.turn <= 0) and room.duel_count and room.duel_count > 0
-      for player in room.players when (!player.is_local or !room.windbot) and (!room.changing_side or player.selected_preduel)
+    for room in ROOM_all when room and room.started and (room.hostinfo.time_limit == 0 or !room.turn or room.turn <= 0)
+      for player in room.players when (!player.is_local or !room.windbot) and (((!room.changing_side or player.selected_preduel) and room.duel_count and room.duel_count > 0) or player.is_reconnect_recovering)
         CLIENT_heartbeat_register(player, true)
     return
   , settings.modules.heartbeat_detection.interval
