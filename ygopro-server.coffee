@@ -582,16 +582,19 @@ CLIENT_send_reconnect_info = (client, server, room) ->
   if room.turn and room.turn > 0
     ygopro.ctos_send(server, 'REQUEST_FIELD')
   else if room.changing_side
+    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if !client.selected_preduel
       ygopro.stoc_send(client, 'CHANGE_SIDE')
     client.reconnecting = false
   else if room.selecting_hand
+    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if (room.hostinfo.mode != 2 or client.pos == 0 or client.pos == 2) and !client.selected_preduel
       ygopro.stoc_send(client, 'SELECT_HAND')
     client.reconnecting = false
   else if room.selecting_tp
+    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if client == room.selecting_tp and !client.selected_preduel
       ygopro.stoc_send(client, 'SELECT_TP')
@@ -638,6 +641,33 @@ CLIENT_reconnect = (client) ->
 
 if settings.modules.reconnect.enabled
   disconnect_list = {} # {old_client, old_server, room_id, timeout, deckbuf}
+
+CLIENT_heartbeat_unregister = (client) ->
+  if !settings.modules.heartbeat_detection.enabled or !client.heartbeat_timeout
+    return false
+  clearTimeout(client.heartbeat_timeout)
+  delete client.heartbeat_timeout
+  #log.info(2, client.name)
+  return true
+
+CLIENT_heartbeat_register = (client, send, extend_time) ->
+  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.pos > 3 or client.confirming_cards
+    return false
+  if client.heartbeat_timeout
+    CLIENT_heartbeat_unregister(client)
+  client.heartbeat_responsed = false
+  if send
+    ygopro.stoc_send(client, "TIME_LIMIT", {
+      player: (if client.is_first or client.is_reconnect_recovering then 0 else 1),
+      left_time: 0
+    })
+  client.heartbeat_timeout = setTimeout(() ->
+    CLIENT_heartbeat_unregister(client)
+    client.destroy() unless client.closed or client.heartbeat_responsed
+    return
+  , settings.modules.heartbeat_detection.wait_time * (if extend_time then 1.5 else 1))
+  #log.info(1, client.name)
+  return true
 
 class Room
   constructor: (name, @hostinfo) ->
@@ -1759,6 +1789,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
   #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
+    if settings.modules.reconnect.enabled
+      client.is_reconnect_recovering = false # dInfo.isFirst is false after reconnecting, so detect this to make client send CTOS_TIME_CONFIRM, assuming the client did not do anything else before reconnecting. I think doing with the client's dInfo.isFirst is still needed.
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
     client.card_count = 0 if room.hostinfo.mode != 2
@@ -1829,13 +1861,16 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
  
   if ygopro.constants.MSG[msg] == 'WIN' and client.pos == 0
     pos = buffer.readUInt8(1)
-    pos = 1 - pos unless client.is_first or pos == 2 or room.turn == 0 or !room.turn
+    pos = 1 - pos unless client.is_first or pos == 2 or room.turn <= 0 or !room.turn
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     reason = buffer.readUInt8(2)
     #log.info {winner: pos, reason: reason}
     #room.duels.push {winner: pos, reason: reason}
     room.winner = pos
     room.turn = 0
+    if settings.modules.heartbeat_detection.enabled
+      for player in room.players
+        player.confirming_cards = false
     if room and !room.finished and room.dueling_players[pos]
       room.winner_name = room.dueling_players[pos].name
       #log.info room.dueling_players, pos
@@ -1921,6 +1956,26 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
     if pos == 0
       count = buffer.readInt8(2)
       client.card_count += count
+
+  # check panel confirming cards in heartbeat
+  if settings.modules.heartbeat_detection.enabled and ygopro.constants.MSG[msg] == 'CONFIRM_CARDS'
+    check = false
+    count = buffer.readInt8(2)
+    max_loop = 3 + (count - 1) * 7
+    deck_found = 0
+    limbo_found = 0 # support custom cards which may be in location 0 in KoishiPro or EdoPro
+    for i in [3..max_loop] by 7
+      loc = buffer.readInt8(i + 5)
+      if (loc & 0x41) > 0
+        deck_found++
+      else if loc == 0
+        limbo_found++
+      if (deck_found > 0 and count > 1) or limbo_found > 0
+        check = true
+        break
+    if check
+      #console.log("Confirming cards:" + client.name)
+      client.confirming_cards = true
 
   #登场台词
   if settings.modules.dialogues.enabled
@@ -2430,6 +2485,44 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
   room.last_active_time = moment()
   return
 
+ygopro.stoc_follow 'TIME_LIMIT', false, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room and settings.modules.heartbeat_detection.enabled and room.turn and room.turn > 0
+  check = false
+  if room.hostinfo.mode != 2
+    check = (client.is_first and info.player == 0) or (!client.is_first and info.player == 1)
+  else
+    cur_players = []
+    switch room.turn % 4
+      when 1
+        cur_players[0] = 0
+        cur_players[1] = 3
+      when 2
+        cur_players[0] = 0
+        cur_players[1] = 2
+      when 3
+        cur_players[0] = 1
+        cur_players[1] = 2
+      when 0
+        cur_players[0] = 1
+        cur_players[1] = 3
+    if !room.dueling_players[0].is_first
+      cur_players[0] = cur_players[0] + 2
+      cur_players[1] = cur_players[1] - 2
+    check = client.pos == cur_players[info.player]
+  if check
+    extend_time = settings.modules.reconnect.enabled and client.reconnecting
+    CLIENT_heartbeat_register(client, false, extend_time)
+  return
+
+ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room and settings.modules.heartbeat_detection.enabled
+  client.confirming_cards = false
+  client.heartbeat_responsed = true
+  CLIENT_heartbeat_unregister(client)
+  return
+
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
@@ -2603,6 +2696,14 @@ if settings.modules.mycard.enabled
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
     return
   , 1000
+
+if settings.modules.heartbeat_detection.enabled
+  setInterval ()->
+    for room in ROOM_all when room and room.started and (room.hostinfo.time_limit == 0 or !room.turn or room.turn <= 0) and room.duel_count and room.duel_count > 0
+      for player in room.players when (!player.is_local or !room.windbot) and (!room.changing_side or player.selected_preduel)
+        CLIENT_heartbeat_register(player, true)
+    return
+  , settings.modules.heartbeat_detection.interval
 
 # spawn windbot
 if settings.modules.windbot.spawn

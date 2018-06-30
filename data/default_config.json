@@ -91,6 +91,11 @@
       "auto_surrender_after_disconnect": false,
       "wait_time": 300000
     },
+    "heartbeat_detection": {
+      "enabled": true,
+      "interval": 10000,
+      "wait_time": 5000
+    },
     "mycard": {
       "enabled": false,
       "auth_base_url": "https://ygobbs.com",
