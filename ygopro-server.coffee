@@ -491,6 +491,7 @@ CLIENT_reconnect_register = (client, room_id, error) ->
   , settings.modules.reconnect.wait_time)
   dinfo.timeout = tmot
   disconnect_list[CLIENT_get_authorize_key(client)] = dinfo
+  #console.log("#{client.name} ${disconnect_from_game}")
   ygopro.stoc_send_chat_to_room(room, "#{client.name} ${disconnect_from_game}" + if error then ": #{error}" else '')
   if settings.modules.reconnect.auto_surrender_after_disconnect and room.turn and room.turn > 0
     ygopro.ctos_send(client.server, 'SURRENDER')
@@ -635,6 +636,7 @@ CLIENT_reconnect = (client) ->
     room.last_active_time = moment()
   CLIENT_import_data(client, dinfo.old_client, room)
   CLIENT_send_reconnect_info(client, client.server, room)
+  #console.log("#{client.name} ${reconnect_to_game}")
   ygopro.stoc_send_chat_to_room(room, "#{client.name} ${reconnect_to_game}")
   CLIENT_reconnect_unregister(client, true)
   return
@@ -1028,6 +1030,8 @@ net.createServer (client) ->
     #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
     unless client.closed
       client.closed = true
+      if settings.modules.heartbeat_detection.enabled
+        CLIENT_heartbeat_unregister(client)
       if room
         if !CLIENT_reconnect_register(client, client.rid)
           room.disconnect(client)
