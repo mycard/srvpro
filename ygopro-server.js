@@ -3116,7 +3116,7 @@
   ygopro.stoc_follow('TIME_LIMIT', false, function(buffer, info, client, server) {
     var check, cur_players, extend_time, room;
     room = ROOM_all[client.rid];
-    if (!(room && settings.modules.heartbeat_detection.enabled && room.turn && room.turn > 0)) {
+    if (!(room && settings.modules.heartbeat_detection.enabled && room.turn && room.turn > 0 && !room.windbot)) {
       return;
     }
     check = false;
@@ -3423,11 +3423,11 @@
       var len2, len3, m, n, player, ref2, room;
       for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
         room = ROOM_all[m];
-        if (room && room.started && (room.hostinfo.time_limit === 0 || !room.turn || room.turn <= 0)) {
+        if (room && room.started && (room.hostinfo.time_limit === 0 || !room.turn || room.turn <= 0) && !room.windbot) {
           ref2 = room.players;
           for (n = 0, len3 = ref2.length; n < len3; n++) {
             player = ref2[n];
-            if ((!player.is_local || !room.windbot) && (((!room.changing_side || player.selected_preduel) && room.duel_count && room.duel_count > 0) || player.is_reconnect_recovering)) {
+            if (((!room.changing_side || player.selected_preduel) && room.duel_count && room.duel_count > 0) || player.is_reconnect_recovering) {
               CLIENT_heartbeat_register(player, true);
             }
           }
