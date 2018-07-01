@@ -93,8 +93,8 @@
     },
     "heartbeat_detection": {
       "enabled": true,
-      "interval": 10000,
-      "wait_time": 5000
+      "interval": 20000,
+      "wait_time": 10000
     },
     "mycard": {
       "enabled": false,
