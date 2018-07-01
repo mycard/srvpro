@@ -2491,7 +2491,7 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'TIME_LIMIT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return unless room and settings.modules.heartbeat_detection.enabled and room.turn and room.turn > 0
+  return unless room and settings.modules.heartbeat_detection.enabled and room.turn and room.turn > 0 and !room.windbot
   check = false
   if room.hostinfo.mode != 2
     check = (client.is_first and info.player == 0) or (!client.is_first and info.player == 1)
@@ -2703,8 +2703,8 @@ if settings.modules.mycard.enabled
 
 if settings.modules.heartbeat_detection.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.started and (room.hostinfo.time_limit == 0 or !room.turn or room.turn <= 0)
-      for player in room.players when (!player.is_local or !room.windbot) and (((!room.changing_side or player.selected_preduel) and room.duel_count and room.duel_count > 0) or player.is_reconnect_recovering)
+    for room in ROOM_all when room and room.started and (room.hostinfo.time_limit == 0 or !room.turn or room.turn <= 0) and !room.windbot
+      for player in room.players when ((!room.changing_side or player.selected_preduel) and room.duel_count and room.duel_count > 0) or player.is_reconnect_recovering
         CLIENT_heartbeat_register(player, true)
     return
   , settings.modules.heartbeat_detection.interval
