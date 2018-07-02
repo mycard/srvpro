@@ -88,13 +88,25 @@
     },
     "reconnect": {
       "enabled": true,
+      "auto_surrender_after_disconnect": false,
       "wait_time": 300000
+    },
+    "heartbeat_detection": {
+      "enabled": true,
+      "interval": 20000,
+      "wait_time": 10000
     },
     "mycard": {
       "enabled": false,
       "auth_base_url": "https://ygobbs.com",
       "auth_database": "postgres://233@233.mycard.moe/233",
       "auth_key": "233333"
+    },
+    "challonge": {
+      "enabled": false,
+      "post_detailed_score": true,
+      "api_key": "123",
+      "tournament_id": "456"
     },
     "deck_log": {
       "enabled": false,

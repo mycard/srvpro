@@ -40,6 +40,34 @@ moment.locale('zh-cn', {
   }
 })
 
+import_datas = [
+  "abuse_count",
+  "rag",
+  "rid",
+  "is_post_watcher",
+  "retry_count",
+  "name",
+  "is_first",
+  "lp",
+  "card_count",
+  "is_host",
+  "pos",
+  "surrend_confirm",
+  "kick_count",
+  "deck_saved",
+  "main",
+  "side",
+  "side_interval",
+  "side_tcount",
+  "selected_preduel",
+  "last_game_msg",
+  "last_game_msg_title",
+  "last_hint_msg",
+  "start_deckbuf",
+  "challonge_info",
+  "ready_trap"
+]
+
 merge = require 'deepmerge'
 
 loadJSON = require('load-json-file').sync
@@ -222,6 +250,11 @@ if settings.modules.mycard.enabled
   pg_client.on 'drain', pg_client.end.bind(pg_client)
   log.info "loading mycard user..."
   pg_client.connect()
+
+if settings.modules.challonge.enabled
+  challonge = require('challonge').createClient({
+    apiKey: settings.modules.challonge.api_key
+  })
 
 # 获取可用内存
 memory_usage = 0
@@ -420,30 +453,33 @@ release_disconnect = (dinfo, reconnected) ->
   return
 
 CLIENT_get_authorize_key = (client) ->
-  if settings.modules.mycard.enabled or client.is_local
+  if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or settings.modules.challonge.enabled or client.is_local
     return client.name
   else
-    return client.ip
+    return client.ip + ":" + client.name
 
-CLIENT_reconnect_unregister = (client, reconnected) ->
+CLIENT_reconnect_unregister = (client, reconnected, exact) ->
   if !settings.modules.reconnect.enabled
     return false
   if disconnect_list[CLIENT_get_authorize_key(client)]
+    if exact and disconnect_list[CLIENT_get_authorize_key(client)].old_client != client
+      return false
     release_disconnect(disconnect_list[CLIENT_get_authorize_key(client)], reconnected)
     delete disconnect_list[CLIENT_get_authorize_key(client)]
     return true
   return false
 
-CLIENT_reconnect_register = (client, room, error) ->
+CLIENT_reconnect_register = (client, room_id, error) ->
+  room = ROOM_all[room_id]
   if client.had_new_reconnection
     return false
-  if !settings.modules.reconnect.enabled or client.system_kicked or client.is_post_watcher or !CLIENT_is_player(client, room) or !room.started or (room.windbot and client.is_local)
+  if !settings.modules.reconnect.enabled or !room or client.system_kicked or client.flee_free or disconnect_list[CLIENT_get_authorize_key(client)] or client.is_post_watcher or !CLIENT_is_player(client, room) or !room.started or (room.windbot and client.is_local) or (settings.modules.reconnect.auto_surrender_after_disconnect and room.hostinfo.mode != 1)
     return false
-  old_dinfo = disconnect_list[CLIENT_get_authorize_key(client)]
-  if old_dinfo
-    old_dinfo.room.disconnect(old_dinfo.old_client)
+  # for player in room.players
+  #   if player != client and CLIENT_get_authorize_key(player) == CLIENT_get_authorize_key(client)
+  #     return false # some issues may occur in this case, so return false
   dinfo = {
-    room: room,
+    room_id: room_id,
     old_client: client,
     old_server: client.server,
     deckbuf: client.start_deckbuf
@@ -455,6 +491,10 @@ CLIENT_reconnect_register = (client, room, error) ->
   , settings.modules.reconnect.wait_time)
   dinfo.timeout = tmot
   disconnect_list[CLIENT_get_authorize_key(client)] = dinfo
+  #console.log("#{client.name} ${disconnect_from_game}")
+  ygopro.stoc_send_chat_to_room(room, "#{client.name} ${disconnect_from_game}" + if error then ": #{error}" else '')
+  if settings.modules.reconnect.auto_surrender_after_disconnect and room.turn and room.turn > 0
+    ygopro.ctos_send(client.server, 'SURRENDER')
   return true
 
 CLIENT_import_data = (client, old_client, room) ->
@@ -463,48 +503,34 @@ CLIENT_import_data = (client, old_client, room) ->
       room.players[index] = client
       break
   room.dueling_players[old_client.pos] = client
-  if room.waiting_for_player = old_client
+  if room.waiting_for_player == old_client
     room.waiting_for_player = client
-  if room.waiting_for_player2 = old_client
+  if room.waiting_for_player2 == old_client
     room.waiting_for_player2 = client
-  if room.selecting_tp = old_client
+  if room.selecting_tp == old_client
     room.selecting_tp = client
-  client.abuse_count = old_client.abuse_count
-  # client.established = old_client.established
-  # client.pre_establish_buffers = old_client.pre_establish_buffers
-  client.rag = old_client.rag
-  client.rid = old_client.rid
-  client.is_post_watcher = old_client.is_post_watcher
-  client.retry_count = old_client.retry_count
-  client.name = old_client.name
-  client.is_first = old_client.is_first
-  client.lp = old_client.lp
-  client.card_count = old_client.card_count
-  client.is_host = old_client.is_host
-  client.pos = old_client.pos
-  client.surrend_confirm = old_client.surrend_confirm
-  client.kick_count = old_client.kick_count
-  client.deck_saved = old_client.deck_saved
-  client.main = old_client.main
-  client.side = old_client.side
-  client.side_interval = old_client.side_interval
-  client.side_tcount = old_client.side_tcount
-  client.selected_preduel = old_client.selected_preduel
-  client.last_game_msg = old_client.last_game_msg
-  client.last_game_msg_title = old_client.last_game_msg_title
-  client.start_deckbuf = old_client.start_deckbuf
-  client.join_game_buffer = old_client.join_game_buffer
+  for key in import_datas
+    client[key] = old_client[key]
   old_client.had_new_reconnection = true
   return
 
 SERVER_clear_disconnect = (server) ->
-  return unless settings.modules.reconnect.enabled
+  return false unless settings.modules.reconnect.enabled
   for k,v of disconnect_list
     if v and server == v.old_server
       release_disconnect(v)
       delete disconnect_list[k]
-      return
-  return
+      return true
+  return false
+
+ROOM_clear_disconnect = (room_id) ->
+  return false unless settings.modules.reconnect.enabled
+  for k,v of disconnect_list
+    if v and room_id == v.room_id
+      release_disconnect(v)
+      delete disconnect_list[k]
+      return true
+  return false
 
 CLIENT_is_player = (client, room) ->
   is_player = false
@@ -512,7 +538,7 @@ CLIENT_is_player = (client, room) ->
     if client == player
       is_player = true 
       break
-  return is_player
+  return is_player and client.pos <= 3
 
 CLIENT_is_able_to_reconnect = (client) ->
   unless settings.modules.reconnect.enabled
@@ -521,6 +547,10 @@ CLIENT_is_able_to_reconnect = (client) ->
     return false
   disconnect_info = disconnect_list[CLIENT_get_authorize_key(client)]
   unless disconnect_info
+    return false
+  room = ROOM_all[disconnect_info.room_id]
+  if !room
+    CLIENT_reconnect_unregister(client)
     return false
   # if disconnect_info.old_server.closed
   #   return false
@@ -533,7 +563,7 @@ CLIENT_is_able_to_reconnect = (client) ->
 
 CLIENT_send_pre_reconnect_info = (client, room, old_client) ->
   ygopro.stoc_send_chat(client, "${pre_reconnecting_to_room}", ygopro.constants.COLORS.BABYBLUE)
-  ygopro.stoc_send(client, 'JOIN_GAME', old_client.join_game_buffer)
+  ygopro.stoc_send(client, 'JOIN_GAME', room.join_game_buffer)
   req_pos = old_client.pos
   if old_client.is_host
     req_pos += 0x10
@@ -544,7 +574,8 @@ CLIENT_send_pre_reconnect_info = (client, room, old_client) ->
     ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
       name: player.name,
       pos: player.pos,
-    })  
+    })
+  return
 
 CLIENT_send_reconnect_info = (client, server, room) ->
   client.reconnecting = true
@@ -552,16 +583,19 @@ CLIENT_send_reconnect_info = (client, server, room) ->
   if room.turn and room.turn > 0
     ygopro.ctos_send(server, 'REQUEST_FIELD')
   else if room.changing_side
+    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if !client.selected_preduel
       ygopro.stoc_send(client, 'CHANGE_SIDE')
     client.reconnecting = false
   else if room.selecting_hand
+    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if (room.hostinfo.mode != 2 or client.pos == 0 or client.pos == 2) and !client.selected_preduel
       ygopro.stoc_send(client, 'SELECT_HAND')
     client.reconnecting = false
   else if room.selecting_tp
+    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if client == room.selecting_tp and !client.selected_preduel
       ygopro.stoc_send(client, 'SELECT_TP')
@@ -578,7 +612,8 @@ CLIENT_pre_reconnect = (client) ->
   client.pre_reconnecting = true
   client.pos = dinfo.old_client.pos
   client.setTimeout(300000)
-  CLIENT_send_pre_reconnect_info(client, dinfo.room, dinfo.old_client)
+  CLIENT_send_pre_reconnect_info(client, ROOM_all[dinfo.room_id], dinfo.old_client)
+  return
 
 CLIENT_reconnect = (client) ->
   if !CLIENT_is_able_to_reconnect(client)
@@ -587,6 +622,7 @@ CLIENT_reconnect = (client) ->
     return
   client.pre_reconnecting = false
   dinfo = disconnect_list[CLIENT_get_authorize_key(client)]
+  room = ROOM_all[dinfo.room_id]
   current_old_server = client.server
   client.server = dinfo.old_server
   client.server.client = client
@@ -596,13 +632,44 @@ CLIENT_reconnect = (client) ->
   current_old_server.destroy()
   client.established = true
   client.pre_establish_buffers = []
-  CLIENT_import_data(client, dinfo.old_client, dinfo.room)
-  CLIENT_send_reconnect_info(client, client.server, dinfo.room)
+  if room.random_type or room.arena
+    room.last_active_time = moment()
+  CLIENT_import_data(client, dinfo.old_client, room)
+  CLIENT_send_reconnect_info(client, client.server, room)
+  #console.log("#{client.name} ${reconnect_to_game}")
+  ygopro.stoc_send_chat_to_room(room, "#{client.name} ${reconnect_to_game}")
   CLIENT_reconnect_unregister(client, true)
   return
 
 if settings.modules.reconnect.enabled
-  disconnect_list = {} # {old_client, old_server, room, timeout, deckbuf}
+  disconnect_list = {} # {old_client, old_server, room_id, timeout, deckbuf}
+
+CLIENT_heartbeat_unregister = (client) ->
+  if !settings.modules.heartbeat_detection.enabled or !client.heartbeat_timeout
+    return false
+  clearTimeout(client.heartbeat_timeout)
+  delete client.heartbeat_timeout
+  #log.info(2, client.name)
+  return true
+
+CLIENT_heartbeat_register = (client, send, extend_time) ->
+  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.pos > 3 or client.confirming_cards
+    return false
+  if client.heartbeat_timeout
+    CLIENT_heartbeat_unregister(client)
+  client.heartbeat_responsed = false
+  if send
+    ygopro.stoc_send(client, "TIME_LIMIT", {
+      player: (if client.is_first and !client.is_reconnect_recovering then 0 else 1),
+      left_time: 0
+    })
+  client.heartbeat_timeout = setTimeout(() ->
+    CLIENT_heartbeat_unregister(client)
+    client.destroy() unless client.closed or client.heartbeat_responsed
+    return
+  , settings.modules.heartbeat_detection.wait_time * (if extend_time then 1.5 else 1))
+  #log.info(1, client.name)
+  return true
 
 class Room
   constructor: (name, @hostinfo) ->
@@ -623,6 +690,8 @@ class Room
     @duel_count = 0
     @death = 0
     @turn = 0
+    if settings.modules.challonge.enabled
+      @challonge_duel_log = {}
     ROOM_all.push this
 
     @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
@@ -790,6 +859,16 @@ class Room
             #else
             #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
           return
+    if settings.modules.challonge.enabled and @started and !@kicked
+      challonge.matches.update({
+        id: settings.modules.challonge.tournament_id,
+        matchId: @challonge_info.id,
+        match: @challonge_duel_log,
+        callback: (err, data) ->
+          if err
+            log.warn("Errored pushing scores to Challonge.", err)
+          return
+      })
     if @player_datas.length and settings.modules.cloud_replay.enabled
       replay_id = @cloud_replay_id
       if @has_ygopro_error
@@ -831,6 +910,8 @@ class Room
     @recorder.destroy() if @recorder
     @deleted = true
     index = _.indexOf(ROOM_all, this)
+    if settings.modules.reconnect.enabled
+      ROOM_clear_disconnect(index)
     ROOM_all[index] = null unless index == -1
     #ROOM_all.splice(index, 1) unless index == -1
     roomlist.delete this if !@windbot and @established and settings.modules.http.websocket_roomlist
@@ -915,7 +996,7 @@ class Room
         @process.kill()
         #client.room = null
         this.delete()
-      if !CLIENT_reconnect_unregister(client)
+      if !CLIENT_reconnect_unregister(client, false, true)
         client.server.destroy()
     return
 
@@ -949,8 +1030,10 @@ net.createServer (client) ->
     #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
     unless client.closed
       client.closed = true
+      if settings.modules.heartbeat_detection.enabled
+        CLIENT_heartbeat_unregister(client)
       if room
-        if !CLIENT_reconnect_register(client, room)
+        if !CLIENT_reconnect_register(client, client.rid)
           room.disconnect(client)
       else if !client.had_new_reconnection
         client.server.destroy()
@@ -967,17 +1050,15 @@ net.createServer (client) ->
     unless client.closed
       client.closed = true
       if room
-        if !CLIENT_reconnect_register(client, room, error)
+        if !CLIENT_reconnect_register(client, client.rid, error)
           room.disconnect(client, error)
       else if !client.had_new_reconnection
         client.server.destroy()
     return
 
   client.on 'timeout', ()->
-    if !client.server
-      return
     unless settings.modules.reconnect.enabled and (disconnect_list[CLIENT_get_authorize_key(client)] or client.had_new_reconnection)
-      client.server.destroy()
+      client.destroy()
     return
 
   server.on 'close', (had_error) ->
@@ -1270,7 +1351,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     }
     CLIENT_kick(client)
 
-  else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled
+  else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled and !settings.modules.challonge.enabled
     ygopro.stoc_die(client, "${blank_room_name}")
 
   else if info.pass.length and settings.modules.mycard.enabled and info.pass[0...3] != 'AI#'
@@ -1299,6 +1380,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       (checksum & 0xFF) == 0
 
     finish = (buffer)->
+      if client.closed
+        return
       action = buffer.readUInt8(1) >> 4
       if buffer != decrypted_buffer and action in [1, 2, 4]
         ygopro.stoc_die(client, '${invalid_password_unauthorized}')
@@ -1333,8 +1416,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           }
           options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room = new Room(name, options)
-          room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
-          room.private = action == 2
+          if room
+            room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
+            room.private = action == 2
         when 3
           name = info.pass.slice(8)
           room = ROOM_find_by_name(name)
@@ -1343,11 +1427,12 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             return
         when 4
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
-          room.private = true
-          room.arena = settings.modules.arena_mode.mode
-          if room.arena == "athletic"
-            room.max_player = 2
-            room.welcome = "${athletic_arena_tip}"
+          if room
+            room.private = true
+            room.arena = settings.modules.arena_mode.mode
+            if room.arena == "athletic"
+              room.max_player = 2
+              room.welcome = "${athletic_arena_tip}"
         when 5
           title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room = ROOM_find_by_title(title)
@@ -1413,8 +1498,94 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       if !check(buffer)
         ygopro.stoc_die(client, '${invalid_password_checksum}')
         return
-      
+
       finish(buffer)
+  
+  else if settings.modules.challonge.enabled
+    pre_room = ROOM_find_by_name(info.pass)
+    if pre_room and pre_room.started and settings.modules.cloud_replay.enable_halfway_watch
+      room = pre_room
+      client.setTimeout(300000) #连接后超时5分钟
+      client.rid = _.indexOf(ROOM_all, room)
+      client.is_post_watcher = true
+      ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
+      room.watchers.push client
+      ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
+      for buffer in room.watcher_buffers
+        client.write buffer
+    else
+      ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
+      challonge.participants.index({
+        id: settings.modules.challonge.tournament_id,
+        callback: (err, data) ->
+          if err or !data
+            if err
+              log.warn("Failed loading Challonge user info", err)
+            ygopro.stoc_die(client, '${challonge_match_load_failed}')
+            return
+          found = false
+          for k,user of data
+            if user.participant and user.participant.name == client.name
+              found = user.participant
+              break
+          if !found
+            ygopro.stoc_die(client, '${challonge_user_not_found}')
+            return
+          client.challonge_info = found
+          challonge.matches.index({
+            id: settings.modules.challonge.tournament_id,
+            callback: (err, data) ->
+              if client.closed
+                return
+              if err or !data
+                if err
+                  log.warn("Failed loading Challonge match info", err)
+                ygopro.stoc_die(client, '${challonge_match_load_failed}')
+                return
+              found = false
+              for k,match of data
+                if match and match.match and !match.match.winnerId and match.match.player1Id and match.match.player2Id and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
+                  found = match.match
+                  break
+              if !found
+                ygopro.stoc_die(client, '${challonge_match_not_found}')
+                return
+              #if found.winnerId
+              #  ygopro.stoc_die(client, '${challonge_match_already_finished}')
+              #  return
+              room = ROOM_find_or_create_by_name('M#' + found.id)
+              if room
+                room.challonge_info = found
+                # room.max_player = 2
+                room.welcome = "${challonge_match_created}"
+              if !room
+                ygopro.stoc_die(client, "${server_full}")
+              else if room.error
+                ygopro.stoc_die(client, room.error)
+              else if room.started
+                if settings.modules.cloud_replay.enable_halfway_watch
+                  client.setTimeout(300000) #连接后超时5分钟
+                  client.rid = _.indexOf(ROOM_all, room)
+                  client.is_post_watcher = true
+                  ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
+                  room.watchers.push client
+                  ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
+                  for buffer in room.watcher_buffers
+                    client.write buffer
+                else
+                  ygopro.stoc_die(client, "${watch_denied}")
+              else
+                for player in room.players when player and player != client and player.name == client.name
+                  ygopro.stoc_die(client, "${challonge_player_already_in}")
+                  return
+                #client.room = room
+                client.setTimeout(300000) #连接后超时5分钟
+                client.rid = _.indexOf(ROOM_all, room)
+                room.connect(client)
+              return
+          })
+          return
+      })
   
   else if !client.name or client.name==""
     ygopro.stoc_die(client, "${bad_user_name}")
@@ -1494,7 +1665,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   #欢迎信息
   room=ROOM_all[client.rid]
   return unless room and !client.reconnecting
-  client.join_game_buffer = buffer
+  if !room.join_game_buffer
+    room.join_game_buffer = buffer
   if settings.modules.welcome
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome
@@ -1600,14 +1772,18 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
           ygopro.stoc_send_chat(client, "${retry_part1}" + client.retry_count + "${retry_part2}" + settings.modules.retry_handle.max_retry_count + "${retry_part3}", ygopro.constants.COLORS.RED)
         else
           ygopro.stoc_send_chat(client, "${retry_not_counted}", ygopro.constants.COLORS.BABYBLUE)
+        if client.last_hint_msg
+          ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
         ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
         return true
     else
       client.last_game_msg = buffer
       client.last_game_msg_title = ygopro.constants.MSG[msg]
+      # log.info(client.name, client.last_game_msg_title)
   else if ygopro.constants.MSG[msg] != 'RETRY'
     client.last_game_msg = buffer
     client.last_game_msg_title = ygopro.constants.MSG[msg]
+    # log.info(client.name, client.last_game_msg_title)
 
   if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg < 144) #SELECT和ANNOUNCE开头的消息
     room.waiting_for_player = client
@@ -1617,6 +1793,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
   #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
+    if settings.modules.reconnect.enabled
+      client.is_reconnect_recovering = false # dInfo.isFirst is false after reconnecting, so detect this to make client send CTOS_TIME_CONFIRM, assuming the client did not do anything else before reconnecting. I think doing with the client's dInfo.isFirst is still needed.
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
     client.card_count = 0 if room.hostinfo.mode != 2
@@ -1634,6 +1812,11 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       client.last_game_msg = null
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
+  
+  if ygopro.constants.MSG[msg] == 'HINT'
+    hint_type = buffer.readUInt8(1)
+    if hint_type = 3
+      client.last_hint_msg = buffer
 
   if ygopro.constants.MSG[msg] == 'NEW_TURN'
     if client.pos == 0
@@ -1682,17 +1865,42 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
  
   if ygopro.constants.MSG[msg] == 'WIN' and client.pos == 0
     pos = buffer.readUInt8(1)
-    pos = 1 - pos unless client.is_first or pos == 2
+    pos = 1 - pos unless client.is_first or pos == 2 or room.turn <= 0 or !room.turn
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     reason = buffer.readUInt8(2)
     #log.info {winner: pos, reason: reason}
     #room.duels.push {winner: pos, reason: reason}
     room.winner = pos
     room.turn = 0
+    if settings.modules.heartbeat_detection.enabled
+      for player in room.players
+        player.confirming_cards = false
     if room and !room.finished and room.dueling_players[pos]
       room.winner_name = room.dueling_players[pos].name
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
+    if settings.modules.challonge.enabled and !room.kicked
+      if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]
+        room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id
+      else if room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]
+        room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
+      else
+        room.challonge_duel_log.winnerId = "tie"
+      if settings.modules.challonge.post_detailed_score
+        if room.dueling_players[0].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[1].challonge_info.id == room.challonge_info.player2Id
+          room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name]
+        else if room.dueling_players[1].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[0].challonge_info.id == room.challonge_info.player2Id
+          room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name]
+        else
+          room.challonge_duel_log.scoresCsv = "0-0"
+          log.warn("Score mismatch.", room.name)
+      else
+        if room.challonge_duel_log.winnerId == room.challonge_info.player1Id
+          room.challonge_duel_log.scoresCsv = "1-0"
+        else if room.challonge_duel_log.winnerId == room.challonge_info.player2Id
+          room.challonge_duel_log.scoresCsv = "0-1"
+        else
+          room.challonge_duel_log.scoresCsv = "0-0"
     if room.death 
       if settings.modules.http.quick_death_rule == 1 or settings.modules.http.quick_death_rule == 3
         room.death = -1
@@ -1753,21 +1961,48 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       count = buffer.readInt8(2)
       client.card_count += count
 
+  # check panel confirming cards in heartbeat
+  if settings.modules.heartbeat_detection.enabled and ygopro.constants.MSG[msg] == 'CONFIRM_CARDS'
+    check = false
+    count = buffer.readInt8(2)
+    max_loop = 3 + (count - 1) * 7
+    deck_found = 0
+    limbo_found = 0 # support custom cards which may be in location 0 in KoishiPro or EdoPro
+    for i in [3..max_loop] by 7
+      loc = buffer.readInt8(i + 5)
+      if (loc & 0x41) > 0
+        deck_found++
+      else if loc == 0
+        limbo_found++
+      if (deck_found > 0 and count > 1) or limbo_found > 0
+        check = true
+        break
+    if check
+      #console.log("Confirming cards:" + client.name)
+      client.confirming_cards = true
+
   #登场台词
   if settings.modules.dialogues.enabled
     if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING' or ygopro.constants.MSG[msg] == 'CHAINING'
       card = buffer.readUInt32LE(1)
       trigger_location = buffer.readUInt8(6)
-      if dialogues.dialogues[card] and (ygopro.constants.MSG[msg] != 'CHAINING' or (trigger_location & 0x8) and !(trigger_location & 0x200))
+      if dialogues.dialogues[card] and (ygopro.constants.MSG[msg] != 'CHAINING' or (trigger_location & 0x8) and client.ready_trap)
         for line in _.lines dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]
           ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK)
+    if ygopro.constants.MSG[msg] == 'POS_CHANGE'
+      loc = buffer.readUInt8(6)
+      ppos = buffer.readUInt8(8)
+      cpos = buffer.readUInt8(9)
+      client.ready_trap = !!(loc & 0x8) and !!(ppos & 0xa) and !!(cpos & 0x5)
+    else if ygopro.constants.MSG[msg] != 'UPDATE_CARD' and ygopro.constants.MSG[msg] != 'WAITING'
+      client.ready_trap = false
   return false
 
 #房间管理
 ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
-  if not room.arena or client.is_local
+  if (!room.arena and !settings.modules.challonge.enabled) or client.is_local
     return false
   for player in room.players
     if player == client
@@ -1780,7 +2015,7 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
   return unless room
   for player in room.players
     if player and player.pos == info.pos and player != client
-      if room.arena == "athletic"
+      if room.arena == "athletic" or settings.modules.challonge.enabled
         ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         CLIENT_kick(client)
         return true
@@ -1851,11 +2086,15 @@ ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
   client.reconnecting = false
-  if client.last_game_msg and client.last_game_msg_title != 'WAITING'
+  if !client.last_game_msg
+    return true
+  if client.last_game_msg_title != 'WAITING'
     setTimeout( () ->
+      if client.last_hint_msg
+        ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
       ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
       return
-    , 1000)
+    , 50)
   return true
 
 wait_room_start = (room, time)->
@@ -2250,6 +2489,44 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
   room.last_active_time = moment()
   return
 
+ygopro.stoc_follow 'TIME_LIMIT', false, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room and settings.modules.heartbeat_detection.enabled and room.turn and room.turn > 0 and !room.windbot
+  check = false
+  if room.hostinfo.mode != 2
+    check = (client.is_first and info.player == 0) or (!client.is_first and info.player == 1)
+  else
+    cur_players = []
+    switch room.turn % 4
+      when 1
+        cur_players[0] = 0
+        cur_players[1] = 3
+      when 2
+        cur_players[0] = 0
+        cur_players[1] = 2
+      when 3
+        cur_players[0] = 1
+        cur_players[1] = 2
+      when 0
+        cur_players[0] = 1
+        cur_players[1] = 3
+    if !room.dueling_players[0].is_first
+      cur_players[0] = cur_players[0] + 2
+      cur_players[1] = cur_players[1] - 2
+    check = client.pos == cur_players[info.player]
+  if check
+    extend_time = settings.modules.reconnect.enabled and client.reconnecting
+    CLIENT_heartbeat_register(client, false, extend_time)
+  return
+
+ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room and settings.modules.heartbeat_detection.enabled
+  client.confirming_cards = false
+  client.heartbeat_responsed = true
+  CLIENT_heartbeat_unregister(client)
+  return
+
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
@@ -2286,7 +2563,7 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server)->
   for player in room.players when player and player.pos == pid
     tplayer = player
   return unless tplayer
-  tcolor = chat_color.save_list[if settings.modules.mycard.enabled then tplayer.name else tplayer.ip]
+  tcolor = chat_color.save_list[CLIENT_get_authorize_key(tplayer)]
   if tcolor
     ygopro.stoc_send client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor]
@@ -2355,7 +2632,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe unless room
+  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player unless room
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
@@ -2397,12 +2674,12 @@ if settings.modules.random_duel.enabled
     for room in ROOM_all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
-      if time_passed >= settings.modules.random_duel.hang_timeout
+      if time_passed >= settings.modules.random_duel.hang_timeout and !room.waiting_for_player.closed
         room.last_active_time = moment()
         ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         room.waiting_for_player.server.destroy()
-      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
+      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10) and !room.waiting_for_player.closed
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
         ROOM_unwelcome(room, room.waiting_for_player, "${random_ban_reason_AFK}")
     return
@@ -2413,16 +2690,24 @@ if settings.modules.mycard.enabled
     for room in ROOM_all when room and room.started and room.arena and room.last_active_time and room.waiting_for_player
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
-      if time_passed >= settings.modules.random_duel.hang_timeout
+      if time_passed >= settings.modules.random_duel.hang_timeout and !room.waiting_for_player.closed
         room.last_active_time = moment()
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         room.scores[room.waiting_for_player.name] = -9
         #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name]
         room.waiting_for_player.server.destroy()
-      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
+      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10) and !room.waiting_for_player.closed
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
     return
   , 1000
+
+if settings.modules.heartbeat_detection.enabled
+  setInterval ()->
+    for room in ROOM_all when room and room.started and (room.hostinfo.time_limit == 0 or !room.turn or room.turn <= 0) and !room.windbot
+      for player in room.players when ((!room.changing_side or player.selected_preduel) and room.duel_count and room.duel_count > 0) or player.is_reconnect_recovering
+        CLIENT_heartbeat_register(player, true)
+    return
+  , settings.modules.heartbeat_detection.interval
 
 # spawn windbot
 if settings.modules.windbot.spawn
@@ -2613,9 +2898,25 @@ if settings.modules.http
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"))
 
+      else if u.query.kick
+        kick_room_found = false
+        for room in ROOM_all when room and room.established and (u.query.kick == "all" or u.query.kick == room.port.toString() or u.query.kick == room.name)
+          kick_room_found = true
+          if room.started
+            room.scores[room.dueling_players[0].name] = 0
+            room.scores[room.dueling_players[1].name] = 0
+          room.kicked = true
+          room.process.kill()
+          room.delete()
+        response.writeHead(200)
+        if kick_room_found
+          response.end(addCallback(u.query.callback, "['kick ok', '" + u.query.kick + "']"))
+        else
+          response.end(addCallback(u.query.callback, "['room not found', '" + u.query.kick + "']"))
+
       else if u.query.death
         death_room_found = false
-        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString())
+        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.port.toString() or u.query.death == room.name)
           death_room_found = true
           oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
           if !room.changing_side and (!room.duel_count or room.turn)

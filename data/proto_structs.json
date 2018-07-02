@@ -21,6 +21,7 @@
         "SELECT_HAND": "",
         "SELECT_TP": "",
         "REPLAY": "",
+        "TIME_LIMIT": "STOC_TimeLimit",
         "CHAT": "STOC_Chat"
     }
 }
