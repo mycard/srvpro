@@ -1462,6 +1462,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             client.write buffer
         else
           ygopro.stoc_die(client, "${watch_denied}")
+      else if room.no_watch and room.players.length == (if room.hostinfo.mode == 2 then 4 else 2)
+        ygopro.stoc_die(client, "${watch_denied_room}")
       else
         #client.room = room
         client.setTimeout(300000) #连接后超时5分钟
@@ -1577,6 +1579,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
                     client.write buffer
                 else
                   ygopro.stoc_die(client, "${watch_denied}")
+              else if room.no_watch and room.players.length == (if room.hostinfo.mode == 2 then 4 else 2)
+                ygopro.stoc_die(client, "${watch_denied_room}")
               else
                 for player in room.players when player and player != client and player.name == client.name
                   ygopro.stoc_die(client, "${challonge_player_already_in}")

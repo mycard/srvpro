@@ -1787,6 +1787,8 @@
           } else {
             ygopro.stoc_die(client, "${watch_denied}");
           }
+        } else if (room.no_watch && room.players.length === (room.hostinfo.mode === 2 ? 4 : 2)) {
+          ygopro.stoc_die(client, "${watch_denied_room}");
         } else {
           client.setTimeout(300000);
           client.rid = _.indexOf(ROOM_all, room);
@@ -1927,6 +1929,8 @@
                   } else {
                     ygopro.stoc_die(client, "${watch_denied}");
                   }
+                } else if (room.no_watch && room.players.length === (room.hostinfo.mode === 2 ? 4 : 2)) {
+                  ygopro.stoc_die(client, "${watch_denied_room}");
                 } else {
                   ref5 = room.players;
                   for (p = 0, len5 = ref5.length; p < len5; p++) {
