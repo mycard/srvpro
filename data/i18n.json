@@ -572,6 +572,7 @@
     "watch_join": "観戦者として参加したよ。",
     "watch_watching": "観戦中。",
     "watch_denied": "決闘はもう既に始まっているよ、観戦は出来ないよ",
+    "watch_denied_room": "この部屋での観戦は出来ないよ",
     "rank_arena": "、貴方のランクは ",
     "rank_blank": "、貴方はランク外だよ。",
     "exp_value_part1": "、貴方は ",
