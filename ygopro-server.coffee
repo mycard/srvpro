@@ -785,6 +785,9 @@ class Room
       if (rule.match /(^|，|,)(IGPRIORITY|PR)(，|,|$)/)
         @hostinfo.enable_priority = true
 
+      if (rule.match /(^|，|,)(NOWATCH|NW)(，|,|$)/)
+        @no_watch = true
+
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'),
       (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'),
       @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
@@ -1448,7 +1451,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       else if room.error
         ygopro.stoc_die(client, room.error)
       else if room.started
-        if settings.modules.cloud_replay.enable_halfway_watch
+        if settings.modules.cloud_replay.enable_halfway_watch and !room.no_watch
           client.setTimeout(300000) #连接后超时5分钟
           client.rid = _.indexOf(ROOM_all, room)
           client.is_post_watcher = true
@@ -1459,6 +1462,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             client.write buffer
         else
           ygopro.stoc_die(client, "${watch_denied}")
+      else if room.no_watch and room.players.length >= (if room.hostinfo.mode == 2 then 4 else 2)
+        ygopro.stoc_die(client, "${watch_denied_room}")
       else
         #client.room = room
         client.setTimeout(300000) #连接后超时5分钟
@@ -1503,7 +1508,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
   
   else if settings.modules.challonge.enabled
     pre_room = ROOM_find_by_name(info.pass)
-    if pre_room and pre_room.started and settings.modules.cloud_replay.enable_halfway_watch
+    if pre_room and pre_room.started and settings.modules.cloud_replay.enable_halfway_watch and !pre_room.no_watch
       room = pre_room
       client.setTimeout(300000) #连接后超时5分钟
       client.rid = _.indexOf(ROOM_all, room)
@@ -1563,7 +1568,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               else if room.error
                 ygopro.stoc_die(client, room.error)
               else if room.started
-                if settings.modules.cloud_replay.enable_halfway_watch
+                if settings.modules.cloud_replay.enable_halfway_watch and !room.no_watch
                   client.setTimeout(300000) #连接后超时5分钟
                   client.rid = _.indexOf(ROOM_all, room)
                   client.is_post_watcher = true
@@ -1574,6 +1579,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
                     client.write buffer
                 else
                   ygopro.stoc_die(client, "${watch_denied}")
+              else if room.no_watch and room.players.length >= (if room.hostinfo.mode == 2 then 4 else 2)
+                ygopro.stoc_die(client, "${watch_denied_room}")
               else
                 for player in room.players when player and player != client and player.name == client.name
                   ygopro.stoc_die(client, "${challonge_player_already_in}")
@@ -1644,7 +1651,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else if room.error
       ygopro.stoc_die(client, room.error)
     else if room.started
-      if settings.modules.cloud_replay.enable_halfway_watch
+      if settings.modules.cloud_replay.enable_halfway_watch and !room.no_watch
         client.setTimeout(300000) #连接后超时5分钟
         client.rid = _.indexOf(ROOM_all, room)
         client.is_post_watcher = true
@@ -1655,6 +1662,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           client.write buffer
       else
         ygopro.stoc_die(client, "${watch_denied}")
+    else if room.no_watch and room.players.length >= (if room.hostinfo.mode == 2 then 4 else 2)
+      ygopro.stoc_die(client, "${watch_denied_room}")
     else
       client.setTimeout(300000) #连接后超时5分钟
       client.rid = _.indexOf(ROOM_all, room)
@@ -1708,7 +1717,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     recorder.on 'error', (error)->
       return
 
-  if settings.modules.cloud_replay.enable_halfway_watch and !room.watcher
+  if settings.modules.cloud_replay.enable_halfway_watch and !room.watcher and !room.no_watch
     room.watcher = watcher = if settings.modules.test_mode.watch_public_hand then room.recorder else net.connect room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
         name: "the Big Brother"
@@ -2002,6 +2011,9 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
 ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
+  if room.no_watch
+    ygopro.stoc_send_chat(client, "${watch_denied_room}", ygopro.constants.COLORS.RED)
+    return true
   if (!room.arena and !settings.modules.challonge.enabled) or client.is_local
     return false
   for player in room.players
@@ -2028,13 +2040,16 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server)->
       ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_player}", ygopro.constants.COLORS.RED)
   return false
 
-ygopro.stoc_follow 'TYPE_CHANGE', false, (buffer, info, client, server)->
+ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server)->
   selftype = info.type & 0xf
   is_host = ((info.type >> 4) & 0xf) != 0
+  # if room and room.no_watch and selftype == 7
+  #   ygopro.stoc_die(client, "${watch_denied_room}")
+  #   return true
   client.is_host = is_host
   client.pos = selftype
   #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
-  return
+  return false
 
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
