@@ -1109,7 +1109,7 @@
       }
       if (settings.modules.challonge.enabled && this.started && !this.kicked) {
         challonge.matches.update({
-          id: settings.modules.challonge.tournament_id,
+          id: encodeURIComponent(settings.modules.challonge.tournament_id),
           matchId: this.challonge_info.id,
           match: this.challonge_duel_log,
           callback: function(err, data) {
@@ -1855,7 +1855,7 @@
       } else {
         ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE);
         challonge.participants.index({
-          id: settings.modules.challonge.tournament_id,
+          id: encodeURIComponent(settings.modules.challonge.tournament_id),
           callback: function(err, data) {
             var found, k, user;
             if (err || !data) {
@@ -1879,7 +1879,7 @@
             }
             client.challonge_info = found;
             challonge.matches.index({
-              id: settings.modules.challonge.tournament_id,
+              id: encodeURIComponent(settings.modules.challonge.tournament_id),
               callback: function(err, data) {
                 var len4, len5, match, o, p, player, ref4, ref5;
                 if (client.closed) {
