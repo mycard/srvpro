@@ -45,6 +45,9 @@
         <div class="col-lg-2">
             <button class="btn btn-default" action="clear_decks" confirm="此操作不可撤销，确实要删除全部卡组吗？">删除全部卡组</button>
         </div>
+        <div class="col-lg-2">
+            <button class="btn btn-default" action="upload_to_challonge">刷新卡组背景</button>
+        </div>
     </div>
 </div>
 <div class="container">
@@ -174,6 +177,12 @@ apis["del_deck"].callback = function(data) {
 
 apis["clear_decks"] = { "tip":" 正在确认操作..." }
 apis["clear_decks"].callback = function() {
+    output(data);
+    openapi("get_decks");
+}
+
+apis["upload_to_challonge"] = { "tip":" 正在上传卡组至Challonge..." }
+apis["upload_to_challonge"].callback = function() {
     output(data);
     openapi("get_decks");
 }
