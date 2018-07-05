@@ -864,7 +864,7 @@ class Room
           return
     if settings.modules.challonge.enabled and @started and !@kicked
       challonge.matches.update({
-        id: settings.modules.challonge.tournament_id,
+        id: encodeURIComponent(settings.modules.challonge.tournament_id),
         matchId: @challonge_info.id,
         match: @challonge_duel_log,
         callback: (err, data) ->
@@ -1521,7 +1521,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     else
       ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
       challonge.participants.index({
-        id: settings.modules.challonge.tournament_id,
+        id: encodeURIComponent(settings.modules.challonge.tournament_id),
         callback: (err, data) ->
           if err or !data
             if err
@@ -1538,7 +1538,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             return
           client.challonge_info = found
           challonge.matches.index({
-            id: settings.modules.challonge.tournament_id,
+            id: encodeURIComponent(settings.modules.challonge.tournament_id),
             callback: (err, data) ->
               if client.closed
                 return

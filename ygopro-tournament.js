@@ -155,9 +155,9 @@ var UploadToChallonge = function() {
         var player_name = player_list[k];
         sendResponse("正在上传玩家 "+player_name+" 至Challonge。");
         challonge.participants.create({
-            id: challonge_config.tournament_id,
+            id: encodeURIComponent(challonge_config.tournament_id),
             participant: {
-                name: player_name
+                name: encodeURIComponent(player_name)
             },
             callback: (function(player_name, success_count) {
                 return function(err, data) {
