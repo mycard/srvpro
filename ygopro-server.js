@@ -3286,7 +3286,7 @@
   });
 
   ygopro.stoc_follow('CHANGE_SIDE', false, function(buffer, info, client, server) {
-    var room, sinterval;
+    var room, sinterval, temp_log;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -3313,6 +3313,20 @@
         }
       }, 60000);
       client.side_interval = sinterval;
+    }
+    if (settings.modules.challonge.enabled && client.pos === 0) {
+      temp_log = JSON.parse(JSON.stringify(room.challonge_duel_log));
+      delete temp_log.winnerId;
+      challonge.matches.update({
+        id: encodeURIComponent(settings.modules.challonge.tournament_id),
+        matchId: room.challonge_info.id,
+        match: temp_log,
+        callback: function(err, data) {
+          if (err) {
+            log.warn("Errored pushing scores to Challonge.", err);
+          }
+        }
+      });
     }
     if (room.random_type || room.arena) {
       if (client.pos === 0) {
