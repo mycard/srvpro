@@ -845,9 +845,9 @@ class Room
         @start_time = end_time
       if score_array.length != 2
         if !score_array[0]
-          score_array[0] = { name: "unknown_player1", score: -5 }
+          score_array[0] = { name: null, score: -5 }
         if !score_array[1]
-          score_array[1] = { name: "unknown_player2", score: -5 }
+          score_array[1] = { name: null, score: -5 }
         score_array[0].score = -5
         score_array[1].score = -5
       request.post { url : settings.modules.arena_mode.post_score , form : {

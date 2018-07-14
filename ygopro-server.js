@@ -1084,13 +1084,13 @@
         if (score_array.length !== 2) {
           if (!score_array[0]) {
             score_array[0] = {
-              name: "unknown_player1",
+              name: null,
               score: -5
             };
           }
           if (!score_array[1]) {
             score_array[1] = {
-              name: "unknown_player2",
+              name: null,
               score: -5
             };
           }
