@@ -1076,36 +1076,50 @@
           score: score
         });
       }
-      if (score_array.length > 0 && settings.modules.arena_mode.enabled && this.arena) {
-        if (score_array.length === 2) {
-          end_time = moment().format();
-          if (!this.start_time) {
-            this.start_time = end_time;
-          }
-          request.post({
-            url: settings.modules.arena_mode.post_score,
-            form: {
-              accesskey: settings.modules.arena_mode.accesskey,
-              usernameA: score_array[0].name,
-              usernameB: score_array[1].name,
-              userscoreA: score_array[0].score,
-              userscoreB: score_array[1].score,
-              start: this.start_time,
-              end: end_time,
-              arena: this.arena
-            }
-          }, (function(_this) {
-            return function(error, response, body) {
-              if (error) {
-                log.warn('SCORE POST ERROR', error);
-              } else {
-                if (response.statusCode !== 204 && response.statusCode !== 200) {
-                  log.warn('SCORE POST FAIL', response.statusCode, response.statusMessage, _this.name, body);
-                }
-              }
-            };
-          })(this));
+      if (settings.modules.arena_mode.enabled && this.arena) {
+        end_time = moment().format();
+        if (!this.start_time) {
+          this.start_time = end_time;
         }
+        if (score_array.length !== 2) {
+          if (!score_array[0]) {
+            score_array[0] = {
+              name: "unknown_player1",
+              score: -5
+            };
+          }
+          if (!score_array[1]) {
+            score_array[1] = {
+              name: "unknown_player2",
+              score: -5
+            };
+          }
+          score_array[0].score = -5;
+          score_array[1].score = -5;
+        }
+        request.post({
+          url: settings.modules.arena_mode.post_score,
+          form: {
+            accesskey: settings.modules.arena_mode.accesskey,
+            usernameA: score_array[0].name,
+            usernameB: score_array[1].name,
+            userscoreA: score_array[0].score,
+            userscoreB: score_array[1].score,
+            start: this.start_time,
+            end: end_time,
+            arena: this.arena
+          }
+        }, (function(_this) {
+          return function(error, response, body) {
+            if (error) {
+              log.warn('SCORE POST ERROR', error);
+            } else {
+              if (response.statusCode !== 204 && response.statusCode !== 200) {
+                log.warn('SCORE POST FAIL', response.statusCode, response.statusMessage, _this.name, body);
+              }
+            }
+          };
+        })(this));
       }
       if (settings.modules.challonge.enabled && this.started && !this.kicked) {
         challonge.matches.update({
@@ -1252,7 +1266,7 @@
         }
         client.server.destroy();
       } else {
-        if (this.arena === "athletic" && !this.started && this.players.length === 2) {
+        if (this.arena && !this.started) {
           ref2 = this.players;
           for (m = 0, len2 = ref2.length; m < len2; m++) {
             player = ref2[m];
@@ -1260,7 +1274,9 @@
               this.scores[player.name] = 0;
             }
           }
-          this.scores[client.name] = -9;
+          if (this.players.length === 2) {
+            this.scores[client.name] = -9;
+          }
         }
         index = _.indexOf(this.players, client);
         if (index !== -1) {
@@ -1273,7 +1289,7 @@
             ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}");
           }
         }
-        if (this.players.length && !(this.windbot && client.is_host)) {
+        if (this.players.length && !(this.windbot && client.is_host) && !(this.arena && !this.started && client.pos <= 3)) {
           ygopro.stoc_send_chat_to_room(this, (client.name + " ${left_game}") + (error ? ": " + error : ''));
           if (!this.windbot && !this.started && settings.modules.http.websocket_roomlist) {
             roomlist.update(this);

@@ -838,30 +838,37 @@ class Room
     score_array=[]
     for name, score of @scores
       score_array.push { name: name, score: score }
-    if score_array.length > 0 and settings.modules.arena_mode.enabled and @arena
+    if settings.modules.arena_mode.enabled and @arena
       #log.info 'SCORE', score_array, @start_time
-      if score_array.length == 2
-        end_time = moment().format()
-        if !@start_time
-          @start_time = end_time
-        request.post { url : settings.modules.arena_mode.post_score , form : {
-          accesskey: settings.modules.arena_mode.accesskey,
-          usernameA: score_array[0].name,
-          usernameB: score_array[1].name,
-          userscoreA: score_array[0].score,
-          userscoreB: score_array[1].score,
-          start: @start_time,
-          end: end_time,
-          arena: @arena
-        }}, (error, response, body)=>
-          if error
-            log.warn 'SCORE POST ERROR', error
-          else
-            if response.statusCode != 204 and response.statusCode != 200
-              log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
-            #else
-            #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
-          return
+      end_time = moment().format()
+      if !@start_time
+        @start_time = end_time
+      if score_array.length != 2
+        if !score_array[0]
+          score_array[0] = { name: "unknown_player1", score: -5 }
+        if !score_array[1]
+          score_array[1] = { name: "unknown_player2", score: -5 }
+        score_array[0].score = -5
+        score_array[1].score = -5
+      request.post { url : settings.modules.arena_mode.post_score , form : {
+        accesskey: settings.modules.arena_mode.accesskey,
+        usernameA: score_array[0].name,
+        usernameB: score_array[1].name,
+        userscoreA: score_array[0].score,
+        userscoreB: score_array[1].score,
+        start: @start_time,
+        end: end_time,
+        arena: @arena
+      }}, (error, response, body)=>
+        if error
+          log.warn 'SCORE POST ERROR', error
+        else
+          if response.statusCode != 204 and response.statusCode != 200
+            log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
+          #else
+          #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
+        return
+
     if settings.modules.challonge.enabled and @started and !@kicked
       challonge.matches.update({
         id: encodeURIComponent(settings.modules.challonge.tournament_id),
@@ -980,10 +987,11 @@ class Room
       client.server.destroy()
     else
       #log.info(client.name, @started, @disconnector, @random_type, @players.length)
-      if @arena == "athletic" and !@started and @players.length == 2
+      if @arena and !@started
         for player in @players when player.pos != 7
           @scores[player.name] = 0
-        @scores[client.name] = -9
+        if @players.length == 2
+          @scores[client.name] = -9
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       if @started and @disconnector != 'server' and (client.pos < 4 or client.is_host)
@@ -991,7 +999,7 @@ class Room
         @scores[client.name] = -9
         if @random_type and not client.flee_free
           ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
-      if @players.length and !(@windbot and client.is_host)
+      if @players.length and !(@windbot and client.is_host) and !(@arena and !@started and client.pos <= 3)
         ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
         roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
         #client.room = null
