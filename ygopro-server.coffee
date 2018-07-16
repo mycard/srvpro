@@ -2557,7 +2557,7 @@ ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
   return unless room
   if settings.modules.reconnect.enabled
     client.time_confirm_required = false
-  return unlesssettings.modules.heartbeat_detection.enabled
+  return unless settings.modules.heartbeat_detection.enabled
   client.confirming_cards = false
   client.heartbeat_responsed = true
   CLIENT_heartbeat_unregister(client)
