@@ -2512,9 +2512,13 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
   room.last_active_time = moment()
   return
 
-ygopro.stoc_follow 'TIME_LIMIT', false, (buffer, info, client, server)->
+ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return unless room and settings.modules.heartbeat_detection.enabled and room.turn and room.turn > 0 and !room.windbot
+  return unless room
+  if settings.modules.reconnect.enabled and client.closed
+    ygopro.ctos_send(server, 'TIME_CONFIRM')
+    return true
+  return unless settings.modules.heartbeat_detection.enabled and room.turn and room.turn > 0 and !room.windbot
   check = false
   if room.hostinfo.mode != 2
     check = (client.is_first and info.player == 0) or (!client.is_first and info.player == 1)
@@ -2540,7 +2544,7 @@ ygopro.stoc_follow 'TIME_LIMIT', false, (buffer, info, client, server)->
   if check
     extend_time = settings.modules.reconnect.enabled and client.reconnecting
     CLIENT_heartbeat_register(client, false, extend_time)
-  return
+  return false
 
 ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
