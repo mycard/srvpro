@@ -630,6 +630,10 @@
     dinfo.timeout = tmot;
     disconnect_list[CLIENT_get_authorize_key(client)] = dinfo;
     ygopro.stoc_send_chat_to_room(room, (client.name + " ${disconnect_from_game}") + (error ? ": " + error : ''));
+    if (client.time_confirm_required) {
+      client.time_confirm_required = false;
+      ygopro.ctos_send(client.server, 'TIME_CONFIRM');
+    }
     if (settings.modules.reconnect.auto_surrender_after_disconnect && room.turn && room.turn > 0) {
       ygopro.ctos_send(client.server, 'SURRENDER');
     }
@@ -3149,9 +3153,13 @@
     if (!room) {
       return;
     }
-    if (settings.modules.reconnect.enabled && client.closed) {
-      ygopro.ctos_send(server, 'TIME_CONFIRM');
-      return true;
+    if (settings.modules.reconnect.enabled) {
+      if (client.closed) {
+        ygopro.ctos_send(server, 'TIME_CONFIRM');
+        return true;
+      } else {
+        client.time_confirm_required = true;
+      }
     }
     if (!(settings.modules.heartbeat_detection.enabled && room.turn && room.turn > 0 && !room.windbot)) {
       return;
@@ -3194,9 +3202,13 @@
   ygopro.ctos_follow('TIME_CONFIRM', false, function(buffer, info, client, server) {
     var room;
     room = ROOM_all[client.rid];
-    if (!(room && settings.modules.heartbeat_detection.enabled)) {
+    if (!room) {
       return;
     }
+    if (settings.modules.reconnect.enabled) {
+      client.time_confirm_required = false;
+    }
+    return unlesssettings.modules.heartbeat_detection.enabled;
     client.confirming_cards = false;
     client.heartbeat_responsed = true;
     CLIENT_heartbeat_unregister(client);

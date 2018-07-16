@@ -493,6 +493,9 @@ CLIENT_reconnect_register = (client, room_id, error) ->
   disconnect_list[CLIENT_get_authorize_key(client)] = dinfo
   #console.log("#{client.name} ${disconnect_from_game}")
   ygopro.stoc_send_chat_to_room(room, "#{client.name} ${disconnect_from_game}" + if error then ": #{error}" else '')
+  if client.time_confirm_required
+    client.time_confirm_required = false
+    ygopro.ctos_send(client.server, 'TIME_CONFIRM')
   if settings.modules.reconnect.auto_surrender_after_disconnect and room.turn and room.turn > 0
     ygopro.ctos_send(client.server, 'SURRENDER')
   return true
@@ -2515,9 +2518,12 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
-  if settings.modules.reconnect.enabled and client.closed
-    ygopro.ctos_send(server, 'TIME_CONFIRM')
-    return true
+  if settings.modules.reconnect.enabled
+    if client.closed
+      ygopro.ctos_send(server, 'TIME_CONFIRM')
+      return true
+    else
+      client.time_confirm_required = true
   return unless settings.modules.heartbeat_detection.enabled and room.turn and room.turn > 0 and !room.windbot
   check = false
   if room.hostinfo.mode != 2
@@ -2548,7 +2554,10 @@ ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server)->
 
 ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return unless room and settings.modules.heartbeat_detection.enabled
+  return unless room
+  if settings.modules.reconnect.enabled
+    client.time_confirm_required = false
+  return unlesssettings.modules.heartbeat_detection.enabled
   client.confirming_cards = false
   client.heartbeat_responsed = true
   CLIENT_heartbeat_unregister(client)
