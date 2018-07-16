@@ -3143,10 +3143,17 @@
     room.last_active_time = moment();
   });
 
-  ygopro.stoc_follow('TIME_LIMIT', false, function(buffer, info, client, server) {
+  ygopro.stoc_follow('TIME_LIMIT', true, function(buffer, info, client, server) {
     var check, cur_players, extend_time, room;
     room = ROOM_all[client.rid];
-    if (!(room && settings.modules.heartbeat_detection.enabled && room.turn && room.turn > 0 && !room.windbot)) {
+    if (!room) {
+      return;
+    }
+    if (settings.modules.reconnect.enabled && client.closed) {
+      ygopro.ctos_send(server, 'TIME_CONFIRM');
+      return true;
+    }
+    if (!(settings.modules.heartbeat_detection.enabled && room.turn && room.turn > 0 && !room.windbot)) {
       return;
     }
     check = false;
@@ -3181,6 +3188,7 @@
       extend_time = settings.modules.reconnect.enabled && client.reconnecting;
       CLIENT_heartbeat_register(client, false, extend_time);
     }
+    return false;
   });
 
   ygopro.ctos_follow('TIME_CONFIRM', false, function(buffer, info, client, server) {
