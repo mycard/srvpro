@@ -287,7 +287,7 @@ ROOM_players_oppentlist = {}
 ROOM_players_banned = []
 ROOM_connected_ip = {}
 ROOM_bad_ip = {}
-  
+
 # ban a user manually and permanently
 ban_user = (name) ->
   settings.ban.banned_user.push(name)
@@ -539,7 +539,7 @@ CLIENT_is_player = (client, room) ->
   is_player = false
   for player in room.players
     if client == player
-      is_player = true 
+      is_player = true
       break
   return is_player and client.pos <= 3
 
@@ -1102,7 +1102,7 @@ net.createServer (client) ->
       CLIENT_kick(server.client)
       SERVER_clear_disconnect(server)
     return
-  
+
   if ROOM_bad_ip[client.ip] > 5 or ROOM_connected_ip[client.ip] > 10
     log.info 'BAD IP', client.ip
     CLIENT_kick(client)
@@ -1127,10 +1127,10 @@ net.createServer (client) ->
           return
         return
       return
-      
+
   # 需要重构
   # 客户端到服务端(ctos)协议分析
-  
+
   client.pre_establish_buffers = new Array()
 
   client.on 'data', (ctos_buffer) ->
@@ -1316,7 +1316,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     return
   else if settings.modules.stop
     ygopro.stoc_die(client, settings.modules.stop)
-    
+
   else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled
     ygopro.stoc_send_chat(client,"${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
     redisdb.lrange client.ip+":replays", 0, 2, (err, result)->
@@ -1337,7 +1337,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       }
       CLIENT_kick(client)
       return), 500
-      
+
   else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.cloud_replay.enabled
     replay_id=info.pass.split("#")[1]
     if (replay_id>0 and replay_id<=9)
@@ -1456,7 +1456,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         else
           ygopro.stoc_die(client, '${invalid_password_action}')
           return
-      
+
       if !room
         ygopro.stoc_die(client, "${server_full}")
       else if room.error
@@ -1516,7 +1516,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         return
 
       finish(buffer)
-  
+
   else if settings.modules.challonge.enabled
     pre_room = ROOM_find_by_name(info.pass)
     if pre_room and pre_room.started and settings.modules.cloud_replay.enable_halfway_watch and !pre_room.no_watch
@@ -1604,7 +1604,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
           })
           return
       })
-  
+
   else if !client.name or client.name==""
     ygopro.stoc_die(client, "${bad_user_name}")
 
@@ -1645,7 +1645,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
   else if info.pass.length && !ROOM_validate(info.pass)
     ygopro.stoc_die(client, "${invalid_password_room}")
-  
+
   else
     #if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
     #  info.version = settings.version
@@ -1654,7 +1654,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     #  struct.set("version", info.version)
     #  buffer = struct.buffer
     #  #ygopro.stoc_send_chat(client, "看起来你是YGOMobile的用户，请记得更新先行卡补丁，否则会看到白卡", ygopro.constants.COLORS.GREEN)
-      
+
     #log.info 'join_game',info.pass, client.name
     room = ROOM_find_or_create_by_name(info.pass, client.ip)
     if !room
@@ -1832,7 +1832,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       client.last_game_msg = null
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
-  
+
   if ygopro.constants.MSG[msg] == 'HINT'
     hint_type = buffer.readUInt8(1)
     if hint_type = 3
@@ -1857,13 +1857,13 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
               ygopro.ctos_send(room.dueling_players[oppo_pos - win_pos].server, 'SURRENDER')
           else
             room.death = -1
-            ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE)            
+            ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE)
         else
           ygopro.stoc_send_chat_to_room(room, "${death_remain_part1}" + (room.death - room.turn) + "${death_remain_part2}", ygopro.constants.COLORS.BABYBLUE)
     if client.surrend_confirm
       client.surrend_confirm = false
       ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
-  
+
   if ygopro.constants.MSG[msg] == 'NEW_PHASE'
     phase = buffer.readInt16LE(1)
     oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
@@ -1881,8 +1881,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
           ygopro.ctos_send(room.dueling_players[oppo_pos - win_pos].server, 'SURRENDER')
       else
         room.death = -1
-        ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE) 
- 
+        ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE)
+
   if ygopro.constants.MSG[msg] == 'WIN' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2 or room.turn <= 0 or !room.turn
@@ -1921,7 +1921,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
           room.challonge_duel_log.scoresCsv = "0-1"
         else
           room.challonge_duel_log.scoresCsv = "0-0"
-    if room.death 
+    if room.death
       if settings.modules.http.quick_death_rule == 1 or settings.modules.http.quick_death_rule == 3
         room.death = -1
       else
@@ -2338,7 +2338,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
               setting_save(chat_color)
               ygopro.stoc_send_chat(client, "${set_chat_color_part1}" + ccolor + "${set_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
             else
-              ygopro.stoc_send_chat(client, "${color_not_found_part1}" + ccolor + "${color_not_found_part2}", ygopro.constants.COLORS.RED)              
+              ygopro.stoc_send_chat(client, "${color_not_found_part1}" + ccolor + "${color_not_found_part2}", ygopro.constants.COLORS.RED)
         else
           if color = chat_color.save_list[cip]
             ygopro.stoc_send_chat(client, "${get_chat_color_part1}" + color + "${get_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
@@ -2566,7 +2566,7 @@ ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
-  client.selected_preduel = true  
+  client.selected_preduel = true
   return unless room.random_type or room.arena
   if client.pos == 0
     room.waiting_for_player = room.waiting_for_player2
@@ -2652,10 +2652,10 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
         ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED)
         room.scores[client.name] = -9
         CLIENT_kick(client)
-        clearInterval sinterval        
+        clearInterval sinterval
       else
         client.side_tcount = client.side_tcount - 1
-        ygopro.stoc_send_chat(client, "${side_remain_part1}#{client.side_tcount}${side_remain_part2}", ygopro.constants.COLORS.BABYBLUE)        
+        ygopro.stoc_send_chat(client, "${side_remain_part1}#{client.side_tcount}${side_remain_part2}", ygopro.constants.COLORS.BABYBLUE)
     , 60000
     client.side_interval = sinterval
   if settings.modules.challonge.enabled and client.pos == 0
@@ -2971,10 +2971,10 @@ if settings.modules.http
             switch settings.modules.http.quick_death_rule
               when 3
                 room.death = -2
-                ygopro.stoc_send_chat_to_room(room, "${death_start_phase}", ygopro.constants.COLORS.BABYBLUE)                   
+                ygopro.stoc_send_chat_to_room(room, "${death_start_phase}", ygopro.constants.COLORS.BABYBLUE)
               else
                 room.death = (if room.turn then room.turn + 4 else 5)
-                ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE)   
+                ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE)
           else
             switch settings.modules.http.quick_death_rule
               when 2,3
@@ -2998,7 +2998,7 @@ if settings.modules.http
                 ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
               else
                 room.death = 5
-                ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)              
+                ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)
         response.writeHead(200)
         if death_room_found
           response.end(addCallback(u.query.callback, "['death ok', '" + u.query.death + "']"))
@@ -3010,7 +3010,7 @@ if settings.modules.http
         for room in ROOM_all when room and room.established and room.started and room.death and (u.query.deathcancel == "all" or u.query.deathcancel == room.port.toString())
           death_room_found = true
           room.death = 0
-          ygopro.stoc_send_chat_to_room(room, "${death_cancel}", ygopro.constants.COLORS.BABYBLUE)         
+          ygopro.stoc_send_chat_to_room(room, "${death_cancel}", ygopro.constants.COLORS.BABYBLUE)
         response.writeHead(200)
         if death_room_found
           response.end(addCallback(u.query.callback, "['death cancel ok', '" + u.query.deathcancel + "']"))
