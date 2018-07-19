@@ -441,7 +441,7 @@ ROOM_unwelcome = (room, bad_player, reason)->
 
 CLIENT_kick = (client) ->
   client.system_kicked = true
-  if settings.module.reconnect.enabled and client.closed
+  if settings.modules.reconnect.enabled and client.closed
     CLIENT_reconnect_unregister(client, false, true)
   else
     client.destroy()
