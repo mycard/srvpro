@@ -1290,7 +1290,7 @@
         if (index !== -1) {
           this.players.splice(index, 1);
         }
-        if (this.started && this.disconnector !== 'server' && (client.pos < 4 || client.is_host)) {
+        if (this.started && this.disconnector !== 'server' && client.pos < 4) {
           this.finished = true;
           this.scores[client.name] = -9;
           if (this.random_type && !client.flee_free) {
