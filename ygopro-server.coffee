@@ -589,19 +589,16 @@ CLIENT_send_reconnect_info = (client, server, room) ->
   if room.turn and room.turn > 0
     ygopro.ctos_send(server, 'REQUEST_FIELD')
   else if room.changing_side
-    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if !client.selected_preduel
       ygopro.stoc_send(client, 'CHANGE_SIDE')
     client.reconnecting = false
   else if room.selecting_hand
-    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if (room.hostinfo.mode != 2 or client.pos == 0 or client.pos == 2) and !client.selected_preduel
       ygopro.stoc_send(client, 'SELECT_HAND')
     client.reconnecting = false
   else if room.selecting_tp
-    client.is_reconnect_recovering = true
     ygopro.stoc_send(client, 'DUEL_START')
     if client == room.selecting_tp and !client.selected_preduel
       ygopro.stoc_send(client, 'SELECT_TP')
@@ -666,7 +663,11 @@ CLIENT_heartbeat_register = (client, send) ->
   client.heartbeat_responsed = false
   if send
     ygopro.stoc_send(client, "TIME_LIMIT", {
-      player: (if client.is_first and !client.is_reconnect_recovering then 0 else 1),
+      player: 0,
+      left_time: 0
+    })
+    ygopro.stoc_send(client, "TIME_LIMIT", {
+      player: 1,
       left_time: 0
     })
   client.heartbeat_timeout = setTimeout(() ->
@@ -1816,8 +1817,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
   #log.info 'MSG', ygopro.constants.MSG[msg]
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
-    if settings.modules.reconnect.enabled
-      client.is_reconnect_recovering = false # dInfo.isFirst is false after reconnecting, so detect this to make client send CTOS_TIME_CONFIRM, assuming the client did not do anything else before reconnecting. I think doing with the client's dInfo.isFirst is still needed.
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
     client.card_count = 0 if room.hostinfo.mode != 2
@@ -2756,7 +2755,7 @@ if settings.modules.mycard.enabled
 if settings.modules.heartbeat_detection.enabled
   setInterval ()->
     for room in ROOM_all when room and room.started and (room.hostinfo.time_limit == 0 or !room.turn or room.turn <= 0) and !room.windbot
-      for player in room.players when ((!room.changing_side or player.selected_preduel) and room.duel_count and room.duel_count > 0) or player.is_reconnect_recovering
+      for player in room.players when !room.changing_side or player.selected_preduel
         CLIENT_heartbeat_register(player, true)
     return
   , settings.modules.heartbeat_detection.interval

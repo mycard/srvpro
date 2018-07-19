@@ -764,21 +764,18 @@
     if (room.turn && room.turn > 0) {
       ygopro.ctos_send(server, 'REQUEST_FIELD');
     } else if (room.changing_side) {
-      client.is_reconnect_recovering = true;
       ygopro.stoc_send(client, 'DUEL_START');
       if (!client.selected_preduel) {
         ygopro.stoc_send(client, 'CHANGE_SIDE');
       }
       client.reconnecting = false;
     } else if (room.selecting_hand) {
-      client.is_reconnect_recovering = true;
       ygopro.stoc_send(client, 'DUEL_START');
       if ((room.hostinfo.mode !== 2 || client.pos === 0 || client.pos === 2) && !client.selected_preduel) {
         ygopro.stoc_send(client, 'SELECT_HAND');
       }
       client.reconnecting = false;
     } else if (room.selecting_tp) {
-      client.is_reconnect_recovering = true;
       ygopro.stoc_send(client, 'DUEL_START');
       if (client === room.selecting_tp && !client.selected_preduel) {
         ygopro.stoc_send(client, 'SELECT_TP');
@@ -853,7 +850,11 @@
     client.heartbeat_responsed = false;
     if (send) {
       ygopro.stoc_send(client, "TIME_LIMIT", {
-        player: (client.is_first && !client.is_reconnect_recovering ? 0 : 1),
+        player: 0,
+        left_time: 0
+      });
+      ygopro.stoc_send(client, "TIME_LIMIT", {
+        player: 1,
         left_time: 0
       });
     }
@@ -2189,9 +2190,6 @@
     }
     if (ygopro.constants.MSG[msg] === 'START') {
       playertype = buffer.readUInt8(1);
-      if (settings.modules.reconnect.enabled) {
-        client.is_reconnect_recovering = false;
-      }
       client.is_first = !(playertype & 0xf);
       client.lp = room.hostinfo.start_lp;
       if (room.hostinfo.mode !== 2) {
@@ -3497,7 +3495,7 @@
           ref2 = room.players;
           for (n = 0, len3 = ref2.length; n < len3; n++) {
             player = ref2[n];
-            if (((!room.changing_side || player.selected_preduel) && room.duel_count && room.duel_count > 0) || player.is_reconnect_recovering) {
+            if (!room.changing_side || player.selected_preduel) {
               CLIENT_heartbeat_register(player, true);
             }
           }
