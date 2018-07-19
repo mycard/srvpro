@@ -839,8 +839,8 @@
     return true;
   };
 
-  CLIENT_heartbeat_register = function(client, send, extend_time) {
-    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.pos > 3 || client.confirming_cards) {
+  CLIENT_heartbeat_register = function(client, send) {
+    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.pos > 3 || client.confirming_cards) {
       return false;
     }
     if (client.heartbeat_timeout) {
@@ -858,7 +858,7 @@
       if (!(client.closed || client.heartbeat_responsed)) {
         client.destroy();
       }
-    }, settings.modules.heartbeat_detection.wait_time * (extend_time ? 1.5 : 1));
+    }, settings.modules.heartbeat_detection.wait_time);
     return true;
   };
 
@@ -3148,7 +3148,7 @@
   });
 
   ygopro.stoc_follow('TIME_LIMIT', true, function(buffer, info, client, server) {
-    var check, cur_players, extend_time, room;
+    var check, cur_players, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -3193,8 +3193,7 @@
       check = client.pos === cur_players[info.player];
     }
     if (check) {
-      extend_time = settings.modules.reconnect.enabled && client.reconnecting;
-      CLIENT_heartbeat_register(client, false, extend_time);
+      CLIENT_heartbeat_register(client, false);
     }
     return false;
   });

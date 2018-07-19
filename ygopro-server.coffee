@@ -655,8 +655,8 @@ CLIENT_heartbeat_unregister = (client) ->
   #log.info(2, client.name)
   return true
 
-CLIENT_heartbeat_register = (client, send, extend_time) ->
-  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.pos > 3 or client.confirming_cards
+CLIENT_heartbeat_register = (client, send) ->
+  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.pos > 3 or client.confirming_cards
     return false
   if client.heartbeat_timeout
     CLIENT_heartbeat_unregister(client)
@@ -670,7 +670,7 @@ CLIENT_heartbeat_register = (client, send, extend_time) ->
     CLIENT_heartbeat_unregister(client)
     client.destroy() unless client.closed or client.heartbeat_responsed
     return
-  , settings.modules.heartbeat_detection.wait_time * (if extend_time then 1.5 else 1))
+  , settings.modules.heartbeat_detection.wait_time)
   #log.info(1, client.name)
   return true
 
@@ -2548,8 +2548,7 @@ ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server)->
       cur_players[1] = cur_players[1] - 2
     check = client.pos == cur_players[info.player]
   if check
-    extend_time = settings.modules.reconnect.enabled and client.reconnecting
-    CLIENT_heartbeat_register(client, false, extend_time)
+    CLIENT_heartbeat_register(client, false)
   return false
 
 ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
