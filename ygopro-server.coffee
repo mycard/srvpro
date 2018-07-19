@@ -2727,6 +2727,8 @@ if settings.modules.random_duel.enabled
       if time_passed >= settings.modules.random_duel.hang_timeout and !room.waiting_for_player.closed
         room.last_active_time = moment()
         ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
+        room.scores[room.waiting_for_player.name] = -9
+        #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name]
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         room.waiting_for_player.server.destroy()
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10) and !room.waiting_for_player.closed
