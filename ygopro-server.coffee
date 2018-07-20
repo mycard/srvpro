@@ -1837,7 +1837,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
 
   if ygopro.constants.MSG[msg] == 'HINT'
     hint_type = buffer.readUInt8(1)
-    if hint_type = 3
+    if hint_type == 3
       client.last_hint_msg = buffer
 
   if ygopro.constants.MSG[msg] == 'NEW_TURN'
