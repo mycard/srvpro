@@ -656,7 +656,7 @@ CLIENT_heartbeat_unregister = (client) ->
   return true
 
 CLIENT_heartbeat_register = (client, send) ->
-  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.pos > 3 or client.confirming_cards
+  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.pos > 3 or client.heartbeat_protected
     return false
   if client.heartbeat_timeout
     CLIENT_heartbeat_unregister(client)
@@ -1896,7 +1896,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
     room.turn = 0
     if settings.modules.heartbeat_detection.enabled
       for player in room.players
-        player.confirming_cards = false
+        player.heartbeat_protected = false
     if room and !room.finished and room.dueling_players[pos]
       room.winner_name = room.dueling_players[pos].name
       #log.info room.dueling_players, pos
@@ -2001,7 +2001,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
         break
     if check
       #console.log("Confirming cards:" + client.name)
-      client.confirming_cards = true
+      client.heartbeat_protected = true
 
   #登场台词
   if settings.modules.dialogues.enabled
@@ -2110,10 +2110,15 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
         setTimeout (()-> wait_room_start(ROOM_all[client.rid], 20);return), 1000
   return
 
+ygopro.ctos_follow 'REQUEST_FIELD', true, (buffer, info, client, server)->
+  return true
+
 ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
   client.reconnecting = false
+  if settings.modules.heartbeat_detection.enabled
+    client.heartbeat_protected = true
   if !client.last_game_msg
     return true
   if client.last_game_msg_title != 'WAITING'
@@ -2559,7 +2564,7 @@ ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
   if settings.modules.reconnect.enabled
     client.time_confirm_required = false
   return unless settings.modules.heartbeat_detection.enabled
-  client.confirming_cards = false
+  client.heartbeat_protected = false
   client.heartbeat_responsed = true
   CLIENT_heartbeat_unregister(client)
   return

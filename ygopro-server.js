@@ -841,7 +841,7 @@
   };
 
   CLIENT_heartbeat_register = function(client, send) {
-    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.pos > 3 || client.confirming_cards) {
+    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.pos > 3 || client.heartbeat_protected) {
       return false;
     }
     if (client.heartbeat_timeout) {
@@ -2287,7 +2287,7 @@
         ref2 = room.players;
         for (m = 0, len2 = ref2.length; m < len2; m++) {
           player = ref2[m];
-          player.confirming_cards = false;
+          player.heartbeat_protected = false;
         }
       }
       if (room && !room.finished && room.dueling_players[pos]) {
@@ -2432,7 +2432,7 @@
         }
       }
       if (check) {
-        client.confirming_cards = true;
+        client.heartbeat_protected = true;
       }
     }
     if (settings.modules.dialogues.enabled) {
@@ -2590,6 +2590,10 @@
     }
   });
 
+  ygopro.ctos_follow('REQUEST_FIELD', true, function(buffer, info, client, server) {
+    return true;
+  });
+
   ygopro.stoc_follow('FIELD_FINISH', true, function(buffer, info, client, server) {
     var room;
     room = ROOM_all[client.rid];
@@ -2597,6 +2601,9 @@
       return;
     }
     client.reconnecting = false;
+    if (settings.modules.heartbeat_detection.enabled) {
+      client.heartbeat_protected = true;
+    }
     if (!client.last_game_msg) {
       return true;
     }
@@ -3212,7 +3219,7 @@
     if (!settings.modules.heartbeat_detection.enabled) {
       return;
     }
-    client.confirming_cards = false;
+    client.heartbeat_protected = false;
     client.heartbeat_responsed = true;
     CLIENT_heartbeat_unregister(client);
   });
