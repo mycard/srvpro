@@ -2455,7 +2455,6 @@
         }
         if (found) {
           room.long_resolve_card = card;
-          console.log(0, card);
         } else {
           delete room.long_resolve_card;
         }
@@ -2465,11 +2464,9 @@
           room.long_resolve_chain = [];
         }
         room.long_resolve_chain[chain] = true;
-        console.log(1, chain);
         delete room.long_resolve_card;
       } else if (ygopro.constants.MSG[msg] === 'CHAIN_SOLVING' && room.long_resolve_chain) {
         chain = buffer.readInt8(1);
-        console.log(2, chain);
         if (room.long_resolve_chain[chain]) {
           ref6 = room.get_playing_player();
           for (p = 0, len4 = ref6.length; p < len4; p++) {
@@ -2479,10 +2476,8 @@
         }
       } else if ((ygopro.constants.MSG[msg] === 'CHAIN_NEGATED' || ygopro.constants.MSG[msg] === 'CHAIN_DISABLED') && room.long_resolve_chain) {
         chain = buffer.readInt8(1);
-        console.log(3, chain);
         delete room.long_resolve_chain[chain];
       } else if (ygopro.constants.MSG[msg] === 'CHAIN_END') {
-        console.log(4, chain);
         delete room.long_resolve_card;
         delete room.long_resolve_chain;
       }
