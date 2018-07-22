@@ -220,6 +220,9 @@ if settings.modules.cloud_replay.enabled
 if settings.modules.windbot.enabled
   windbots = loadJSON(settings.modules.windbot.botlist).windbots
 
+if settings.modules.heartbeat_detection.enabled
+  long_resolve_cards = loadJSON('./data/long_resolve_cards.json')
+
 # 组件
 ygopro = require './ygopro.js'
 roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
@@ -1897,6 +1900,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
     if settings.modules.heartbeat_detection.enabled
       for player in room.players
         player.heartbeat_protected = false
+      delete room.long_resolve_card
+      delete room.long_resolve_chain
     if room and !room.finished and room.dueling_players[pos]
       room.winner_name = room.dueling_players[pos].name
       #log.info room.dueling_players, pos
@@ -2002,6 +2007,41 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
     if check
       #console.log("Confirming cards:" + client.name)
       client.heartbeat_protected = true
+
+  # chain detection
+  if settings.modules.heartbeat_detection.enabled and client.pos == 0
+    if ygopro.constants.MSG[msg] == 'CHAINING'
+      card = buffer.readUInt32LE(1)
+      found = false
+      for id in long_resolve_cards when id == card
+        found = true
+        break
+      if found
+        room.long_resolve_card = card
+        # console.log(0,card)
+      else
+        delete room.long_resolve_card
+    else if ygopro.constants.MSG[msg] == 'CHAINED' and room.long_resolve_card
+      chain = buffer.readInt8(1)
+      if !room.long_resolve_chain
+        room.long_resolve_chain = []
+      room.long_resolve_chain[chain] = true
+      # console.log(1,chain)
+      delete room.long_resolve_card
+    else if ygopro.constants.MSG[msg] == 'CHAIN_SOLVING' and room.long_resolve_chain
+      chain = buffer.readInt8(1)
+      # console.log(2,chain)
+      if room.long_resolve_chain[chain]
+        for player in room.get_playing_player()
+          player.heartbeat_protected = true
+    else if (ygopro.constants.MSG[msg] == 'CHAIN_NEGATED' or ygopro.constants.MSG[msg] == 'CHAIN_DISABLED') and room.long_resolve_chain
+      chain = buffer.readInt8(1)
+      # console.log(3,chain)
+      delete room.long_resolve_chain[chain]
+    else if ygopro.constants.MSG[msg] == 'CHAIN_END'
+      # console.log(4,chain)
+      delete room.long_resolve_card
+      delete room.long_resolve_chain
 
   #登场台词
   if settings.modules.dialogues.enabled
