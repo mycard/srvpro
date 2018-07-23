@@ -951,6 +951,15 @@ class Room
       return
     return host_player
 
+   is_has_disconnected_player: ->
+    if !settings.modules.reconnect.enabled
+      return false
+    found = false
+    for player in @get_playing_player() when player.closed
+      found = true
+      break
+    return found
+
   add_windbot: (botdata)->
     @windbot = botdata
     request
@@ -2765,17 +2774,17 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
 
 if settings.modules.random_duel.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player
+    for room in ROOM_all when room and room.started and room.random_type and room.last_active_time and room.waiting_for_player and !room.is_has_disconnected_player()
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
-      if time_passed >= settings.modules.random_duel.hang_timeout and !room.waiting_for_player.closed
+      if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
         ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
         room.scores[room.waiting_for_player.name] = -9
         #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name]
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         CLIENT_kick(room.waiting_for_player)
-      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10) and !room.waiting_for_player.closed
+      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
         ROOM_unwelcome(room, room.waiting_for_player, "${random_ban_reason_AFK}")
     return
@@ -2783,16 +2792,16 @@ if settings.modules.random_duel.enabled
 
 if settings.modules.mycard.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.started and room.arena and room.last_active_time and room.waiting_for_player
+    for room in ROOM_all when room and room.started and room.arena and room.last_active_time and room.waiting_for_player and !room.is_has_disconnected_player()
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
-      if time_passed >= settings.modules.random_duel.hang_timeout and !room.waiting_for_player.closed
+      if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         room.scores[room.waiting_for_player.name] = -9
         #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name]
         CLIENT_kick(room.waiting_for_player)
-      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10) and !room.waiting_for_player.closed
+      else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
     return
   , 1000
