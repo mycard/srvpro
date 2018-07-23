@@ -2206,7 +2206,7 @@
       client.last_game_msg = buffer;
       client.last_game_msg_title = ygopro.constants.MSG[msg];
     }
-    if ((msg >= 10 && msg < 30) || msg === 132 || (msg >= 140 && msg < 144)) {
+    if ((msg >= 10 && msg < 30) || msg === 132 || (msg >= 140 && msg <= 144)) {
       room.waiting_for_player = client;
       room.last_active_time = moment();
     }

@@ -1821,7 +1821,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
     client.last_game_msg_title = ygopro.constants.MSG[msg]
     # log.info(client.name, client.last_game_msg_title)
 
-  if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg < 144) #SELECT和ANNOUNCE开头的消息
+  if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg <= 144) #SELECT和ANNOUNCE开头的消息
     room.waiting_for_player = client
     room.last_active_time = moment()
   #log.info("#{ygopro.constants.MSG[msg]}等待#{room.waiting_for_player.name}")
