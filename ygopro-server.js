@@ -942,6 +942,7 @@
         }
         if (rule.match(/(^|，|,)(OCGONLY|OO)(，|,|$)/)) {
           this.hostinfo.rule = 0;
+          this.hostinfo.lflist = 0;
         }
         if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/)) {
           this.hostinfo.rule = 2;

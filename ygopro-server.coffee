@@ -748,6 +748,7 @@ class Room
 
       if (rule.match /(^|，|,)(OCGONLY|OO)(，|,|$)/)
         @hostinfo.rule = 0
+        @hostinfo.lflist = 0
 
       if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/)
         @hostinfo.rule = 2
