@@ -27,18 +27,18 @@
 * 在线聊天室
 
 ### 使用方法
-* 可参考[wiki](https://github.com/mercury233/ygopro-server/wiki)安装
+* 可参考[wiki](https://github.com/moecube/srvpro/wiki)安装
 * 手动安装：
   * `git clone https://github.com/moecube/srvpro.git`
   * `cd srvpro`
   * `npm install`
   * 安装修改后的YGOPro服务端：https://github.com/moecube/ygopro/tree/server
 * `node ygopro-server.js`即可运行
-* 简易的控制台在 http://srvpro.ygo233.com/dashboard.html
+* 简易的控制台在 http://srvpro-cn.ygo233.com/dashboard.html
 
 ### 高级功能
 * 待补充说明
-* 简易的先行卡更新控制台在 http://srvpro.ygo233.com/pre-dashboard.html
+* 简易的先行卡更新控制台在 http://srvpro-cn.ygo233.com/pre-dashboard.html
 
 ### 开发计划
 * 重做CTOS和STOC部分
