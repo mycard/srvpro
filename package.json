@@ -15,9 +15,16 @@
     "deepmerge": "latest",
     "load-json-file": "latest",
     "moment": "latest",
+    "redis": "latest",
+    "formidable": "latest",
     "request": "latest",
     "underscore": "latest",
-    "underscore.string": "latest"
+    "underscore.string": "latest",
+    "sqlite3": "latest",
+    "geoip-country-lite": "latest",
+    "challonge": "latest",
+    "pg": "^6.4.2",
+    "ws": "^6.0.0"
   },
   "license": "AGPL-3.0",
   "scripts": {
