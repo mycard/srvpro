@@ -659,7 +659,7 @@ CLIENT_heartbeat_unregister = (client) ->
   return true
 
 CLIENT_heartbeat_register = (client, send) ->
-  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.pos > 3 or client.heartbeat_protected
+  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.waiting_for_last or client.pos > 3 or client.heartbeat_protected
     return false
   if client.heartbeat_timeout
     CLIENT_heartbeat_unregister(client)
@@ -2165,19 +2165,14 @@ ygopro.ctos_follow 'REQUEST_FIELD', true, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return unless room
+  return true unless room and settings.modules.reconnect.enabled
   client.reconnecting = false
-  if settings.modules.heartbeat_detection.enabled
-    client.heartbeat_protected = true
-  if !client.last_game_msg
-    return true
-  if client.last_game_msg_title != 'WAITING'
-    setTimeout( () ->
-      if client.last_hint_msg
-        ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
-      ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
-      return
-    , 50)
+  if client.time_confirm_required # client did not send TIME_CONFIRM
+    client.waiting_for_last = true
+  else if client.last_game_msg and client.last_game_msg_title != 'WAITING' # client sent TIME_CONFIRM
+    if client.last_hint_msg
+      ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
+    ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
   return true
 
 wait_room_start = (room, time)->
@@ -2612,11 +2607,17 @@ ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
   if settings.modules.reconnect.enabled
+    if client.waiting_for_last
+      client.waiting_for_last = false
+      if client.last_game_msg and client.last_game_msg_title != 'WAITING'
+        if client.last_hint_msg
+          ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
+        ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
     client.time_confirm_required = false
-  return unless settings.modules.heartbeat_detection.enabled
-  client.heartbeat_protected = false
-  client.heartbeat_responsed = true
-  CLIENT_heartbeat_unregister(client)
+  if settings.modules.heartbeat_detection.enabled
+    client.heartbeat_protected = false
+    client.heartbeat_responsed = true
+    CLIENT_heartbeat_unregister(client)
   return
 
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server)->

@@ -845,7 +845,7 @@
   };
 
   CLIENT_heartbeat_register = function(client, send) {
-    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.pos > 3 || client.heartbeat_protected) {
+    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.waiting_for_last || client.pos > 3 || client.heartbeat_protected) {
       return false;
     }
     if (client.heartbeat_timeout) {
@@ -2663,23 +2663,17 @@
   ygopro.stoc_follow('FIELD_FINISH', true, function(buffer, info, client, server) {
     var room;
     room = ROOM_all[client.rid];
-    if (!room) {
-      return;
-    }
-    client.reconnecting = false;
-    if (settings.modules.heartbeat_detection.enabled) {
-      client.heartbeat_protected = true;
-    }
-    if (!client.last_game_msg) {
+    if (!(room && settings.modules.reconnect.enabled)) {
       return true;
     }
-    if (client.last_game_msg_title !== 'WAITING') {
-      setTimeout(function() {
-        if (client.last_hint_msg) {
-          ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
-        }
-        ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
-      }, 50);
+    client.reconnecting = false;
+    if (client.time_confirm_required) {
+      client.waiting_for_last = true;
+    } else if (client.last_game_msg && client.last_game_msg_title !== 'WAITING') {
+      if (client.last_hint_msg) {
+        ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
+      }
+      ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
     }
     return true;
   });
@@ -3280,14 +3274,22 @@
       return;
     }
     if (settings.modules.reconnect.enabled) {
+      if (client.waiting_for_last) {
+        client.waiting_for_last = false;
+        if (client.last_game_msg && client.last_game_msg_title !== 'WAITING') {
+          if (client.last_hint_msg) {
+            ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
+          }
+          ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
+        }
+      }
       client.time_confirm_required = false;
     }
-    if (!settings.modules.heartbeat_detection.enabled) {
-      return;
+    if (settings.modules.heartbeat_detection.enabled) {
+      client.heartbeat_protected = false;
+      client.heartbeat_responsed = true;
+      CLIENT_heartbeat_unregister(client);
     }
-    client.heartbeat_protected = false;
-    client.heartbeat_responsed = true;
-    CLIENT_heartbeat_unregister(client);
   });
 
   ygopro.ctos_follow('HAND_RESULT', false, function(buffer, info, client, server) {
