@@ -9,7 +9,7 @@
     "srvpro",
     "server"
   ],
-  "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>",
+  "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>, Nanahira <78877@qq.com>",
   "dependencies": {
     "bunyan": "latest",
     "deepmerge": "latest",
