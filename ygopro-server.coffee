@@ -549,7 +549,7 @@ CLIENT_is_player = (client, room) ->
       break
   return is_player and client.pos <= 3
 
-CLIENT_is_able_to_reconnect = (client) ->
+CLIENT_is_able_to_reconnect = (client, deckbuf) ->
   unless settings.modules.reconnect.enabled
     return false
   if client.system_kicked
@@ -561,13 +561,21 @@ CLIENT_is_able_to_reconnect = (client) ->
   if !room
     CLIENT_reconnect_unregister(client)
     return false
-  # if disconnect_info.old_server.closed
-  #   return false
-  # current_room = disconnect_info.room
-  # unless current_room and current_room.started
-  #   return false
-  # if client.is_post_watcher or !CLIENT_is_player(client, current_room) or (room.windbot and client.is_local)
-  #   return false
+  if deckbuf and !_.isEqual(deckbuf, disconnect_info.deckbuf)
+    return false
+  return true
+
+CLIENT_get_kick_reconnect_target = (client, deckbuf) ->
+  for room in ROOM_all when room.started and !room.windbot
+    for player in room.get_playing_player() when !player.closed and player.name == client.name and player.pass == client.pass and (settings.modules.mycard.enabled or player.ip == client.ip) and (!check_deck or player.start_deckbuf == deckbuf)
+
+CLIENT_is_able_to_kick_reconnect = (client) ->
+  unless settings.modules.reconnect.enabled and settings.modules.reconnect.allow_kick_reconnect
+    return false
+  for room in ROOM_all[disconnect_info.room_id]
+  if !room
+    CLIENT_reconnect_unregister(client)
+    return false
   return true
 
 CLIENT_send_pre_reconnect_info = (client, room, old_client) ->
@@ -614,7 +622,7 @@ CLIENT_pre_reconnect = (client) ->
   if !CLIENT_is_able_to_reconnect(client)
     return
   dinfo = disconnect_list[CLIENT_get_authorize_key(client)]
-  client.pre_deckbuf = dinfo.deckbuf
+  # client.pre_deckbuf = dinfo.deckbuf
   client.pre_reconnecting = true
   client.pos = dinfo.old_client.pos
   client.setTimeout(300000)
@@ -2479,7 +2487,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
 
 ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
   if settings.modules.reconnect.enabled and client.pre_reconnecting
-    if _.isEqual(buffer, client.pre_deckbuf)
+    if CLIENT_is_able_to_reconnect(client, deckbuf)
       CLIENT_reconnect(client)
     else
       ygopro.stoc_send_chat(client, "${deck_incorrect_reconnect}", ygopro.constants.COLORS.RED)
