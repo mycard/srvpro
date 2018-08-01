@@ -622,7 +622,7 @@
     if (client.had_new_reconnection) {
       return false;
     }
-    if (!settings.modules.reconnect.enabled || !room || client.system_kicked || client.flee_free || disconnect_list[CLIENT_get_authorize_key(client)] || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || room.windbot || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1) || (room.random_type && room.max_player && room.get_disconnected_count() >= room.max_player - 1)) {
+    if (!settings.modules.reconnect.enabled || !room || client.system_kicked || client.flee_free || disconnect_list[CLIENT_get_authorize_key(client)] || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || room.windbot || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1) || (room.random_type && room.get_disconnected_count() > 0)) {
       return false;
     }
     dinfo = {
@@ -1380,7 +1380,7 @@
         if (this.started && this.disconnector !== 'server' && client.pos < 4) {
           this.finished = true;
           this.scores[client.name] = -9;
-          if (this.random_type && !client.flee_free) {
+          if (this.random_type && !client.flee_free && (!settings.modules.reconnect.enabled || this.get_disconnected_count() === 0)) {
             ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}");
           }
         }
