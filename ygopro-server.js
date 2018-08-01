@@ -748,7 +748,7 @@
     var len2, len3, m, n, player, ref2, room;
     for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
       room = ROOM_all[m];
-      if (room.started && !room.windbot) {
+      if (room && room.started && !room.windbot) {
         ref2 = room.get_playing_player();
         for (n = 0, len3 = ref2.length; n < len3; n++) {
           player = ref2[n];
