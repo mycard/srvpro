@@ -622,7 +622,7 @@
     if (client.had_new_reconnection) {
       return false;
     }
-    if (!settings.modules.reconnect.enabled || !room || client.system_kicked || client.flee_free || disconnect_list[CLIENT_get_authorize_key(client)] || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || room.windbot || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1)) {
+    if (!settings.modules.reconnect.enabled || !room || client.system_kicked || client.flee_free || disconnect_list[CLIENT_get_authorize_key(client)] || client.is_post_watcher || !CLIENT_is_player(client, room) || !room.started || room.windbot || (settings.modules.reconnect.auto_surrender_after_disconnect && room.hostinfo.mode !== 1) || (room.random_type && room.max_player && room.get_disconnected_count() >= room.max_player - 1)) {
       return false;
     }
     dinfo = {
@@ -1288,20 +1288,18 @@
       return host_player;
     };
 
-    Room.prototype.is_has_disconnected_player = function() {
+    Room.prototype.get_disconnected_count = function() {
       var found, len2, m, player, ref2;
       if (!settings.modules.reconnect.enabled) {
-        return false;
+        return 0;
       }
-      found = false;
+      found = 0;
       ref2 = this.get_playing_player();
       for (m = 0, len2 = ref2.length; m < len2; m++) {
         player = ref2[m];
-        if (!player.closed) {
-          continue;
+        if (player.closed) {
+          found++;
         }
-        found = true;
-        break;
       }
       return found;
     };
@@ -3593,7 +3591,7 @@
       var len2, m, room, time_passed;
       for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
         room = ROOM_all[m];
-        if (!(room && room.started && room.random_type && room.last_active_time && room.waiting_for_player && !room.is_has_disconnected_player())) {
+        if (!(room && room.started && room.random_type && room.last_active_time && room.waiting_for_player && room.get_disconnected_count() === 0)) {
           continue;
         }
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
@@ -3616,7 +3614,7 @@
       var len2, m, room, time_passed;
       for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
         room = ROOM_all[m];
-        if (!(room && room.started && room.arena && room.last_active_time && room.waiting_for_player && !room.is_has_disconnected_player())) {
+        if (!(room && room.started && room.arena && room.last_active_time && room.waiting_for_player && room.get_disconnected_count() === 0)) {
           continue;
         }
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
