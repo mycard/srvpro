@@ -568,7 +568,7 @@ CLIENT_is_able_to_reconnect = (client, deckbuf) ->
 
 CLIENT_get_kick_reconnect_target = (client, deckbuf) ->
   for room in ROOM_all when room.started and !room.windbot
-    for player in room.get_playing_player() when !player.closed and player.name == client.name and player.pass == client.pass and (settings.modules.mycard.enabled or player.ip == client.ip) and (!deckbuf or _.isEqual(player.start_deckbuf, deckbuf))
+    for player in room.get_playing_player() when !player.closed and player.name == client.name and player.pass == client.pass and (settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or player.ip == client.ip) and (!deckbuf or _.isEqual(player.start_deckbuf, deckbuf))
       return player
   return null
 
