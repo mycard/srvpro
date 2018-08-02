@@ -213,7 +213,7 @@ catch
 if settings.modules.cloud_replay.enabled
   redis = require 'redis'
   zlib = require 'zlib'
-  redisdb = redis.createClient host: "127.0.0.1", port: settings.modules.cloud_replay.redis_port
+  redisdb = redis.createClient host: settings.modules.cloud_replay.redis_host, port: settings.modules.cloud_replay.redis_port, password: settings.modules.cloud_replay.redis_password
   redisdb.on 'error', (err)->
     log.warn err
     return
