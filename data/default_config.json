@@ -68,9 +68,10 @@
     },
     "cloud_replay": {
       "enabled": false,
-      "redis_host": "127.0.0.1",
-      "redis_port": 6379,
-      "redis_password": "Omoiyoshino",
+      "redis": {
+        "host": "127.0.0.1",
+        "port": 6379
+      },
       "enable_halfway_watch": true
     },
     "windbot": {
