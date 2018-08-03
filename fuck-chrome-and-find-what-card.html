@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>识别卡图搜索卡片 - YGOPro 233服</title>
+<base href="https://ygo233.com/">	
+<meta name="keywords" content="游戏王,YGOPro,233服,实验室" />
+<meta name="description" content="识别卡图搜索卡片。" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="lab deck">
+<header class="container">
+    <div class="row">
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
+                <span class="sr-only">开关导航</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">YGOPro 233服</a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar-collapse">
+                <ul class="nav navbar-nav">
+                <li class="index"><a href="/">首页</a></li>
+                <li class="download"><a href="/download">下载</a></li>
+                <li class="usage"><a href="/usage">使用方法</a></li>
+                <li class="changelog"><a href="/changelog">更新记录</a></li>
+                <li class="bugs"><a href="/bugs">BUG报告</a></li>
+                <li class="lab"><a href="/lab">实验室</a></li>
+                <li class="pre"><a href="/pre">先行卡</a></li>
+                </ul>
+                <p class="navbar-text navbar-right">主机信息(IP)：<kbd>s1.ygo233.com</kbd>
+                    <kbd>233</kbd></p>
+            </div>
+            </div>
+        </nav>
+    </div>
+</header>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="title">识图 (Preview-Alpha)</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7 col-md-push-5 col-lg-6 col-lg-push-4">
+            <div id="deck">
+                <label>卡组</label>
+            </div>
+        </div>
+        <div class="col-md-5 col-md-pull-7 col-lg-4 col-lg-pull-6">
+            <div id="card">
+                <img id="cardpic" src="https://ygo233.my-card.in/ygopro/pics/2333365.jpg">
+                <div id="cardtext">
+                    <div class="cardname">233服卡组展示</div>
+                    <p></p><pre></pre>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-12">
+            <p class="buttons">
+                <button class="btn btn-default" id="upload_button">上传图片</button>
+                <input type='file' id="input_file" accept=".jpg" />
+            </p>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">分享卡组</h4>
+      </div>
+      <div class="modal-body text-center">
+        <div id="qrcode"></div>
+        <p>分享此二维码，或直接分享本页面网址</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">完成</button>
+      </div>
+    </div>
+  </div>
+</div>
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <p>&copy; 2018 <a href="http://mercury233.me/" target="_blank">Mercury233</a>
+            </div>
+        </div>
+    </div>
+</footer>
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?80278025afb2c6934aa93a16b3b14b30";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+<script src="https://cdn.bootcss.com/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
+<script>
+var currentDeck = {};
+
+$(function() {
+    $("#upload_button").click(startUploadDeck);
+    $("#input_file").on("change", uploadDeck);
+});
+
+parseQueryString = function() {
+    //http://stackoverflow.com/questions/523266/how-can-i-get-a-specific-parameter-from-location-search
+    var str = window.location.search;
+    var objURL = {};
+    str.replace(
+        new RegExp( "([^?=&]+)(=([^&]*))?", "g" ),
+        function( $0, $1, $2, $3 ){
+            objURL[ $1 ] = $3;
+        }
+    );
+    return objURL;
+}
+
+loadDeckFromURL = function() {
+    var deck = {};
+    var params=parseQueryString();
+    deck.name = params.name ? decodeURIComponent(params.name) : "未命名卡组";
+    deck.deck = params.deck;
+    deck = decodeDeck(deck);
+    showDeck(deck);
+}
+
+buildCard = function(id) {
+    var card_img = $("<img src='https://ygo233.my-card.in/ygopro/pics/"+id+".jpg!thumb' data-id='"+id+"'>");
+    card_img.click(function(){
+        showCard($(this).data("id"));
+    });
+    return card_img;
+}
+
+showDeck = function(deck) {
+    currentDeck = deck;
+
+    $("#deck").html(" ");
+    $("#deck").append("<label class='pull-right' id='deckname' contenteditable='true'></label>");
+    $("#deckname").text(deck.name);
+    
+    $("#deck").append("<label>主卡组：<b>"+deck.main.length+"</b></label>");
+    var deck_main=$('<div></div>');
+    deck_main.addClass("line"+Math.ceil(deck.main.length/4));
+    for (var j in deck.main) {
+        deck_main.append(buildCard(deck.main[j]));
+    }
+    deck_main.appendTo($("#deck"));
+    
+    $("#deck").append("<label>额外卡组：<b>"+deck.extra.length+"</b></label>");
+    var deck_extra=$('<div></div>');
+    deck_extra.addClass("line"+deck.extra.length);
+    for (var j in deck.extra) {
+        deck_extra.append(buildCard(deck.extra[j]));
+    }
+    deck_extra.appendTo($("#deck"));
+    
+    $("#deck").append("<label>副卡组：<b>"+deck.side.length+"</b></label>");
+    var deck_side=$('<div></div>');
+    deck_side.addClass("line"+deck.side.length);
+    for (var j in deck.side) {
+        deck_side.append(buildCard(deck.side[j]));
+    }
+    deck_side.appendTo($("#deck"));
+    
+    changeDeckName();
+    showCard(deck.main[0]);
+}
+
+showCard = function(id) {
+    $("#cardpic").attr("src", "https://ygo233.my-card.in/ygopro/pics/"+id+".jpg");
+    $("#cardtext").html("<div class='cardname'><div class='loader'></div></div>");
+    $.getJSON("/card/data/"+id+"/callback=?", function(card) {
+        $("#cardtext").html("");
+        $("#cardtext").append("<div class='cardname'>"+card.text.name+"["+card.id+"]</div>");
+        if (card.data.type & 1) { //TYPE_MONSTER
+            $("#cardtext").append("<p>["+card.text.type+"] "+card.text.attr+"<br>"+card.text.data+"</p>");
+            $("#cardtext").addClass("monster");
+        }
+        else {
+            $("#cardtext").append("<p>["+card.text.type+"]</p>");
+            $("#cardtext").removeClass("monster");
+        }
+        $("#cardtext").append("<pre>"+card.text.desc+"</pre>");
+    });
+}
+
+//+ Carlos R. L. Rodrigues
+//@ http://jsfromhell.com/number/base-conversor [rev. #1]
+Number.prototype.toBase = function(b, c){
+    var s = "", n = this;
+    if(b > (c = (c || BASE_DICT).split("")).length || b < 2) return "";
+    while(n)
+        s = c[n % b] + s, n = Math.floor(n / b);
+    return s;
+};
+String.prototype.parseBase = function(b, c){
+    var s = 0, n, l = (n = this.split("")).length, i = 0;
+    if(b > (c = c || BASE_DICT).length || b < 2) return NaN;
+    while(l--)
+        s += c.indexOf(n[i++]) * Math.pow(b, l);
+    return s;
+};
+
+var BASE_DICT = "0123456789ABCDEFGHIJKLMNPRSTUVWXYZabcdefghijklmnopqrstuvwxyz"; // not including O and Q
+var BASE_MAX = ("zzzzz").parseBase(60);
+
+encodeDeck = function(deck) {
+    var newDeck = {};
+    newDeck.name = deck.name;
+    var deckArray = deck.main.concat([0]).concat(deck.extra).concat([0]).concat(deck.side);
+    newDeck.deck = encodeDeckArray(deckArray);
+    return newDeck;
+}
+
+decodeDeck = function(deck) {
+    var newDeck = {};
+    newDeck.name = deck.name;
+    newDeck.main = [];
+    newDeck.extra = [];
+    newDeck.side = [];
+    var deckArray = decodeDeckString(deck.deck);
+    var nowAdding = "main";
+    for (var i in deckArray) {
+        var card = deckArray[i];
+        if (card == 0) {
+            if (nowAdding == "main")
+                nowAdding = "extra";
+            else
+                nowAdding = "side"
+            continue;
+        }
+        newDeck[nowAdding].push(card);
+    }
+    return newDeck;
+}
+
+encodeDeckArray = function(deckArray) {
+    var deckIndex = {};
+    var newDeckArray = [];
+    for (var i in deckArray) {
+        var card = parseInt(deckArray[i]);
+        if (card > 0 && (card < deckArray.length || card > BASE_MAX))
+            warn("卡片密码过大或过小，无法正常编码！");
+        if (deckIndex[card] >= 0)
+            card = parseInt(deckIndex[card]) + 1;
+        else
+            deckIndex[card] = i;
+        var cardString = card.toBase(60);
+        if (cardString.length == 5) { }
+        else if (cardString.length == 4)
+            cardString = "0" + cardString;
+        else if (cardString.length == 3)
+            cardString = "00" + cardString;
+        else if (cardString.length == 2)
+            cardString = "Q" + cardString;
+        else
+            cardString = "O" + cardString; // the letter o
+        newDeckArray.push(cardString);
+    }
+    return newDeckArray.join("");
+}
+
+decodeDeckString = function(encodedDeck) {
+    var deckArray = [];
+    encodedDeck = encodedDeck.replace(/Q/g, "000");
+    encodedDeck = encodedDeck.replace(/O/g, "0000"); // the letter o
+    for (var i = 0; i < encodedDeck.length; i += 5) {
+        var cardString = encodedDeck.substr(i, 5);
+        var card = cardString.parseBase(60);
+        var index = card - 1;
+        if (index >= 0 && index < deckArray.length)
+            deckArray.push(deckArray[index]);
+        else
+            deckArray.push(card);
+    }
+    return deckArray;
+}
+
+startUploadDeck = function() {
+    $("#input_file").click();
+}
+
+uploadDeck = function() {
+    var file=this.files[0];
+    //console.log(file);
+    if(!file)
+        return;
+    if(file.name.indexOf(".jpg") < 0) {
+        warn("请选择JPG图片文件！");
+        return;
+    }
+    var reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = function() {sendArrayBuffer(this.result) };
+}
+
+sendArrayBuffer = function(buffer) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', 'http://pastec.ygo233.com:7998/index/searcher', true);
+	xhr.onload = function(e) { 
+		if (this.status == 200) {
+			console.log(this.responseText);
+			var res=JSON.parse(this.responseText);
+			showResponse(res);
+		}
+	}
+	xhr.send(buffer);
+}
+
+showResponse = function(res) {
+	var deck = {};
+	deck.name="识别结果";
+	deck.main=res.image_ids;
+	if (res.image_ids.length==0) {
+		deck.name="没有找到卡片";
+		deck.main=[48202661];
+	}
+	deck.extra=[];
+	deck.side=[];
+	showDeck(deck);
+}
+
+readDeck = function(deck, fileText) {
+    //console.log(deck);
+    //console.log(filetext);
+    deck.main = [];
+    deck.extra = [];
+    deck.side = [];
+    var nowReading = "main";
+    fileArray = fileText.split('\n');
+    for (var i in fileArray) {
+        var line = fileArray[i].trim();
+        //console.log(line);
+        if(line == "#main")
+            nowReading = "main";
+        if(line == "#extra")
+            nowReading = "extra";
+        if(line == "!side")
+            nowReading = "side";
+        var card = parseInt(line);
+        if(card > 0) {
+            deck[nowReading].push(card);
+        }
+    }
+    showDeck(deck);
+    updateDeckURL();
+}
+
+changeDeckName = function() {
+    currentDeck.name = $("#deckname").text();
+    document.title = currentDeck.name + " - 卡组 - YGOPro 233服";
+}
+
+updateDeckURL = function() {
+    var newDeck = encodeDeck(currentDeck);
+    var newURL = window.location.origin + window.location.pathname + "?name=" + encodeURIComponent(newDeck.name) + "&deck=" + encodeURIComponent(newDeck.deck);
+    window.history.pushState({}, 0, newURL);
+}
+
+shareDeck = function() {
+    updateDeckURL();
+    $("#qrcode").html("");
+    $("#qrcode").qrcode({ width: 480, height: 480, text: window.location.href });
+    $("#myModal").modal("show");
+    //alert("已保存卡组，直接复制或分享当前页面地址即可！");
+}
+
+downloadDeck = function() {
+    var deckName = currentDeck.name;
+    if(!deckName.toLowerCase().endsWith(".ydk"))
+        deckName = deckName + ".ydk"
+    var deckArray = [];
+    deckArray.push("#created by ygo233.com", "#main");
+    deckArray = deckArray.concat(currentDeck.main);
+    deckArray.push("#extra");
+    deckArray = deckArray.concat(currentDeck.extra);
+    deckArray.push("!side");
+    deckArray = deckArray.concat(currentDeck.side);
+    deckArray.push("");
+    var blob = new Blob([deckArray.join("\n")], { type: "text/plain" });
+    this.href = window.URL.createObjectURL(blob);
+    this.download = deckName;
+    return true;
+}
+
+warn = function(text) {
+    alert(text);
+}
+
+</script>
+</body>
+</html>
