@@ -185,7 +185,7 @@ showDeck = function(deck) {
 showCard = function(id) {
     $("#cardpic").attr("src", "https://ygo233.my-card.in/ygopro/pics/"+id+".jpg");
     $("#cardtext").html("<div class='cardname'><div class='loader'></div></div>");
-    $.getJSON("/card/data/"+id+"/callback=?", function(card) {
+    $.getJSON("https://ygo233.com/card/data/"+id+"/callback=?", function(card) {
         $("#cardtext").html("");
         $("#cardtext").append("<div class='cardname'>"+card.text.name+"["+card.id+"]</div>");
         if (card.data.type & 1) { //TYPE_MONSTER
