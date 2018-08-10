@@ -1069,7 +1069,7 @@ class Room
         @finished = true
         if !@finished_by_death
           @scores[client.name] = -9
-          if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() <= 1)
+          if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() == 0)
             ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
       if @players.length and !(@windbot and client.is_host) and !(@arena and !@started and client.pos <= 3)
         ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''

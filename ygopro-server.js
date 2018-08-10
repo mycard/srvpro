@@ -1390,7 +1390,7 @@
           this.finished = true;
           if (!this.finished_by_death) {
             this.scores[client.name] = -9;
-            if (this.random_type && !client.flee_free && (!settings.modules.reconnect.enabled || this.get_disconnected_count() <= 1)) {
+            if (this.random_type && !client.flee_free && (!settings.modules.reconnect.enabled || this.get_disconnected_count() === 0)) {
               ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}");
             }
           }
