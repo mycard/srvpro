@@ -1386,6 +1386,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     return
   else if settings.modules.stop
     ygopro.stoc_die(client, settings.modules.stop)
+  else if info.pass == "Marshtomp" or info.pass == "the Big Brother"
+    ygopro.stoc_die(client, "${bad_user_name}")
 
   else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled
     ygopro.stoc_send_chat(client,"${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
