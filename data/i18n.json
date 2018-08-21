@@ -138,7 +138,7 @@
     "deck_incorrect_reconnect": "Please pick your previous deck.",
     "reconnect_failed": "Reconnect failed.",
     "reconnecting_to_room": "Reconnecting to server...",
-    "reconnect_kicked": "You are kicked out because you're logined in on other devices.",
+    "reconnect_kicked": "You are kicked out because you're logged in on other devices.",
     "challonge_user_not_found": "You are not a participant of the tournament.",
     "challonge_match_load_failed": "Failed loading tournament info.",
     "challonge_match_not_found": "Your current match was not found.",
@@ -282,6 +282,13 @@
     "deck_incorrect_reconnect": "Por favor, escoja tu Deck anterior.",
     "reconnect_failed": "Fallo al reconectar.",
     "reconnecting_to_room": "Reconectando al servidor...",
+    "reconnect_kicked": "Fuiste expulsado porque estás conectado a otros dispositivos.",
+    "challonge_user_not_found": "No eres participante del torneo.",
+    "challonge_match_load_failed": "Fallo al cargar información del torneo.",
+    "challonge_match_not_found": "No se pudo encontrar tu partida.",
+    "challonge_match_already_finished": "Tu partida actual ya ha terminado. Por favor, llama a un juez para ayuda.",
+    "challonge_match_created": "Una sala de sólo partidas creada. Tu oponente se unirá automáticamente.",
+    "challonge_player_already_in": "Por favor, no entres en la sala en la que ya estás.",
     "athletic_arena_tip": "Durante una Partdida deportiva, un comportamiento de abandono se considera una rendición."
   },
   "zh-cn": {
