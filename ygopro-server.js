@@ -173,9 +173,19 @@
     imported = true;
   }
 
+  if (settings.modules.http.quick_death_rule === false) {
+    settings.modules.http.quick_death_rule = 0;
+    imported = true;
+  }
+
   if (settings.modules.cloud_replay.redis_port) {
     settings.modules.cloud_replay.redis.port = settings.modules.cloud_replay.redis_port;
     delete settings.modules.cloud_replay.redis_port;
+    imported = true;
+  }
+
+  if (settings.module.http.show_info) {
+    delete settings.module.http.show_info;
     imported = true;
   }
 
@@ -3733,7 +3743,11 @@
                         if (player.pos != null) {
                           results1.push({
                             id: (-1).toString(),
-                            name: player.name + (settings.modules.http.show_ip && pass_validated && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.http.show_info && room.started && player.pos !== 7 && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + (room.hostinfo.mode !== 2 ? " Cards:" + (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : "") + ")" : ""),
+                            name: player.name,
+                            ip: settings.modules.http.show_ip && pass_validated && !player.is_local ? player.ip.slice(7) : null,
+                            score: room.started && player.pos !== 7 && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? room.scores[player.name] : "",
+                            lp: room.started && player.pos !== 7 && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? (player.lp != null ? player.lp : room.hostinfo.start_lp) : null,
+                            cards: room.started && player.pos !== 7 && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : null,
                             pos: player.pos
                           });
                         }
