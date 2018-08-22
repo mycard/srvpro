@@ -263,8 +263,7 @@
       "websocket_roomlist": false,
       "public_roomlist": false,
       "show_ip": false,
-      "show_info": true,
-      "quick_death_rule": false,
+      "quick_death_rule": 0,
       "ssl": {
         "enabled": false,
         "port": 7923,
