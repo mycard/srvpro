@@ -1183,7 +1183,7 @@ net.createServer (client) ->
         ygopro.stoc_die(client, "${cloud_replay_no}")
         return
       redisdb.expire("replay:"+replay.replay_id, 60*60*48)
-      buffer=new Buffer(replay.replay_buffer,'binary')
+      buffer=Buffer.from(replay.replay_buffer,'binary')
       zlib.unzip buffer, (err, replay_buffer) ->
         if err
           log.info "cloud replay unzip error: " + err
@@ -1207,7 +1207,7 @@ net.createServer (client) ->
       room=ROOM_all[client.rid]
       room.watcher.write ctos_buffer if room
     else
-      #ctos_buffer = new Buffer(0)
+      #ctos_buffer = Buffer.alloc(0)
       ctos_message_length = 0
       ctos_proto = 0
       #ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
@@ -1275,7 +1275,7 @@ net.createServer (client) ->
 
   # 服务端到客户端(stoc)
   server.on 'data', (stoc_buffer)->
-    #stoc_buffer = new Buffer(0)
+    #stoc_buffer = Buffer.alloc(0)
     stoc_message_length = 0
     stoc_proto = 0
     #stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
@@ -1453,7 +1453,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
     #  struct.set("version", info.version)
     #  buffer = struct.buffer
 
-    buffer = new Buffer(info.pass[0...8], 'base64')
+    buffer = Buffer.from(info.pass[0...8], 'base64')
 
     if buffer.length != 6
       ygopro.stoc_die(client, '${invalid_password_payload}')
@@ -1556,7 +1556,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
 
     if id = users_cache[client.name]
       secret = id % 65535 + 1
-      decrypted_buffer = new Buffer(6)
+      decrypted_buffer = Buffer.allocUnsafe(6)
       for i in [0, 2, 4]
         decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
       if check(decrypted_buffer)
@@ -1575,7 +1575,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       if body and body.user
         users_cache[client.name] = body.user.id
         secret = body.user.id % 65535 + 1
-        decrypted_buffer = new Buffer(6)
+        decrypted_buffer = Buffer.allocUnsafe(6)
         for i in [0, 2, 4]
           decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
         if check(decrypted_buffer)

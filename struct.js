@@ -251,7 +251,7 @@ function Struct() {
 
     this.allocate = function () {
         applyClosures(priv);
-        priv.buf = new Buffer(priv.len);
+        priv.buf = Buffer.alloc(priv.len);
         allocateFields();
         priv.allocated = true;
         return this;

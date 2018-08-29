@@ -80,7 +80,7 @@ for name, declaration of structs_declaration
         break
     throw "unknown proto" if !@constants.STOC[proto]
 
-  header = new Buffer(3)
+  header = Buffer.allocUnsafe(3)
   header.writeUInt16LE buffer.length + 1, 0
   header.writeUInt8 proto, 2
   socket.write header
@@ -108,7 +108,7 @@ for name, declaration of structs_declaration
         break
     throw "unknown proto" if !@constants.CTOS[proto]
 
-  header = new Buffer(3)
+  header = Buffer.allocUnsafe(3)
   header.writeUInt16LE buffer.length + 1, 0
   header.writeUInt8 proto, 2
   socket.write header

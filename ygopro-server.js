@@ -1520,7 +1520,7 @@
           return;
         }
         redisdb.expire("replay:" + replay.replay_id, 60 * 60 * 48);
-        buffer = new Buffer(replay.replay_buffer, 'binary');
+        buffer = Buffer.from(replay.replay_buffer, 'binary');
         zlib.unzip(buffer, function(err, replay_buffer) {
           if (err) {
             log.info("cloud replay unzip error: " + err);
@@ -1806,7 +1806,7 @@
         ygopro.stoc_die(client, '${invalid_password_length}');
         return;
       }
-      buffer = new Buffer(info.pass.slice(0, 8), 'base64');
+      buffer = Buffer.from(info.pass.slice(0, 8), 'base64');
       if (buffer.length !== 6) {
         ygopro.stoc_die(client, '${invalid_password_payload}');
         return;
@@ -1922,7 +1922,7 @@
       };
       if (id = users_cache[client.name]) {
         secret = id % 65535 + 1;
-        decrypted_buffer = new Buffer(6);
+        decrypted_buffer = Buffer.allocUnsafe(6);
         ref2 = [0, 2, 4];
         for (m = 0, len2 = ref2.length; m < len2; m++) {
           i = ref2[m];
@@ -1946,7 +1946,7 @@
         if (body && body.user) {
           users_cache[client.name] = body.user.id;
           secret = body.user.id % 65535 + 1;
-          decrypted_buffer = new Buffer(6);
+          decrypted_buffer = Buffer.allocUnsafe(6);
           ref3 = [0, 2, 4];
           for (n = 0, len3 = ref3.length; n < len3; n++) {
             i = ref3[n];
