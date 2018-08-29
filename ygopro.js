@@ -130,7 +130,7 @@
         throw "unknown proto";
       }
     }
-    header = new Buffer(3);
+    header = Buffer.allocUnsafe(3);
     header.writeUInt16LE(buffer.length + 1, 0);
     header.writeUInt8(proto, 2);
     socket.write(header);
@@ -167,7 +167,7 @@
         throw "unknown proto";
       }
     }
-    header = new Buffer(3);
+    header = Buffer.allocUnsafe(3);
     header.writeUInt16LE(buffer.length + 1, 0);
     header.writeUInt8(proto, 2);
     socket.write(header);
