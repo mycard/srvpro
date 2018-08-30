@@ -42,6 +42,7 @@ moment.locale('zh-cn', {
 
 import_datas = [
   "abuse_count",
+  "ban_mc",
   "rag",
   "rid",
   "is_post_watcher",
@@ -733,6 +734,9 @@ CLIENT_heartbeat_register = (client, send) ->
   #log.info(1, client.name)
   return true
 
+CLIENT_is_banned_by_mc = (client) ->
+  return client.ban_mc and client.ban_mc.banned and moment().isBefore(client.ban_mc.until)
+
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -1205,7 +1209,7 @@ net.createServer (client) ->
   client.on 'data', (ctos_buffer) ->
     if client.is_post_watcher
       room=ROOM_all[client.rid]
-      room.watcher.write ctos_buffer if room
+      room.watcher.write ctos_buffer if room and !CLIENT_is_banned_by_mc(client)
     else
       #ctos_buffer = Buffer.alloc(0)
       ctos_message_length = 0
@@ -1356,6 +1360,22 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
     return false
   , name))
     client.rag = true
+  if true#settings.modules.mycard.enabled
+    #console.log(name)
+    request
+      url: settings.modules.mycard.ban_get
+      json: true
+      qs:
+        user: name
+    , (error, response, body)->
+      #console.log(body)
+      if _.isString body
+        log.warn "ban get bad json", body
+      else if error or !body
+        log.warn 'ban get error', error, response
+      else
+        client.ban_mc = body
+      return
   struct = ygopro.structs["CTOS_PlayerInfo"]
   struct._setBuff(buffer)
   struct.set("name", name)
@@ -2463,7 +2483,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
     cancel = true
   if !(room and (room.random_type or room.arena))
     return cancel
-  if client.abuse_count>=5
+  if client.abuse_count>=5 or CLIENT_is_banned_by_mc(client)
     log.warn "BANNED CHAT", client.name, client.ip, msg
     ygopro.stoc_send_chat(client, "${banned_chat_tip}", ygopro.constants.COLORS.RED)
     return true

@@ -104,6 +104,7 @@
       "enabled": false,
       "auth_base_url": "https://ygobbs.com",
       "auth_database": "postgres://233@233.mycard.moe/233",
+      "ban_get": "https://api.mycard.moe/ygopro/big-brother/ban",
       "auth_key": "233333"
     },
     "challonge": {
