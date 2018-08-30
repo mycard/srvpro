@@ -1718,7 +1718,7 @@
     }, name)) {
       client.rag = true;
     }
-    if (true) {
+    if (settings.modules.mycard.enabled) {
       request({
         url: settings.modules.mycard.ban_get,
         json: true,

@@ -1360,7 +1360,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
     return false
   , name))
     client.rag = true
-  if true#settings.modules.mycard.enabled
+  if settings.modules.mycard.enabled
     #console.log(name)
     request
       url: settings.modules.mycard.ban_get
