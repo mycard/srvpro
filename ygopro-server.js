@@ -1215,7 +1215,7 @@
       }
       if (settings.modules.challonge.enabled && this.started && !this.kicked) {
         challonge.matches.update({
-          id: encodeURIComponent(settings.modules.challonge.tournament_id),
+          id: settings.modules.challonge.tournament_id,
           matchId: this.challonge_info.id,
           match: this.challonge_duel_log,
           callback: function(err, data) {
@@ -2001,7 +2001,7 @@
       } else {
         ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE);
         challonge.participants.index({
-          id: encodeURIComponent(settings.modules.challonge.tournament_id),
+          id: settings.modules.challonge.tournament_id,
           callback: function(err, data) {
             var found, k, user;
             if (err || !data) {
@@ -2025,7 +2025,7 @@
             }
             client.challonge_info = found;
             challonge.matches.index({
-              id: encodeURIComponent(settings.modules.challonge.tournament_id),
+              id: settings.modules.challonge.tournament_id,
               callback: function(err, data) {
                 var len4, len5, match, o, p, player, ref4, ref5;
                 if (client.closed) {
@@ -3538,7 +3538,7 @@
       temp_log = JSON.parse(JSON.stringify(room.challonge_duel_log));
       delete temp_log.winnerId;
       challonge.matches.update({
-        id: encodeURIComponent(settings.modules.challonge.tournament_id),
+        id: settings.modules.challonge.tournament_id,
         matchId: room.challonge_info.id,
         match: temp_log,
         callback: function(err, data) {
