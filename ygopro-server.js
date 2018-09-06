@@ -605,6 +605,8 @@
   CLIENT_get_authorize_key = function(client) {
     if (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || settings.modules.challonge.enabled || client.is_local) {
       return client.name;
+    } else if (!settings.modules.mycard.enabled && client.vpass) {
+      return client.vpass + ":" + client.name;
     } else {
       return client.ip + ":" + client.name;
     }
@@ -761,7 +763,7 @@
         ref2 = room.get_playing_player();
         for (n = 0, len3 = ref2.length; n < len3; n++) {
           player = ref2[n];
-          if (!player.closed && player.name === client.name && player.pass === client.pass && (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || player.ip === client.ip) && (!deckbuf || _.isEqual(player.start_deckbuf, deckbuf))) {
+          if (!player.closed && player.name === client.name && player.pass === client.pass && (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || player.ip === client.ip || (client.vpass && client.vpass === player.vpass)) && (!deckbuf || _.isEqual(player.start_deckbuf, deckbuf))) {
             return player;
           }
         }
@@ -1704,8 +1706,13 @@
   }
 
   ygopro.ctos_follow('PLAYER_INFO', true, function(buffer, info, client, server) {
-    var geo, lang, name, struct;
-    name = info.name.split("$")[0];
+    var geo, lang, name, name_full, struct, vpass;
+    name_full = info.name.split("$");
+    name = name_full[0];
+    vpass = name_full[1];
+    if (vpass && !vpass.length) {
+      vpass = null;
+    }
     if (_.any(settings.ban.illegal_id, function(badid) {
       var matchs, regexp;
       regexp = new RegExp(badid, 'i');
@@ -1740,6 +1747,7 @@
     struct.set("name", name);
     buffer = struct.buffer;
     client.name = name;
+    client.vpass = vpass;
     if (!settings.modules.i18n.auto_pick || client.is_local) {
       client.lang = settings.modules.i18n["default"];
     } else {

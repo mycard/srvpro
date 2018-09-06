@@ -473,6 +473,8 @@ release_disconnect = (dinfo, reconnected) ->
 CLIENT_get_authorize_key = (client) ->
   if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or settings.modules.challonge.enabled or client.is_local
     return client.name
+  else if !settings.modules.mycard.enabled and client.vpass
+    return client.vpass + ":" + client.name
   else
     return client.ip + ":" + client.name
 
@@ -579,7 +581,7 @@ CLIENT_is_able_to_reconnect = (client, deckbuf) ->
 
 CLIENT_get_kick_reconnect_target = (client, deckbuf) ->
   for room in ROOM_all when room and room.started and !room.windbot
-    for player in room.get_playing_player() when !player.closed and player.name == client.name and player.pass == client.pass and (settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or player.ip == client.ip) and (!deckbuf or _.isEqual(player.start_deckbuf, deckbuf))
+    for player in room.get_playing_player() when !player.closed and player.name == client.name and player.pass == client.pass and (settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or player.ip == client.ip or (client.vpass and client.vpass == player.vpass)) and (!deckbuf or _.isEqual(player.start_deckbuf, deckbuf))
       return player
   return null
 
@@ -1350,7 +1352,11 @@ if settings.modules.stop
 ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   # checkmate use username$password, but here don't
   # so remove the password
-  name = info.name.split("$")[0]
+  name_full =info.name.split("$")
+  name = name_full[0]
+  vpass = name_full[1]
+  if vpass and !vpass.length
+    vpass = null
   if (_.any(settings.ban.illegal_id, (badid) ->
     regexp = new RegExp(badid, 'i')
     matchs = name.match(regexp)
@@ -1381,6 +1387,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   struct.set("name", name)
   buffer = struct.buffer
   client.name = name
+  client.vpass = vpass
 
   if not settings.modules.i18n.auto_pick or client.is_local
     client.lang=settings.modules.i18n.default
