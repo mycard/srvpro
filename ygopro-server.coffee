@@ -43,6 +43,7 @@ moment.locale('zh-cn', {
 import_datas = [
   "abuse_count",
   "ban_mc",
+  "vpass",
   "rag",
   "rid",
   "is_post_watcher",
