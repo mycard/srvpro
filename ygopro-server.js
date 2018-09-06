@@ -603,10 +603,10 @@
   };
 
   CLIENT_get_authorize_key = function(client) {
-    if (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || settings.modules.challonge.enabled || client.is_local) {
-      return client.name;
-    } else if (!settings.modules.mycard.enabled && client.vpass) {
+    if (!settings.modules.mycard.enabled && client.vpass) {
       return client.name + "$" + client.vpass;
+    } else if (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || settings.modules.challonge.enabled || client.is_local) {
+      return client.name;
     } else {
       return client.ip + ":" + client.name;
     }
