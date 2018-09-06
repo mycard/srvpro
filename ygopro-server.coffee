@@ -475,7 +475,7 @@ CLIENT_get_authorize_key = (client) ->
   if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or settings.modules.challonge.enabled or client.is_local
     return client.name
   else if !settings.modules.mycard.enabled and client.vpass
-    return client.vpass + ":" + client.name
+    return client.vpass + "$" + client.name
   else
     return client.ip + ":" + client.name
 

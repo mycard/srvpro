@@ -606,7 +606,7 @@
     if (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || settings.modules.challonge.enabled || client.is_local) {
       return client.name;
     } else if (!settings.modules.mycard.enabled && client.vpass) {
-      return client.vpass + ":" + client.name;
+      return client.vpass + "$" + client.name;
     } else {
       return client.ip + ":" + client.name;
     }
