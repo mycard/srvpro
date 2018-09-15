@@ -2902,7 +2902,7 @@ if settings.modules.mycard.enabled
 if settings.modules.heartbeat_detection.enabled
   setInterval ()->
     for room in ROOM_all when room and room.started and (room.hostinfo.time_limit == 0 or !room.turn or room.turn <= 0) and !room.windbot
-      for player in room.players when !room.changing_side or player.selected_preduel
+      for player in room.get_playing_player() when player and (!room.changing_side or player.selected_preduel)
         CLIENT_heartbeat_register(player, true)
     return
   , settings.modules.heartbeat_detection.interval

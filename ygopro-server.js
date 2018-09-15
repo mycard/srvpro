@@ -3681,10 +3681,10 @@
       for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
         room = ROOM_all[m];
         if (room && room.started && (room.hostinfo.time_limit === 0 || !room.turn || room.turn <= 0) && !room.windbot) {
-          ref2 = room.players;
+          ref2 = room.get_playing_player();
           for (n = 0, len3 = ref2.length; n < len3; n++) {
             player = ref2[n];
-            if (!room.changing_side || player.selected_preduel) {
+            if (player && (!room.changing_side || player.selected_preduel)) {
               CLIENT_heartbeat_register(player, true);
             }
           }
