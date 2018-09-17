@@ -93,10 +93,10 @@
       "enabled": true,
       "auto_surrender_after_disconnect": false,
       "allow_kick_reconnect": true,
-      "wait_time": 60000
+      "wait_time": 90000
     },
     "heartbeat_detection": {
-      "enabled": true,
+      "enabled": false,
       "interval": 20000,
       "wait_time": 10000
     },
