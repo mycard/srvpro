@@ -3728,7 +3728,7 @@
       log.info('WindBot:', data);
     });
     windbot_process.stderr.setEncoding('utf8');
-    return windbot_process.stderr.on('data', function(data) {
+    windbot_process.stderr.on('data', function(data) {
       log.warn('WindBot Error:', data);
     });
   };
