@@ -2908,7 +2908,9 @@ if settings.modules.heartbeat_detection.enabled
   , settings.modules.heartbeat_detection.interval
 
 # spawn windbot
-if settings.modules.windbot.spawn
+windbot_looplimit = 0
+
+spawn_windbot = () ->
   if /^win/.test(process.platform)
     windbot_bin = 'WindBot.exe'
     windbot_parameters = []
@@ -2920,9 +2922,15 @@ if settings.modules.windbot.spawn
   windbot_process = spawn windbot_bin, windbot_parameters, {cwd: 'windbot'}
   windbot_process.on 'error', (err)->
     log.warn 'WindBot ERROR', err
+    if windbot_looplimit < 1000
+      windbot_looplimit++
+      spawn_windbot()
     return
   windbot_process.on 'exit', (code)->
     log.warn 'WindBot EXIT', code
+    if windbot_looplimit < 1000
+      windbot_looplimit++
+      spawn_windbot()
     return
   windbot_process.stdout.setEncoding('utf8')
   windbot_process.stdout.on 'data', (data)->
@@ -2932,6 +2940,9 @@ if settings.modules.windbot.spawn
   windbot_process.stderr.on 'data', (data)->
     log.warn 'WindBot Error:', data
     return
+
+if settings.modules.windbot.enabled and settings.modules.windbot.spawn
+  spawn_windbot()
 
 #http
 if settings.modules.http
