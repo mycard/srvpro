@@ -280,8 +280,7 @@ if settings.modules.challonge.enabled
         challonge_cache[challonge_type] = data
       _callback(err, data)
       while challonge_queue_callbacks[challonge_type].length
-        cur_callback = challonge_queue_callbacks[challonge_type][0]
-        challonge_queue_callbacks[challonge_type].splice(0, 1)
+        cur_callback = challonge_queue_callbacks[challonge_type].splice(0, 1)[0]
         cur_callback(err, data)
       is_requesting[challonge_type] = false
       return
