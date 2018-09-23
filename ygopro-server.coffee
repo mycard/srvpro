@@ -306,10 +306,24 @@ if settings.modules.challonge.enabled
       is_requesting[1] = true
       challonge.matches.index(_data)
     return
-  setInterval(
+  refresh_challonge_cache = () ->
     challonge_cache[0] = null
     challonge_cache[1] = null
-  , 10000)
+    challonge.participants._index({
+      id: settings.modules.challonge.tournament_id,
+      callback: (() ->
+        challonge.matches._index({
+          id: settings.modules.challonge.tournament_id,
+          callback: (() ->
+            return
+          )
+        })
+        return
+      )
+    })
+    return
+  refresh_challonge_cache()
+  setInterval(refresh_challonge_cache, 30000)
 
 # 获取可用内存
 memory_usage = 0
@@ -987,7 +1001,7 @@ class Room
           if err
             log.warn("Errored pushing scores to Challonge.", err)
           else
-            challonge_cache[1] = null
+            refresh_challonge_cache()
           return
       })
     if @player_datas.length and settings.modules.cloud_replay.enabled
@@ -2858,7 +2872,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
         if err
           log.warn("Errored pushing scores to Challonge.", err)
         else
-          challonge_cache[1] = null
+          refresh_challonge_cache()
         return
     })
   if room.random_type or room.arena
