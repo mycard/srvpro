@@ -308,20 +308,20 @@ if settings.modules.challonge.enabled
   refresh_challonge_cache = () ->
     challonge_cache[0] = null
     challonge_cache[1] = null
-    challonge.participants._index({
-      id: settings.modules.challonge.tournament_id,
-      callback: (() ->
-        challonge.matches._index({
-          id: settings.modules.challonge.tournament_id,
-          callback: (() ->
-            return
-          )
-        })
-        return
-      )
-    })
     return
   refresh_challonge_cache()
+  challonge.participants._index({
+    id: settings.modules.challonge.tournament_id,
+    callback: (() ->
+      challonge.matches._index({
+        id: settings.modules.challonge.tournament_id,
+        callback: (() ->
+          return
+        )
+      })
+      return
+    )
+  })
   setInterval(refresh_challonge_cache, 30000)
 
 # 获取可用内存

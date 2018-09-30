@@ -360,17 +360,17 @@
     refresh_challonge_cache = function() {
       challonge_cache[0] = null;
       challonge_cache[1] = null;
-      challonge.participants._index({
-        id: settings.modules.challonge.tournament_id,
-        callback: (function() {
-          challonge.matches._index({
-            id: settings.modules.challonge.tournament_id,
-            callback: (function() {})
-          });
-        })
-      });
     };
     refresh_challonge_cache();
+    challonge.participants._index({
+      id: settings.modules.challonge.tournament_id,
+      callback: (function() {
+        challonge.matches._index({
+          id: settings.modules.challonge.tournament_id,
+          callback: (function() {})
+        });
+      })
+    });
     setInterval(refresh_challonge_cache, 30000);
   }
 
