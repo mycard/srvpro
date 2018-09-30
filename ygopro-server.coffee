@@ -1688,6 +1688,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
       challonge.participants._index({
         id: settings.modules.challonge.tournament_id,
         callback: (err, data) ->
+          if client.closed
+            return
           if err or !data
             if err
               log.warn("Failed loading Challonge user info", err)
@@ -1695,7 +1697,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
             return
           found = false
           for k,user of data
-            if user.participant and user.participant.name == client.name
+            if user.participant and user.participant.name and _.endsWith(user.participant.name, client.name)
               found = user.participant
               break
           if !found
@@ -1747,7 +1749,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
               else if room.no_watch and room.players.length >= (if room.hostinfo.mode == 2 then 4 else 2)
                 ygopro.stoc_die(client, "${watch_denied_room}")
               else
-                for player in room.players when player and player != client and player.name == client.name
+                for player in room.get_playing_player() when player and player != client and player.challonge_info.id == client.challonge_info.id
                   ygopro.stoc_die(client, "${challonge_player_already_in}")
                   return
                 #client.room = room
