@@ -2055,6 +2055,7 @@
         }
       } else {
         ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE);
+        client.setTimeout(300000);
         challonge.participants._index({
           id: settings.modules.challonge.tournament_id,
           callback: function(err, data) {
@@ -2119,7 +2120,6 @@
                   ygopro.stoc_die(client, room.error);
                 } else if (room.started) {
                   if (settings.modules.cloud_replay.enable_halfway_watch && !room.no_watch) {
-                    client.setTimeout(300000);
                     client.rid = _.indexOf(ROOM_all, room);
                     client.is_post_watcher = true;
                     ygopro.stoc_send_chat_to_room(room, client.name + " ${watch_join}");
@@ -2145,7 +2145,6 @@
                     ygopro.stoc_die(client, "${challonge_player_already_in}");
                     return;
                   }
-                  client.setTimeout(300000);
                   client.rid = _.indexOf(ROOM_all, room);
                   room.connect(client);
                 }
