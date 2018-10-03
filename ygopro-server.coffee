@@ -2866,7 +2866,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
         ygopro.stoc_send_chat(client, "${side_remain_part1}#{client.side_tcount}${side_remain_part2}", ygopro.constants.COLORS.BABYBLUE)
     , 60000
     client.side_interval = sinterval
-  if settings.modules.challonge.enabled and client.pos == 0
+  if settings.modules.challonge.enabled and settings.modules.challonge.post_score_midduel and client.pos == 0
     temp_log = JSON.parse(JSON.stringify(room.challonge_duel_log))
     delete temp_log.winnerId
     challonge.matches.update({

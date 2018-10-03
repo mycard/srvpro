@@ -3597,7 +3597,7 @@
       }, 60000);
       client.side_interval = sinterval;
     }
-    if (settings.modules.challonge.enabled && client.pos === 0) {
+    if (settings.modules.challonge.enabled && settings.modules.challonge.post_score_midduel && client.pos === 0) {
       temp_log = JSON.parse(JSON.stringify(room.challonge_duel_log));
       delete temp_log.winnerId;
       challonge.matches.update({
