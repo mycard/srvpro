@@ -110,6 +110,7 @@
     "challonge": {
       "enabled": false,
       "post_detailed_score": true,
+      "cache_ttl": 60000,
       "api_key": "123",
       "tournament_id": "456"
     },

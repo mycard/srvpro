@@ -271,12 +271,13 @@ if settings.modules.challonge.enabled
   challonge = require('challonge').createClient({
     apiKey: settings.modules.challonge.api_key
   })
-  challonge_cache = []
+  if settings.modules.challonge.cache_ttl
+    challonge_cache = []
   challonge_queue_callbacks = [[], []]
   is_requesting = [false, false]
   get_callback = (challonge_type, _callback) ->
     return ((err, data) ->
-      if !err and data
+      if settings.modules.challonge.cache_ttl and !err and data
         challonge_cache[challonge_type] = data
       _callback(err, data)
       while challonge_queue_callbacks[challonge_type].length
@@ -286,7 +287,7 @@ if settings.modules.challonge.enabled
       return
     )
   challonge.participants._index = (_data) ->
-    if challonge_cache[0]
+    if settings.modules.challonge.cache_ttl and challonge_cache[0]
       _data.callback(null, challonge_cache[0])
     else if is_requesting[0]
       challonge_queue_callbacks[0].push(_data.callback)
@@ -296,7 +297,7 @@ if settings.modules.challonge.enabled
       challonge.participants.index(_data)
     return 
   challonge.matches._index = (_data) ->
-    if challonge_cache[1]
+    if settings.modules.challonge.cache_ttl and challonge_cache[1]
       _data.callback(null, challonge_cache[1])
     else if is_requesting[1]
       challonge_queue_callbacks[1].push(_data.callback)
@@ -306,8 +307,9 @@ if settings.modules.challonge.enabled
       challonge.matches.index(_data)
     return
   refresh_challonge_cache = () ->
-    challonge_cache[0] = null
-    challonge_cache[1] = null
+    if settings.modules.challonge.cache_ttl
+      challonge_cache[0] = null
+      challonge_cache[1] = null
     return
   refresh_challonge_cache()
   # challonge.participants._index({
@@ -322,7 +324,8 @@ if settings.modules.challonge.enabled
   #     return
   #   )
   # })
-  setInterval(refresh_challonge_cache, 60000)
+  if settings.modules.challonge.cache_ttl
+    setInterval(refresh_challonge_cache, settings.modules.challonge.cache_ttl)
 
 # 获取可用内存
 memory_usage = 0
