@@ -1,7 +1,7 @@
 ## SRVPro
 一个YGOPro服务器。
 
-现用于[萌卡](https://mycard.moe/)，[YGOPro 233服](https://ygo233.com/)和[YGOPro Koishi服](http://koishi.222diy,gdn/)。
+现用于[萌卡](https://mycard.moe/)，[YGOPro 233服](https://ygo233.com/)和[YGOPro Koishi服](http://koishi.222diy.gdn/)。
 
 ### 支持功能
 * Linux上运行
