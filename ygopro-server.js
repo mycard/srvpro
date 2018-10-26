@@ -3102,7 +3102,7 @@
         }
         break;
       case '/ai':
-        if (settings.modules.windbot.enabled) {
+        if (settings.modules.windbot.enabled && client.is_host) {
           if (name = cmd[1]) {
             windbot = _.sample(_.filter(windbots, function(w) {
               return w.name === name || w.deck === name;
