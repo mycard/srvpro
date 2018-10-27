@@ -2502,7 +2502,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       ygopro.stoc_send_random_tip(client) if settings.modules.tips.enabled
 
     when '/ai'
-      if settings.modules.windbot.enabled and client.is_host
+      if settings.modules.windbot.enabled and client.is_host and !settings.modules.challonge.enabled
         if name = cmd[1]
           windbot = _.sample _.filter windbots, (w)->
             w.name == name or w.deck == name
