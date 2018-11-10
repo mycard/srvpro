@@ -1720,7 +1720,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
                 return
               found = false
               for k,match of data
-                if match and match.match and !match.match.winnerId and match.match.player1Id and match.match.player2Id and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
+                if match and match.match and !match.match.winnerId and match.match.state != "complete" and match.match.player1Id and match.match.player2Id and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
                   found = match.match
                   break
               if !found
