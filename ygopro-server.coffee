@@ -814,8 +814,6 @@ class Room
     @duel_count = 0
     @death = 0
     @turn = 0
-    if settings.modules.challonge.enabled
-      @challonge_duel_log = {}
     ROOM_all.push this
 
     @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
@@ -994,11 +992,11 @@ class Room
           #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
         return
 
-    if settings.modules.challonge.enabled and @started and !@kicked
+    if settings.modules.challonge.enabled and @started and @hostinfo.mode != 2 and !@kicked
       challonge.matches.update({
         id: settings.modules.challonge.tournament_id,
         matchId: @challonge_info.id,
-        match: @challonge_duel_log,
+        match: @get_challonge_score(),
         callback: (err, data) ->
           if err
             log.warn("Errored pushing scores to Challonge.", err)
@@ -1075,6 +1073,33 @@ class Room
     for player in @get_playing_player() when player.closed
       found++
     return found
+
+  get_challonge_score: ->
+    if !settings.modules.challonge.enabled or !@started or @hostinfo.mode == 2
+      return null
+    challonge_duel_log = {}
+    if @scores[@dueling_players[0].name] > @scores[@dueling_players[1].name]
+      challonge_duel_log.winnerId = @dueling_players[0].challonge_info.id
+    else if @scores[@dueling_players[0].name] < @scores[@dueling_players[1].name]
+      challonge_duel_log.winnerId = @dueling_players[1].challonge_info.id
+    else
+      challonge_duel_log.winnerId = "tie"
+    if settings.modules.challonge.post_detailed_score
+      if @dueling_players[0].challonge_info.id == @challonge_info.player1Id and @dueling_players[1].challonge_info.id == @challonge_info.player2Id
+        challonge_duel_log.scoresCsv = @scores[@dueling_players[0].name] + "-" + @scores[@dueling_players[1].name]
+      else if @dueling_players[1].challonge_info.id == @challonge_info.player1Id and @dueling_players[0].challonge_info.id == @challonge_info.player2Id
+        challonge_duel_log.scoresCsv = @scores[@dueling_players[1].name] + "-" + @scores[@dueling_players[0].name]
+      else
+        challonge_duel_log.scoresCsv = "0-0"
+        log.warn("Score mismatch.", @name)
+    else
+      if challonge_duel_log.winnerId == @challonge_info.player1Id
+        challonge_duel_log.scoresCsv = "1-0"
+      else if challonge_duel_log.winnerId == @challonge_info.player2Id
+        challonge_duel_log.scoresCsv = "0-1"
+      else
+        challonge_duel_log.scoresCsv = "0-0"
+    return challonge_duel_log
 
   add_windbot: (botdata)->
     @windbot = botdata
@@ -2061,28 +2086,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       room.winner_name = room.dueling_players[pos].name
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
-    if settings.modules.challonge.enabled and !room.kicked
-      if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[1].name]
-        room.challonge_duel_log.winnerId = room.dueling_players[0].challonge_info.id
-      else if room.scores[room.dueling_players[0].name] < room.scores[room.dueling_players[1].name]
-        room.challonge_duel_log.winnerId = room.dueling_players[1].challonge_info.id
-      else
-        room.challonge_duel_log.winnerId = "tie"
-      if settings.modules.challonge.post_detailed_score
-        if room.dueling_players[0].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[1].challonge_info.id == room.challonge_info.player2Id
-          room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[0].name] + "-" + room.scores[room.dueling_players[1].name]
-        else if room.dueling_players[1].challonge_info.id == room.challonge_info.player1Id and room.dueling_players[0].challonge_info.id == room.challonge_info.player2Id
-          room.challonge_duel_log.scoresCsv = room.scores[room.dueling_players[1].name] + "-" + room.scores[room.dueling_players[0].name]
-        else
-          room.challonge_duel_log.scoresCsv = "0-0"
-          log.warn("Score mismatch.", room.name)
-      else
-        if room.challonge_duel_log.winnerId == room.challonge_info.player1Id
-          room.challonge_duel_log.scoresCsv = "1-0"
-        else if room.challonge_duel_log.winnerId == room.challonge_info.player2Id
-          room.challonge_duel_log.scoresCsv = "0-1"
-        else
-          room.challonge_duel_log.scoresCsv = "0-0"
     if room.death
       if settings.modules.http.quick_death_rule == 1 or settings.modules.http.quick_death_rule == 3
         room.death = -1
@@ -2866,8 +2869,8 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
         ygopro.stoc_send_chat(client, "${side_remain_part1}#{client.side_tcount}${side_remain_part2}", ygopro.constants.COLORS.BABYBLUE)
     , 60000
     client.side_interval = sinterval
-  if settings.modules.challonge.enabled and settings.modules.challonge.post_score_midduel and client.pos == 0
-    temp_log = JSON.parse(JSON.stringify(room.challonge_duel_log))
+  if settings.modules.challonge.enabled and settings.modules.challonge.post_score_midduel and room.hostinfo.mode != 2 and client.pos == 0
+    temp_log = JSON.parse(JSON.stringify(room.get_challonge_score()))
     delete temp_log.winnerId
     challonge.matches.update({
       id: settings.modules.challonge.tournament_id,
