@@ -637,7 +637,7 @@
   CLIENT_kick = function(client) {
     client.system_kicked = true;
     if (settings.modules.reconnect.enabled && client.closed) {
-      CLIENT_reconnect_unregister(client, false, true);
+      client.server.destroy();
     } else {
       client.destroy();
     }
@@ -3587,7 +3587,6 @@
         if (client.side_tcount === 1) {
           ygopro.stoc_send_chat_to_room(room, client.name + "${side_overtime_room}", ygopro.constants.COLORS.BABYBLUE);
           ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED);
-          room.scores[client.name] = -9;
           CLIENT_kick(client);
           return clearInterval(sinterval);
         } else {

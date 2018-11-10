@@ -513,7 +513,7 @@ ROOM_unwelcome = (room, bad_player, reason)->
 CLIENT_kick = (client) ->
   client.system_kicked = true
   if settings.modules.reconnect.enabled and client.closed
-    CLIENT_reconnect_unregister(client, false, true)
+    client.server.destroy()
   else
     client.destroy()
   return
@@ -2858,7 +2858,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
       if client.side_tcount == 1
         ygopro.stoc_send_chat_to_room(room, client.name + "${side_overtime_room}", ygopro.constants.COLORS.BABYBLUE)
         ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED)
-        room.scores[client.name] = -9
+        #room.scores[client.name] = -9
         CLIENT_kick(client)
         clearInterval sinterval
       else
