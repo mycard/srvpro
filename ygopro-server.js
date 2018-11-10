@@ -1263,7 +1263,7 @@
           };
         })(this));
       }
-      if (settings.modules.challonge.enabled && this.started && !this.kicked) {
+      if (settings.modules.challonge.enabled && this.started && this.hostinfo.mode !== 2 && !this.kicked) {
         challonge.matches.update({
           id: settings.modules.challonge.tournament_id,
           matchId: this.challonge_info.id,
@@ -1371,7 +1371,7 @@
 
     Room.prototype.get_challonge_score = function() {
       var challonge_duel_log;
-      if (!settings.modules.challonge.enabled || this.hostinfo.mode === 2) {
+      if (!settings.modules.challonge.enabled || !this.started || this.hostinfo.mode === 2) {
         return null;
       }
       challonge_duel_log = {};
@@ -3600,7 +3600,7 @@
       }, 60000);
       client.side_interval = sinterval;
     }
-    if (settings.modules.challonge.enabled && settings.modules.challonge.post_score_midduel && client.pos === 0) {
+    if (settings.modules.challonge.enabled && settings.modules.challonge.post_score_midduel && room.hostinfo.mode !== 2 && client.pos === 0) {
       temp_log = JSON.parse(JSON.stringify(room.get_challonge_score()));
       delete temp_log.winnerId;
       challonge.matches.update({
