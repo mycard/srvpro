@@ -637,7 +637,9 @@
   CLIENT_kick = function(client) {
     client.system_kicked = true;
     if (settings.modules.reconnect.enabled && client.closed) {
-      client.server.destroy();
+      if (client.server && !client.had_new_reconnection) {
+        client.server.destroy();
+      }
     } else {
       client.destroy();
     }
