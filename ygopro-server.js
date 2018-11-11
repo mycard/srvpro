@@ -2795,14 +2795,14 @@
         }
         if (room.waiting_for_player !== room.waiting_for_player2) {
           room.waiting_for_player2 = room.waiting_for_player;
-          room.waiting_for_player_time = 20;
+          room.waiting_for_player_time = settings.modules.arena_mode.ready_time;
           room.waiting_for_player_interval = setInterval((function() {
             wait_room_start_arena(ROOM_all[client.rid]);
           }), 1000);
         } else if (!room.waiting_for_player && room.waiting_for_player_interval) {
           clearInterval(room.waiting_for_player_interval);
           room.waiting_for_player_interval = null;
-          room.waiting_for_player_time = 20;
+          room.waiting_for_player_time = settings.modules.arena_mode.ready_time;
         }
       } else {
         room.ready_player_count_without_host = 0;
@@ -2818,7 +2818,7 @@
         }
         if (room.ready_player_count_without_host >= room.max_player - 1) {
           setTimeout((function() {
-            wait_room_start(ROOM_all[client.rid], 20);
+            wait_room_start(ROOM_all[client.rid], settings.modules.random_duel.ready_time);
           }), 1000);
         }
       }

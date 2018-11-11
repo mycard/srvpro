@@ -2291,12 +2291,12 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
         room.waiting_for_player = p2
       if room.waiting_for_player != room.waiting_for_player2
         room.waiting_for_player2 = room.waiting_for_player
-        room.waiting_for_player_time = 20
+        room.waiting_for_player_time = settings.modules.arena_mode.ready_time
         room.waiting_for_player_interval = setInterval (()-> wait_room_start_arena(ROOM_all[client.rid]);return), 1000
       else if !room.waiting_for_player and room.waiting_for_player_interval
         clearInterval room.waiting_for_player_interval
         room.waiting_for_player_interval = null
-        room.waiting_for_player_time = 20
+        room.waiting_for_player_time = settings.modules.arena_mode.ready_time
     else
       room.ready_player_count_without_host = 0
       for player in room.players
@@ -2306,7 +2306,7 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server)->
           room.ready_player_count_without_host += player.is_ready
       if room.ready_player_count_without_host >= room.max_player - 1
         #log.info "all ready"
-        setTimeout (()-> wait_room_start(ROOM_all[client.rid], 20);return), 1000
+        setTimeout (()-> wait_room_start(ROOM_all[client.rid], settings.modules.random_duel.ready_time);return), 1000
   return
 
 ygopro.ctos_follow 'REQUEST_FIELD', true, (buffer, info, client, server)->

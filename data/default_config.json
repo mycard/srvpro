@@ -64,6 +64,7 @@
     "random_duel": {
       "enabled": false,
       "no_rematch_check": false,
+      "ready_time": 20,
       "hang_timeout": 90
     },
     "cloud_replay": {
@@ -132,6 +133,7 @@
       "mode": "entertain",
       "comment": "mode: athletic / entertain",
       "accesskey": "233",
+      "ready_time": 30,
       "post_score": false,
       "get_score": false
     },
