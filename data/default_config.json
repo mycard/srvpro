@@ -96,6 +96,10 @@
       "allow_kick_reconnect": true,
       "wait_time": 90000
     },
+    "stand_bot": {
+      "enabled": true,
+      "name": "悠悠"
+    },
     "heartbeat_detection": {
       "enabled": false,
       "interval": 20000,
@@ -154,7 +158,8 @@
     "test_mode": {
       "watch_public_hand": false,
       "no_connect_count_limit": false,
-      "no_ban_player": false
+      "no_ban_player": false,
+      "surrender_anytime": false
     },
     "pre_util": {
       "enabled": false,

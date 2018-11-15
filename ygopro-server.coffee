@@ -1156,11 +1156,24 @@ class Room
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       if @started and @disconnector != 'server' and client.pos < 4
-        @finished = true
-        if !@finished_by_death
-          @scores[client.name] = -9
-          if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() == 0)
-            ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
+        if settings.modules.stand_bot.enabled and (@random_type == 'S' or @random_type == 'M') and !@stand_bot
+          client.stand_bot = true
+          @stand_bot = true
+          for player in @players when player != client
+            ygopro.stoc_send player, 'HS_PLAYER_ENTER', {
+              name: settings.modules.stand_bot.name,
+              pos: if player.is_first then client.pos else 1 - client.pos
+            }
+            ygopro.stoc_send_chat player, "#{client.name} 已离开，但你可以和机器人继续决斗", ygopro.constants.COLORS.GREEN
+            player.flee_free = true
+          if client.last_game_msg and client.last_game_msg_title != 'WAITING'
+            stand_bot_action client.last_game_msg_title, client.last_game_msg, client.server
+        else
+          @finished = true
+          if !@finished_by_death
+            @scores[client.name] = -9
+            if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() == 0)
+              ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
       if @players.length and !(@windbot and client.is_host) and !(@arena and !@started and client.pos <= 3)
         ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
         roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
@@ -1169,7 +1182,7 @@ class Room
         @process.kill()
         #client.room = null
         this.delete()
-      if !CLIENT_reconnect_unregister(client, false, true)
+      if !CLIENT_reconnect_unregister(client, false, true) && !client.stand_bot
         client.server.destroy()
     return
 
@@ -1958,10 +1971,31 @@ load_dialogues = () ->
 if settings.modules.dialogues.get
   load_dialogues()
 
+stand_bot_action = (msg, buffer, server) ->
+  switch msg
+    when "SELECT_CHAIN"
+      buf = Buffer.allocUnsafe(4)
+      buf.writeInt32LE(-1)
+      ygopro.ctos_send server, 'RESPONSE', buf
+    when "SELECT_BATTLECMD"
+      buf = Buffer.allocUnsafe(4)
+      buf.writeInt32LE(3)
+      ygopro.ctos_send server, 'RESPONSE', buf
+    when "SELECT_IDLECMD"
+      buf = Buffer.allocUnsafe(4)
+      buf.writeInt32LE(7)
+      ygopro.ctos_send server, 'RESPONSE', buf
+    else
+      log.info msg
+  return
+
 ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room and !client.reconnecting
   msg = buffer.readInt8(0)
+  if client.stand_bot
+    stand_bot_action ygopro.constants.MSG[msg], buffer, server
+    return
   if settings.modules.retry_handle.enabled
     if ygopro.constants.MSG[msg] == 'RETRY'
       if !client.retry_count?
@@ -2447,7 +2481,7 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server)->
   return unless room
   if !room.started or room.hostinfo.mode==2
     return true
-  if room.random_type and room.turn < 3 and not client.flee_free
+  if room.random_type and room.turn < 3 and not client.flee_free and not settings.modules.test_mode.surrender_anytime
     ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
     return true
   return false
@@ -2725,6 +2759,9 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server)->
 ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
+  if client.stand_bot
+    ygopro.ctos_send(server, 'TIME_CONFIRM')
+    return true
   if settings.modules.reconnect.enabled
     if client.closed
       ygopro.ctos_send(server, 'TIME_CONFIRM')
