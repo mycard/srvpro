@@ -1935,7 +1935,7 @@
         return (checksum & 0xFF) === 0;
       };
       finish = function(buffer) {
-        var action, len2, m, name, opt1, opt2, opt3, options, ref2, room, title;
+        var action, len2, len3, m, n, name, opt1, opt2, opt3, options, player, ref2, ref3, room, title;
         if (client.closed) {
           return;
         }
@@ -1987,6 +1987,15 @@
           case 4:
             room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8));
             if (room) {
+              ref2 = room.get_playing_player();
+              for (m = 0, len2 = ref2.length; m < len2; m++) {
+                player = ref2[m];
+                if (!(player && player.name === client.name)) {
+                  continue;
+                }
+                ygopro.stoc_die(client, '${invalid_password_unauthorized}');
+                return;
+              }
               room["private"] = true;
               room.arena = settings.modules.arena_mode.mode;
               if (room.arena === "athletic") {
@@ -2019,9 +2028,9 @@
             ygopro.stoc_send_chat_to_room(room, client.name + " ${watch_join}");
             room.watchers.push(client);
             ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE);
-            ref2 = room.watcher_buffers;
-            for (m = 0, len2 = ref2.length; m < len2; m++) {
-              buffer = ref2[m];
+            ref3 = room.watcher_buffers;
+            for (n = 0, len3 = ref3.length; n < len3; n++) {
+              buffer = ref3[n];
               client.write(buffer);
             }
           } else {

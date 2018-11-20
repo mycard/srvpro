@@ -1625,6 +1625,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         when 4
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           if room
+            for player in room.get_playing_player() when player and player.name == client.name
+              ygopro.stoc_die(client, '${invalid_password_unauthorized}')
+              return
             room.private = true
             room.arena = settings.modules.arena_mode.mode
             if room.arena == "athletic"
