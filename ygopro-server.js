@@ -1022,6 +1022,7 @@
       this.random_type = '';
       this.welcome = '';
       this.scores = {};
+      this.decks = {};
       this.duel_count = 0;
       this.death = 0;
       this.turn = 0;
@@ -1207,7 +1208,7 @@
     }
 
     Room.prototype["delete"] = function() {
-      var end_time, index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref2, replay_id, score, score_array;
+      var end_time, index, log_rep_id, name, player_ips, player_names, recorder_buffer, ref2, replay_id, score, score_array, score_form;
       if (this.deleted) {
         return;
       }
@@ -1215,10 +1216,15 @@
       ref2 = this.scores;
       for (name in ref2) {
         score = ref2[name];
-        score_array.push({
+        score_form = {
           name: name,
-          score: score
-        });
+          score: score,
+          deck: null
+        };
+        if (this.decks[name]) {
+          score_form.deck = this.decks[name];
+        }
+        score_array.push(score_form);
       }
       if (settings.modules.arena_mode.enabled && this.arena) {
         end_time = moment().format();
@@ -1229,13 +1235,15 @@
           if (!score_array[0]) {
             score_array[0] = {
               name: null,
-              score: -5
+              score: -5,
+              deck: null
             };
           }
           if (!score_array[1]) {
             score_array[1] = {
               name: null,
-              score: -5
+              score: -5,
+              deck: null
             };
           }
           score_array[0].score = -5;
@@ -1249,6 +1257,8 @@
             usernameB: score_array[1].name,
             userscoreA: score_array[0].score,
             userscoreB: score_array[1].score,
+            userdeckA: score_array[0].deck,
+            userdeckB: score_array[1].deck,
             start: this.start_time,
             end: end_time,
             arena: this.arena
@@ -2976,8 +2986,12 @@
     if (settings.modules.tips.enabled) {
       ygopro.stoc_send_random_tip(client);
     }
-    if (settings.modules.deck_log.enabled && client.main && client.main.length && !client.deck_saved && !room.windbot) {
+    deck_text = null;
+    if (client.main && client.main.length) {
       deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n';
+      room.decks[client.name] = deck_text;
+    }
+    if (settings.modules.deck_log.enabled && deck_text && !client.deck_saved && !room.windbot) {
       deck_arena = settings.modules.deck_log.arena + '-';
       if (room.arena) {
         deck_arena = deck_arena + room.arena;
