@@ -3044,7 +3044,7 @@
     if (!room.started || room.hostinfo.mode === 2) {
       return true;
     }
-    if (room.random_type && room.turn < 3 && !client.flee_free) {
+    if (room.random_type && room.turn < 3 && !client.flee_free && !settings.modules.test_mode.surrender_anytime) {
       ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE);
       return true;
     }

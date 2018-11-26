@@ -154,7 +154,8 @@
     "test_mode": {
       "watch_public_hand": false,
       "no_connect_count_limit": false,
-      "no_ban_player": false
+      "no_ban_player": false,
+      "surrender_anytime": false
     },
     "pre_util": {
       "enabled": false,
