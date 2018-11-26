@@ -2514,7 +2514,7 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server)->
   return unless room
   if !room.started or room.hostinfo.mode==2
     return true
-  if room.random_type and room.turn < 3 and not client.flee_free and not settings.modules.test_mode.surrender_anytime
+  if room.random_type and room.turn < 3 and not client.flee_free and not settings.modules.test_mode.surrender_anytime and not (room.random_type=='M' and settings.modules.random_duel.record_match_scores)
     ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
     return true
   return false
