@@ -64,7 +64,9 @@
     "random_duel": {
       "enabled": false,
       "no_rematch_check": false,
-      "record_match_scores": true,
+      "record_match_scores": false,
+      "post_match_scores": false,
+      "post_match_accesskey": "123456",
       "blank_pass_match": true,
       "ready_time": 20,
       "hang_timeout": 90

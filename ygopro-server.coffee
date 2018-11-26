@@ -430,6 +430,26 @@ ROOM_player_get_score = (player)->
     return "${random_score_part1}#{player.name} ${random_score_part2} #{Math.ceil(score.win/total*100)}${random_score_part3} #{Math.ceil(score.flee/total*100)}${random_score_part4}"
   return
 
+if settings.modules.random_duel.post_match_scores
+  setInterval(()->
+    _scores = _.pairs ROOM_players_scores
+    scores = _.first(_.sortBy(_scores, (score)-> return score[1].win).reverse(), 10)
+    #log.info scores
+    request.post { url : settings.modules.random_duel.post_match_scores , form : {
+      accesskey: settings.modules.random_duel.post_match_accesskey,
+      rank: JSON.stringify(scores)
+    }}, (error, response, body)=>
+      if error
+        log.warn 'RANDOM SCORE POST ERROR', error
+      else
+        if response.statusCode != 204 and response.statusCode != 200
+          log.warn 'RANDOM SCORE POST FAIL', response.statusCode, response.statusMessage, body
+        #else
+        #  log.info 'RANDOM SCORE POST OK', response.statusCode, response.statusMessage
+      return
+    return
+  , 60000)
+
 ROOM_find_or_create_by_name = (name, player_ip)->
   uname=name.toUpperCase()
   if settings.modules.windbot.enabled and (uname[0...2] == 'AI' or (!settings.modules.random_duel.enabled and uname == ''))

@@ -528,6 +528,33 @@
     }
   };
 
+  if (settings.modules.random_duel.post_match_scores) {
+    setInterval(function() {
+      var _scores, scores;
+      _scores = _.pairs(ROOM_players_scores);
+      scores = _.first(_.sortBy(_scores, function(score) {
+        return score[1].win;
+      }).reverse(), 10);
+      request.post({
+        url: settings.modules.random_duel.post_match_scores,
+        form: {
+          accesskey: settings.modules.random_duel.post_match_accesskey,
+          rank: JSON.stringify(scores)
+        }
+      }, (function(_this) {
+        return function(error, response, body) {
+          if (error) {
+            log.warn('RANDOM SCORE POST ERROR', error);
+          } else {
+            if (response.statusCode !== 204 && response.statusCode !== 200) {
+              log.warn('RANDOM SCORE POST FAIL', response.statusCode, response.statusMessage, body);
+            }
+          }
+        };
+      })(this));
+    }, 60000);
+  }
+
   ROOM_find_or_create_by_name = function(name, player_ip) {
     var room, uname;
     uname = name.toUpperCase();
