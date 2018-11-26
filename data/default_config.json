@@ -65,6 +65,7 @@
       "enabled": false,
       "no_rematch_check": false,
       "record_match_scores": true,
+      "blank_pass_match": true,
       "ready_time": 20,
       "hang_timeout": 90
     },
