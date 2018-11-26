@@ -356,6 +356,7 @@ Cloud_replay_ids = []
 ROOM_all = []
 ROOM_players_oppentlist = {}
 ROOM_players_banned = []
+ROOM_players_scores = {}
 ROOM_connected_ip = {}
 ROOM_bad_ip = {}
 
@@ -391,6 +392,42 @@ ROOM_ban_player = (name, ip, reason, countadd = 1)->
     bannedplayer = {"ip": ip, "time": moment(), "count": countadd, "reasons": [reason], "need_tip": true}
     ROOM_players_banned.push(bannedplayer)
   #log.info("banned", name, ip, reason, bannedplayer.count)
+  return
+
+ROOM_player_win = (name)->
+  if !ROOM_players_scores[name]
+    ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
+  ROOM_players_scores[name].win = ROOM_players_scores[name].win + 1
+  ROOM_players_scores[name].combo = ROOM_players_scores[name].combo + 1
+  return
+
+ROOM_player_lose = (name)->
+  if !ROOM_players_scores[name]
+    ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
+  ROOM_players_scores[name].lose = ROOM_players_scores[name].lose + 1
+  ROOM_players_scores[name].combo = 0
+  return
+
+ROOM_player_flee = (name)->
+  if !ROOM_players_scores[name]
+    ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
+  ROOM_players_scores[name].flee = ROOM_players_scores[name].flee + 1
+  ROOM_players_scores[name].combo = 0
+  return
+
+ROOM_player_get_score = (player)->
+  name = player.name_vpass
+  score = ROOM_players_scores[name] 
+  if !score
+    return "#{player.name} ${random_score_blank}"
+  total = score.win + score.lose + score.flee
+  if score.win < 2 and total < 3
+    return "#{player.name} ${random_score_not_enough}"
+  if score.combo >= 2
+    return "${random_score_part1}#{player.name} ${random_score_part2} #{Math.ceil(score.win/total*100)}${random_score_part3} #{Math.ceil(score.flee/total*100)}${random_score_part4_combo}#{score.combo}${random_score_part5_combo}"
+    #return player.name + " 的今日战绩：胜率" + Math.ceil(score.win/total*100) + "%，逃跑率" + Math.ceil(score.flee/total*100) + "%，" + score.combo + "连胜中！"
+  else
+    return "${random_score_part1}#{player.name} ${random_score_part2} #{Math.ceil(score.win/total*100)}${random_score_part3} #{Math.ceil(score.flee/total*100)}${random_score_part4}"
   return
 
 ROOM_find_or_create_by_name = (name, player_ip)->
@@ -529,7 +566,7 @@ release_disconnect = (dinfo, reconnected) ->
 
 CLIENT_get_authorize_key = (client) ->
   if !settings.modules.mycard.enabled and client.vpass
-    return client.name + "$" + client.vpass
+    return client.name_vpass
   else if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or settings.modules.challonge.enabled or client.is_local
     return client.name
   else
@@ -962,10 +999,23 @@ class Room
     #log.info 'room-delete', this.name, ROOM_all.length
     score_array=[]
     for name, score of @scores
-      score_form = { name: name, score: score, deck: null }
+      score_form = { name: name.split('$')[0], score: score, deck: null, name_vpass: name }
       if @decks[name]
         score_form.deck = @decks[name]
       score_array.push score_form
+    if settings.modules.random_duel.record_match_scores and @random_type == 'M'
+      if score_array.length == 2
+        if score_array[0].score != score_array[1].score
+          if score_array[0].score > score_array[1].score
+            ROOM_player_win(score_array[0].name_vpass)
+            ROOM_player_lose(score_array[1].name_vpass)
+          else
+            ROOM_player_win(score_array[1].name_vpass)
+            ROOM_player_lose(score_array[0].name_vpass)
+      if score_array.length == 1 # same name
+          #log.info score_array[0].name
+          ROOM_player_win(score_array[0].name_vpass)
+          ROOM_player_lose(score_array[0].name_vpass)
     if settings.modules.arena_mode.enabled and @arena
       #log.info 'SCORE', score_array, @start_time
       end_time = moment().format()
@@ -1085,17 +1135,17 @@ class Room
     if !settings.modules.challonge.enabled or !@started or @hostinfo.mode == 2
       return null
     challonge_duel_log = {}
-    if @scores[@dueling_players[0].name] > @scores[@dueling_players[1].name]
+    if @scores[@dueling_players[0].name_vpass] > @scores[@dueling_players[1].name_vpass]
       challonge_duel_log.winnerId = @dueling_players[0].challonge_info.id
-    else if @scores[@dueling_players[0].name] < @scores[@dueling_players[1].name]
+    else if @scores[@dueling_players[0].name_vpass] < @scores[@dueling_players[1].name_vpass]
       challonge_duel_log.winnerId = @dueling_players[1].challonge_info.id
     else
       challonge_duel_log.winnerId = "tie"
     if settings.modules.challonge.post_detailed_score
       if @dueling_players[0].challonge_info.id == @challonge_info.player1Id and @dueling_players[1].challonge_info.id == @challonge_info.player2Id
-        challonge_duel_log.scoresCsv = @scores[@dueling_players[0].name] + "-" + @scores[@dueling_players[1].name]
+        challonge_duel_log.scoresCsv = @scores[@dueling_players[0].name_vpass] + "-" + @scores[@dueling_players[1].name_vpass]
       else if @dueling_players[1].challonge_info.id == @challonge_info.player1Id and @dueling_players[0].challonge_info.id == @challonge_info.player2Id
-        challonge_duel_log.scoresCsv = @scores[@dueling_players[1].name] + "-" + @scores[@dueling_players[0].name]
+        challonge_duel_log.scoresCsv = @scores[@dueling_players[1].name_vpass] + "-" + @scores[@dueling_players[0].name_vpass]
       else
         challonge_duel_log.scoresCsv = "0-0"
         log.warn("Score mismatch.", @name)
@@ -1156,17 +1206,18 @@ class Room
       #log.info(client.name, @started, @disconnector, @random_type, @players.length)
       if @arena and !@started
         for player in @players when player.pos != 7
-          @scores[player.name] = 0
+          @scores[player.name_vpass] = 0
         if @players.length == 2
-          @scores[client.name] = -9
+          @scores[client.name_vpass] = -9
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       if @started and @disconnector != 'server' and client.pos < 4
         @finished = true
         if !@finished_by_death
-          @scores[client.name] = -9
+          @scores[client.name_vpass] = -9
           if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() == 0)
             ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
+            ROOM_player_flee(client.name_vpass)
       if @players.length and !(@windbot and client.is_host) and !(@arena and !@started and client.pos <= 3)
         ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
         roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
@@ -1478,6 +1529,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server)->
   buffer = struct.buffer
   client.name = name
   client.vpass = vpass
+  client.name_vpass = if vpass then name + "$" + vpass else name
 
   if not settings.modules.i18n.auto_pick or client.is_local
     client.lang=settings.modules.i18n.default
@@ -1901,7 +1953,10 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server)->
         ygopro.stoc_send_chat(client, "#{client.name}${exp_value_part1}#{body.exp}${exp_value_part2}${exp_value_part3}#{Math.round(body.pt)}#{rank_txt}${exp_value_part4}", ygopro.constants.COLORS.BABYBLUE)
         #client.score_shown = true
       return
-
+  if settings.modules.random_duel.record_match_scores and room.random_type == 'M'
+    ygopro.stoc_send_chat_to_room(room, ROOM_player_get_score(client), ygopro.constants.COLORS.GREEN)
+    for player in room.players when player.pos != 7 and player != client
+      ygopro.stoc_send_chat(client, ROOM_player_get_score(player), ygopro.constants.COLORS.GREEN)
   if !room.recorder
     room.recorder = recorder = net.connect room.port, ->
       ygopro.ctos_send recorder, 'PLAYER_INFO', {
@@ -2044,7 +2099,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
               room.finished_by_death = true
               ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
               ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END')
-              room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
+              room.scores[room.dueling_players[oppo_pos - win_pos].name_vpass] = -1
               CLIENT_kick(room.dueling_players[oppo_pos - win_pos])
               CLIENT_kick(room.dueling_players[oppo_pos - win_pos + 1])
             else
@@ -2069,7 +2124,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
           room.finished_by_death = true
           ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
           ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END')
-          room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
+          room.scores[room.dueling_players[oppo_pos - win_pos].name_vpass] = -1
           CLIENT_kick(room.dueling_players[oppo_pos - win_pos])
           CLIENT_kick(room.dueling_players[oppo_pos - win_pos + 1])
         else
@@ -2093,7 +2148,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       delete room.long_resolve_card
       delete room.long_resolve_chain
     if room and !room.finished and room.dueling_players[pos]
-      room.winner_name = room.dueling_players[pos].name
+      room.winner_name = room.dueling_players[pos].name_vpass
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
     if room.death
@@ -2407,7 +2462,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
     room.dueling_players = []
     for player in room.players when player.pos != 7
       room.dueling_players[player.pos] = player
-      room.scores[player.name] = 0
+      room.scores[player.name_vpass] = 0
       room.player_datas.push ip: player.ip, name: player.name
       if room.random_type == 'T'
         # 双打房不记录匹配过
@@ -2673,13 +2728,13 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
   else
     client.start_deckbuf = buffer
   oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
-  if settings.modules.http.quick_death_rule >= 2 and room.started and room.death and room.scores[room.dueling_players[0].name] != room.scores[room.dueling_players[oppo_pos].name]
-    win_pos = if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[oppo_pos].name] then 0 else oppo_pos
+  if settings.modules.http.quick_death_rule >= 2 and room.started and room.death and room.scores[room.dueling_players[0].name_vpass] != room.scores[room.dueling_players[oppo_pos].name_vpass]
+    win_pos = if room.scores[room.dueling_players[0].name_vpass] > room.scores[room.dueling_players[oppo_pos].name_vpass] then 0 else oppo_pos
     room.finished_by_death = true
     ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
     ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
     ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END') if room.hostinfo.mode == 2
-    room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
+    room.scores[room.dueling_players[oppo_pos - win_pos].name_vpass] = -1
     CLIENT_kick(room.dueling_players[oppo_pos - win_pos])
     CLIENT_kick(room.dueling_players[oppo_pos - win_pos + 1]) if room.hostinfo.mode == 2
     return true
@@ -2874,7 +2929,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
       if client.side_tcount == 1
         ygopro.stoc_send_chat_to_room(room, client.name + "${side_overtime_room}", ygopro.constants.COLORS.BABYBLUE)
         ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED)
-        #room.scores[client.name] = -9
+        #room.scores[client.name_vpass] = -9
         CLIENT_kick(client)
         clearInterval sinterval
       else
@@ -2928,7 +2983,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
         replay_filename: replay_filename,
         roommode: room.hostinfo.mode,
         players: (for player in room.dueling_players
-          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
+          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
           winner: player.pos == room.winner
         )
       }
@@ -2951,8 +3006,8 @@ if settings.modules.random_duel.enabled
       if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
         ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
-        room.scores[room.waiting_for_player.name] = -9
-        #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name]
+        room.scores[room.waiting_for_player.name_vpass] = -9
+        #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name_vpass]
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         CLIENT_kick(room.waiting_for_player)
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
@@ -2969,8 +3024,8 @@ if settings.modules.mycard.enabled
       if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-        room.scores[room.waiting_for_player.name] = -9
-        #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name]
+        room.scores[room.waiting_for_player.name_vpass] = -9
+        #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name_vpass]
         CLIENT_kick(room.waiting_for_player)
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
@@ -3049,7 +3104,7 @@ if settings.modules.http
           needpass: (room.name.indexOf('$') != -1).toString(),
           users: (for player in room.players when player.pos?
             id: (-1).toString(),
-            name: player.name + (if settings.modules.http.show_ip and pass_validated and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.http.show_info and room.started and player.pos != 7 and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
+            name: player.name + (if settings.modules.http.show_ip and pass_validated and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.http.show_info and room.started and player.pos != 7 and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
             pos: player.pos
           ),
           istart: if room.started then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " " + (if room.changing_side then "Siding" else "Turn:" + (if room.turn? then room.turn else 0) + (if room.death then "/" + (if room.death > 0 then room.death - 1 else "Death") else ""))) else 'start') else 'wait'
@@ -3191,8 +3246,8 @@ if settings.modules.http
         for room in ROOM_all when room and room.established and (u.query.kick == "all" or u.query.kick == room.port.toString() or u.query.kick == room.name)
           kick_room_found = true
           if room.started
-            room.scores[room.dueling_players[0].name] = 0
-            room.scores[room.dueling_players[1].name] = 0
+            room.scores[room.dueling_players[0].name_vpass] = 0
+            room.scores[room.dueling_players[1].name_vpass] = 0
           room.kicked = true
           room.process.kill()
           room.delete()
@@ -3218,7 +3273,7 @@ if settings.modules.http
           else
             switch settings.modules.http.quick_death_rule
               when 2,3
-                if room.scores[room.dueling_players[0].name] == room.scores[room.dueling_players[oppo_pos].name]
+                if room.scores[room.dueling_players[0].name_vpass] == room.scores[room.dueling_players[oppo_pos].name_vpass]
                   if settings.modules.http.quick_death_rule == 3
                     room.death = -1
                     ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
@@ -3226,12 +3281,12 @@ if settings.modules.http
                     room.death = 5
                     ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)
                 else
-                  win_pos = if room.scores[room.dueling_players[0].name] > room.scores[room.dueling_players[oppo_pos].name] then 0 else oppo_pos
+                  win_pos = if room.scores[room.dueling_players[0].name_vpass] > room.scores[room.dueling_players[oppo_pos].name_vpass] then 0 else oppo_pos
                   room.finished_by_death = true
                   ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
                   ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
                   ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END') if room.hostinfo.mode == 2
-                  room.scores[room.dueling_players[oppo_pos - win_pos].name] = -1
+                  room.scores[room.dueling_players[oppo_pos - win_pos].name_vpass] = -1
                   CLIENT_kick(room.dueling_players[oppo_pos - win_pos])
                   CLIENT_kick(room.dueling_players[oppo_pos - win_pos + 1]) if room.hostinfo.mode == 2
               when 1
