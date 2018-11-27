@@ -530,11 +530,15 @@
 
   if (settings.modules.random_duel.post_match_scores) {
     setInterval(function() {
-      var _scores, scores;
-      _scores = _.pairs(ROOM_players_scores);
-      scores = _.first(_.sortBy(_scores, function(score) {
+      var scores, scores_by_lose, scores_by_win, scores_pair;
+      scores_pair = _.pairs(ROOM_players_scores);
+      scores_by_lose = _.sortBy(scores_pair, function(score) {
+        return score[1].lose;
+      }).reverse();
+      scores_by_win = _.sortBy(scores_by_lose, function(score) {
         return score[1].win;
-      }).reverse(), 10);
+      }).reverse();
+      scores = _.first(scores_by_win, 10);
       request.post({
         url: settings.modules.random_duel.post_match_scores,
         form: {
