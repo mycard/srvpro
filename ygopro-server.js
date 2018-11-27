@@ -517,7 +517,7 @@
     if (!score) {
       return player.name + " ${random_score_blank}";
     }
-    total = score.win + score.lose + score.flee;
+    total = score.win + score.lose;
     if (score.win < 2 && total < 3) {
       return player.name + " ${random_score_not_enough}";
     }
@@ -1598,7 +1598,9 @@
             this.scores[client.name_vpass] = -9;
             if (this.random_type && !client.flee_free && (!settings.modules.reconnect.enabled || this.get_disconnected_count() === 0)) {
               ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}");
-              ROOM_player_flee(client.name_vpass);
+              if (settings.modules.random_duel.record_match_scores && this.random_type === 'M') {
+                ROOM_player_flee(client.name_vpass);
+              }
             }
           }
         }

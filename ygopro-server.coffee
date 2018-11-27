@@ -420,7 +420,7 @@ ROOM_player_get_score = (player)->
   score = ROOM_players_scores[name] 
   if !score
     return "#{player.name} ${random_score_blank}"
-  total = score.win + score.lose + score.flee
+  total = score.win + score.lose
   if score.win < 2 and total < 3
     return "#{player.name} ${random_score_not_enough}"
   if score.combo >= 2
@@ -1237,7 +1237,8 @@ class Room
           @scores[client.name_vpass] = -9
           if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() == 0)
             ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
-            ROOM_player_flee(client.name_vpass)
+            if settings.modules.random_duel.record_match_scores and @random_type == 'M'
+              ROOM_player_flee(client.name_vpass)
       if @players.length and !(@windbot and client.is_host) and !(@arena and !@started and client.pos <= 3)
         ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
         roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
