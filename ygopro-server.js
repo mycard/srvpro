@@ -3253,7 +3253,7 @@
         }
         break;
       case '/ai':
-        if (settings.modules.windbot.enabled && client.is_host && !settings.modules.challonge.enabled) {
+        if (settings.modules.windbot.enabled && client.is_host && !settings.modules.challonge.enabled && !room.arena && room.random_type !== 'M') {
           if (name = cmd[1]) {
             windbot = _.sample(_.filter(windbots, function(w) {
               return w.name === name || w.deck === name;
