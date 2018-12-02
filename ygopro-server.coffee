@@ -682,7 +682,7 @@ CLIENT_send_reconnect_info = (client, server, room) ->
     client.reconnecting = false
   else if room.selecting_tp
     ygopro.stoc_send(client, 'DUEL_START')
-    if client == room.selecting_tp and !client.selected_preduel
+    if client == room.selecting_tp # and !client.selected_preduel
       ygopro.stoc_send(client, 'SELECT_TP')
     client.reconnecting = false
   else
@@ -2801,7 +2801,7 @@ ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
   return unless room
   client.selected_preduel = true
-  room.selecting_tp = false
+  # room.selecting_tp = false
   return unless room.random_type or room.arena
   room.last_active_time = moment()
   return
