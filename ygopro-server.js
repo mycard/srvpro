@@ -875,7 +875,7 @@
       client.reconnecting = false;
     } else if (room.selecting_tp) {
       ygopro.stoc_send(client, 'DUEL_START');
-      if (client === room.selecting_tp && !client.selected_preduel) {
+      if (client === room.selecting_tp) {
         ygopro.stoc_send(client, 'SELECT_TP');
       }
       client.reconnecting = false;
@@ -3513,7 +3513,6 @@
       return;
     }
     client.selected_preduel = true;
-    room.selecting_tp = false;
     if (!(room.random_type || room.arena)) {
       return;
     }
