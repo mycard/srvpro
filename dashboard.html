@@ -124,6 +124,26 @@ function autoload() {
     }
 }
 
+function playerinfo(player, mode) {
+    if (!player)
+        return "";
+    var info = player.name;
+    if (player.status) {
+        var status = "";
+        if (mode == 1)
+            status = status + "得分: " + player.status.score + " " ;
+        if (mode != 2 || player.pos % 2 == 0)
+            status = status + "LP: "+ player.status.lp;
+        if (mode != 2)
+            status = status + " 卡数: "+ player.status.cards;
+        if (status != "")
+            info = info + " <em>(" + status + ")</em>";
+    }
+    if (player.ip)
+        info = info +"<br><code>IP: " + player.ip + "</code>";
+    return info;
+}
+
 function listroom(data) {
 
     $("#open_button").addClass("btn-success");
@@ -149,12 +169,12 @@ function listroom(data) {
         tr.append($("<td>"+ ((room.needpass == "true") ? "<span class='glyphicon glyphicon-lock'></span>" : "") + room.roomname+ "</td>"));
 
         if (room.roommode != 2) {
-            tr.append($("<td>"+((room.duelers[0]) ? room.duelers[0].name : "")+"</td>"));
-            tr.append($("<td>"+((room.duelers[1]) ? room.duelers[1].name : "")+"</td>"));
+            tr.append($("<td>"+playerinfo(room.duelers[0], room.roommode)+"</td>"));
+            tr.append($("<td>"+playerinfo(room.duelers[1], room.roommode)+"</td>"));
         }
         else {
-            tr.append($("<td>"+((room.duelers[0]) ? room.duelers[0].name : "")+((room.duelers[1]) ? "<br>"+room.duelers[1].name : "")+"</td>"));
-            tr.append($("<td>"+((room.duelers[2]) ? room.duelers[2].name : "")+((room.duelers[3]) ? "<br>"+room.duelers[3].name : "")+"</td>"));
+            tr.append($("<td>"+playerinfo(room.duelers[0], 2)+"<br>"+playerinfo(room.duelers[1], 2)+"</td>"));
+            tr.append($("<td>"+playerinfo(room.duelers[2], 2)+"<br>"+playerinfo(room.duelers[3], 2)+"</td>"));
         }
         
         var watchlist="";
