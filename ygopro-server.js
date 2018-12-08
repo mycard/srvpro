@@ -1237,6 +1237,7 @@
         this.process = spawn('./ygopro', param, {
           cwd: 'ygopro'
         });
+        this.process_pid = this.process.pid;
         this.process.on('error', (function(_this) {
           return function(err) {
             _.each(_this.players, function(player) {
@@ -3128,7 +3129,7 @@
         deck_arena = deck_arena + 'custom';
       }
       if (settings.modules.deck_log.local) {
-        deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.process.pid + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_');
+        deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.process_pid + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_');
         fs.writeFile(settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', function(err) {
           if (err) {
             return log.warn('DECK SAVE ERROR', err);
@@ -3803,7 +3804,7 @@
         duellog = {
           time: dueltime,
           name: room.name + (settings.modules.tournament_mode.show_info ? " (Duel:" + room.duel_count + ")" : ""),
-          roomid: room.process.pid.toString(),
+          roomid: room.process_pid.toString(),
           cloud_replay_id: "R#" + room.cloud_replay_id,
           replay_filename: replay_filename,
           roommode: room.hostinfo.mode,
@@ -3970,7 +3971,7 @@
                 room = ROOM_all[m];
                 if (room && room.established) {
                   results.push({
-                    roomid: room.process.pid.toString(),
+                    roomid: room.process_pid.toString(),
                     roomname: pass_validated ? room.name : room.name.split('$', 2)[0],
                     roommode: room.hostinfo.mode,
                     needpass: (room.name.indexOf('$') !== -1).toString(),
@@ -4163,7 +4164,7 @@
           kick_room_found = false;
           for (o = 0, len4 = ROOM_all.length; o < len4; o++) {
             room = ROOM_all[o];
-            if (!(room && room.established && (u.query.kick === "all" || u.query.kick === room.process.pid.toString() || u.query.kick === room.name))) {
+            if (!(room && room.established && (u.query.kick === "all" || u.query.kick === room.process_pid.toString() || u.query.kick === room.name))) {
               continue;
             }
             kick_room_found = true;
@@ -4185,7 +4186,7 @@
           death_room_found = false;
           for (p = 0, len5 = ROOM_all.length; p < len5; p++) {
             room = ROOM_all[p];
-            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.process.pid.toString() || u.query.death === room.name))) {
+            if (!(room && room.established && room.started && !room.death && (u.query.death === "all" || u.query.death === room.process_pid.toString() || u.query.death === room.name))) {
               continue;
             }
             death_room_found = true;
@@ -4247,7 +4248,7 @@
           death_room_found = false;
           for (q = 0, len6 = ROOM_all.length; q < len6; q++) {
             room = ROOM_all[q];
-            if (!(room && room.established && room.started && room.death && (u.query.deathcancel === "all" || u.query.deathcancel === room.process.pid.toString()))) {
+            if (!(room && room.established && room.started && room.death && (u.query.deathcancel === "all" || u.query.deathcancel === room.process_pid.toString()))) {
               continue;
             }
             death_room_found = true;

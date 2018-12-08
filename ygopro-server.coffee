@@ -979,6 +979,7 @@ class Room
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}
+      @process_pid = @process.pid
       @process.on 'error', (err)=>
         _.each @players, (player)->
           ygopro.stoc_die(player, "${create_room_failed}")
@@ -2511,7 +2512,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server)->
       deck_arena = deck_arena + 'custom'
     #log.info "DECK LOG START", client.name, room.arena
     if settings.modules.deck_log.local
-      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.process.pid + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
+      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.process_pid + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
         if err
           log.warn 'DECK SAVE ERROR', err
@@ -3002,7 +3003,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       duellog = {
         time: dueltime,
         name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
-        roomid: room.process.pid.toString(),
+        roomid: room.process_pid.toString(),
         cloud_replay_id: "R#"+room.cloud_replay_id,
         replay_filename: replay_filename,
         roommode: room.hostinfo.mode,
@@ -3121,7 +3122,7 @@ if settings.modules.http
       else
         response.writeHead(200)
         roomsjson = JSON.stringify rooms: (for room in ROOM_all when room and room.established
-          roomid: room.process.pid.toString(),
+          roomid: room.process_pid.toString(),
           roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
           roommode: room.hostinfo.mode,
           needpass: (room.name.indexOf('$') != -1).toString(),
@@ -3272,7 +3273,7 @@ if settings.modules.http
 
       else if u.query.kick
         kick_room_found = false
-        for room in ROOM_all when room and room.established and (u.query.kick == "all" or u.query.kick == room.process.pid.toString() or u.query.kick == room.name)
+        for room in ROOM_all when room and room.established and (u.query.kick == "all" or u.query.kick == room.process_pid.toString() or u.query.kick == room.name)
           kick_room_found = true
           if room.started
             room.scores[room.dueling_players[0].name_vpass] = 0
@@ -3288,7 +3289,7 @@ if settings.modules.http
 
       else if u.query.death
         death_room_found = false
-        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.process.pid.toString() or u.query.death == room.name)
+        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name)
           death_room_found = true
           oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
           if !room.changing_side and (!room.duel_count or room.turn)
@@ -3332,7 +3333,7 @@ if settings.modules.http
 
       else if u.query.deathcancel
         death_room_found = false
-        for room in ROOM_all when room and room.established and room.started and room.death and (u.query.deathcancel == "all" or u.query.deathcancel == room.process.pid.toString())
+        for room in ROOM_all when room and room.established and room.started and room.death and (u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString())
           death_room_found = true
           room.death = 0
           ygopro.stoc_send_chat_to_room(room, "${death_cancel}", ygopro.constants.COLORS.BABYBLUE)
