@@ -3970,8 +3970,7 @@
                 room = ROOM_all[m];
                 if (room && room.established) {
                   results.push({
-                    pid: room.process.pid.toString(),
-                    roomid: room.port.toString(),
+                    roomid: room.process.pid.toString(),
                     roomname: pass_validated ? room.name : room.name.split('$', 2)[0],
                     roommode: room.hostinfo.mode,
                     needpass: (room.name.indexOf('$') !== -1).toString(),

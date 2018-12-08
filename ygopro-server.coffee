@@ -3121,8 +3121,7 @@ if settings.modules.http
       else
         response.writeHead(200)
         roomsjson = JSON.stringify rooms: (for room in ROOM_all when room and room.established
-          pid: room.process.pid.toString(),
-          roomid: room.port.toString(),
+          roomid: room.process.pid.toString(),
           roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
           roommode: room.hostinfo.mode,
           needpass: (room.name.indexOf('$') != -1).toString(),
