@@ -3126,11 +3126,17 @@ if settings.modules.http
           roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
           roommode: room.hostinfo.mode,
           needpass: (room.name.indexOf('$') != -1).toString(),
-          users: (for player in room.players when player.pos?
+          users: _.sortBy((for player in room.players when player.pos?
             id: (-1).toString(),
-            name: player.name + (if settings.modules.http.show_ip and pass_validated and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.http.show_info and room.started and player.pos != 7 and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
+            name: player.name,
+            ip: if settings.modules.http.show_ip and pass_validated and !player.is_local then player.ip.slice(7) else null,
+            status: if settings.modules.http.show_info and room.started and player.pos != 7 then (
+              score: room.scores[player.name_vpass],
+              lp: if player.lp? then player.lp else room.hostinfo.start_lp,
+              cards: if room.hostinfo.mode != 2 then (if player.card_count? then player.card_count else room.hostinfo.start_hand) else null
+            ) else null,
             pos: player.pos
-          ),
+          ), "pos"),
           istart: if room.started then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " " + (if room.changing_side then "Siding" else "Turn:" + (if room.turn? then room.turn else 0) + (if room.death then "/" + (if room.death > 0 then room.death - 1 else "Death") else ""))) else 'start') else 'wait'
         ), null, 2
         response.end(addCallback(u.query.callback, roomsjson))

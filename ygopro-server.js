@@ -3975,7 +3975,7 @@
                     roomname: pass_validated ? room.name : room.name.split('$', 2)[0],
                     roommode: room.hostinfo.mode,
                     needpass: (room.name.indexOf('$') !== -1).toString(),
-                    users: (function() {
+                    users: _.sortBy((function() {
                       var len3, n, ref2, results1;
                       ref2 = room.players;
                       results1 = [];
@@ -3984,13 +3984,19 @@
                         if (player.pos != null) {
                           results1.push({
                             id: (-1).toString(),
-                            name: player.name + (settings.modules.http.show_ip && pass_validated && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.http.show_info && room.started && player.pos !== 7 && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name_vpass] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + (room.hostinfo.mode !== 2 ? " Cards:" + (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : "") + ")" : ""),
+                            name: player.name,
+                            ip: settings.modules.http.show_ip && pass_validated && !player.is_local ? player.ip.slice(7) : null,
+                            status: settings.modules.http.show_info && room.started && player.pos !== 7 ? {
+                              score: room.scores[player.name_vpass],
+                              lp: player.lp != null ? player.lp : room.hostinfo.start_lp,
+                              cards: room.hostinfo.mode !== 2 ? (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : null
+                            } : null,
                             pos: player.pos
                           });
                         }
                       }
                       return results1;
-                    })(),
+                    })(), "pos"),
                     istart: room.started ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " " + (room.changing_side ? "Siding" : "Turn:" + (room.turn != null ? room.turn : 0) + (room.death ? "/" + (room.death > 0 ? room.death - 1 : "Death") : "")) : 'start') : 'wait'
                   });
                 }
