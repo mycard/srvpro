@@ -1137,6 +1137,7 @@
       } else if (name.slice(0, 3) === 'AI#') {
         this.hostinfo.rule = 2;
         this.hostinfo.lflist = -1;
+        this.hostinfo.time_limit = 999;
       } else if ((param = name.match(/^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i))) {
         this.hostinfo.rule = parseInt(param[1]);
         this.hostinfo.mode = parseInt(param[2]);
