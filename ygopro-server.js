@@ -322,40 +322,40 @@
       challonge_cache = [];
     }
     challonge_queue_callbacks = [[], []];
-    is_requesting = [false, false];
+    is_requesting = [null, null];
     get_callback = function(challonge_type, _callback) {
       return (function(err, data) {
         var cur_callback;
         if (settings.modules.challonge.cache_ttl && !err && data) {
           challonge_cache[challonge_type] = data;
         }
+        is_requesting[challonge_type] = null;
         _callback(err, data);
         while (challonge_queue_callbacks[challonge_type].length) {
           cur_callback = challonge_queue_callbacks[challonge_type].splice(0, 1)[0];
           cur_callback(err, data);
         }
-        is_requesting[challonge_type] = false;
       });
     };
     challonge.participants._index = function(_data) {
       if (settings.modules.challonge.cache_ttl && challonge_cache[0]) {
         _data.callback(null, challonge_cache[0]);
-      } else if (is_requesting[0]) {
+      } else if (is_requesting[0] && moment() - is_requesting[0] <= 5000) {
         challonge_queue_callbacks[0].push(_data.callback);
       } else {
         _data.callback = get_callback(0, _data.callback);
-        is_requesting[0] = true;
+        is_requesting[0] = moment();
         challonge.participants.index(_data);
       }
     };
     challonge.matches._index = function(_data) {
       if (settings.modules.challonge.cache_ttl && challonge_cache[1]) {
         _data.callback(null, challonge_cache[1]);
-      } else if (is_requesting[1]) {
+      } else if (is_requesting[1] && moment() - is_requesting[1] <= 5000) {
         challonge_queue_callbacks[1].push(_data.callback);
       } else {
         _data.callback = get_callback(1, _data.callback);
-        is_requesting[1] = true;
+        is_requesting[1] = moment();
         challonge.matches.index(_data);
       }
     };
