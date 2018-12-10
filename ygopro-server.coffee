@@ -955,6 +955,11 @@ class Room
         lflist = parseInt(param[3]) - 1
         @hostinfo.lflist = lflist
 
+      if (param = rule.match /(^|，|,)(EXTEND|EX)(\d+)(，|,|$)/)
+        extend_time = parseInt(param[3])
+        if (extend_time >= 60) then extend_time = 60
+        @hostinfo.extend_time = extend_time
+
       if (rule.match /(^|，|,)(NOLFLIST|NF)(，|,|$)/)
         @hostinfo.lflist = -1
 
@@ -975,7 +980,7 @@ class Room
 
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'),
       (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'),
-      @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
+      @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode, @hostinfo.extend_time]
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}

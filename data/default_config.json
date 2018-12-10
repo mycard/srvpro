@@ -13,7 +13,8 @@
     "start_lp": 8000,
     "start_hand": 5,
     "draw_count": 1,
-    "time_limit": 180
+    "time_limit": 180,
+    "extend_time": 1
   },
   "modules": {
     "welcome": "MyCard YGOPro Server",

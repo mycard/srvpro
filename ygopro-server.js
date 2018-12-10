@@ -1096,7 +1096,7 @@
 
   Room = (function() {
     function Room(name, hostinfo) {
-      var draw_count, lflist, param, rule, start_hand, start_lp, time_limit;
+      var draw_count, extend_time, lflist, param, rule, start_hand, start_lp, time_limit;
       this.hostinfo = hostinfo;
       this.name = name;
       this.alive = true;
@@ -1213,6 +1213,13 @@
           lflist = parseInt(param[3]) - 1;
           this.hostinfo.lflist = lflist;
         }
+        if ((param = rule.match(/(^|，|,)(EXTEND|EX)(\d+)(，|,|$)/))) {
+          extend_time = parseInt(param[3]);
+          if (extend_time >= 60) {
+            extend_time = 60;
+          }
+          this.hostinfo.extend_time = extend_time;
+        }
         if (rule.match(/(^|，|,)(NOLFLIST|NF)(，|,|$)/)) {
           this.hostinfo.lflist = -1;
         }
@@ -1232,7 +1239,7 @@
           this.no_watch = true;
         }
       }
-      param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode];
+      param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode, this.hostinfo.extend_time];
       try {
         this.process = spawn('./ygopro', param, {
           cwd: 'ygopro'
