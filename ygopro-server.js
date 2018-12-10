@@ -1218,6 +1218,9 @@
           if (extend_time >= 60) {
             extend_time = 60;
           }
+          if (extend_time < 0) {
+            extend_time = 0;
+          }
           this.hostinfo.extend_time = extend_time;
         }
         if (rule.match(/(^|，|,)(NOLFLIST|NF)(，|,|$)/)) {
