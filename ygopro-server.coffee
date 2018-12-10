@@ -958,6 +958,7 @@ class Room
       if (param = rule.match /(^|，|,)(EXTEND|EX)(\d+)(，|,|$)/)
         extend_time = parseInt(param[3])
         if (extend_time >= 60) then extend_time = 60
+        if (extend_time < 0) then extend_time = 0
         @hostinfo.extend_time = extend_time
 
       if (rule.match /(^|，|,)(NOLFLIST|NF)(，|,|$)/)
