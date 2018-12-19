@@ -40,13 +40,14 @@ function autoload() {
     if (window.autoLoad) {
         window.clearInterval(window.autoLoad);
         window.autoLoad=false;
-        $("#message_callback").text("关闭自动刷新");
+        $("#message_callback").text("OFF");
     }
     else {
-        if (!$("#password").val()) {
+        /*if (!$("#password").val()) {
             alert("请输入密码");
             return;
-        }
+        }*/
+        $("#message_callback").text("ON");
         window.autoLoad=window.setInterval(loadrooms,1000);
     }
 }
