@@ -58,11 +58,11 @@ function playerinfo(player, mode) {
     if (player.status) {
         var status = "";
         if (mode == 1)
-            status = status + "得分: " + player.status.score + " " ;
+            status = status + "Score: " + player.status.score + " " ;
         if (mode != 2 || player.pos % 2 == 0)
             status = status + "LP: "+ player.status.lp;
         if (mode != 2)
-            status = status + " 卡数: "+ player.status.cards;
+            status = status + " Cards: "+ player.status.cards;
         if (status != "")
             info = info + " <em>(" + status + ")</em>";
     }
