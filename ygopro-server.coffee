@@ -372,6 +372,7 @@ ban_user = (name) ->
         ROOM_bad_ip[bad_ip]=99
         settings.ban.banned_ip.push(player.ip)
         ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
+        CLIENT_send_replays(player, room)
         CLIENT_kick(player)
         continue
   return
@@ -1026,6 +1027,7 @@ class Room
         @has_ygopro_error = true
         @ygopro_error_length = if @ygopro_error_length then @ygopro_error_length + data.length else data.length
         if @ygopro_error_length > 10000
+          @send_replays()
           @process.kill()
         return
     catch
@@ -1194,6 +1196,14 @@ class Room
         challonge_duel_log.scoresCsv = "0-0"
     return challonge_duel_log
 
+  send_replays: () ->
+    return false unless settings.modules.replay_delay and @replays.length and @hostinfo.mode == 1
+    for player in @players
+      CLIENT_send_replays(player, this)
+    for player in @watchers
+      CLIENT_send_replays(player, this)
+    return true
+
   add_windbot: (botdata)->
     @windbot = botdata
     request
@@ -1260,6 +1270,7 @@ class Room
         roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
         #client.room = null
       else
+        @send_replays()
         @process.kill()
         #client.room = null
         this.delete()
@@ -3314,6 +3325,7 @@ if settings.modules.http
             room.scores[room.dueling_players[0].name_vpass] = 0
             room.scores[room.dueling_players[1].name_vpass] = 0
           room.kicked = true
+          @send_replays()
           room.process.kill()
           room.delete()
         response.writeHead(200)
