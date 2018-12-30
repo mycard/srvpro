@@ -2436,6 +2436,8 @@ ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server)->
   CLIENT_send_replays(client, room)
   if !room.replays_sent_to_watchers
     room.replays_sent_to_watchers = true
+    for player in room.players when player and player.pos > 3
+      CLIENT_send_replays(player, room)
     for player in room.watchers when player
       CLIENT_send_replays(player, room)
 

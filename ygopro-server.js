@@ -3011,7 +3011,7 @@
   });
 
   ygopro.stoc_follow('DUEL_END', false, function(buffer, info, client, server) {
-    var len2, m, player, ref2, results, room;
+    var len2, len3, m, n, player, ref2, ref3, results, room;
     room = ROOM_all[client.rid];
     if (!(room && settings.modules.replay_delay && room.hostinfo.mode === 1)) {
       return;
@@ -3019,10 +3019,17 @@
     CLIENT_send_replays(client, room);
     if (!room.replays_sent_to_watchers) {
       room.replays_sent_to_watchers = true;
-      ref2 = room.watchers;
-      results = [];
+      ref2 = room.players;
       for (m = 0, len2 = ref2.length; m < len2; m++) {
         player = ref2[m];
+        if (player && player.pos > 3) {
+          CLIENT_send_replays(player, room);
+        }
+      }
+      ref3 = room.watchers;
+      results = [];
+      for (n = 0, len3 = ref3.length; n < len3; n++) {
+        player = ref3[n];
         if (player) {
           results.push(CLIENT_send_replays(player, room));
         }
