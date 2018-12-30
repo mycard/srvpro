@@ -1194,14 +1194,6 @@ class Room
         challonge_duel_log.scoresCsv = "0-0"
     return challonge_duel_log
 
-  send_replays: () ->
-    return false unless settings.modules.replay_delay and @replays.length and @hostinfo.mode == 1
-    for player in @players
-      CLIENT_send_replays(player, this)
-    for player in @watchers
-      CLIENT_send_replays(player, this)
-    return true
-
   add_windbot: (botdata)->
     @windbot = botdata
     request
@@ -1346,8 +1338,8 @@ net.createServer (client) ->
       return
     unless server.client.closed
       ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED)
-      if room and settings.modules.replay_delay
-        room.send_replays()
+      #if room and settings.modules.replay_delay
+      #  room.send_replays()
       CLIENT_kick(server.client)
       SERVER_clear_disconnect(server)
     return
@@ -1362,8 +1354,8 @@ net.createServer (client) ->
       return
     unless server.client.closed
       ygopro.stoc_send_chat(server.client, "${server_error}: #{error}", ygopro.constants.COLORS.RED)
-      if room and settings.modules.replay_delay
-        room.send_replays()
+      #if room and settings.modules.replay_delay
+      #  room.send_replays()
       CLIENT_kick(server.client)
       SERVER_clear_disconnect(server)
     return
@@ -2437,6 +2429,15 @@ ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server)->
       ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
     ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
   return true
+
+ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room and settings.modules.replay_delay and room.hostinfo.mode == 1
+  CLIENT_send_replays(client, room)
+  if !room.replays_sent_to_watchers
+    room.replays_sent_to_watchers = true
+    for player in room.watchers when player
+      CLIENT_send_replays(player, room)
 
 wait_room_start = (room, time)->
   unless !room or room.started or room.ready_player_count_without_host < room.max_player - 1
