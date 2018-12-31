@@ -372,6 +372,7 @@ ban_user = (name) ->
         ROOM_bad_ip[bad_ip]=99
         settings.ban.banned_ip.push(player.ip)
         ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
+        CLIENT_send_replays(player, room)
         CLIENT_kick(player)
         continue
   return
@@ -855,6 +856,15 @@ CLIENT_heartbeat_register = (client, send) ->
 CLIENT_is_banned_by_mc = (client) ->
   return client.ban_mc and client.ban_mc.banned and moment().isBefore(client.ban_mc.until)
 
+CLIENT_send_replays = (client, room) ->
+  return false unless settings.modules.replay_delay and room.replays.length and room.hostinfo.mode == 1
+  i = 0
+  for buffer in room.replays
+    ++i
+    ygopro.stoc_send_chat(client, "${replay_hint_part1}" + i + "${replay_hint_part2}", ygopro.constants.COLORS.BABYBLUE)
+    ygopro.stoc_send(client, "REPLAY", buffer)
+  return true
+
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -875,6 +885,8 @@ class Room
     @duel_count = 0
     @death = 0
     @turn = 0
+    if settings.modules.replay_delay
+      @replays = []
     ROOM_all.push this
 
     @hostinfo ||= JSON.parse(JSON.stringify(settings.hostinfo))
@@ -884,7 +896,6 @@ class Room
         @hostinfo.lflist = _.findIndex lflists, (list)-> list.tcg
     else
       @hostinfo.lflist =  -1
-    @hostinfo.replay_mode = if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe then 1 else 0
 
     if name[0...2] == 'M#'
       @hostinfo.mode = 1
@@ -973,6 +984,8 @@ class Room
       if (rule.match /(^|，|,)(NOWATCH|NW)(，|,|$)/)
         @no_watch = true
 
+    @hostinfo.replay_mode = if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe or @hostinfo.mode == 1 and settings.modules.replay_delay then 1 else 0
+
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'),
       (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'),
       @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
@@ -1014,6 +1027,7 @@ class Room
         @has_ygopro_error = true
         @ygopro_error_length = if @ygopro_error_length then @ygopro_error_length + data.length else data.length
         if @ygopro_error_length > 10000
+          @send_replays()
           @process.kill()
         return
     catch
@@ -1182,6 +1196,14 @@ class Room
         challonge_duel_log.scoresCsv = "0-0"
     return challonge_duel_log
 
+  send_replays: () ->
+    return false unless settings.modules.replay_delay and @replays.length and @hostinfo.mode == 1
+    for player in @players
+      CLIENT_send_replays(player, this)
+    for player in @watchers
+      CLIENT_send_replays(player, this)
+    return true
+
   add_windbot: (botdata)->
     @windbot = botdata
     request
@@ -1248,6 +1270,7 @@ class Room
         roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
         #client.room = null
       else
+        @send_replays()
         @process.kill()
         #client.room = null
         this.delete()
@@ -1326,6 +1349,8 @@ net.createServer (client) ->
       return
     unless server.client.closed
       ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED)
+      #if room and settings.modules.replay_delay
+      #  room.send_replays()
       CLIENT_kick(server.client)
       SERVER_clear_disconnect(server)
     return
@@ -1340,6 +1365,8 @@ net.createServer (client) ->
       return
     unless server.client.closed
       ygopro.stoc_send_chat(server.client, "${server_error}: #{error}", ygopro.constants.COLORS.RED)
+      #if room and settings.modules.replay_delay
+      #  room.send_replays()
       CLIENT_kick(server.client)
       SERVER_clear_disconnect(server)
     return
@@ -2060,6 +2087,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server)->
       if settings.modules.retry_handle.max_retry_count and client.retry_count >= settings.modules.retry_handle.max_retry_count
         ygopro.stoc_send_chat_to_room(room, client.name + "${retry_too_much_room_part1}" + settings.modules.retry_handle.max_retry_count + "${retry_too_much_room_part2}", ygopro.constants.COLORS.BABYBLUE)
         ygopro.stoc_send_chat(client, "${retry_too_much_part1}" + settings.modules.retry_handle.max_retry_count + "${retry_too_much_part2}", ygopro.constants.COLORS.RED)
+        CLIENT_send_replays(client, room)
         CLIENT_kick(client)
         return true
       if client.last_game_msg
@@ -2413,6 +2441,17 @@ ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server)->
     ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
   return true
 
+ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server)->
+  room=ROOM_all[client.rid]
+  return unless room and settings.modules.replay_delay and room.hostinfo.mode == 1
+  CLIENT_send_replays(client, room)
+  if !room.replays_sent_to_watchers
+    room.replays_sent_to_watchers = true
+    for player in room.players when player and player.pos > 3
+      CLIENT_send_replays(player, room)
+    for player in room.watchers when player
+      CLIENT_send_replays(player, room)
+
 wait_room_start = (room, time)->
   unless !room or room.started or room.ready_player_count_without_host < room.max_player - 1
     time -= 1
@@ -2663,6 +2702,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server)->
       ygopro.stoc_send_chat(client, "${banned_duel_tip}", ygopro.constants.COLORS.RED)
       ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
       ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}", 3)
+      CLIENT_send_replays(client, room)
       CLIENT_kick(client)
       return true
     else
@@ -2757,6 +2797,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server)->
     win_pos = if room.scores[room.dueling_players[0].name_vpass] > room.scores[room.dueling_players[oppo_pos].name_vpass] then 0 else oppo_pos
     room.finished_by_death = true
     ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
+    CLIENT_send_replays(room.dueling_players[oppo_pos - win_pos], room) if room.hostinfo.mode == 1
     ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
     ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END') if room.hostinfo.mode == 2
     room.scores[room.dueling_players[oppo_pos - win_pos].name_vpass] = -1
@@ -2955,6 +2996,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
         ygopro.stoc_send_chat_to_room(room, client.name + "${side_overtime_room}", ygopro.constants.COLORS.BABYBLUE)
         ygopro.stoc_send_chat(client, "${side_overtime}", ygopro.constants.COLORS.RED)
         #room.scores[client.name_vpass] = -9
+        CLIENT_send_replays(client, room)
         CLIENT_kick(client)
         clearInterval sinterval
       else
@@ -2986,9 +3028,11 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server)->
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
   room=ROOM_all[client.rid]
-  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player unless room
+  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1 unless room
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
+  if settings.modules.replay_delay and room.hostinfo.mode == 1 and client.pos == 0 and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player)
+    room.replays.push(buffer)
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
     if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
@@ -3019,9 +3063,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server)->
       )
     if settings.modules.cloud_replay.enabled
       ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
-    return settings.modules.tournament_mode.block_replay_to_player
+    return settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
   else
-    return false
+    return settings.modules.replay_delay and room.hostinfo.mode == 1
 
 if settings.modules.random_duel.enabled
   setInterval ()->
@@ -3034,6 +3078,7 @@ if settings.modules.random_duel.enabled
         room.scores[room.waiting_for_player.name_vpass] = -9
         #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name_vpass]
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
+        CLIENT_send_replays(room.waiting_for_player, room)
         CLIENT_kick(room.waiting_for_player)
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
@@ -3051,6 +3096,7 @@ if settings.modules.mycard.enabled
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         room.scores[room.waiting_for_player.name_vpass] = -9
         #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name_vpass]
+        CLIENT_send_replays(room.waiting_for_player, room)
         CLIENT_kick(room.waiting_for_player)
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
@@ -3279,6 +3325,7 @@ if settings.modules.http
             room.scores[room.dueling_players[0].name_vpass] = 0
             room.scores[room.dueling_players[1].name_vpass] = 0
           room.kicked = true
+          @send_replays()
           room.process.kill()
           room.delete()
         response.writeHead(200)
@@ -3314,6 +3361,7 @@ if settings.modules.http
                   win_pos = if room.scores[room.dueling_players[0].name_vpass] > room.scores[room.dueling_players[oppo_pos].name_vpass] then 0 else oppo_pos
                   room.finished_by_death = true
                   ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
+                  CLIENT_send_replays(room.dueling_players[oppo_pos - win_pos], room) if room.hostinfo.mode == 1
                   ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
                   ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END') if room.hostinfo.mode == 2
                   room.scores[room.dueling_players[oppo_pos - win_pos].name_vpass] = -1
