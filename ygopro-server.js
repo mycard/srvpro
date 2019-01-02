@@ -1963,7 +1963,7 @@
     log.info("NOTE: server not open due to config, ", settings.modules.stop);
   }
 
-  ygopro.ctos_follow('PLAYER_INFO', true, function(buffer, info, client, server) {
+  ygopro.ctos_follow('PLAYER_INFO', true, function(buffer, info, client, server, datas) {
     var geo, lang, name, name_full, struct, vpass;
     name_full = info.name.split("$");
     name = name_full[0];
@@ -2025,7 +2025,7 @@
     return false;
   });
 
-  ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server) {
+  ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server, datas) {
     var check, decrypted_buffer, finish, i, id, len2, len3, len4, m, n, name, o, pre_room, ref2, ref3, ref4, replay_id, room, secret;
     info.pass = info.pass.trim();
     client.pass = info.pass;
@@ -2442,7 +2442,7 @@
     }
   });
 
-  ygopro.stoc_follow('JOIN_GAME', false, function(buffer, info, client, server) {
+  ygopro.stoc_follow('JOIN_GAME', false, function(buffer, info, client, server, datas) {
     var len2, m, player, recorder, ref2, room, watcher;
     room = ROOM_all[client.rid];
     if (!(room && !client.reconnecting)) {
@@ -2553,7 +2553,7 @@
     load_dialogues();
   }
 
-  ygopro.stoc_follow('GAME_MSG', true, function(buffer, info, client, server) {
+  ygopro.stoc_follow('GAME_MSG', true, function(buffer, info, client, server, datas) {
     var card, chain, check, count, cpos, deck_found, found, hint_type, i, id, len2, len3, len4, len5, limbo_found, line, loc, m, max_loop, msg, n, o, oppo_pos, p, phase, player, playertype, pos, ppos, q, reason, ref2, ref3, ref4, ref5, ref6, ref7, room, trigger_location, val, win_pos;
     room = ROOM_all[client.rid];
     if (!(room && !client.reconnecting)) {
@@ -2887,7 +2887,7 @@
     return false;
   });
 
-  ygopro.ctos_follow('HS_TOOBSERVER', true, function(buffer, info, client, server) {
+  ygopro.ctos_follow('HS_TOOBSERVER', true, function(buffer, info, client, server, datas) {
     var len2, m, player, ref2, room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -2911,7 +2911,7 @@
     return false;
   });
 
-  ygopro.ctos_follow('HS_KICK', true, function(buffer, info, client, server) {
+  ygopro.ctos_follow('HS_KICK', true, function(buffer, info, client, server, datas) {
     var len2, m, player, ref2, room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -2939,7 +2939,7 @@
     return false;
   });
 
-  ygopro.stoc_follow('TYPE_CHANGE', true, function(buffer, info, client, server) {
+  ygopro.stoc_follow('TYPE_CHANGE', true, function(buffer, info, client, server, datas) {
     var is_host, selftype;
     selftype = info.type & 0xf;
     is_host = ((info.type >> 4) & 0xf) !== 0;
@@ -2948,7 +2948,7 @@
     return false;
   });
 
-  ygopro.stoc_follow('HS_PLAYER_CHANGE', false, function(buffer, info, client, server) {
+  ygopro.stoc_follow('HS_PLAYER_CHANGE', false, function(buffer, info, client, server, datas) {
     var is_ready, len2, len3, m, n, p1, p2, player, pos, ref2, ref3, room;
     room = ROOM_all[client.rid];
     if (!(room && room.max_player && client.is_host)) {
@@ -3018,7 +3018,7 @@
     }
   });
 
-  ygopro.ctos_follow('REQUEST_FIELD', true, function(buffer, info, client, server) {
+  ygopro.ctos_follow('REQUEST_FIELD', true, function(buffer, info, client, server, datas) {
     return true;
   });
 
@@ -3147,7 +3147,7 @@
     }, 30000);
   }
 
-  ygopro.stoc_follow('DUEL_START', false, function(buffer, info, client, server) {
+  ygopro.stoc_follow('DUEL_START', false, function(buffer, info, client, server, datas) {
     var deck_arena, deck_name, deck_text, len2, m, player, ref2, room;
     room = ROOM_all[client.rid];
     if (!(room && !client.reconnecting)) {
@@ -3230,7 +3230,7 @@
     }
   });
 
-  ygopro.ctos_follow('SURRENDER', true, function(buffer, info, client, server) {
+  ygopro.ctos_follow('SURRENDER', true, function(buffer, info, client, server, datas) {
     var room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3272,7 +3272,7 @@
     });
   };
 
-  ygopro.ctos_follow('CHAT', true, function(buffer, info, client, server) {
+  ygopro.ctos_follow('CHAT', true, function(buffer, info, client, server, datas) {
     var cancel, ccolor, cip, cmd, cmsg, cname, color, cvalue, msg, name, oldmsg, ref2, room, struct, windbot;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3473,7 +3473,7 @@
     return cancel;
   });
 
-  ygopro.ctos_follow('UPDATE_DECK', true, function(buffer, info, client, server) {
+  ygopro.ctos_follow('UPDATE_DECK', true, function(buffer, info, client, server, datas) {
     var buff_main, buff_side, card, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, len2, len3, line, m, n, oppo_pos, room, struct, win_pos;
     if (settings.modules.reconnect.enabled && client.pre_reconnecting) {
       if (!CLIENT_is_able_to_reconnect(client) && !CLIENT_is_able_to_kick_reconnect(client)) {
@@ -3604,7 +3604,7 @@
     return false;
   });
 
-  ygopro.ctos_follow('RESPONSE', false, function(buffer, info, client, server) {
+  ygopro.ctos_follow('RESPONSE', false, function(buffer, info, client, server, datas) {
     var room;
     room = ROOM_all[client.rid];
     if (!(room && (room.random_type || room.arena))) {
@@ -3613,7 +3613,7 @@
     room.last_active_time = moment();
   });
 
-  ygopro.stoc_follow('TIME_LIMIT', true, function(buffer, info, client, server) {
+  ygopro.stoc_follow('TIME_LIMIT', true, function(buffer, info, client, server, datas) {
     var check, cur_players, room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3664,7 +3664,7 @@
     return false;
   });
 
-  ygopro.ctos_follow('TIME_CONFIRM', false, function(buffer, info, client, server) {
+  ygopro.ctos_follow('TIME_CONFIRM', false, function(buffer, info, client, server, datas) {
     var room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3680,7 +3680,7 @@
     }
   });
 
-  ygopro.ctos_follow('HAND_RESULT', false, function(buffer, info, client, server) {
+  ygopro.ctos_follow('HAND_RESULT', false, function(buffer, info, client, server, datas) {
     var room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3696,7 +3696,7 @@
     room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's');
   });
 
-  ygopro.ctos_follow('TP_RESULT', false, function(buffer, info, client, server) {
+  ygopro.ctos_follow('TP_RESULT', false, function(buffer, info, client, server, datas) {
     var room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3709,7 +3709,7 @@
     room.last_active_time = moment();
   });
 
-  ygopro.stoc_follow('CHAT', true, function(buffer, info, client, server) {
+  ygopro.stoc_follow('CHAT', true, function(buffer, info, client, server, datas) {
     var len2, m, pid, player, ref2, room, tcolor, tplayer;
     room = ROOM_all[client.rid];
     pid = info.player;
@@ -3748,7 +3748,7 @@
     }
   });
 
-  ygopro.stoc_follow('SELECT_HAND', false, function(buffer, info, client, server) {
+  ygopro.stoc_follow('SELECT_HAND', false, function(buffer, info, client, server, datas) {
     var room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3770,7 +3770,7 @@
     room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's');
   });
 
-  ygopro.stoc_follow('SELECT_TP', false, function(buffer, info, client, server) {
+  ygopro.stoc_follow('SELECT_TP', false, function(buffer, info, client, server, datas) {
     var room;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3786,7 +3786,7 @@
     }
   });
 
-  ygopro.stoc_follow('CHANGE_SIDE', false, function(buffer, info, client, server) {
+  ygopro.stoc_follow('CHANGE_SIDE', false, function(buffer, info, client, server, datas) {
     var room, sinterval, temp_log;
     room = ROOM_all[client.rid];
     if (!room) {
@@ -3841,7 +3841,7 @@
     }
   });
 
-  ygopro.stoc_follow('REPLAY', true, function(buffer, info, client, server) {
+  ygopro.stoc_follow('REPLAY', true, function(buffer, info, client, server, datas) {
     var duellog, dueltime, i, len2, len3, m, n, player, ref2, ref3, replay_filename, room;
     room = ROOM_all[client.rid];
     if (!room) {
