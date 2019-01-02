@@ -865,6 +865,12 @@ CLIENT_send_replays = (client, room) ->
     ygopro.stoc_send(client, "REPLAY", buffer)
   return true
 
+SOCKET_flush_data = (sk, datas) ->
+  for buffer in datas
+    sk.write(buffer)
+  datas.splice(0, datas.length)
+  return
+
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -1441,9 +1447,9 @@ net.createServer (client) ->
                 struct._setBuff(b)
                 info = _.clone(struct.fields)
               if ygopro.ctos_follows[ctos_proto].synchronous
-                cancel = ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server
+                cancel = ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
               else
-                ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server
+                ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
             datas.push ctos_buffer.slice(0, 2 + ctos_message_length) unless cancel
             ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
             ctos_message_length = 0
@@ -1510,9 +1516,9 @@ net.createServer (client) ->
               struct._setBuff(b)
               info = _.clone(struct.fields)
             if ygopro.stoc_follows[stoc_proto].synchronous
-              cancel = ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server
+              cancel = ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
             else
-              ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server
+              ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
           datas.push stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
           stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
           stoc_message_length = 0
@@ -2441,14 +2447,15 @@ ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server)->
     ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
   return true
 
-ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server)->
+ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and settings.modules.replay_delay and room.hostinfo.mode == 1
+  SOCKET_flush_data(client, datas)
   CLIENT_send_replays(client, room)
   if !room.replays_sent_to_watchers
     room.replays_sent_to_watchers = true
-    for player in room.players when player and player.pos > 3
-      CLIENT_send_replays(player, room)
+    # for player in room.players when player and player.pos > 3
+    #   CLIENT_send_replays(player, room)
     for player in room.watchers when player
       CLIENT_send_replays(player, room)
 
