@@ -4245,7 +4245,7 @@
               room.scores[room.dueling_players[1].name_vpass] = 0;
             }
             room.kicked = true;
-            this.send_replays();
+            room.send_replays();
             room.process.kill();
             room["delete"]();
           }
