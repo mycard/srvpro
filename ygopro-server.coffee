@@ -3334,7 +3334,7 @@ if settings.modules.http
             room.scores[room.dueling_players[0].name_vpass] = 0
             room.scores[room.dueling_players[1].name_vpass] = 0
           room.kicked = true
-          @send_replays()
+          room.send_replays()
           room.process.kill()
           room.delete()
         response.writeHead(200)
