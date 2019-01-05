@@ -866,10 +866,12 @@ CLIENT_send_replays = (client, room) ->
   return true
 
 SOCKET_flush_data = (sk, datas) ->
+  if !sk or sk.closed
+    return false
   for buffer in datas
     sk.write(buffer)
   datas.splice(0, datas.length)
-  return
+  return true
 
 class Room
   constructor: (name, @hostinfo) ->
