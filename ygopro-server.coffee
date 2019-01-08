@@ -2791,6 +2791,9 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return false unless room
   #log.info info
+  if info.mainc > 256 or info.sidec > 256 # Prevent attack, see https://github.com/Fluorohydride/ygopro/issues/2174
+    CLIENT_kick(client)
+    return true
   buff_main = (info.deckbuf[i] for i in [0...info.mainc])
   buff_side = (info.deckbuf[i] for i in [info.mainc...info.mainc + info.sidec])
   client.main = buff_main
