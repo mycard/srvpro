@@ -571,13 +571,15 @@ ROOM_unwelcome = (room, bad_player, reason)->
   return
 
 CLIENT_kick = (client) ->
+  if !client
+    return false
   client.system_kicked = true
   if settings.modules.reconnect.enabled and client.closed
     if client.server and !client.had_new_reconnection
       client.server.destroy()
   else
     client.destroy()
-  return
+  return true
 
 release_disconnect = (dinfo, reconnected) ->
   if dinfo.old_client and !reconnected

@@ -726,6 +726,9 @@
   };
 
   CLIENT_kick = function(client) {
+    if (!client) {
+      return false;
+    }
     client.system_kicked = true;
     if (settings.modules.reconnect.enabled && client.closed) {
       if (client.server && !client.had_new_reconnection) {
@@ -734,6 +737,7 @@
     } else {
       client.destroy();
     }
+    return true;
   };
 
   release_disconnect = function(dinfo, reconnected) {
