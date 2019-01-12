@@ -306,6 +306,12 @@ if settings.modules.challonge.enabled
       is_requesting[1] = moment()
       challonge.matches.index(_data)
     return
+  challonge.matches._update = (_data) ->
+    try
+      challonge.matches.update(_data)
+    catch err
+      log.warn("Errored pushing scores to Challonge.", err)
+    return
   refresh_challonge_cache = () ->
     if settings.modules.challonge.cache_ttl
       challonge_cache[0] = null
@@ -1098,7 +1104,7 @@ class Room
         return
 
     if settings.modules.challonge.enabled and @started and @hostinfo.mode != 2 and !@kicked
-      challonge.matches.update({
+      challonge.matches._update({
         id: settings.modules.challonge.tournament_id,
         matchId: @challonge_info.id,
         match: @get_challonge_score(),
@@ -3023,7 +3029,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
   if settings.modules.challonge.enabled and settings.modules.challonge.post_score_midduel and room.hostinfo.mode != 2 and client.pos == 0
     temp_log = JSON.parse(JSON.stringify(room.get_challonge_score()))
     delete temp_log.winnerId
-    challonge.matches.update({
+    challonge.matches._update({
       id: settings.modules.challonge.tournament_id,
       matchId: room.challonge_info.id,
       match: temp_log,

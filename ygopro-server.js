@@ -359,6 +359,15 @@
         challonge.matches.index(_data);
       }
     };
+    challonge.matches._update = function(_data) {
+      var err;
+      try {
+        challonge.matches.update(_data);
+      } catch (error1) {
+        err = error1;
+        log.warn("Errored pushing scores to Challonge.", err);
+      }
+    };
     refresh_challonge_cache = function() {
       if (settings.modules.challonge.cache_ttl) {
         challonge_cache[0] = null;
@@ -1424,7 +1433,7 @@
         })(this));
       }
       if (settings.modules.challonge.enabled && this.started && this.hostinfo.mode !== 2 && !this.kicked) {
-        challonge.matches.update({
+        challonge.matches._update({
           id: settings.modules.challonge.tournament_id,
           matchId: this.challonge_info.id,
           match: this.get_challonge_score(),
@@ -3837,7 +3846,7 @@
     if (settings.modules.challonge.enabled && settings.modules.challonge.post_score_midduel && room.hostinfo.mode !== 2 && client.pos === 0) {
       temp_log = JSON.parse(JSON.stringify(room.get_challonge_score()));
       delete temp_log.winnerId;
-      challonge.matches.update({
+      challonge.matches._update({
         id: settings.modules.challonge.tournament_id,
         matchId: room.challonge_info.id,
         match: temp_log,
