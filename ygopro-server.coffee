@@ -294,7 +294,10 @@ if settings.modules.challonge.enabled
     else
       _data.callback = get_callback(0, _data.callback)
       is_requesting[0] = moment()
-      challonge.participants.index(_data)
+      try
+        challonge.participants.index(_data)
+      catch err
+        _data.callback(err, null)
     return 
   challonge.matches._index = (_data) ->
     if settings.modules.challonge.cache_ttl and challonge_cache[1]
@@ -304,7 +307,10 @@ if settings.modules.challonge.enabled
     else
       _data.callback = get_callback(1, _data.callback)
       is_requesting[1] = moment()
-      challonge.matches.index(_data)
+      try
+        challonge.matches.index(_data)
+      catch err
+        _data.callback(err, null)
     return
   challonge.matches._update = (_data) ->
     try
