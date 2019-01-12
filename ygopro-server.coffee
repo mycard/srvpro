@@ -2451,7 +2451,7 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server, dat
 ygopro.ctos_follow 'REQUEST_FIELD', true, (buffer, info, client, server, datas)->
   return true
 
-ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server)->
+ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return true unless room and settings.modules.reconnect.enabled
   client.reconnecting = false

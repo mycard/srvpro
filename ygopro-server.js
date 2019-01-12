@@ -3051,7 +3051,7 @@
     return true;
   });
 
-  ygopro.stoc_follow('FIELD_FINISH', true, function(buffer, info, client, server) {
+  ygopro.stoc_follow('FIELD_FINISH', true, function(buffer, info, client, server, datas) {
     var room;
     room = ROOM_all[client.rid];
     if (!(room && settings.modules.reconnect.enabled)) {
