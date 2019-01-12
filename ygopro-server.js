@@ -1090,7 +1090,7 @@
   };
 
   CLIENT_heartbeat_register = function(client, send) {
-    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.pos > 3 || client.heartbeat_protected) {
+    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.waiting_for_last || client.pos > 3 || client.heartbeat_protected) {
       return false;
     }
     if (client.heartbeat_timeout) {
@@ -3051,15 +3051,16 @@
     return true;
   });
 
-  ygopro.stoc_follow('FIELD_FINISH', true, function(buffer, info, client, server, datas) {
+  ygopro.stoc_follow('FIELD_FINISH', true, function(buffer, info, client, server) {
     var room;
     room = ROOM_all[client.rid];
     if (!(room && settings.modules.reconnect.enabled)) {
       return true;
     }
     client.reconnecting = false;
-    if (client.last_game_msg && client.last_game_msg_title !== 'WAITING') {
-      SOCKET_flush_data(client, datas);
+    if (client.time_confirm_required) {
+      client.waiting_for_last = true;
+    } else if (client.last_game_msg && client.last_game_msg_title !== 'WAITING') {
       if (client.last_hint_msg) {
         ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
       }
@@ -3711,6 +3712,15 @@
       return;
     }
     if (settings.modules.reconnect.enabled) {
+      if (client.waiting_for_last) {
+        client.waiting_for_last = false;
+        if (client.last_game_msg && client.last_game_msg_title !== 'WAITING') {
+          if (client.last_hint_msg) {
+            ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
+          }
+          ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
+        }
+      }
       client.time_confirm_required = false;
     }
     if (settings.modules.heartbeat_detection.enabled) {
