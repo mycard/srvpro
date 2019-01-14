@@ -58,7 +58,7 @@
     }
   });
 
-  import_datas = ["abuse_count", "ban_mc", "vpass", "rag", "rid", "is_post_watcher", "retry_count", "name", "pass", "is_first", "lp", "card_count", "is_host", "pos", "surrend_confirm", "kick_count", "deck_saved", "main", "side", "side_interval", "side_tcount", "selected_preduel", "last_game_msg", "last_game_msg_title", "last_hint_msg", "start_deckbuf", "challonge_info", "ready_trap"];
+  import_datas = ["abuse_count", "ban_mc", "vpass", "rag", "rid", "is_post_watcher", "retry_count", "name", "pass", "is_first", "lp", "card_count", "is_host", "pos", "surrend_confirm", "kick_count", "deck_saved", "main", "side", "side_interval", "side_tcount", "selected_preduel", "last_game_msg", "last_game_msg_title", "last_hint_msg", "start_deckbuf", "challonge_info", "ready_trap", "replays_sent"];
 
   merge = require('deepmerge');
 
@@ -1122,9 +1122,10 @@
 
   CLIENT_send_replays = function(client, room) {
     var buffer, i, len2, m, ref2;
-    if (!(settings.modules.replay_delay && room.replays.length && room.hostinfo.mode === 1)) {
+    if (!(settings.modules.replay_delay && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.closed)) {
       return false;
     }
+    client.replays_sent = true;
     i = 0;
     ref2 = room.replays;
     for (m = 0, len2 = ref2.length; m < len2; m++) {
@@ -3077,7 +3078,7 @@
     }
     SOCKET_flush_data(client, datas);
     CLIENT_send_replays(client, room);
-    if (!room.replays_sent_to_watchers && (client.pos === 0 || !room.dueling_players[0] || room.dueling_players[0].closed)) {
+    if (!room.replays_sent_to_watchers) {
       room.replays_sent_to_watchers = true;
       ref2 = room.players;
       for (m = 0, len2 = ref2.length; m < len2; m++) {
