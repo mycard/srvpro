@@ -3896,7 +3896,7 @@
     var duellog, dueltime, i, len2, len3, m, n, player, ref2, ref3, replay_filename, room;
     room = ROOM_all[client.rid];
     if (!room) {
-      return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe && settings.modules.tournament_mode.block_replay_to_player || settings.modules.replay_delay && room.hostinfo.mode === 1;
+      return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replREPLAay_safe && settings.modules.tournament_mode.block_replay_to_player || settings.modules.replay_delay;
     }
     if (settings.modules.cloud_replay.enabled && room.random_type) {
       Cloud_replay_ids.push(room.cloud_replay_id);
