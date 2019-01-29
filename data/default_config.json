@@ -156,6 +156,10 @@
       "password": "123456",
       "port": 7933
     },
+    "side_restrict": {
+      "enabled": false,
+      "restrict_cards": []
+    },
     "test_mode": {
       "watch_public_hand": false,
       "no_connect_count_limit": false,

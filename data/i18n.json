@@ -155,6 +155,7 @@
     "challonge_player_already_in": "Please do not enter the room you are already in.",
     "replay_hint_part1": "Sending the replay of the duel number ",
     "replay_hint_part2": ".",
+    "invalid_side_rule": "Illegal cards are contained in your side deck.",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender."
   },
   "es-es": {
@@ -457,6 +458,7 @@
     "challonge_player_already_in": "请不要重复加入比赛房间。",
     "replay_hint_part1": "正在发送第",
     "replay_hint_part2": "局决斗的录像。",
+    "invalid_side_rule": "副卡组中包含不允许换入副卡组的卡。",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。"
   },
  "ko-kr": {
