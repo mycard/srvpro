@@ -3068,8 +3068,8 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay unless room
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
-  if settings.modules.replay_delay and room.hostinfo.mode == 1 and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player)
-    # console.log("Replay saved: " + (room.duel_count - 1))
+  if settings.modules.replay_delay and room.hostinfo.mode == 1 and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player) and !room.replays[room.duel_count - 1]
+    # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
   if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
     if client.pos == 0
