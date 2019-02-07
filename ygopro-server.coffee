@@ -50,6 +50,7 @@ import_datas = [
   "retry_count",
   "name",
   "pass",
+  "name_vpass",
   "is_first",
   "lp",
   "card_count",
