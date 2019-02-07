@@ -877,8 +877,9 @@ CLIENT_send_replays = (client, room) ->
   i = 0
   for buffer in room.replays
     ++i
-    ygopro.stoc_send_chat(client, "${replay_hint_part1}" + i + "${replay_hint_part2}", ygopro.constants.COLORS.BABYBLUE)
-    ygopro.stoc_send(client, "REPLAY", buffer)
+    if buffer
+      ygopro.stoc_send_chat(client, "${replay_hint_part1}" + i + "${replay_hint_part2}", ygopro.constants.COLORS.BABYBLUE)
+      ygopro.stoc_send(client, "REPLAY", buffer)
   return true
 
 SOCKET_flush_data = (sk, datas) ->
