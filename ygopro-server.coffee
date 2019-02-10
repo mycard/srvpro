@@ -270,7 +270,10 @@ if settings.modules.mycard.enabled
   pg_client.connect()
 
 if settings.modules.challonge.enabled
-  challonge = require('challonge').createClient({
+  challonge_module_name = 'challonge'
+  if settings.modules.challonge.use_custom_module
+    challonge_module_name = settings.modules.challonge.use_custom_module
+  challonge = require(challonge_module_name).createClient({
     apiKey: settings.modules.challonge.api_key
   })
   if settings.modules.challonge.cache_ttl
