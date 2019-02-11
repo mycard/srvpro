@@ -1280,11 +1280,12 @@ class Room
       client.server.destroy()
     else
       #log.info(client.name, @started, @disconnector, @random_type, @players.length)
-      if @arena and !@started
+      if @arena and !@started and @disconnector != 'server' and !@arena_score_handled
         for player in @players when player.pos != 7
           @scores[player.name_vpass] = 0
         if @players.length == 2
           @scores[client.name_vpass] = -9
+        @arena_score_handled = true
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       if @started and @disconnector != 'server' and client.pos < 4
