@@ -3575,7 +3575,7 @@
         client.side_tcount = null;
       }
     } else {
-      client.start_deckbuf = buffer;
+      client.start_deckbuf = Buffer.from(buffer);
     }
     oppo_pos = room.hostinfo.mode === 2 ? 2 : 1;
     if (settings.modules.http.quick_death_rule >= 2 && room.started && room.death && room.scores[room.dueling_players[0].name_vpass] !== room.scores[room.dueling_players[oppo_pos].name_vpass]) {

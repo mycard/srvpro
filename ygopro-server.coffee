@@ -2826,7 +2826,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
       client.side_interval = null
       client.side_tcount = null
   else
-    client.start_deckbuf = buffer
+    client.start_deckbuf = Buffer.from(buffer)
   oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
   if settings.modules.http.quick_death_rule >= 2 and room.started and room.death and room.scores[room.dueling_players[0].name_vpass] != room.scores[room.dueling_players[oppo_pos].name_vpass]
     win_pos = if room.scores[room.dueling_players[0].name_vpass] > room.scores[room.dueling_players[oppo_pos].name_vpass] then 0 else oppo_pos
