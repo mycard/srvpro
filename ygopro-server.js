@@ -4429,7 +4429,9 @@
         key: fs.readFileSync(settings.modules.http.ssl.key)
       };
       https_server = https.createServer(options, requestListener);
-      roomlist.init(https_server, ROOM_all);
+      if (settings.modules.http.websocket_roomlist && roomlist) {
+        roomlist.init(https_server, ROOM_all);
+      }
       https_server.listen(settings.modules.http.ssl.port);
     }
   }
