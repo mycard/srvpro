@@ -1,3 +1,29 @@
+###
+Main script of new dashboard account system.
+The account list file is stored at `./config/admin_user.json`. The users are stored at `users`.
+The key is the username. The `permissions` field could be a string, using a permission set from the example, or an object, to define a specific set of permissions.
+eg. An account for a judge could be as follows, to use the default permission of judges,
+    "username": {
+      "password": "123456",
+      "enabled": true,
+      "permissions": "judge"
+    },
+or as follows, to use a specific set of permissions.
+    "username": {
+      "password": "123456",
+      "enabled": true,
+      "permissions": {
+        "get_rooms": true,
+        "duel_log": true,
+        "download_replay": true,
+        "deck_dashboard_read": true,
+        "deck_dashboard_write": true,
+        "shout": true,
+        "kick_user": true,
+        "start_death": true
+      }
+    },
+###
 fs = require 'fs'
 loadJSON = require('load-json-file').sync
 moment = require 'moment'
