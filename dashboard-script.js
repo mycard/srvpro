@@ -33,7 +33,7 @@ function parseQueryString() {
 
 function loadrooms() {
     var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/getrooms?callback=?"+ ($("#username").val() ? "&username="+$("#username").val() : "") + ($("#password").val() ? "&pass="+$("#password").val() : "");
-	alert(url);
+	//alert(url);
 	
 	
     $.getJSON(url, listroom);
