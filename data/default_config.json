@@ -154,7 +154,6 @@
       "show_ip": false,
       "show_info": true,
       "log_save_path": "./config/",
-      "password": "123456",
       "port": 7933
     },
     "side_restrict": {
@@ -170,7 +169,6 @@
     "pre_util": {
       "enabled": false,
       "port": 7944,
-      "password": "123456",
       "git_html_path": "../mercury233.github.io/",
       "html_path": "../mercury233.github.io/ygosrv233/",
       "html_filename": "pre.html",
@@ -249,7 +247,6 @@
     "update_util": {
       "enabled": false,
       "port": 7955,
-      "password": "123456",
       "git_html_path": "../ygo233-web/",
       "html_path": "../ygo233-web/",
       "cdb_path": "./ygopro/cards.cdb",
@@ -275,7 +272,6 @@
     },
     "http": {
       "port": 7922,
-      "password": "123456",
       "websocket_roomlist": false,
       "public_roomlist": false,
       "show_ip": false,

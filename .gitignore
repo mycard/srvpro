@@ -19,6 +19,7 @@ config.user.bak
 /ssl
 /ygosrv233
 /challonge
+/logs
 
 test*
 *.heapsnapshot
