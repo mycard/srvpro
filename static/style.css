@@ -1,0 +1,306 @@
+/*干掉站长统计的文本*/
+a[title="站长统计"] {
+    display: none;
+}
+
+/*标题*/
+h1.title {
+    font-family: 'Helvetica Neue', Helvetica, 'Microsoft Yahei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
+    font-size: 22px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.index .navbar-nav>li.index>a, .index .navbar-nav>li.index>a:focus, .index .navbar-nav>li.index>a:hover,
+.download .navbar-nav>li.download>a, .download .navbar-nav>li.download>a:focus, .download .navbar-nav>li.download>a:hover,
+.usage .navbar-nav>li.usage>a, .usage .navbar-nav>li.usage>a:focus, .usage .navbar-nav>li.usage>a:hover,
+.changelog .navbar-nav>li.changelog>a, .changelog .navbar-nav>li.changelog>a:focus, .changelog .navbar-nav>li.changelog>a:hover,
+.bugs .navbar-nav>li.bugs>a, .bugs .navbar-nav>li.bugs>a:focus, .bugs .navbar-nav>li.bugs>a:hover,
+.lab .navbar-nav>li.lab>a, .lab .navbar-nav>li.lab>a:focus, .lab .navbar-nav>li.lab>a:hover,
+.pre .navbar-nav>li.pre>a, .pre .navbar-nav>li.pre>a:focus, .pre .navbar-nav>li.pre>a:hover
+{
+    color: #555;
+    background-color: #e7e7e7;
+}
+
+h1.title .date {
+    font-size: 14px;
+    float: right;
+    padding-top: 10px;
+}
+
+h2.title {
+    font-family: 'Helvetica Neue', Helvetica, 'Microsoft Yahei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
+    font-size: 16px;
+    padding: 8px 0 8px 8px;
+    border-left: 2px solid #ddd;
+}
+
+footer {
+    margin: 100px 0 10px 0;
+    color: #767676;
+    text-align: center;
+}
+
+.row.grid {
+    margin-bottom: 15px;
+}
+
+#shouttemp {
+    border: 0;
+    width: 200px;
+    height: 20px;
+}
+
+#decklist, #output.deck {
+    overflow-y: scroll;
+    height: 520px;
+}
+#decklist li {
+    border: 1px solid #EEEEEE;
+    border-radius: 5px;
+    padding: 2px 5px;
+    margin-bottom: 3px;
+    line-height: 22px;
+    cursor: pointer;
+}
+#decklist li:hover {
+    border: 1px solid #B8D6FB;
+    background-color: #EBF3FD;
+    background-image: linear-gradient(to bottom, #FAFBFD, #EBF3FD);
+}
+
+.deck #card {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.deck #card, .deck #card pre {
+    font-family: 'Helvetica Neue', Helvetica, 'Microsoft Yahei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
+}
+
+.deck #card #cardpic {
+    margin: 0 auto 5px auto;
+    width: 177px;
+    height: 254px;
+    display: block;
+}
+
+.deck #card #cardtext {
+    height: 260px;
+}
+
+.deck #card .cardname {
+    text-align: center;
+    margin: 5px 0 4px;
+    padding: 3px 0;
+    border: 1px solid #EEEEEE;
+    background-color: #F9F9F9;
+    height: 28px;
+}
+
+/* https://projects.lukehaas.me/css-loaders/ */
+.loader,
+.loader:before,
+.loader:after {
+  border-radius: 50%;
+  width: 2.5em;
+  height: 2.5em;
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+  -webkit-animation: load7 1.8s infinite ease-in-out;
+  animation: load7 1.8s infinite ease-in-out;
+}
+.loader {
+  color: #333333;
+  font-size: 10px;
+  margin: 80px auto;
+  position: relative;
+  text-indent: -9999em;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+.loader:before,
+.loader:after {
+  content: '';
+  position: absolute;
+  top: 0;
+}
+.loader:before {
+  left: -3.5em;
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+.loader:after {
+  left: 3.5em;
+}
+@-webkit-keyframes load7 {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 2.5em 0 -1.3em;
+  }
+  40% {
+    box-shadow: 0 2.5em 0 0;
+  }
+}
+@keyframes load7 {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 2.5em 0 -1.3em;
+  }
+  40% {
+    box-shadow: 0 2.5em 0 0;
+  }
+}
+
+.deck #card p {
+    margin: 3px;
+    padding: 0 3px;
+    line-height: 22px;
+}
+
+.deck #card pre {
+    display: block;
+    margin: 3px 3px 0;
+    padding: 0 3px;
+    font-size: 14px;
+    line-height: 22px;
+    color: #333;
+    white-space: pre-wrap;
+    background-color: unset;
+    border: none;
+    height: 193px;
+}
+
+.deck #card .monster pre {
+    height: 171px;
+}
+.deck #deck {
+    width: 500px;
+    padding: 5px 0px;
+    background: #CCCCCC center center;
+    margin: 0 auto;
+}
+@media (min-width: 1200px) {
+.deck #card {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.deck #deck {
+    margin: 0 -15px;
+}
+}
+.deck #deck label {
+    text-shadow: -1px -1px #000;
+    color: #FFF;
+    font-weight: normal;
+    border: 1px solid #FFF;
+    padding: 0px 5px;
+    margin: 1px 7px;
+}
+.deck #deck label b {
+    margin: 0px 8px;
+    font-size: 16px;
+    line-height: 100%;
+}
+
+.deck #deck div {
+    border: 1px solid #FFF;
+    padding: 2px;
+    margin: 0px 7px;
+    min-height: 74px;
+}
+
+.deck #deck img {
+    width: 46px;
+    height: 66px;
+    margin: 1px;
+    border: 1px solid transparent;
+}
+
+.deck #deck .line11 img {
+    margin-right: -3.8px;
+}
+.deck #deck .line12 img {
+    margin-right: -7.7px;
+}
+.deck #deck .line13 img {
+    margin-right: -11px;
+}
+.deck #deck .line14 img {
+    margin-right: -13.7px;
+}
+.deck #deck .line15 img {
+    margin-right: -16.1px;
+}
+
+.deck #deck img:hover {
+    border: 1px solid #FFF;
+}
+
+#input_file {
+    display: none;
+}
+
+.modal-title {
+    font-family: 'Helvetica Neue', Helvetica, 'Microsoft Yahei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
+}
+
+p.buttons {
+    line-height: 40px;
+}
+
+div.buttons {
+    line-height: 50px;
+}
+
+#pre_update_log .auto-generated {
+    max-height: 300px;
+    overflow-y: scroll;
+}
+
+#pre_release_cards {
+    width: auto;
+    margin-left: 15px;
+    margin-right: 15px;
+    font-family: 宋体;
+}
+
+#pre_release_cards img {
+    width: 44px;
+    height: 64px;
+}
+
+#pre_faq p {
+    padding-left: 2em;
+    border-left: 3px #EEEEEE solid;
+    line-height: 200%;
+    text-indent: -1.5em;
+}
+
+#pre_faq p::first-letter {
+    font-weight: bold;
+    margin-right: 0.5em;
+}
+
+#pre_faq p.q {
+    background-color: #F0F0F0;
+    border-color: #CCCCCC;
+}
+
+#pre_faq p.a {
+    margin-bottom: 2em;
+}
+
+#pre_faq p:hover {
+    border-color: #AAAAAA;
+}
+
+#output .add {
+	background-color:#94fbb1;
+}

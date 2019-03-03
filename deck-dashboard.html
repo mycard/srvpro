@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SRVPro Deck Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="/static/style.css" rel="stylesheet">
+</head>
+<body class="deck">
+<header class="container">
+    <h1 class="title">SRVPro 竞赛模式卡组管理</h1>
+</header>
+<div class="container">
+    <div class="row grid">
+        <div class="col-lg-2">
+            <input type="text" class="form-control" id="ip" value="" placeholder="IP">
+        </div>
+        <div class="col-lg-2">
+            <input type="text" class="form-control" id="port" value="" placeholder="Port">
+        </div>
+        <div class="col-lg-2">
+            <input type="text" class="form-control" id="username" value="" placeholder="Username">
+        </div>
+        <div class="col-lg-2">
+            <input type="password" class="form-control" id="password" value="" placeholder="Password">
+        </div>
+        <div class="col-lg-2">
+            <button class="btn btn-default" id="login_button">登陆</button>
+            <button class="btn btn-default" id="clear_button">清屏</button>
+        </div>
+    </div>
+    <div class="row buttons hidden">
+        <div class="col-lg-2">
+            <button class="btn btn-default" action="get_decks">共有<b id="deckcount">0</b>个卡组</button>
+        </div>
+        <div class="col-lg-2">
+            <button class="btn btn-default" action="get_decks">刷新卡组列表</button>
+        </div>
+        <div class="col-lg-2">
+            <button class="btn btn-default" action="get_bg">刷新卡组背景</button>
+        </div>
+        <div class="col-lg-2">
+            <form class="hidden" id="uploadform" enctype="multipart/form-data">
+            <input id="filesel" type="file" name="upload" multiple="multiple">
+            </form>
+            <button class="btn btn-default" action="upload_decks">上传卡组</button>
+        </div>
+        <div class="col-lg-2">
+            <button class="btn btn-default" action="clear_decks" confirm="此操作不可撤销，确实要删除全部卡组吗？">删除全部卡组</button>
+        </div>
+        <div class="col-lg-2">
+            <button class="btn btn-default" action="upload_to_challonge">上传至Challonge</button>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <hr>
+    <div class="row">
+        <div class="col-lg-3">
+            <ul id="decklist" class="list-unstyled">
+
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <div id="deck">
+<label>卡组</label>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <ul id="output" class="list-unstyled deck">
+
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist//jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+<script>
+var ip, port, password;
+var apis={}
+
+$(function(){
+    $("body").tooltip({selector: "[data-toggle='tooltip']"});
+    
+    $("#login_button").click(login);
+    $("#clear_button").click(clear);
+    
+    $(".buttons button").click(function(){openapi($(this).attr("action"),null,$(this).attr("confirm"))});
+    
+    var params=parseQueryString();
+    $("#ip").val(params["ip"]);
+    $("#port").val(params["port"]);
+    $("#password").val(params["password"]);
+    $("#username").val(params["username"]);
+    $("#filesel").change(function() { 
+        upload_decks();
+    });
+});
+
+function parseQueryString() {
+    //http://stackoverflow.com/questions/523266/how-can-i-get-a-specific-parameter-from-location-search
+    var str = window.location.search;
+    var objURL = {};
+    str.replace(
+        new RegExp( "([^?=&]+)(=([^&]*))?", "g" ),
+        function( $0, $1, $2, $3 ){
+            objURL[ $1 ] = $3;
+        }
+    );
+    return objURL;
+}
+
+function output(data) {
+    var data_li = $('<li>'+ data +'</li>');
+    data_li.appendTo($("#output"));
+    data_li[0].scrollIntoView();
+}
+
+function clear() {
+    $("#output").html(" ");
+}
+
+function login() {
+    ip=$("#ip").val();
+    port=$("#port").val();
+    password=$("#password").val();
+	username=$("#username").val();
+    var es = new EventSource("http://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
+    es.onmessage = function(e) {
+        output(e.data);
+        
+        if (e.data=="已连接。") {
+            $(".row.buttons").removeClass("hidden");
+            openapi("get_bg");
+            openapi("get_decks");
+        }
+    };
+    es.onerror = function(e) {
+        $(".row.buttons").addClass("hidden");
+        output("已断开");
+        //alert("连接断开！");
+        es.close();
+    };
+}
+
+apis["get_bg"] = { "tip":" 正在加载卡组背景..." }
+apis["get_bg"].callback = function(data) {
+    $("#deck").css("background-image","url('"+data.url+"')");
+    output("已加载背景："+data.desc);
+}
+
+apis["get_decks"] = { "tip":" 正在刷新卡组列表..." }
+apis["get_decks"].callback = function(data) {
+    $("#decklist").html(" ");
+    for (var i in data) {
+        var deck = data[i];
+        var deck_li = $('<li data-deck=\''+JSON.stringify(deck)+'\'>'+ deck.name +'</li>');
+        var del_button = $('<button type="button" class="btn btn-default btn-xs pull-right">删除</button>');
+        del_button.appendTo(deck_li);
+        deck_li.appendTo($("#decklist"));
+        deck_li.click(function(){
+            apis["show_deck"].callback($(this).data("deck"));
+        });
+        del_button.click(function(){
+            var deck_name=$(this).parent().data("deck").name;
+            if (confirm("确实要删除"+deck_name+"？")) {
+                openapi("del_deck", deck_name);
+            }
+        });
+    }
+    output("成功读取"+data.length+"个卡组。");
+    $("#deckcount").html(data.length);
+}
+
+apis["del_deck"] = { "tip":" 正在删除卡组..." }
+apis["del_deck"].callback = function(data) {
+    output(data);
+    openapi("get_decks");
+}
+
+apis["clear_decks"] = { "tip":" 正在确认操作..." }
+apis["clear_decks"].callback = function() {
+    output(data);
+    openapi("get_decks");
+}
+
+apis["upload_to_challonge"] = { "tip":" 正在上传卡组至Challonge..." }
+apis["upload_to_challonge"].callback = function() {
+    output(data);
+    openapi("get_decks");
+}
+
+apis["show_deck"] = {}
+apis["show_deck"].callback = function(deck) {
+    $("#deck").html(" ");
+    $("#deck").append("<label class='pull-right'>"+deck.name+"</label>");
+    
+    $("#deck").append("<label>主卡组：<b>"+deck.main.length+"</b></label>");
+    var deck_main=$('<div></div>');
+    deck_main.addClass("line"+Math.ceil(deck.main.length/4));
+    for (var j in deck.main) {
+        deck_main.append("<img src='http://ygo233.my-card.in/ygopro/pics/"+deck.main[j]+".jpg!thumb'>");
+    }
+    deck_main.appendTo($("#deck"));
+    
+    $("#deck").append("<label>额外卡组：<b>"+deck.extra.length+"</b></label>");
+    var deck_extra=$('<div></div>');
+    deck_extra.addClass("line"+deck.extra.length);
+    for (var j in deck.extra) {
+        deck_extra.append("<img src='http://ygo233.my-card.in/ygopro/pics/"+deck.extra[j]+".jpg!thumb'>");
+    }
+    deck_extra.appendTo($("#deck"));
+    
+    $("#deck").append("<label>副卡组：<b>"+deck.side.length+"</b></label>");
+    var deck_side=$('<div></div>');
+    deck_side.addClass("line"+deck.side.length);
+    for (var j in deck.side) {
+        deck_side.append("<img src='http://ygo233.my-card.in/ygopro/pics/"+deck.side[j]+".jpg!thumb'>");
+    }
+    deck_side.appendTo($("#deck"));
+    
+    //output("显示卡组："+deck.name);
+}
+
+function openapi(api, msg, confirm2) {
+    if (apis[api] && apis[api].tip) {
+        output(apis[api].tip);
+    }
+    else {
+        output("正在操作...");
+    }
+    if(api=="upload_decks") {
+        $("#filesel").click();
+    }
+    else if (!confirm2 || confirm(confirm2)) {
+        $.getJSON("http://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password + (msg ? "&msg="+encodeURIComponent(msg) : "" ) + "&callback=?", function(data) {
+            if (apis[api]) {
+                apis[api].callback(data);
+            }
+            else {
+                output(data);
+            }
+        });
+    }
+}
+
+function upload_decks() {
+    var filesel=$('#filesel')[0];
+    if (!filesel.files.length) { return; }
+    var formData = new FormData();
+    for (var i=0; i < filesel.files.length; i++) {
+        formData.append('upload['+i+']', filesel.files[i]);
+    }
+    $.ajax({
+        url: "http://"+ip+":"+port+"/api/upload_decks?username="+username+"password="+password,
+        type: 'POST',
+        cache: false,
+        data: formData,
+        processData: false,
+        contentType: false
+    }).done(function(result) {
+        result=JSON.parse(result);
+        if(result.length) {
+            output("上传结果：");
+            for (var j in result) {
+                var r=result[j];
+                output(r.file+"："+r.status);
+            }
+        }
+        else {
+            output("没有文件被上传！");
+        }
+        openapi("get_decks");
+    }).fail(function(result) {
+        output("上传失败！");
+        openapi("get_decks");
+    });
+}
+</script>
+
+<script src="http://s4.cnzz.com/z_stat.php?id=1255875151&web_id=1255875151"></script>
+</body>
+</html>
