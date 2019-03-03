@@ -16,6 +16,8 @@ _.str = require('underscore.string');
 _.mixin(_.str.exports());
 var loadJSON = require('load-json-file').sync;
 
+var auth = require('./ygopro-auth.js');
+
 var settings = loadJSON('./config/config.json');
 config=settings.modules.tournament_mode;
 challonge_config=settings.modules.challonge;
@@ -215,13 +217,18 @@ var receiveDecks = function(files) {
 http.createServer(function (req, res) {
     var u = url.parse(req.url, true);
     
-    if (u.query.password !== config.password) {
+    /*if (u.query.password !== config.password) {
         res.writeHead(403);
         res.end("Auth Failed.");
         return;
-    }
+    }*/
     
     if (u.pathname === '/api/upload_decks' && req.method.toLowerCase() == 'post') {
+        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "upload_deck")) { 
+            res.writeHead(403);
+            res.end("Auth Failed.");
+            return;
+        }
         var form = new formidable.IncomingForm();
         form.parse(req, function(err, fields, files) {
             res.writeHead(200, {
@@ -234,6 +241,11 @@ http.createServer(function (req, res) {
         });
     }
     else if (u.pathname === '/api/msg') {
+        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "login_deck_dashboard")) { 
+            res.writeHead(403);
+            res.end("Auth Failed.");
+            return;
+        }
         res.writeHead(200, {
             "Access-Control-Allow-origin": "*",
             "Content-Type": "text/event-stream",
@@ -250,25 +262,50 @@ http.createServer(function (req, res) {
         sendResponse("已连接。");
     }
     else if (u.pathname === '/api/get_bg') {
+        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "login_deck_dashboard")) { 
+            res.writeHead(403);
+            res.end("Auth Failed.");
+            return;
+        }
         res.writeHead(200);
         res.end(u.query.callback+'('+JSON.stringify(config.wallpapers[Math.floor(Math.random() * config.wallpapers.length)])+');');
     }
     else if (u.pathname === '/api/get_decks') {
+        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "get_decks")) { 
+            res.writeHead(403);
+            res.end("Auth Failed.");
+            return;
+        }
         res.writeHead(200);
         var decklist=getDecks();
         res.end(u.query.callback+'('+JSON.stringify(decklist)+');');
     }
     else if (u.pathname === '/api/del_deck') {
+        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "delete_deck")) { 
+            res.writeHead(403);
+            res.end("Auth Failed.");
+            return;
+        }
         res.writeHead(200);
         var result=delDeck(u.query.msg);
         res.end(u.query.callback+'("'+result+'");');
     }
     else if (u.pathname === '/api/clear_decks') {
+        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "clear_decks")) { 
+            res.writeHead(403);
+            res.end("Auth Failed.");
+            return;
+        }
         res.writeHead(200);
         clearDecks();
         res.end(u.query.callback+'("已删除全部卡组。");');
     }
     else if (u.pathname === '/api/upload_to_challonge') {
+        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "upload_to_challonge")) { 
+            res.writeHead(403);
+            res.end("Auth Failed.");
+            return;
+        }
         res.writeHead(200);
         var result=UploadToChallonge();
         res.end(u.query.callback+'("操作完成。");');
@@ -279,4 +316,3 @@ http.createServer(function (req, res) {
     }
 
 }).listen(config.port);
-

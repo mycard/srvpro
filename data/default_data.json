@@ -31,5 +31,49 @@
   "chat_color": {
     "file": "./config/chat_color.json",
     "save_list": {}
+  },
+  "users": {
+    "file": "./config/admin_user.json",
+    "permission_examples": {
+      "sudo": {
+        "get_rooms": true,
+        "duel_log": true,
+        "download_replay": true,
+        "clear_duel_log": true,
+        "deck_dashboard_read": true,
+        "deck_dashboard_write": true,
+        "shout": true,
+        "stop": true,
+        "change_settings": true,
+        "ban_user": true,
+        "kick_user": true,
+        "start_death": true,
+        "pre_dashboard": true,
+        "update_dashboard": true
+      },
+      "judge": {
+        "get_rooms": true,
+        "duel_log": true,
+        "download_replay": true,
+        "deck_dashboard_read": true,
+        "deck_dashboard_write": true,
+        "shout": true,
+        "kick_user": true,
+        "start_death": true
+      },
+      "streamer": {
+        "get_rooms": true,
+        "duel_log": true,
+        "download_replay": true,
+        "deck_dashboard_read": true
+      }
+    },
+    "users": {
+      "root": {
+        "password": "123456",
+        "enabled": false,
+        "permissions": "sudo"
+      }
+    }
   }
 }
