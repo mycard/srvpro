@@ -19,6 +19,9 @@
             <input type="text" class="form-control" id="port" value="" placeholder="Port">
         </div>
         <div class="col-lg-2">
+            <input type="username" class="form-control" id="username" value="" placeholder="Username">
+        </div>
+        <div class="col-lg-2">
             <input type="password" class="form-control" id="password" value="" placeholder="Password">
         </div>
         <div class="col-lg-2">
@@ -113,6 +116,8 @@ $(function(){
     $("#ip").val(params["ip"]);
     $("#port").val(params["port"]);
     $("#password").val(params["password"]);
+	$("#username").val(params["username"]);
+	
 
     $("#message").val($("#message-head").val()+$("#message-body").val()+$("#message-other").val());
 });
@@ -134,7 +139,8 @@ function login() {
     ip=$("#ip").val();
     port=$("#port").val();
     password=$("#password").val();
-    var es = new EventSource("http://"+ip+":"+port+"/api/msg?password="+password);
+	username=$("#username").val();
+    var es = new EventSource("http://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
     es.onmessage = function(e) {
         var data_li = $('<li>'+ e.data +'</li>');
         data_li.appendTo($("#output"));
@@ -168,7 +174,7 @@ function clear() {
 }
 
 function openapi(api) {
-    $.getJSON("http://"+ip+":"+port+"/api/"+ api +"?password="+password+"&message="+$("#message").val().replace(/\n/g,"！换行符！")+"&callback=?", function(data) {
+    $.getJSON("http://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password+"&message="+$("#message").val().replace(/\n/g,"！换行符！")+"&callback=?", function(data) {
         var data_li = $('<li>'+ data.message +'</li>');
         data_li.appendTo($("#output"));
     });

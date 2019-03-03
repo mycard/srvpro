@@ -15,6 +15,7 @@ $(function(){
     $("#ip").val(params["ip"]);
     $("#port").val(params["port"]);
     $("#password").val(params["password"]);
+	$("#username").val(params["username"]);
 });
 
 function parseQueryString() {
@@ -31,7 +32,10 @@ function parseQueryString() {
 }
 
 function loadrooms() {
-    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/getrooms?callback=?"+ ($("#password").val() ? "&pass="+$("#password").val() : "");
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/getrooms?callback=?"+ ($("#username").val() ? "&username="+$("#username").val() : "") + ($("#password").val() ? "&pass="+$("#password").val() : "");
+	alert(url);
+	
+	
     $.getJSON(url, listroom);
     $("#open_button").removeClass("btn-success");
 }
@@ -123,49 +127,49 @@ function listroom(data) {
 
 function shout() {
     $("#message_callback").text('...');
-    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?shout=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?shout=" + $("#shout").val() + "&username="+$("#username").val()+"&pass=" + $("#password").val() + "&callback=?";
     $.getJSON(url, shoutcallback);
 }
 function stop() {
     if (confirm("Are you sure to stop the server?")) {
         $("#message_callback").text('...');
-        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?stop=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?stop=" + $("#shout").val() +"&username="+$("#username").val()+ "&pass=" + $("#password").val() + "&callback=?";
         $.getJSON(url, shoutcallback);
     }
 }
 function welcome() {
     if ($("#shout").val().length) {
         $("#message_callback").text('...');
-        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?welcome=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?welcome=" + $("#shout").val() + "&username="+$("#username").val()+"&pass=" + $("#password").val() + "&callback=?";
         $.getJSON(url, shoutcallback);
     }
     else {
         $("#message_callback").text('...');
-        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?getwelcome=1&pass=" + $("#password").val() + "&callback=?";
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?getwelcome=1&pass=" + $("#password").val() + "&username="+$("#username").val()+ "&callback=?";
         $.getJSON(url, shoutcallback);
     }
 }
 function load_tips() {
     $("#message_callback").text('...');
-    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?loadtips=1&pass=" + $("#password").val() + "&callback=?";
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?loadtips=1&pass=" + $("#password").val() + "&username="+$("#username").val() + "&callback=?";
     $.getJSON(url, shoutcallback);
 }
 function load_dialogues() {
     $("#message_callback").text('...');
-    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?loaddialogues=1&pass=" + $("#password").val() + "&callback=?";
+    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?loaddialogues=1&pass=" + $("#password").val() +"&username="+$("#username").val() +"&callback=?";
     $.getJSON(url, shoutcallback);
 }
 function ban_player() {
     if (confirm("Are you sure to ban this player?")) {
         $("#message_callback").text('...');
-        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?ban=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?ban=" + $("#shout").val() + "&pass=" + $("#password").val() +"&username="+$("#username").val() +"&callback=?";
         $.getJSON(url, shoutcallback);
     }
 }
 function kick_room() {
     if (confirm("Are you sure to terminate this duel?")) {
         $("#message_callback").text('...');
-        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?kick=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?kick=" + $("#shout").val() + "&pass=" + $("#password").val() + "&username="+$("#username").val() +"&callback=?";
         $.getJSON(url, shoutcallback);
     }
 }
@@ -173,12 +177,12 @@ function start_death() {
     if (confirm("Are you sure to start Extra Duel?")) {
         if ($("#shout").val().length) {
             $("#message_callback").text('...');
-            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?death=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?death=" + $("#shout").val() + "&pass=" + $("#password").val() +"&username="+$("#username").val() +"&callback=?";
             $.getJSON(url, shoutcallback);
         }
         else {
             $("#message_callback").text('...');
-            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?death=all&pass=" + $("#password").val() + "&callback=?";
+            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?death=all&pass=" + $("#password").val() + "&username="+$("#username").val() +"&callback=?";
             $.getJSON(url, shoutcallback);
         }
     }
@@ -187,12 +191,12 @@ function cancel_death() {
     if (confirm("Are you sure to cancel Extra Duel?")) {
         if ($("#shout").val().length) {
             $("#message_callback").text('...');
-            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?deathcancel=" + $("#shout").val() + "&pass=" + $("#password").val() + "&callback=?";
+            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?deathcancel=" + $("#shout").val() + "&pass=" + $("#password").val() + "&username="+$("#username").val() +"&callback=?";
             $.getJSON(url, shoutcallback);
         }
         else {
             $("#message_callback").text('...');
-            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?deathcancel=all&pass=" + $("#password").val() + "&callback=?";
+            var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/message?deathcancel=all&pass=" + $("#password").val() + "&username="+$("#username").val() +"&callback=?";
             $.getJSON(url, shoutcallback);
         }
     }

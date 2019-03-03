@@ -19,6 +19,9 @@
             <input type="text" class="form-control" id="port" value="" placeholder="Port">
         </div>
         <div class="col-lg-2">
+            <input type="text" class="form-control" id="username" value="" placeholder="Username">
+        </div>
+        <div class="col-lg-2">
             <input type="password" class="form-control" id="password" value="" placeholder="Password">
         </div>
         <div class="col-lg-2">
@@ -89,7 +92,7 @@ $(function(){
     $("#ip").val(params["ip"]);
     $("#port").val(params["port"]);
     $("#password").val(params["password"]);
-    
+    $("#username").val(params["username"]);
     $("#filesel").change(function() { 
         upload_decks();
     });
@@ -122,7 +125,8 @@ function login() {
     ip=$("#ip").val();
     port=$("#port").val();
     password=$("#password").val();
-    var es = new EventSource("http://"+ip+":"+port+"/api/msg?password="+password);
+	username=$("#username").val();
+    var es = new EventSource("http://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
     es.onmessage = function(e) {
         output(e.data);
         
@@ -230,7 +234,7 @@ function openapi(api, msg, confirm2) {
         $("#filesel").click();
     }
     else if (!confirm2 || confirm(confirm2)) {
-        $.getJSON("http://"+ip+":"+port+"/api/"+ api +"?password="+password + (msg ? "&msg="+encodeURIComponent(msg) : "" ) + "&callback=?", function(data) {
+        $.getJSON("http://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password + (msg ? "&msg="+encodeURIComponent(msg) : "" ) + "&callback=?", function(data) {
             if (apis[api]) {
                 apis[api].callback(data);
             }
@@ -249,7 +253,7 @@ function upload_decks() {
         formData.append('upload['+i+']', filesel.files[i]);
     }
     $.ajax({
-        url: "http://"+ip+":"+port+"/api/upload_decks?password="+password,
+        url: "http://"+ip+":"+port+"/api/upload_decks?username="+username+"password="+password,
         type: 'POST',
         cache: false,
         data: formData,
