@@ -200,7 +200,7 @@
       "duel_log": true,
       "download_replay": true,
       "clear_duel_log": true,
-      "deck_dashbaord_read": true,
+      "deck_dashboard_read": true,
       "deck_dashboard_write": true
     });
     delete settings.modules.tournament_mode.password;
@@ -4143,11 +4143,12 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, kick_room_found, len2, len3, len4, len5, len6, m, n, o, oppo_pos, p, parseQueryString, player, q, ref2, replay, room, roomsjson, u, win_pos;
+      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, kick_room_found, len2, len3, len4, len5, len6, m, n, o, oppo_pos, p, parseQueryString, pass_validated, player, q, ref2, replay, room, roomsjson, u, win_pos;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       if (u.pathname === '/api/getrooms') {
-        if (!settings.modules.http.public_roomlist && !auth.auth(u.query.username, u.query.pass, "get_rooms", "get_rooms")) {
+        pass_validated = auth.auth(u.query.username, u.query.pass, "get_rooms", "get_rooms");
+        if (!settings.modules.http.public_roomlist && !pass_validated) {
           response.writeHead(200);
           response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'));
         } else {
