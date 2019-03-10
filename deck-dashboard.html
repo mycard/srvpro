@@ -253,7 +253,7 @@ function upload_decks() {
         formData.append('upload['+i+']', filesel.files[i]);
     }
     $.ajax({
-        url: "http://"+ip+":"+port+"/api/upload_decks?username="+username+"password="+password,
+        url: "http://"+ip+":"+port+"/api/upload_decks?username="+username+"&password="+password,
         type: 'POST',
         cache: false,
         data: formData,
