@@ -3047,7 +3047,7 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server, datas)->
   if tcolor
     ygopro.stoc_send client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor]
-        msg: (else tplayer.name) + ": " + info.msg
+        msg: tplayer.name + ": " + info.msg
       }
     return true
   return

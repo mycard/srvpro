@@ -1699,7 +1699,7 @@
     };
 
     Room.prototype.disconnect = function(client, error) {
-      var index, len2, m, player, ref2;
+      var index, left_name, len2, m, player, ref2;
       if (client.had_new_reconnection) {
         return;
       }
@@ -1741,7 +1741,8 @@
           }
         }
         if (this.players.length && !(this.windbot && client.is_host) && !(this.arena && !this.started && client.pos <= 3)) {
-          ygopro.stoc_send_chat_to_room(this, (client.name + " ${left_game}") + (error ? ": " + error : ''));
+          left_name = (settings.modules.hide_name && !this.started ? "********" : client.name);
+          ygopro.stoc_send_chat_to_room(this, (left_name + " ${left_game}") + (error ? ": " + error : ''));
           if (!this.windbot && !this.started && settings.modules.http.websocket_roomlist) {
             roomlist.update(this);
           }
@@ -3858,7 +3859,7 @@
     var len2, m, pid, player, ref2, room, tcolor, tplayer;
     room = ROOM_all[client.rid];
     pid = info.player;
-    if (!(room && pid < 4 && settings.modules.chat_color.enabled)) {
+    if (!(room && pid < 4 && settings.modules.chat_color.enabled && (!settings.modules.hide_name || room.started))) {
       return;
     }
     if (room.started && room.turn > 0 && !room.dueling_players[0].is_first) {
