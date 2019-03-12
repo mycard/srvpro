@@ -2448,6 +2448,17 @@ ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server, datas)->
   #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
   return false
 
+ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas)->
+  room=ROOM_all[client.rid]
+  return false unless room and settings.modules.hide_name and !room.started
+  pos = info.pos
+  if pos < 4 and pos != client.pos
+    struct = ygopro.structs["STOC_HS_PlayerEnter"]
+    struct._setBuff(buffer)
+    struct.set("name", "********")
+    buffer = struct.buffer
+  return false
+
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and room.max_player and client.is_host
@@ -2600,6 +2611,12 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
       if room.random_type == 'T'
         # 双打房不记录匹配过
         ROOM_players_oppentlist[player.ip] = null
+  if settings.modules.hide_name and room.duel_count == 0
+    for player in room.get_playing_player() when player != client
+      ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
+        name: player.name,
+        pos: player.pos
+      })
   if settings.modules.tips.enabled
     ygopro.stoc_send_random_tip(client)
   deck_text = null
