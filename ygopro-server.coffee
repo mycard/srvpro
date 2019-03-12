@@ -1334,7 +1334,8 @@ class Room
             if settings.modules.random_duel.record_match_scores and @random_type == 'M'
               ROOM_player_flee(client.name_vpass)
       if @players.length and !(@windbot and client.is_host) and !(@arena and !@started and client.pos <= 3)
-        ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
+        left_name = (if settings.modules.hide_name and !@started then "********" else client.name)
+        ygopro.stoc_send_chat_to_room this, "#{left_name} ${left_game}" + if error then ": #{error}" else ''
         roomlist.update(this) if !@windbot and !@started and settings.modules.http.websocket_roomlist
         #client.room = null
       else
@@ -3028,7 +3029,7 @@ ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
 ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   pid = info.player
-  return unless room and pid < 4 and settings.modules.chat_color.enabled
+  return unless room and pid < 4 and settings.modules.chat_color.enabled and (!settings.modules.hide_name or room.started)
   if room.started and room.turn > 0 and !room.dueling_players[0].is_first
     if room.hostinfo.mode == 2
       pid = {
@@ -3046,7 +3047,7 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server, datas)->
   if tcolor
     ygopro.stoc_send client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor]
-        msg: tplayer.name + ": " + info.msg
+        msg: (else tplayer.name) + ": " + info.msg
       }
     return true
   return
