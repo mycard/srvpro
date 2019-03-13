@@ -2553,7 +2553,9 @@ wait_room_start_arena = (room)->
     room.waiting_for_player_time = room.waiting_for_player_time - 1
     if room.waiting_for_player_time > 0
       unless room.waiting_for_player_time % 5
-        ygopro.stoc_send_chat_to_room(room, "#{if room.waiting_for_player_time <= 9 then ' ' else ''}#{room.waiting_for_player_time}${kick_count_down_arena_part1} #{room.waiting_for_player.name} ${kick_count_down_arena_part2}", if room.waiting_for_player_time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
+        for player in room.players when player
+          display_name = (if settings.modules.hide_name and player != room.waiting_for_player then "********" else room.waiting_for_player.name)
+          ygopro.stoc_send_chat(player, "#{if room.waiting_for_player_time <= 9 then ' ' else ''}#{room.waiting_for_player_time}${kick_count_down_arena_part1} #{display_name} ${kick_count_down_arena_part2}", if room.waiting_for_player_time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
     else
       ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
       CLIENT_kick(room.waiting_for_player)
