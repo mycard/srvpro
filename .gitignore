@@ -1,5 +1,4 @@
 # ignore
-package-lock.json
 jsconfig.json
 coffeelint.json
 .vscode/
