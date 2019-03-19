@@ -1,0 +1,21 @@
+{
+	"apps": [
+		{
+			"name": "ygopro-server",
+			"script": "/ygopro-server/ygopro-server.js",
+			"cwd": "/ygopro-server"
+		},
+		{
+			"name": "windbot",
+			"script": "/ygopro-server/windbot/WindBot.exe",
+			"cwd": "/ygopro-server/windbot/",
+			"args": "ServerMode=true ServerPort=2399",
+			"interpreter": "mono"
+		},
+		{
+			"name": "redis-server",
+			"script": "/usr/bin/redis-server",
+			"cwd": "/redis"
+		}
+	]
+}
