@@ -1,35 +1,56 @@
+# Dockerfile for SRVPro
 FROM node:stretch
 
-RUN ssh-keygen -A
+# apt
 RUN apt update
-RUN apt install -y openssh-server locales curl git vim build-essential premake4 libevent-dev libsqlite3-dev liblua5.3-dev mono-complete sqlite3 p7zip-full
-RUN ln -s /usr/lib/x86_64-linux-gnu/liblua5.3.so /usr/lib/liblua.so
-RUN npm install pm2 -g
+RUN env DEBIAN_FRONTEND=noninteractive apt install -y curl wget vim sudo git build-essential libssl1.0-dev libsqlite3-dev sqlite3 mono-complete p7zip-full redis-server
 
-# 系统源
-#RUN sed -i 's/deb.debian.org/ftp.cn.debian.org/g' /etc/apt/sources.list
-#RUN apt update
+RUN npm install -g pm2
 
-# ssh
-RUN mkdir -p /var/run/sshd
-RUN mkdir /root/.ssh
-RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+# libevent
+WORKDIR /
+RUN wget 'https://github.com/libevent/libevent/releases/download/release-2.0.22-stable/libevent-2.0.22-stable.tar.gz' -O libevent-2.0.22-stable.tar.gz --no-check-certificate && \
+    tar xf libevent-2.0.22-stable.tar.gz && \
+    cd libevent-2.0.22-stable/ && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    bash -c 'ln -s /usr/local/lib/libevent-2.0.so.5 /usr/lib/libevent-2.0.so.5;ln -s /usr/local/lib/libevent_pthreads-2.0.so.5 /usr/lib/libevent_pthreads-2.0.so.5;ln -s /usr/local/lib/libevent-2.0.so.5 /usr/lib64/libevent-2.0.so.5;ln -s /usr/local/lib/libevent_pthreads-2.0.so.5 /usr/lib64/libevent_pthreads-2.0.so.5;exit 0'
 
-# locale
-RUN echo "zh_CN.UTF-8 UTF-8" > /etc/locale.gen && \
-    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    locale-gen && \
-    dpkg-reconfigure -f noninteractive locales tzdata && \
-    /usr/sbin/update-locale LANG=zh_CN.UTF-8
-ENV LANG=zh_CN.UTF-8
+# srvpro
+COPY . /ygopro-server
+WORKDIR /ygopro-server
+RUN npm ci && \
+    mkdir config decks replays logs && \
+    cp data/default_config.json config/config.json
 
-# declarations
-EXPOSE 22
+# ygopro
+RUN git clone --branch=server --recursive https://github.com/moecube/ygopro /ygopro-server/ygopro
+WORKDIR /ygopro-server/ygopro
+RUN git submodule foreach git checkout master && \
+    wget -O - https://github.com/premake/premake-core/releases/download/v5.0.0-alpha12/premake-5.0.0-alpha12-linux.tar.gz | tar zfx - && \
+    ./premake5 gmake && \
+    cd build && \
+    make config=release && \
+    cd .. && \
+    ln -s ./bin/release/ygopro . && \
+    strip ygopro && \
+    mkdir replay expansions
+
+# windbot
+RUN git clone https://github.com/moecube/windbot /ygopro-server/windbot
+WORKDIR /ygopro-server/windbot
+RUN xbuild /property:Configuration=Release /property:TargetFrameworkVersion="v4.5" && \
+    ln -s ./bin/Release/WindBot.exe . && \
+    ln -s /ygopro-server/ygopro/cards.cdb .
+
+# infos
+WORKDIR /
+RUN mkdir /redis
 EXPOSE 7911
 EXPOSE 7922
-VOLUME /root
+VOLUME /ygopro-server/config
+VOLUME /ygopro-server/ygopro/expansions
 
-WORKDIR /root
-COPY data/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-CMD [ "/entrypoint.sh" ]
+CMD [ "pm2-docker", "start", "/ygopro-server/data/pm2-docker.json" ]
