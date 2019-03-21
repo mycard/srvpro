@@ -9,8 +9,8 @@ RUN npm install -g pm2
 
 # libevent
 WORKDIR /
-ADD https://github.com/libevent/libevent/releases/download/release-2.0.22-stable/libevent-2.0.22-stable.tar.gz .
-RUN tar xf libevent-2.0.22-stable.tar.gz && \
+RUN wget 'https://github.com/libevent/libevent/releases/download/release-2.0.22-stable/libevent-2.0.22-stable.tar.gz' -O libevent-2.0.22-stable.tar.gz --no-check-certificate && \
+    tar xf libevent-2.0.22-stable.tar.gz && \
     cd libevent-2.0.22-stable/ && \
     ./configure && \
     make && \
@@ -28,8 +28,8 @@ RUN npm ci && \
 # ygopro
 RUN git clone --branch=server --recursive https://github.com/moecube/ygopro /ygopro-server/ygopro
 WORKDIR /ygopro-server/ygopro
-ADD https://github.com/premake/premake-core/releases/download/v5.0.0-alpha12/premake-5.0.0-alpha12-linux.tar.gz .
 RUN git submodule foreach git checkout master && \
+    wget -O - https://github.com/premake/premake-core/releases/download/v5.0.0-alpha12/premake-5.0.0-alpha12-linux.tar.gz | tar zfx - && \
     ./premake5 gmake && \
     cd build && \
     make config=release && \
