@@ -3208,7 +3208,7 @@ if settings.modules.mycard.enabled
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
     for room in ROOM_all when room and room.arena and !room.started and room.get_playing_player().length < 2
       player = room.get_playing_player()[0]
-      if player and !player.arena_quit_free
+      if player and player.join_time and !player.arena_quit_free
         waited_time = moment() - player.join_time
         if waited_time >= 30000
           ygopro.stoc_send_chat(player, "${arena_wait_timeout}", ygopro.constants.COLORS.BABYBLUE)

@@ -4115,7 +4115,7 @@
           continue;
         }
         player = room.get_playing_player()[0];
-        if (player && !player.arena_quit_free) {
+        if (player && player.join_time && !player.arena_quit_free) {
           waited_time = moment() - player.join_time;
           if (waited_time >= 30000) {
             ygopro.stoc_send_chat(player, "${arena_wait_timeout}", ygopro.constants.COLORS.BABYBLUE);
