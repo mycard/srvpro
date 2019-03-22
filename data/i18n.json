@@ -156,6 +156,8 @@
     "replay_hint_part1": "Sending the replay of the duel number ",
     "replay_hint_part2": ".",
     "invalid_side_rule": "Illegal cards are contained in your side deck.",
+    "arena_wait_hint": "If you opponent does not appear within 25 seconds, you may quit without any penalty.",
+    "arena_wait_timeout": "Your opponent did not appear, you may quit without any penalty.",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender."
   },
   "es-es": {
@@ -459,6 +461,8 @@
     "replay_hint_part1": "正在发送第",
     "replay_hint_part2": "局决斗的录像。",
     "invalid_side_rule": "副卡组中包含不允许换入副卡组的卡。",
+    "arena_wait_hint": "若对手在25秒内不进入游戏，您退房时不会进行扣分。",
+    "arena_wait_timeout": "由于对手未能在30秒内进入游戏，此时您退出游戏不会扣分。",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。"
   },
  "ko-kr": {

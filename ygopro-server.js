@@ -58,7 +58,7 @@
     }
   });
 
-  import_datas = ["abuse_count", "ban_mc", "vpass", "rag", "rid", "is_post_watcher", "retry_count", "name", "pass", "name_vpass", "is_first", "lp", "card_count", "is_host", "pos", "surrend_confirm", "kick_count", "deck_saved", "main", "side", "side_interval", "side_tcount", "selected_preduel", "last_game_msg", "last_game_msg_title", "last_hint_msg", "start_deckbuf", "challonge_info", "ready_trap", "replays_sent"];
+  import_datas = ["abuse_count", "ban_mc", "vpass", "rag", "rid", "is_post_watcher", "retry_count", "name", "pass", "name_vpass", "is_first", "lp", "card_count", "is_host", "pos", "surrend_confirm", "kick_count", "deck_saved", "main", "side", "side_interval", "side_tcount", "selected_preduel", "last_game_msg", "last_game_msg_title", "last_hint_msg", "start_deckbuf", "challonge_info", "ready_trap", "join_time", "arena_quit_free", "replays_sent"];
 
   merge = require('deepmerge');
 
@@ -1671,6 +1671,7 @@
     Room.prototype.connect = function(client) {
       var host_player;
       this.players.push(client);
+      client.join_time = moment();
       if (this.random_type) {
         client.abuse_count = 0;
         host_player = this.get_host();
@@ -1711,7 +1712,7 @@
         }
         client.server.destroy();
       } else {
-        if (this.arena && !this.started && this.disconnector !== 'server' && !this.arena_score_handled) {
+        if (this.arena && !this.started && this.disconnector !== 'server' && !this.arena_score_handled && !client.arena_quit_free) {
           ref2 = this.players;
           for (m = 0, len2 = ref2.length; m < len2; m++) {
             player = ref2[m];
@@ -4091,7 +4092,7 @@
 
   if (settings.modules.mycard.enabled) {
     setInterval(function() {
-      var len2, m, room, time_passed;
+      var len2, len3, m, n, player, room, time_passed, waited_time;
       for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
         room = ROOM_all[m];
         if (!(room && room.started && room.arena && room.last_active_time && room.waiting_for_player && room.get_disconnected_count() === 0)) {
@@ -4106,6 +4107,22 @@
           CLIENT_kick(room.waiting_for_player);
         } else if (time_passed >= (settings.modules.random_duel.hang_timeout - 20) && !(time_passed % 10)) {
           ygopro.stoc_send_chat_to_room(room, room.waiting_for_player.name + " ${afk_warn_part1}" + (settings.modules.random_duel.hang_timeout - time_passed) + "${afk_warn_part2}", ygopro.constants.COLORS.RED);
+        }
+      }
+      for (n = 0, len3 = ROOM_all.length; n < len3; n++) {
+        room = ROOM_all[n];
+        if (!(room && room.arena && !room.started && room.get_playing_player().length < 2)) {
+          continue;
+        }
+        player = room.get_playing_player()[0];
+        if (player && !player.arena_quit_free) {
+          waited_time = moment() - player.join_time;
+          if (waited_time >= 30000) {
+            ygopro.stoc_send_chat(player, "${arena_wait_timeout}", ygopro.constants.COLORS.BABYBLUE);
+            player.arena_quit_free = true;
+          } else if (waited_time >= 5000 && waited_time < 6000) {
+            ygopro.stoc_send_chat(player, "${arena_wait_hint}", ygopro.constants.COLORS.BABYBLUE);
+          }
         }
       }
     }, 1000);

@@ -70,6 +70,8 @@ import_datas = [
   "start_deckbuf",
   "challonge_info",
   "ready_trap",
+  "join_time",
+  "arena_quit_free",
   "replays_sent"
 ]
 
@@ -1286,6 +1288,7 @@ class Room
 
   connect: (client)->
     @players.push client
+    client.join_time = moment()
     if @random_type
       client.abuse_count = 0
       host_player = @get_host()
@@ -1317,7 +1320,7 @@ class Room
       client.server.destroy()
     else
       #log.info(client.name, @started, @disconnector, @random_type, @players.length)
-      if @arena and !@started and @disconnector != 'server' and !@arena_score_handled
+      if @arena and !@started and @disconnector != 'server' and !@arena_score_handled and !client.arena_quit_free
         for player in @players when player.pos != 7
           @scores[player.name_vpass] = 0
         if @players.length == 2
@@ -3203,6 +3206,15 @@ if settings.modules.mycard.enabled
         CLIENT_kick(room.waiting_for_player)
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
+    for room in ROOM_all when room and room.arena and !room.started and room.get_playing_player().length < 2
+      player = room.get_playing_player()[0]
+      if player and !player.arena_quit_free
+        waited_time = moment() - player.join_time
+        if waited_time >= 30000
+          ygopro.stoc_send_chat(player, "${arena_wait_timeout}", ygopro.constants.COLORS.BABYBLUE)
+          player.arena_quit_free = true
+        else if waited_time >= 5000 and waited_time < 6000
+          ygopro.stoc_send_chat(player, "${arena_wait_hint}", ygopro.constants.COLORS.BABYBLUE)
     return
   , 1000
 
