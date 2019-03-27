@@ -7,6 +7,7 @@
  不带参数运行时，会建立一个服务器，调用API执行对应操作
 */
 var http = require('http');
+var https = require('https');
 var fs = require('fs');
 var url = require('url');
 var request = require('request');
@@ -19,8 +20,9 @@ var loadJSON = require('load-json-file').sync;
 var auth = require('./ygopro-auth.js');
 
 var settings = loadJSON('./config/config.json');
-config=settings.modules.tournament_mode;
-challonge_config=settings.modules.challonge;
+config = settings.modules.tournament_mode;
+challonge_config = settings.modules.challonge;
+ssl_config = settings.modules.http.ssl;
 
 var challonge;
 if (challonge_config.enabled) {
@@ -214,7 +216,7 @@ var receiveDecks = function(files) {
 }
 
 //建立一个http服务器，接收API操作
-http.createServer(function (req, res) {
+function requestListener(req, res) {
     var u = url.parse(req.url, true);
     
     /*if (u.query.password !== config.password) {
@@ -315,4 +317,16 @@ http.createServer(function (req, res) {
         res.end("400");
     }
 
-}).listen(config.port);
+}
+
+if (ssl_config.enabled) {
+    const ssl_cert = fs.readFileSync(ssl_config.cert);
+    const ssl_key = fs.readFileSync(ssl_config.key);
+    const options = {
+        cert: ssl_cert,
+        key: ssl_key
+    }
+    https.createServer(options, requestListener).listen(config.port);
+} else { 
+    http.createServer(requestListener).listen(config.port);
+}

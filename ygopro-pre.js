@@ -8,6 +8,7 @@
  TODO：带参数运行时执行对应操作后退出
 */
 var http = require('http');
+var https = require('https');
 var sqlite3 = require('sqlite3').verbose();
 var fs = require('fs');
 var execSync = require('child_process').execSync;
@@ -22,7 +23,8 @@ var auth = require('./ygopro-auth.js');
 var constants = loadJSON('./data/constants.json');
 
 var settings = loadJSON('./config/config.json');
-config=settings.modules.pre_util;
+config = settings.modules.pre_util;
+ssl_config = settings.modules.http.ssl;
 
 //全卡HTML列表
 var cardHTMLs=[];
@@ -403,7 +405,7 @@ var packDatas = function () {
 }
 
 //建立一个http服务器，接收API操作
-http.createServer(function (req, res) {
+function requestListener(req, res) {
     var u = url.parse(req.url, true);
     
     if (!auth.auth(u.query.username, u.query.password, "pre_dashboard", "pre_dashboard")) {
@@ -463,4 +465,16 @@ http.createServer(function (req, res) {
         res.end("400");
     }
 
-}).listen(config.port);
+}
+
+if (ssl_config.enabled) {
+    const ssl_cert = fs.readFileSync(ssl_config.cert);
+    const ssl_key = fs.readFileSync(ssl_config.key);
+    const options = {
+        cert: ssl_cert,
+        key: ssl_key
+    }
+    https.createServer(options, requestListener).listen(config.port);
+} else { 
+    http.createServer(requestListener).listen(config.port);
+}
