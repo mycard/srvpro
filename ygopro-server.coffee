@@ -1805,11 +1805,11 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             ygopro.stoc_die(client, '${invalid_password_not_found}')
             return
         when 4
+          if match_permit and !match_permit.permit
+            ygopro.stoc_die(client, '${invalid_password_unauthorized}')
+            return
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           if room
-            if match_permit and !match_permit.permit
-              ygopro.stoc_die(client, '${invalid_password_unauthorized}')
-              return
             for player in room.get_playing_player() when player and player.name == client.name
               ygopro.stoc_die(client, '${invalid_password_unauthorized}')
               return

@@ -2242,12 +2242,12 @@
             }
             break;
           case 4:
+            if (match_permit && !match_permit.permit) {
+              ygopro.stoc_die(client, '${invalid_password_unauthorized}');
+              return;
+            }
             room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8));
             if (room) {
-              if (match_permit && !match_permit.permit) {
-                ygopro.stoc_die(client, '${invalid_password_unauthorized}');
-                return;
-              }
               ref2 = room.get_playing_player();
               for (m = 0, len2 = ref2.length; m < len2; m++) {
                 player = ref2[m];
