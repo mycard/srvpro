@@ -2368,6 +2368,7 @@
           if (!error && body) {
             match_permit_callback(buffer, body);
           } else {
+            log.warn("Match permit request error", error);
             match_permit_callback(buffer, null);
           }
         });
