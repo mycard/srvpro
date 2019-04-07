@@ -141,6 +141,7 @@
       "comment": "mode: athletic / entertain",
       "accesskey": "233",
       "ready_time": 30,
+      "check_permit": "https://api.mycard.moe/ygopro/match/permit",
       "post_score": false,
       "get_score": false
     },

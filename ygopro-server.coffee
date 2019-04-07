@@ -1752,13 +1752,13 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       ygopro.stoc_die(client, '${invalid_password_payload}')
       return
 
-    check = (buf)->
+    check_buffer_indentity = (buf)->
       checksum = 0
       for i in [0...buf.length]
         checksum += buf.readUInt8(i)
       (checksum & 0xFF) == 0
 
-    finish = (buffer)->
+    buffer_handle_callback = (buffer, match_permit)->
       if client.closed
         return
       action = buffer.readUInt8(1) >> 4
@@ -1807,6 +1807,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         when 4
           room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           if room
+            if match_permit and !match_permit.permit
+              ygopro.stoc_die(client, '${invalid_password_unauthorized}')
+              return
             for player in room.get_playing_player() when player and player.name == client.name
               ygopro.stoc_die(client, '${invalid_password_unauthorized}')
               return
@@ -1850,40 +1853,62 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         room.connect(client)
       return
 
-    if id = users_cache[client.name]
-      secret = id % 65535 + 1
-      decrypted_buffer = Buffer.allocUnsafe(6)
-      for i in [0, 2, 4]
-        decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
-      if check(decrypted_buffer)
-        return finish(decrypted_buffer)
-
-    #TODO: query database directly, like preload.
-    request
-      baseUrl: settings.modules.mycard.auth_base_url,
-      url: '/users/' + encodeURIComponent(client.name) + '.json',
-      qs:
-        api_key: settings.modules.mycard.auth_key,
-        api_username: client.name,
-        skip_track_visit: true
-      json: true
-    , (error, response, body)->
-      if body and body.user
-        users_cache[client.name] = body.user.id
-        secret = body.user.id % 65535 + 1
+    match_permit_callback = (buffer, match_permit) ->
+      if client.closed
+        return
+      if id = users_cache[client.name]
+        secret = id % 65535 + 1
         decrypted_buffer = Buffer.allocUnsafe(6)
         for i in [0, 2, 4]
           decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
-        if check(decrypted_buffer)
-          buffer = decrypted_buffer
+        if check_buffer_indentity(decrypted_buffer)
+          return buffer_handle_callback(decrypted_buffer, match_permit)
 
-      # buffer != decrypted_buffer  ==> auth failed
+      #TODO: query database directly, like preload.
+      request
+        baseUrl: settings.modules.mycard.auth_base_url,
+        url: '/users/' + encodeURIComponent(client.name) + '.json',
+        qs:
+          api_key: settings.modules.mycard.auth_key,
+          api_username: client.name,
+          skip_track_visit: true
+        json: true
+      , (error, response, body)->
+        if body and body.user
+          users_cache[client.name] = body.user.id
+          secret = body.user.id % 65535 + 1
+          decrypted_buffer = Buffer.allocUnsafe(6)
+          for i in [0, 2, 4]
+            decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
+          if check_buffer_indentity(decrypted_buffer)
+            buffer = decrypted_buffer
 
-      if !check(buffer)
-        ygopro.stoc_die(client, '${invalid_password_checksum}')
+        # buffer != decrypted_buffer  ==> auth failed
+
+        if !check_buffer_indentity(buffer)
+          ygopro.stoc_die(client, '${invalid_password_checksum}')
+          return
+        return buffer_handle_callback(buffer, match_permit)
+      return
+
+    if settings.modules.arena_mode.check_permit
+      request
+        url: settings.modules.arena_mode.check_permit,
+        json: true,
+        qs:
+          username: client.name,
+          password: info.pass
+      , (error, response, body)->
+        if client.closed
+          return
+        if !error and body
+          match_permit_callback(buffer, body)
+        else
+          match_permit_callback(buffer, null)
         return
+    else
+      match_permit_callback(buffer, null)
 
-      finish(buffer)
 
   else if settings.modules.challonge.enabled
     pre_room = ROOM_find_by_name(info.pass)
