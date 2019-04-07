@@ -2191,7 +2191,7 @@
         }
         return (checksum & 0xFF) === 0;
       };
-      buffer_handle_callback = function(buffer, match_permit) {
+      buffer_handle_callback = function(buffer, decrypted_buffer, match_permit) {
         var action, len2, len3, m, n, name, opt1, opt2, opt3, options, player, ref2, ref3, room, title;
         if (client.closed) {
           return;
@@ -2319,7 +2319,7 @@
             decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
           }
           if (check_buffer_indentity(decrypted_buffer)) {
-            return buffer_handle_callback(decrypted_buffer, match_permit);
+            return buffer_handle_callback(decrypted_buffer, decrypted_buffer, match_permit);
           }
         }
         request({
@@ -2350,7 +2350,7 @@
             ygopro.stoc_die(client, '${invalid_password_checksum}');
             return;
           }
-          return buffer_handle_callback(buffer, match_permit);
+          return buffer_handle_callback(buffer, decrypted_buffer, match_permit);
         });
       };
       if (settings.modules.arena_mode.check_permit) {

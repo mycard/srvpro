@@ -1758,7 +1758,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         checksum += buf.readUInt8(i)
       (checksum & 0xFF) == 0
 
-    buffer_handle_callback = (buffer, match_permit)->
+    buffer_handle_callback = (buffer, decrypted_buffer, match_permit)->
       if client.closed
         return
       action = buffer.readUInt8(1) >> 4
@@ -1862,7 +1862,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         for i in [0, 2, 4]
           decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
         if check_buffer_indentity(decrypted_buffer)
-          return buffer_handle_callback(decrypted_buffer, match_permit)
+          return buffer_handle_callback(decrypted_buffer, decrypted_buffer, match_permit)
 
       #TODO: query database directly, like preload.
       request
@@ -1888,7 +1888,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         if !check_buffer_indentity(buffer)
           ygopro.stoc_die(client, '${invalid_password_checksum}')
           return
-        return buffer_handle_callback(buffer, match_permit)
+        return buffer_handle_callback(buffer, decrypted_buffer, match_permit)
       return
 
     if settings.modules.arena_mode.check_permit
