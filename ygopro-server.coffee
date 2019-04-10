@@ -1320,10 +1320,10 @@ class Room
       client.server.destroy()
     else
       #log.info(client.name, @started, @disconnector, @random_type, @players.length)
-      if @arena and !@started and @disconnector != 'server' and !@arena_score_handled and !client.arena_quit_free
+      if @arena and !@started and @disconnector != 'server' and !@arena_score_handled
         for player in @players when player.pos != 7
           @scores[player.name_vpass] = 0
-        if @players.length == 2
+        if @players.length == 2 and !client.arena_quit_free
           @scores[client.name_vpass] = -9
         @arena_score_handled = true
       index = _.indexOf(@players, client)

@@ -1712,7 +1712,7 @@
         }
         client.server.destroy();
       } else {
-        if (this.arena && !this.started && this.disconnector !== 'server' && !this.arena_score_handled && !client.arena_quit_free) {
+        if (this.arena && !this.started && this.disconnector !== 'server' && !this.arena_score_handled) {
           ref2 = this.players;
           for (m = 0, len2 = ref2.length; m < len2; m++) {
             player = ref2[m];
@@ -1720,7 +1720,7 @@
               this.scores[player.name_vpass] = 0;
             }
           }
-          if (this.players.length === 2) {
+          if (this.players.length === 2 && !client.arena_quit_free) {
             this.scores[client.name_vpass] = -9;
           }
           this.arena_score_handled = true;
