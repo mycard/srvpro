@@ -2359,7 +2359,8 @@
           json: true,
           qs: {
             username: client.name,
-            password: info.pass
+            password: info.pass,
+            arena: settings.modules.arena_mode.mode
           }
         }, function(error, response, body) {
           if (client.closed) {
