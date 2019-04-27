@@ -307,6 +307,19 @@ if settings.modules.mycard.enabled
   pg_client.on 'drain', pg_client.end.bind(pg_client)
   log.info "loading mycard user..."
   pg_client.connect()
+  if settings.modules.arena_mode.enabled and settings.modules.arena_mode.init_post.enabled
+    request.post { url : settings.modules.arena_mode.init_post.url , qs : {
+      ak: settings.modules.arena_mode.init_post.accesskey,
+      arena: settings.modules.arena_mode.mode
+    }}, (error, response, body)=>
+      if error
+        log.warn 'ARENA INIT POST ERROR', error
+      else
+        if response.statusCode >= 400
+          log.warn 'ARENA INIT POST FAIL', response.statusCode, response.statusMessage, body
+        #else
+        #  log.info 'ARENA INIT POST OK', response.statusCode, response.statusMessage
+      return
 
 if settings.modules.challonge.enabled
   challonge_module_name = 'challonge'

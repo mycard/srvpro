@@ -143,7 +143,12 @@
       "ready_time": 30,
       "check_permit": "https://api.mycard.moe/ygopro/match/permit",
       "post_score": false,
-      "get_score": false
+      "get_score": false,
+      "init_post": {
+        "enabled": false,
+        "url": "https://api.mycard.moe/ygopro/match/clear",
+        "accesskey": "momobako"
+      }
     },
     "tournament_mode": {
       "enabled": false,
