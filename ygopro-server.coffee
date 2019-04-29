@@ -1363,6 +1363,52 @@ class Room
         client.server.destroy()
     return
 
+  start_death: () ->
+    unless @established and @started and !@death
+      return false
+    oppo_pos = if @hostinfo.mode == 2 then 2 else 1
+    if !@changing_side and (!@duel_count or @turn) # Extra duel started in duel
+      switch settings.modules.http.quick_death_rule
+        when 3
+          @death = -2
+          ygopro.stoc_send_chat_to_room(this, "${death_start_phase}", ygopro.constants.COLORS.BABYBLUE)
+        else
+          @death = (if @turn then @turn + 4 else 5)
+          ygopro.stoc_send_chat_to_room(this, "${death_start}", ygopro.constants.COLORS.BABYBLUE)
+    else                                           # Extra duel started in siding
+      switch settings.modules.http.quick_death_rule
+        when 2,3
+          if @scores[@dueling_players[0].name_vpass] == @scores[@dueling_players[oppo_pos].name_vpass]
+            if settings.modules.http.quick_death_rule == 3
+              @death = -1
+              ygopro.stoc_send_chat_to_room(this, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
+            else
+              @death = 5
+              ygopro.stoc_send_chat_to_room(this, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)
+          else
+            win_pos = if @scores[@dueling_players[0].name_vpass] > @scores[@dueling_players[oppo_pos].name_vpass] then 0 else oppo_pos
+            @finished_by_death = true
+            ygopro.stoc_send_chat_to_room(this, "${death2_finish_part1}" + @dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
+            CLIENT_send_replays(@dueling_players[oppo_pos - win_pos], this) if @hostinfo.mode == 1
+            ygopro.stoc_send(@dueling_players[oppo_pos - win_pos], 'DUEL_END')
+            ygopro.stoc_send(@dueling_players[oppo_pos - win_pos + 1], 'DUEL_END') if @hostinfo.mode == 2
+            @scores[@dueling_players[oppo_pos - win_pos].name_vpass] = -1
+            CLIENT_kick(@dueling_players[oppo_pos - win_pos])
+            CLIENT_kick(@dueling_players[oppo_pos - win_pos + 1]) if @hostinfo.mode == 2
+        when 1
+          @death = -1
+          ygopro.stoc_send_chat_to_room(this, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
+        else
+          @death = 5
+          ygopro.stoc_send_chat_to_room(this, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)
+    return true
+
+  cancel_death: () ->
+    unless @established and @started and @death
+      return false
+    @death = 0
+    ygopro.stoc_send_chat_to_room(this, "${death_cancel}", ygopro.constants.COLORS.BABYBLUE)
+    return true
 
 # 网络连接
 net.createServer (client) ->
@@ -3529,43 +3575,9 @@ if settings.modules.http
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         death_room_found = false
-        for room in ROOM_all when room and room.established and room.started and !room.death and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name)
-          death_room_found = true
-          oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
-          if !room.changing_side and (!room.duel_count or room.turn)
-            switch settings.modules.http.quick_death_rule
-              when 3
-                room.death = -2
-                ygopro.stoc_send_chat_to_room(room, "${death_start_phase}", ygopro.constants.COLORS.BABYBLUE)
-              else
-                room.death = (if room.turn then room.turn + 4 else 5)
-                ygopro.stoc_send_chat_to_room(room, "${death_start}", ygopro.constants.COLORS.BABYBLUE)
-          else
-            switch settings.modules.http.quick_death_rule
-              when 2,3
-                if room.scores[room.dueling_players[0].name_vpass] == room.scores[room.dueling_players[oppo_pos].name_vpass]
-                  if settings.modules.http.quick_death_rule == 3
-                    room.death = -1
-                    ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
-                  else
-                    room.death = 5
-                    ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)
-                else
-                  win_pos = if room.scores[room.dueling_players[0].name_vpass] > room.scores[room.dueling_players[oppo_pos].name_vpass] then 0 else oppo_pos
-                  room.finished_by_death = true
-                  ygopro.stoc_send_chat_to_room(room, "${death2_finish_part1}" + room.dueling_players[win_pos].name + "${death2_finish_part2}", ygopro.constants.COLORS.BABYBLUE)
-                  CLIENT_send_replays(room.dueling_players[oppo_pos - win_pos], room) if room.hostinfo.mode == 1
-                  ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos], 'DUEL_END')
-                  ygopro.stoc_send(room.dueling_players[oppo_pos - win_pos + 1], 'DUEL_END') if room.hostinfo.mode == 2
-                  room.scores[room.dueling_players[oppo_pos - win_pos].name_vpass] = -1
-                  CLIENT_kick(room.dueling_players[oppo_pos - win_pos])
-                  CLIENT_kick(room.dueling_players[oppo_pos - win_pos + 1]) if room.hostinfo.mode == 2
-              when 1
-                room.death = -1
-                ygopro.stoc_send_chat_to_room(room, "${death_start_quick}", ygopro.constants.COLORS.BABYBLUE)
-              else
-                room.death = 5
-                ygopro.stoc_send_chat_to_room(room, "${death_start_siding}", ygopro.constants.COLORS.BABYBLUE)
+        for room in ROOM_all when room and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name)
+          if room.start_death()
+            death_room_found = true
         response.writeHead(200)
         if death_room_found
           response.end(addCallback(u.query.callback, "['death ok', '" + u.query.death + "']"))
@@ -3578,10 +3590,9 @@ if settings.modules.http
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         death_room_found = false
-        for room in ROOM_all when room and room.established and room.started and room.death and (u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString())
-          death_room_found = true
-          room.death = 0
-          ygopro.stoc_send_chat_to_room(room, "${death_cancel}", ygopro.constants.COLORS.BABYBLUE)
+        for room in ROOM_all when room and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name)
+          if room.cancel_death()
+            death_room_found = true
         response.writeHead(200)
         if death_room_found
           response.end(addCallback(u.query.callback, "['death cancel ok', '" + u.query.deathcancel + "']"))
