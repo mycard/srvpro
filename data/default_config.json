@@ -14,7 +14,8 @@
     "start_hand": 5,
     "draw_count": 1,
     "time_limit": 180,
-    "no_watch": false
+    "no_watch": false,
+    "auto_death": false
   },
   "modules": {
     "welcome": "MyCard YGOPro Server",

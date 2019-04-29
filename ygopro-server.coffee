@@ -1065,6 +1065,13 @@ class Room
       if (rule.match /(^|，|,)(NOWATCH|NW)(，|,|$)/)
         @hostinfo.no_watch = true
 
+      if (param = rule.match /(^|，|,)(DEATH|DH)(\d*)(，|,|$)/)
+        death_time = parseInt(param[3])
+        if death_time and death_time > 0
+          @hostinfo.auto_death = death_time
+        else
+          @hostinfo.auto_death = 40
+
     @hostinfo.replay_mode = if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe or @hostinfo.mode == 1 and settings.modules.replay_delay then 1 else 0
 
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'),
@@ -1852,6 +1859,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             start_hand: opt3 >> 4
             draw_count: opt3 & 0xF
             no_watch: false
+            auto_death: false
           }
           options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room = new Room(name, options)
@@ -2281,7 +2289,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     room.selecting_tp = false
     if client.pos == 0
       room.turn = 0
-      room.duel_count = room.duel_count + 1
+      room.duel_count++
       if room.death and room.duel_count > 1
         if room.death == -1
           ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE)
@@ -2704,6 +2712,8 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
       if room.random_type == 'T'
         # 双打房不记录匹配过
         ROOM_players_oppentlist[player.ip] = null
+    if room.hostinfo.auto_death
+      ygopro.stoc_send_chat_to_room(room, "${auto_death_part1}#{room.hostinfo.auto_death}${auto_death_part2}", ygopro.constants.COLORS.BABYBLUE)
   if settings.modules.hide_name and room.duel_count == 0
     for player in room.get_playing_player() when player != client
       ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
@@ -3312,6 +3322,14 @@ if settings.modules.heartbeat_detection.enabled
         CLIENT_heartbeat_register(player, true)
     return
   , settings.modules.heartbeat_detection.interval
+
+setInterval ()->
+  current_time = moment()
+  for room in ROOM_all when room and room.started and room.hostinfo.auto_death and !room.auto_death_triggered and current_time - moment(room.start_time) > 60000 * room.hostinfo.auto_death
+    room.auto_death_triggered = true
+    room.start_death()
+
+, 1000
 
 # spawn windbot
 windbot_looplimit = 0
