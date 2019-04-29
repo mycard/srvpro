@@ -1367,7 +1367,13 @@
           }
         }
       }
-      this.hostinfo.replay_mode = settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe || this.hostinfo.mode === 1 && settings.modules.replay_delay ? 1 : 0;
+      this.hostinfo.replay_mode = 0;
+      if (settings.modules.tournament_mode.enabled) {
+        this.hostinfo.replay_mode |= 0x1;
+      }
+      if ((settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) || (this.hostinfo.mode === 1 && settings.modules.replay_delay)) {
+        this.hostinfo.replay_mode |= 0x2;
+      }
       param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, (this.hostinfo.enable_priority ? 'T' : 'F'), (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode];
       try {
         this.process = spawn('./ygopro', param, {
@@ -2829,9 +2835,6 @@
             ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE);
           }
         }
-        if (room.duel_count === 1 && room.hostinfo.auto_death) {
-          ygopro.stoc_send_chat_to_room(room, "${auto_death_part1}" + room.hostinfo.auto_death + "${auto_death_part2}", ygopro.constants.COLORS.BABYBLUE);
-        }
       }
       if (settings.modules.retry_handle.enabled) {
         client.retry_count = 0;
@@ -3425,6 +3428,9 @@
         if (room.random_type === 'T') {
           ROOM_players_oppentlist[player.ip] = null;
         }
+      }
+      if (room.hostinfo.auto_death) {
+        ygopro.stoc_send_chat_to_room(room, "${auto_death_part1}" + room.hostinfo.auto_death + "${auto_death_part2}", ygopro.constants.COLORS.BABYBLUE);
       }
     }
     if (settings.modules.hide_name && room.duel_count === 0) {
