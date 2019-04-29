@@ -1356,7 +1356,7 @@
           this.hostinfo.enable_priority = true;
         }
         if (rule.match(/(^|，|,)(NOWATCH|NW)(，|,|$)/)) {
-          this.no_watch = true;
+          this.hostinfo.no_watch = true;
         }
       }
       this.hostinfo.replay_mode = settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe || this.hostinfo.mode === 1 && settings.modules.replay_delay ? 1 : 0;
@@ -2368,7 +2368,7 @@
         } else if (room.error) {
           ygopro.stoc_die(client, room.error);
         } else if (room.started) {
-          if (settings.modules.cloud_replay.enable_halfway_watch && !room.no_watch) {
+          if (settings.modules.cloud_replay.enable_halfway_watch && !room.hostinfo.no_watch) {
             client.setTimeout(300000);
             client.rid = _.indexOf(ROOM_all, room);
             client.is_post_watcher = true;
@@ -2383,7 +2383,7 @@
           } else {
             ygopro.stoc_die(client, "${watch_denied}");
           }
-        } else if (room.no_watch && room.players.length >= (room.hostinfo.mode === 2 ? 4 : 2)) {
+        } else if (room.hostinfo.no_watch && room.players.length >= (room.hostinfo.mode === 2 ? 4 : 2)) {
           ygopro.stoc_die(client, "${watch_denied_room}");
         } else {
           client.setTimeout(300000);
@@ -2464,7 +2464,7 @@
       }
     } else if (settings.modules.challonge.enabled) {
       pre_room = ROOM_find_by_name(info.pass);
-      if (pre_room && pre_room.started && settings.modules.cloud_replay.enable_halfway_watch && !pre_room.no_watch) {
+      if (pre_room && pre_room.started && settings.modules.cloud_replay.enable_halfway_watch && !pre_room.hostinfo.no_watch) {
         room = pre_room;
         client.setTimeout(300000);
         client.rid = _.indexOf(ROOM_all, room);
@@ -2543,7 +2543,7 @@
                 } else if (room.error) {
                   ygopro.stoc_die(client, room.error);
                 } else if (room.started) {
-                  if (settings.modules.cloud_replay.enable_halfway_watch && !room.no_watch) {
+                  if (settings.modules.cloud_replay.enable_halfway_watch && !room.hostinfo.no_watch) {
                     client.rid = _.indexOf(ROOM_all, room);
                     client.is_post_watcher = true;
                     ygopro.stoc_send_chat_to_room(room, client.name + " ${watch_join}");
@@ -2557,7 +2557,7 @@
                   } else {
                     ygopro.stoc_die(client, "${watch_denied}");
                   }
-                } else if (room.no_watch && room.players.length >= (room.hostinfo.mode === 2 ? 4 : 2)) {
+                } else if (room.hostinfo.no_watch && room.players.length >= (room.hostinfo.mode === 2 ? 4 : 2)) {
                   ygopro.stoc_die(client, "${watch_denied_room}");
                 } else {
                   ref4 = room.get_playing_player();
@@ -2620,7 +2620,7 @@
       } else if (room.error) {
         ygopro.stoc_die(client, room.error);
       } else if (room.started) {
-        if (settings.modules.cloud_replay.enable_halfway_watch && !room.no_watch) {
+        if (settings.modules.cloud_replay.enable_halfway_watch && !room.hostinfo.no_watch) {
           client.setTimeout(300000);
           client.rid = _.indexOf(ROOM_all, room);
           client.is_post_watcher = true;
@@ -2635,7 +2635,7 @@
         } else {
           ygopro.stoc_die(client, "${watch_denied}");
         }
-      } else if (room.no_watch && room.players.length >= (room.hostinfo.mode === 2 ? 4 : 2)) {
+      } else if (room.hostinfo.no_watch && room.players.length >= (room.hostinfo.mode === 2 ? 4 : 2)) {
         ygopro.stoc_die(client, "${watch_denied_room}");
       } else {
         client.setTimeout(300000);
@@ -2706,7 +2706,7 @@
       });
       recorder.on('error', function(error) {});
     }
-    if (settings.modules.cloud_replay.enable_halfway_watch && !room.watcher && !room.no_watch) {
+    if (settings.modules.cloud_replay.enable_halfway_watch && !room.watcher && !room.hostinfo.no_watch) {
       room.watcher = watcher = settings.modules.test_mode.watch_public_hand ? room.recorder : net.connect(room.port, function() {
         ygopro.ctos_send(watcher, 'PLAYER_INFO', {
           name: "the Big Brother"
@@ -3096,7 +3096,7 @@
     if (!room) {
       return;
     }
-    if (room.no_watch) {
+    if (room.hostinfo.no_watch) {
       ygopro.stoc_send_chat(client, "${watch_denied_room}", ygopro.constants.COLORS.RED);
       return true;
     }
