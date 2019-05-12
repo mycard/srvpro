@@ -12,6 +12,12 @@
 </header>
 <div class="container">
     <div class="row grid">
+        <div class="col-lg-1">
+            <select class="form-control" id="http">
+                <option value ="http">HTTP</option>
+                <option value ="https">HTTPS</option>
+            </select>
+        </div>
         <div class="col-lg-2">
             <input type="text" class="form-control" id="ip" value="" placeholder="IP">
         </div>
@@ -106,7 +112,7 @@ function login() {
     port=$("#port").val();
     password=$("#password").val();
 	username=$("#username").val();
-    var es = new EventSource("http://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
+    var es = new EventSource($("#http").val() + "://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
     es.onmessage = function(e) {
         var data_li = $('<li>'+ e.data +'</li>');
         data_li.appendTo($("#output"));
@@ -129,7 +135,7 @@ function clear() {
 }
 
 function openapi(api) {
-    $.getJSON("http://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password+"&message="+$("#message").val().replace(/\n/g,"！换行符！")+"&callback=?", function(data) {
+    $.getJSON($("#http").val() +"://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password+"&message="+$("#message").val().replace(/\n/g,"！换行符！")+"&callback=?", function(data) {
         var data_li = $('<li>'+ data.message +'</li>');
         data_li.appendTo($("#output"));
     });

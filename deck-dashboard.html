@@ -12,6 +12,12 @@
 </header>
 <div class="container">
     <div class="row grid">
+        <div class="col-lg-1">
+            <select class="form-control" id="http">
+                <option value ="http">HTTP</option>
+                <option value ="https">HTTPS</option>
+            </select>
+        </div>
         <div class="col-lg-2">
             <input type="text" class="form-control" id="ip" value="" placeholder="IP">
         </div>
@@ -126,7 +132,7 @@ function login() {
     port=$("#port").val();
     password=$("#password").val();
 	username=$("#username").val();
-    var es = new EventSource("http://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
+    var es = new EventSource($("#http").val() + "://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
     es.onmessage = function(e) {
         output(e.data);
         
@@ -234,7 +240,7 @@ function openapi(api, msg, confirm2) {
         $("#filesel").click();
     }
     else if (!confirm2 || confirm(confirm2)) {
-        $.getJSON("http://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password + (msg ? "&msg="+encodeURIComponent(msg) : "" ) + "&callback=?", function(data) {
+        $.getJSON($("#http").val() + "://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password + (msg ? "&msg="+encodeURIComponent(msg) : "" ) + "&callback=?", function(data) {
             if (apis[api]) {
                 apis[api].callback(data);
             }
@@ -253,7 +259,7 @@ function upload_decks() {
         formData.append('upload['+i+']', filesel.files[i]);
     }
     $.ajax({
-        url: "http://"+ip+":"+port+"/api/upload_decks?username="+username+"&password="+password,
+        url: $("#http").val() + "://"+ip+":"+port+"/api/upload_decks?username="+username+"&password="+password,
         type: 'POST',
         cache: false,
         data: formData,
