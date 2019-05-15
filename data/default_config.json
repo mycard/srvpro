@@ -146,6 +146,7 @@
       "check_permit": "https://api.mycard.moe/ygopro/match/permit",
       "post_score": false,
       "get_score": false,
+      "punish_quit_before_match": false,
       "init_post": {
         "enabled": false,
         "url": "https://api.mycard.moe/ygopro/match/clear",

@@ -1346,10 +1346,13 @@ class Room
     else
       #log.info(client.name, @started, @disconnector, @random_type, @players.length)
       if @arena and !@started and @disconnector != 'server' and !@arena_score_handled
-        for player in @players when player.pos != 7
-          @scores[player.name_vpass] = 0
-        if @players.length == 2 and !client.arena_quit_free
+        if settings.modules.arena_mode.punish_quit_before_match and @players.length == 2 and !client.arena_quit_free
+          for player in @players when player.pos != 7
+            @scores[player.name_vpass] = 0
           @scores[client.name_vpass] = -9
+        else
+          for player in @players when player.pos != 7
+            @scores[player.name_vpass] = -5
         @arena_score_handled = true
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
@@ -3314,15 +3317,16 @@ if settings.modules.mycard.enabled
         CLIENT_kick(room.waiting_for_player)
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
-    for room in ROOM_all when room and room.arena and !room.started and room.get_playing_player().length < 2
-      player = room.get_playing_player()[0]
-      if player and player.join_time and !player.arena_quit_free
-        waited_time = moment() - player.join_time
-        if waited_time >= 30000
-          ygopro.stoc_send_chat(player, "${arena_wait_timeout}", ygopro.constants.COLORS.BABYBLUE)
-          player.arena_quit_free = true
-        else if waited_time >= 5000 and waited_time < 6000
-          ygopro.stoc_send_chat(player, "${arena_wait_hint}", ygopro.constants.COLORS.BABYBLUE)
+    if settings.modules.arena_mode.punish_quit_before_match
+      for room in ROOM_all when room and room.arena and !room.started and room.get_playing_player().length < 2
+        player = room.get_playing_player()[0]
+        if player and player.join_time and !player.arena_quit_free
+          waited_time = moment() - player.join_time
+          if waited_time >= 30000
+            ygopro.stoc_send_chat(player, "${arena_wait_timeout}", ygopro.constants.COLORS.BABYBLUE)
+            player.arena_quit_free = true
+          else if waited_time >= 5000 and waited_time < 6000
+            ygopro.stoc_send_chat(player, "${arena_wait_hint}", ygopro.constants.COLORS.BABYBLUE)
     return
   , 1000
 
