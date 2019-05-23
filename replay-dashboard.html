@@ -90,22 +90,30 @@ function parseQueryString() {
     return objURL;
 }
 
+function get_http() { 
+    return $("#http").val() + "://" + $("#ip").val() + ($("#port").val() ? (":" + $("#port").val()) : "");
+}
+
+function get_value(name) { 
+    return encodeURIComponent($(name).val());
+}
+
 function loadreplays() {
-    var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/duellog?callback=?"+ ($("#username").val() ? "&username="+$("#username").val() : "") +($("#password").val() ? "&pass="+$("#password").val() : "");
+    var url=get_http() + "/api/duellog?callback=?"+ (get_value("#username") ? "&username="+get_value("#username") : "") +(get_value("#password") ? "&pass="+get_value("#password") : "");
     $.getJSON(url, listreplay);
     $("#open_button").removeClass("btn-success");
 }
 
 function clearreplays() {
     if (confirm("确实要清空记录吗？")) {
-        var url=$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/clearlog?callback=?"+ ($("#username").val() ? "&username="+$("#username").val() : "") +($("#password").val() ? "&pass="+$("#password").val() : "");
+        var url=get_http() + "/api/clearlog?callback=?"+ (get_value("#username") ? "&username="+get_value("#username") : "") +(get_value("#password") ? "&pass="+get_value("#password") : "");
         $.getJSON(url, clearreplays_success);
         $("#empty_button").removeClass("btn-success");
     }
 }
 
 function packreplays() {
-    window.open($("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/archive.zip?username="+$("#username").val()+"&pass="+$("#password").val());
+    window.open(get_http() + "/api/archive.zip?username="+get_value("#username")+"&pass="+get_value("#password"));
 }
 
 function clearreplays_success() {
@@ -135,7 +143,7 @@ function listreplay(data) {
             tr.append($("<td>"+((duellog.players) ? (duellog.players[2].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[2].name + "<br>" + duellog.players[3].name : "")+"</td>"));
         }
         tr.append($("<td>"+duellog.cloud_replay_id+"</td>"));
-        tr.append($("<td><a href='"+$("#http").val() + "://" + $("#ip").val() + ":" + $("#port").val() + "/api/replay/"+duellog.replay_filename+"?username="+$("#username").val()+"&pass="+$("#password").val()+"' download><span class='glyphicon glyphicon-download-alt'></span></a></td>"));
+        tr.append($("<td><a href='"+get_http() + "/api/replay/"+duellog.replay_filename+"?username="+get_value("#username")+"&pass="+get_value("#password")+"' download><span class='glyphicon glyphicon-download-alt'></span></a></td>"));
 
         
         tbody.append(tr);
