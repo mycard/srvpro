@@ -35,6 +35,11 @@
   * 安装修改后的YGOPro服务端：https://github.com/moecube/ygopro/tree/server
 * `node ygopro-server.js`即可运行
 * 简易的控制台在 http://srvpro.ygo233.com/dashboard.html 或 http://srvpro-cn.ygo233.com/dashboard.html
+* 使用本项目的Docker镜像: https://hub.docker.com/r/mycard/ygopro-server/
+  * `7911`: YGOPro端口
+  * `7922`: 管理后台端口
+  * `/ygopro-server/config`: SRVPro配置文件数据卷
+  * `/ygopro-server/ygopro/expansions`: YGOPro额外卡片数据卷
 
 ### 高级功能
 * 待补充说明
