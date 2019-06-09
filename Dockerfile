@@ -1,5 +1,5 @@
 # Dockerfile for SRVPro
-FROM node:11.15.0-stretch
+FROM node:12-stretch
 
 # apt
 RUN apt update && \
