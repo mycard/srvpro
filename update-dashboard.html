@@ -180,7 +180,7 @@ function clear() {
 }
 
 function openapi(api) {
-    $.getJSON($("#http").val + "://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password+"&message="+$("#message").val().replace(/\n/g,"！换行符！")+"&callback=?", function(data) {
+    $.getJSON($("#http").val() + "://"+ip+":"+port+"/api/"+ api +"?username="+username+"&password="+password+"&message="+$("#message").val().replace(/\n/g,"！换行符！")+"&callback=?", function(data) {
         var data_li = $('<li>'+ data.message +'</li>');
         data_li.appendTo($("#output"));
     });
