@@ -146,7 +146,7 @@ function login() {
     port=$("#port").val();
     password=$("#password").val();
 	username=$("#username").val();
-    var es = new EventSource($("#http").val + "://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
+    var es = new EventSource($("#http").val() + "://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
     es.onmessage = function(e) {
         var data_li = $('<li>'+ e.data +'</li>');
         data_li.appendTo($("#output"));
