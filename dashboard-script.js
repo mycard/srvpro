@@ -11,6 +11,7 @@ $(function(){
     $("#kick_button").click(kick_room);
     $("#death_button").click(start_death);
     $("#deathcancel_button").click(cancel_death);
+    $("#reboot_button").click(reboot);
     var params=parseQueryString();
     $("#ip").val(params["ip"]);
     $("#port").val(params["port"]);
@@ -207,6 +208,13 @@ function cancel_death() {
             var url=get_http() + "/api/message?deathcancel=all&pass=" + get_value("#password") + "&username="+get_value("#username") +"&callback=?";
             $.getJSON(url, shoutcallback);
         }
+    }
+}
+function reboot() {
+    if (confirm("Are you sure to reboot server?")) {
+        $("#message_callback").text('...');
+        var url=get_http() + "/api/message?reboot=1&pass=" + get_value("#password") + "&username="+get_value("#username") + "&callback=?";
+        $.getJSON(url, shoutcallback);
     }
 }
 
