@@ -16,14 +16,14 @@ RUN wget 'https://github.com/libevent/libevent/releases/download/release-2.0.22-
     make && \
     make install && \
     cd .. && \
-    bash -c 'ln -s /usr/local/lib/libevent-2.0.so.5 /usr/lib/libevent-2.0.so.5;ln -s /usr/local/lib/libevent_pthreads-2.0.so.5 /usr/lib/libevent_pthreads-2.0.so.5;ln -s /usr/local/lib/libevent-2.0.so.5 /usr/lib64/libevent-2.0.so.5;ln -s /usr/local/lib/libevent_pthreads-2.0.so.5 /usr/lib64/libevent_pthreads-2.0.so.5;exit 0'
+    bash -c 'ln -s /usr/local/lib/libevent-2.0.so.5 /usr/lib/libevent-2.0.so.5;ln -s /usr/local/lib/libevent_pthreads-2.0.so.5 /usr/lib/libevent_pthreads-2.0.so.5;ln -s /usr/local/lib/libevent-2.0.so.5 /usr/lib64/libevent-2.0.so.5;ln -s /usr/local/lib/libevent_pthreads-2.0.so.5 /usr/lib64/libevent_pthreads-2.0.so.5;exit 0' && \
+    rm -rf /libevent-2.0.22-stable.tar.gz /libevent-2.0.22-stable
 
 # srvpro
 COPY . /ygopro-server
 WORKDIR /ygopro-server
 RUN npm ci && \
-    mkdir config decks replays logs && \
-    cp data/default_config.json config/config.json
+    mkdir config decks replays logs /redis
 
 # ygopro
 RUN git clone --branch=server --recursive https://github.com/moecube/ygopro /ygopro-server/ygopro
@@ -46,11 +46,9 @@ RUN xbuild /property:Configuration=Release /property:TargetFrameworkVersion="v4.
     ln -s /ygopro-server/ygopro/cards.cdb .
 
 # infos
-WORKDIR /
-RUN mkdir /redis
+WORKDIR /ygopro-server
 EXPOSE 7911
 EXPOSE 7922
-VOLUME /ygopro-server/config
-VOLUME /ygopro-server/ygopro/expansions
+VOLUME [ /ygopro-server/config, /ygopro-server/decks, /ygopro-server/replays, /redis ]
 
 CMD [ "pm2-docker", "start", "/ygopro-server/data/pm2-docker.json" ]
