@@ -3,7 +3,7 @@ FROM node:12-stretch
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y curl wget vim sudo git build-essential libssl1.0-dev libsqlite3-dev sqlite3 mono-complete p7zip-full redis-server
+    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libssl1.0-dev libsqlite3-dev mono-complete p7zip-full redis-server
 
 RUN npm install -g pm2
 
