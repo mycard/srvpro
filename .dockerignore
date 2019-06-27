@@ -4,3 +4,4 @@ Dockerfile*
 /docs
 /README.md
 /*.coffee
+/LICENSE
