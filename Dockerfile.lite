@@ -1,4 +1,4 @@
-# Dockerfile for SRVPro
+# Dockerfile for SRVPro Lite
 FROM node:12-stretch-slim
 
 # apt
