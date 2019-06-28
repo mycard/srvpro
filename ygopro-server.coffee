@@ -273,6 +273,14 @@ if settings.modules.cloud_replay.enabled
 
 if settings.modules.windbot.enabled
   windbots = loadJSON(settings.modules.windbot.botlist).windbots
+  real_windbot_server_ip = settings.modules.windbot.server_ip
+  if !settings.modules.windbot.server_ip.includes("127.0.0.1")
+    dns = require('dns')
+    dns.lookup(settings.modules.windbot.server_ip,(err,addr) ->
+      if(!err)
+        real_windbot_server_ip = addr
+    )
+
 
 if settings.modules.heartbeat_detection.enabled
   long_resolve_cards = loadJSON('./data/long_resolve_cards.json')
@@ -1428,7 +1436,7 @@ class Room
 # 网络连接
 net.createServer (client) ->
   client.ip = client.remoteAddress
-  client.is_local = client.ip and (client.ip.includes('127.0.0.1') or client.ip.includes(settings.modules.windbot.server_ip))
+  client.is_local = client.ip and (client.ip.includes('127.0.0.1') or client.ip.includes(real_windbot_server_ip))
 
   connect_count = ROOM_connected_ip[client.ip] or 0
   if !settings.modules.test_mode.no_connect_count_limit and !client.is_local
