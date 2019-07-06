@@ -2899,8 +2899,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     return cancel
   if client.abuse_count>=5 or CLIENT_is_banned_by_mc(client)
     log.warn "BANNED CHAT", client.name, client.ip, msg
-    ygopro.stoc_send_chat(client, "${banned_chat_tip}"
-    + (if client.ban_mc and client.ban_mc.message then (": " + client.ban_mc.message) else ""), ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${banned_chat_tip}" + (if client.ban_mc and client.ban_mc.message then (": " + client.ban_mc.message) else ""), ygopro.constants.COLORS.RED)
     return true
   oldmsg = msg
   if (_.any(badwords.level3, (badword) ->

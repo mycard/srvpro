@@ -3686,7 +3686,7 @@
     }
     if (client.abuse_count >= 5 || CLIENT_is_banned_by_mc(client)) {
       log.warn("BANNED CHAT", client.name, client.ip, msg);
-      ygopro.stoc_send_chat(client, "${banned_chat_tip}", +(client.ban_mc && client.ban_mc.message ? ": " + client.ban_mc.message : ""), ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, "${banned_chat_tip}" + (client.ban_mc && client.ban_mc.message ? ": " + client.ban_mc.message : ""), ygopro.constants.COLORS.RED);
       return true;
     }
     oldmsg = msg;
