@@ -176,7 +176,7 @@ var return_success = function(res, msg) {
 	return;
 }
 
-var http_response = function (req, res) {
+var requestListener = function (req, res) {
 	var u = url.parse(req.url, true);
 	var data = u.pathname.split("/");
 	if (data[0] !== "" || data[1] !== "api") {
