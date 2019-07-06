@@ -10,6 +10,7 @@
  
 */
 var http = require('http');
+var https = require('https');
 var fs = require('fs');
 var execSync = require('child_process').execSync;
 var spawn = require('child_process').spawn;
