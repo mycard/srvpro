@@ -703,7 +703,7 @@
     max_player = type === 'T' ? 4 : 2;
     playerbanned = bannedplayer && bannedplayer.count > 3 && moment() < bannedplayer.time;
     result = _.find(ROOM_all, function(room) {
-      return room && room.random_type !== '' && !room.started && ((type === '' && (room.random_type === 'S' || (settings.modules.random_duel.blank_pass_match && room.random_type !== 'T'))) || room.random_type === type) && room.get_playing_player().length < max_player && (settings.modules.random_duel.no_rematch_check || room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated || type === 'T');
+      return room && room.random_type !== '' && !room.started && !room.windbot && ((type === '' && (room.random_type === 'S' || (settings.modules.random_duel.blank_pass_match && room.random_type !== 'T'))) || room.random_type === type) && room.get_playing_player().length < max_player && (settings.modules.random_duel.no_rematch_check || room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated || type === 'T');
     });
     if (result) {
       result.welcome = '${random_duel_enter_room_waiting}';
@@ -3628,6 +3628,9 @@
             }
           } else {
             windbot = _.sample(windbots);
+          }
+          if (room.random_type) {
+            ygopro.stoc_send_chat(client, "${windbot_disable_random_room} " + room.name, ygopro.constants.COLORS.BABYBLUE);
           }
           room.add_windbot(windbot);
         }

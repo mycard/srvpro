@@ -560,7 +560,7 @@ ROOM_find_or_create_random = (type, player_ip)->
   max_player = if type == 'T' then 4 else 2
   playerbanned = (bannedplayer and bannedplayer.count > 3 and moment() < bannedplayer.time)
   result = _.find ROOM_all, (room)->
-    return room and room.random_type != '' and !room.started and
+    return room and room.random_type != '' and !room.started and !room.windbot and
     ((type == '' and (room.random_type == 'S' or (settings.modules.random_duel.blank_pass_match and room.random_type != 'T'))) or room.random_type == type) and
     room.get_playing_player().length < max_player and
     (settings.modules.random_duel.no_rematch_check or room.get_host() == null or
@@ -2857,6 +2857,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
             return
         else
           windbot = _.sample windbots
+        if room.random_type
+          ygopro.stoc_send_chat(client, "${windbot_disable_random_room} " + room.name, ygopro.constants.COLORS.BABYBLUE)
         room.add_windbot(windbot)
 
     when '/roomname'
