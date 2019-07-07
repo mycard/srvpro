@@ -4534,7 +4534,7 @@
           return;
         } else {
           getpath = u.pathname.split("/");
-          filename = decodeURIComponent(getpath.pop());
+          filename = path.basename(decodeURIComponent(getpath.pop()));
           fs.readFile(settings.modules.tournament_mode.replay_path + filename, function(error, buffer) {
             if (error) {
               response.writeHead(404);
