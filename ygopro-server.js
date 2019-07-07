@@ -1779,7 +1779,8 @@
         if (index !== -1) {
           this.players.splice(index, 1);
         }
-        if (this.started && !this.finished && this.disconnector !== 'server' && client.pos < 4 && !client.system_kicked) {
+        if (this.started && this.disconnector !== 'server' && client.pos < 4) {
+          this.finished = true;
           if (!this.finished_by_death) {
             this.scores[client.name_vpass] = -9;
             if (this.random_type && !client.flee_free && (!settings.modules.reconnect.enabled || this.get_disconnected_count() === 0)) {
@@ -2940,7 +2941,6 @@
         delete room.long_resolve_chain;
       }
       if (room && !room.finished && room.dueling_players[pos]) {
-        room.finished = true;
         room.winner_name = room.dueling_players[pos].name_vpass;
         room.scores[room.winner_name] = room.scores[room.winner_name] + 1;
         if (room.match_kill) {
@@ -4114,7 +4114,6 @@
       return;
     }
     room.changing_side = true;
-    room.finished = false;
     client.selected_preduel = false;
     if (settings.modules.side_timeout) {
       client.side_tcount = settings.modules.side_timeout;

@@ -1364,7 +1364,8 @@ class Room
         @arena_score_handled = true
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
-      if @started and !@finished and @disconnector != 'server' and client.pos < 4 and !client.system_kicked
+      if @started and @disconnector != 'server' and client.pos < 4
+        @finished = true
         if !@finished_by_death
           @scores[client.name_vpass] = -9
           if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() == 0)
@@ -2383,7 +2384,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       delete room.long_resolve_card
       delete room.long_resolve_chain
     if room and !room.finished and room.dueling_players[pos]
-      room.finished = true
       room.winner_name = room.dueling_players[pos].name_vpass
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
@@ -3209,7 +3209,6 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room
   room.changing_side = true
-  room.finished = false
   client.selected_preduel = false
   if settings.modules.side_timeout
     client.side_tcount = settings.modules.side_timeout
