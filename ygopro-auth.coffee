@@ -27,7 +27,7 @@ or as follows, to use a specific set of permissions.
 fs = require 'fs'
 loadJSON = require('load-json-file').sync
 moment = require 'moment'
-moment.locale('zh-cn', {
+moment.updateLocale('zh-cn', {
   relativeTime: {
     future: '%s内',
     past: '%s前',

@@ -22,7 +22,7 @@ bunyan = require 'bunyan'
 log = bunyan.createLogger name: "mycard"
 
 moment = require 'moment'
-moment.locale('zh-cn', {
+moment.updateLocale('zh-cn', {
   relativeTime: {
     future: '%s内',
     past: '%s前',

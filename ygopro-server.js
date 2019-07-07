@@ -40,7 +40,7 @@
 
   moment = require('moment');
 
-  moment.locale('zh-cn', {
+  moment.updateLocale('zh-cn', {
     relativeTime: {
       future: '%s内',
       past: '%s前',
