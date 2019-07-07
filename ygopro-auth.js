@@ -28,7 +28,7 @@ or as follows, to use a specific set of permissions.
  */
 
 (function() {
-  var add_log, check_permission, default_data, fs, loadJSON, moment, reload, save, setting_save, users;
+  var add_log, bunyan, check_permission, default_data, fs, loadJSON, log, moment, reload, save, setting_save, users;
 
   fs = require('fs');
 
@@ -54,6 +54,12 @@ or as follows, to use a specific set of permissions.
     }
   });
 
+  bunyan = require('bunyan');
+
+  log = bunyan.createLogger({
+    name: "auth"
+  });
+
   if (!fs.existsSync('./logs')) {
     fs.mkdirSync('./logs');
   }
@@ -61,8 +67,8 @@ or as follows, to use a specific set of permissions.
   add_log = function(message) {
     var mt, res, text;
     mt = moment();
+    log.info(message);
     text = mt.format('YYYY-MM-DD HH:mm:ss') + " --> " + message + "\n";
-    console.log(text);
     res = false;
     try {
       fs.appendFileSync("./logs/" + mt.format('YYYY-MM-DD') + ".log", text);

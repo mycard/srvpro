@@ -45,13 +45,16 @@ moment.updateLocale('zh-cn', {
   }
 })
 
+bunyan = require 'bunyan'
+log = bunyan.createLogger name: "auth"
+
 if not fs.existsSync('./logs')
   fs.mkdirSync('./logs')
 
 add_log = (message) ->
   mt = moment()
+  log.info(message)
   text = mt.format('YYYY-MM-DD HH:mm:ss') + " --> " + message + "\n"
-  console.log(text)
   res = false
   try
     fs.appendFileSync("./logs/"+mt.format('YYYY-MM-DD')+".log", text)
