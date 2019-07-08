@@ -268,6 +268,14 @@
         "LINK_MARKER_TOP": 128,
         "LINK_MARKER_TOP_RIGHT": 256
     },
+    "DUEL_STAGE": {
+        "BEGIN": 0,
+        "FINGER": 1,
+        "FIRSTGO": 2,
+        "DUELING": 3,
+        "SIDING": 4,
+        "END": 5
+    },
     "COLORS": {
         "LIGHTBLUE": 8,
         "RED": 11,
@@ -281,6 +289,3 @@
         "DARKGRAY": 19
     }
 }
-
-
-
