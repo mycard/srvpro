@@ -3,21 +3,9 @@ FROM node:12-stretch-slim
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libssl1.0-dev libsqlite3-dev mono-complete p7zip-full redis-server
+    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libevent-dev libsqlite3-dev mono-complete p7zip-full redis-server
 
 RUN npm install -g pm2
-
-# libevent
-WORKDIR /
-RUN wget 'https://github.com/libevent/libevent/releases/download/release-2.0.22-stable/libevent-2.0.22-stable.tar.gz' -O libevent-2.0.22-stable.tar.gz --no-check-certificate && \
-    tar xf libevent-2.0.22-stable.tar.gz && \
-    cd libevent-2.0.22-stable/ && \
-    ./configure && \
-    make && \
-    make install && \
-    cd .. && \
-    bash -c 'ln -s /usr/local/lib/libevent-2.0.so.5 /usr/lib/libevent-2.0.so.5;ln -s /usr/local/lib/libevent_pthreads-2.0.so.5 /usr/lib/libevent_pthreads-2.0.so.5;ln -s /usr/local/lib/libevent-2.0.so.5 /usr/lib64/libevent-2.0.so.5;ln -s /usr/local/lib/libevent_pthreads-2.0.so.5 /usr/lib64/libevent_pthreads-2.0.so.5;exit 0' && \
-    rm -rf /libevent-2.0.22-stable.tar.gz /libevent-2.0.22-stable
 
 # srvpro
 COPY . /ygopro-server
