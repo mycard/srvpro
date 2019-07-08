@@ -3,7 +3,7 @@ FROM node:12-stretch-slim
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libssl1.0-dev libevent-dev p7zip-full
+    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libsqlite3-dev libevent-dev p7zip-full
 
 # srvpro
 COPY . /ygopro-server
