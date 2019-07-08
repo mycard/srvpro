@@ -66,7 +66,7 @@
       "get": "http://mercury233.me/ygosrv233/dialogues.json"
     },
     "random_duel": {
-      "enabled": false,
+      "enabled": true,
       "no_rematch_check": false,
       "record_match_scores": false,
       "post_match_scores": false,
