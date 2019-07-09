@@ -50,7 +50,7 @@
           results = [];
           for (i = 0, len = ROOM_all.length; i < len; i++) {
             room = ROOM_all[i];
-            if (room && room.established && (connection.filter === 'started' || !room["private"]) && ((room.stage !== 0) === (connection.filter === 'started'))) {
+            if (room && room.established && (connection.filter === 'started' || !room["private"]) && ((room.duel_stage !== 0) === (connection.filter === 'started'))) {
               results.push(room_data(room));
             }
           }
@@ -80,7 +80,7 @@
   };
 
   _delete = function(room) {
-    if (room.stage !== 0) {
+    if (room.duel_stage !== 0) {
       return broadcast('delete', room.name, 'started');
     } else {
       if (!room["private"]) {
