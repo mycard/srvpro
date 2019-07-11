@@ -1215,7 +1215,7 @@ class Room
                    (if @player_datas[3] then "+" + @player_datas[3].name else "")
       player_ips=[]
       _.each @player_datas, (player)->
-        player_ips.push(player.ip)
+        player_ips.push(player.key)
         return
       recorder_buffer=Buffer.concat(@recorder_buffers)
       zlib.deflate recorder_buffer, (err, replay_buffer) ->
@@ -1770,7 +1770,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
 
   else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled
     ygopro.stoc_send_chat(client,"${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
-    redisdb.lrange client.ip+":replays", 0, 2, (err, result)->
+    redisdb.lrange CLIENT_get_authorize_key(client)+":replays", 0, 2, (err, result)->
       _.each result, (replay_id,id)->
         redisdb.hgetall "replay:"+replay_id, (err, replay)->
           if err or !replay
@@ -2735,7 +2735,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
     for player in room.players when player.pos != 7
       room.dueling_players[player.pos] = player
       room.scores[player.name_vpass] = 0
-      room.player_datas.push ip: player.ip, name: player.name
+      room.player_datas.push key: CLIENT_get_authorize_key(player), name: player.name
       if room.random_type == 'T'
         # 双打房不记录匹配过
         ROOM_players_oppentlist[player.ip] = null

@@ -1562,7 +1562,7 @@
         player_names = this.player_datas[0].name + (this.player_datas[2] ? "+" + this.player_datas[2].name : "") + " VS " + (this.player_datas[1] ? this.player_datas[1].name : "AI") + (this.player_datas[3] ? "+" + this.player_datas[3].name : "");
         player_ips = [];
         _.each(this.player_datas, function(player) {
-          player_ips.push(player.ip);
+          player_ips.push(player.key);
         });
         recorder_buffer = Buffer.concat(this.recorder_buffers);
         zlib.deflate(recorder_buffer, function(err, replay_buffer) {
@@ -2241,7 +2241,7 @@
       ygopro.stoc_die(client, "${bad_user_name}");
     } else if (info.pass.toUpperCase() === "R" && settings.modules.cloud_replay.enabled) {
       ygopro.stoc_send_chat(client, "${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE);
-      redisdb.lrange(client.ip + ":replays", 0, 2, function(err, result) {
+      redisdb.lrange(CLIENT_get_authorize_key(client) + ":replays", 0, 2, function(err, result) {
         _.each(result, function(replay_id, id) {
           redisdb.hgetall("replay:" + replay_id, function(err, replay) {
             if (err || !replay) {
@@ -3449,7 +3449,7 @@
         room.dueling_players[player.pos] = player;
         room.scores[player.name_vpass] = 0;
         room.player_datas.push({
-          ip: player.ip,
+          key: CLIENT_get_authorize_key(player),
           name: player.name
         });
         if (room.random_type === 'T') {
