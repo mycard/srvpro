@@ -1201,7 +1201,7 @@
 
   CLIENT_send_replays = function(client, room) {
     var buffer, i, len2, m, ref2;
-    if (!(settings.modules.replay_delay && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.closed)) {
+    if (!(settings.modules.replay_delay && !(settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe && settings.modules.tournament_mode.block_replay_to_player) && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.closed)) {
       return false;
     }
     client.replays_sent = true;
@@ -1252,9 +1252,7 @@
       this.death = 0;
       this.turn = 0;
       this.duel_stage = ygopro.constants.DUEL_STAGE.BEGIN;
-      if (settings.modules.replay_delay) {
-        this.replays = [];
-      }
+      this.replays = [];
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = JSON.parse(JSON.stringify(settings.hostinfo)));
       delete this.hostinfo.comment;
@@ -1523,6 +1521,7 @@
             userscoreB: score_array[1].score,
             userdeckA: score_array[0].deck,
             userdeckB: score_array[1].deck,
+            replays: this.replays,
             start: this.start_time,
             end: end_time,
             arena: this.arena
@@ -4175,7 +4174,7 @@
     if (settings.modules.cloud_replay.enabled && room.random_type) {
       Cloud_replay_ids.push(room.cloud_replay_id);
     }
-    if (settings.modules.replay_delay && room.hostinfo.mode === 1 && !(settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe && settings.modules.tournament_mode.block_replay_to_player) && !room.replays[room.duel_count - 1]) {
+    if (!room.replays[room.duel_count - 1]) {
       room.replays[room.duel_count - 1] = buffer;
     }
     if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
