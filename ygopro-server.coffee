@@ -1170,6 +1170,9 @@ class Room
           score_array[1] = { name: null, score: -5, deck: null }
         score_array[0].score = -5
         score_array[1].score = -5
+      formatted_replays = []
+      for repbuf in @replays when repbuf
+        formatted_replays.push(repbuf.toString("base64"))
       request.post { url : settings.modules.arena_mode.post_score , form : {
         accesskey: settings.modules.arena_mode.accesskey,
         usernameA: score_array[0].name,
@@ -1178,7 +1181,7 @@ class Room
         userscoreB: score_array[1].score,
         userdeckA: score_array[0].deck,
         userdeckB: score_array[1].deck,
-        replays: @replays,
+        replays: formatted_replays,
         start: @start_time,
         end: end_time,
         arena: @arena
