@@ -1570,7 +1570,7 @@
           replay_buffer = replay_buffer.toString('binary');
           date_time = moment().format('YYYY-MM-DD HH:mm:ss');
           redisdb.hmset("replay:" + replay_id, "replay_id", replay_id, "replay_buffer", replay_buffer, "player_names", player_names, "date_time", date_time);
-          if (!log_rep_id) {
+          if (!log_rep_id && !settings.modules.cloud_replay.never_expire) {
             redisdb.expire("replay:" + replay_id, 60 * 60 * 24);
           }
           recorded_ip = [];
