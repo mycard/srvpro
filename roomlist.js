@@ -74,7 +74,7 @@
 
   start = function(room) {
     if (!room["private"]) {
-      broadcast('delete', room_data(room), 'waiting');
+      broadcast('delete', room.name, 'waiting');
     }
     return broadcast('create', room_data(room), 'started');
   };
