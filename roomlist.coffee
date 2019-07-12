@@ -29,7 +29,7 @@ update = (room)->
   broadcast('update', room_data(room), 'waiting') if !room.private
 
 start = (room)->
-  broadcast('delete', room_data(room), 'waiting') if !room.private
+  broadcast('delete', room.name, 'waiting') if !room.private
   broadcast('create', room_data(room), 'started')
 
 _delete = (room)->
