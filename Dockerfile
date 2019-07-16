@@ -35,8 +35,7 @@ RUN xbuild /property:Configuration=Release /property:TargetFrameworkVersion="v4.
 
 # infos
 WORKDIR /ygopro-server
-EXPOSE 7911
-EXPOSE 7922
-VOLUME [ /ygopro-server/config, /ygopro-server/decks, /ygopro-server/replays, /redis ]
+EXPOSE 7911 7922 7933
+# VOLUME [ /ygopro-server/config, /ygopro-server/decks, /ygopro-server/replays, /redis ]
 
 CMD [ "pm2-docker", "start", "/ygopro-server/data/pm2-docker.json" ]

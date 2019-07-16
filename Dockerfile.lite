@@ -26,8 +26,7 @@ RUN git submodule foreach git checkout master && \
 
 # infos
 WORKDIR /ygopro-server
-EXPOSE 7911
-EXPOSE 7922
-VOLUME [ /ygopro-server/config, /ygopro-server/decks, /ygopro-server/replays ]
+EXPOSE 7911 7922 7933
+# VOLUME [ /ygopro-server/config, /ygopro-server/decks, /ygopro-server/replays ]
 
 CMD [ "node", "ygopro-server.js" ]
