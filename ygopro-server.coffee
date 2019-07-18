@@ -1888,7 +1888,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             time_limit: 180
             rule: (opt1 >> 5) & 3
             mode: (opt1 >> 3) & 3
-            enable_priority: (if !!((opt1 >> 2) & 1) then 3 else 4)
+            duel_rule: (if !!((opt1 >> 2) & 1) then 3 else 4)
             no_check_deck: !!((opt1 >> 1) & 1)
             no_shuffle_deck: !!(opt1 & 1)
             start_lp: opt2

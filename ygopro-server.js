@@ -2359,7 +2359,7 @@
               time_limit: 180,
               rule: (opt1 >> 5) & 3,
               mode: (opt1 >> 3) & 3,
-              enable_priority: (!!((opt1 >> 2) & 1) ? 3 : 4),
+              duel_rule: (!!((opt1 >> 2) & 1) ? 3 : 4),
               no_check_deck: !!((opt1 >> 1) & 1),
               no_shuffle_deck: !!(opt1 & 1),
               start_lp: opt2,
