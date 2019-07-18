@@ -207,6 +207,14 @@ if settings.modules.update_util.password
   })
   delete settings.modules.update_util.password
   imported = true
+#import the old enable_priority hostinfo
+if settings.hostinfo.enable_priority or settings.hostinfo.enable_priority == false
+  if settings.hostinfo.enable_priority
+    settings.hostinfo.duel_rule = 3
+  else
+    settings.hostinfo.duel_rule = 4
+  delete settings.hostinfo.enable_priority
+  imported = true
 #finish
 if imported
   setting_save(settings)
@@ -1002,7 +1010,7 @@ class Room
     else if (param = name.match /^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i)
       @hostinfo.rule = parseInt(param[1])
       @hostinfo.mode = parseInt(param[2])
-      @hostinfo.enable_priority = param[3] == 'T'
+      @hostinfo.duel_rule = (if param[3] == 'T' then 3 else 4)
       @hostinfo.no_check_deck = param[4] == 'T'
       @hostinfo.no_shuffle_deck = param[5] == 'T'
       @hostinfo.start_lp = parseInt(param[6])
@@ -1070,8 +1078,13 @@ class Room
       if (rule.match /(^|，|,)(NOSHUFFLE|NS)(，|,|$)/)
         @hostinfo.no_shuffle_deck = true
 
-      if (rule.match /(^|，|,)(IGPRIORITY|PR)(，|,|$)/)
-        @hostinfo.enable_priority = true
+      if (rule.match /(^|，|,)(IGPRIORITY|PR)(，|,|$)/) # deprecated
+        @hostinfo.duel_rule = 3
+
+      if (param = rule.match /(^|，|,)(DUELRULE|MR)(\d+)(，|,|$)/)
+        duel_rule = parseInt(param[3])
+        if duel_rule and duel_rule > 0 and duel_rule <= 4
+          @hostinfo.duel_rule = duel_rule
 
       if (rule.match /(^|，|,)(NOWATCH|NW)(，|,|$)/)
         @hostinfo.no_watch = true
@@ -1090,7 +1103,7 @@ class Room
     if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe) or (@hostinfo.mode == 1 and settings.modules.replay_delay)
       @hostinfo.replay_mode |= 0x2
 
-    param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, (if @hostinfo.enable_priority then 'T' else 'F'),
+    param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, @hostinfo.duel_rule,
       (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'),
       @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
 
@@ -1875,7 +1888,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             time_limit: 180
             rule: (opt1 >> 5) & 3
             mode: (opt1 >> 3) & 3
-            enable_priority: !!((opt1 >> 2) & 1)
+            enable_priority: (if !!((opt1 >> 2) & 1) then 3 else 4)
             no_check_deck: !!((opt1 >> 1) & 1)
             no_shuffle_deck: !!(opt1 & 1)
             start_lp: opt2
