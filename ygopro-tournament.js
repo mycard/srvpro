@@ -26,9 +26,7 @@ ssl_config = settings.modules.http.ssl;
 
 var challonge;
 if (challonge_config.enabled) {
-    challonge = require('challonge').createClient({
-        apiKey: challonge_config.api_key
-    });
+    challonge = require('challonge').createClient(challonge_config.options);
 }
 
 //http长连接
