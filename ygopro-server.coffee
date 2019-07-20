@@ -215,6 +215,11 @@ if settings.hostinfo.enable_priority or settings.hostinfo.enable_priority == fal
     settings.hostinfo.duel_rule = 4
   delete settings.hostinfo.enable_priority
   imported = true
+#import the old Challonge api key option
+if settings.modules.challonge.api_key
+  settings.modules.challonge.options.apiKey = settings.modules.challonge.api_key
+  delete settings.modules.challonge.api_key
+  imported = true
 #finish
 if imported
   setting_save(settings)
@@ -341,9 +346,7 @@ if settings.modules.challonge.enabled
   challonge_module_name = 'challonge'
   if settings.modules.challonge.use_custom_module
     challonge_module_name = settings.modules.challonge.use_custom_module
-  challonge = require(challonge_module_name).createClient({
-    apiKey: settings.modules.challonge.api_key
-  })
+  challonge = require(challonge_module_name).createClient(settings.modules.challonge.options)
   if settings.modules.challonge.cache_ttl
     challonge_cache = []
   challonge_queue_callbacks = [[], []]

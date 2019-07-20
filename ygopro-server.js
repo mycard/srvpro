@@ -233,6 +233,12 @@
     imported = true;
   }
 
+  if (settings.modules.challonge.api_key) {
+    settings.modules.challonge.options.apiKey = settings.modules.challonge.api_key;
+    delete settings.modules.challonge.api_key;
+    imported = true;
+  }
+
   if (imported) {
     setting_save(settings);
   }
@@ -401,9 +407,7 @@
     if (settings.modules.challonge.use_custom_module) {
       challonge_module_name = settings.modules.challonge.use_custom_module;
     }
-    challonge = require(challonge_module_name).createClient({
-      apiKey: settings.modules.challonge.api_key
-    });
+    challonge = require(challonge_module_name).createClient(settings.modules.challonge.options);
     if (settings.modules.challonge.cache_ttl) {
       challonge_cache = [];
     }
