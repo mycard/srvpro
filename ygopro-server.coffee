@@ -1615,16 +1615,25 @@ net.createServer (client) ->
             cancel = false
             if settings.modules.reconnect.enabled and client.pre_reconnecting and ygopro.constants.CTOS[ctos_proto] != 'UPDATE_DECK'
               cancel = true
+            b = ctos_buffer.slice(3, ctos_message_length - 1 + 3)
+            info = null
+            if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
+              struct._setBuff(b)
+              info = _.clone(struct.fields)
+            if ygopro.ctos_follows_before[ctos_proto] and !cancel
+              for ctos_event in ygopro.ctos_follows_before[ctos_proto]
+                result = ctos_event.callback b, info, client, client.server, datas
+                if result and ctos_event.synchronous
+                  cancel = true
             if ygopro.ctos_follows[ctos_proto] and !cancel
-              b = ctos_buffer.slice(3, ctos_message_length - 1 + 3)
-              info = null
-              if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
-                struct._setBuff(b)
-                info = _.clone(struct.fields)
-              if ygopro.ctos_follows[ctos_proto].synchronous
-                cancel = ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
-              else
-                ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
+              result = ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
+              if result and ygopro.ctos_follows[ctos_proto].synchronous
+                cancel = true
+            if ygopro.ctos_follows_after[ctos_proto] and !cancel
+              for ctos_event in ygopro.ctos_follows_after[ctos_proto]
+                result = ctos_event.callback b, info, client, client.server, datas
+                if result and ctos_event.synchronous
+                  cancel = true
             datas.push ctos_buffer.slice(0, 2 + ctos_message_length) unless cancel
             ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
             ctos_message_length = 0
@@ -1683,17 +1692,25 @@ net.createServer (client) ->
         if stoc_buffer.length >= 2 + stoc_message_length
           #console.log "STOC", ygopro.constants.STOC[stoc_proto]
           cancel = false
-          stanzas = stoc_proto
-          if ygopro.stoc_follows[stoc_proto]
-            b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
-            info = null
-            if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
-              struct._setBuff(b)
-              info = _.clone(struct.fields)
-            if ygopro.stoc_follows[stoc_proto].synchronous
-              cancel = ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
-            else
-              ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
+          b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
+          info = null
+          if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
+            struct._setBuff(b)
+            info = _.clone(struct.fields)
+          if ygopro.stoc_follows_before[stoc_proto] and !cancel
+            for stoc_event in ygopro.stoc_follows_before[stoc_proto]
+              result = stoc_event.callback b, info, server.client, server, datas
+              if result and stoc_event.synchronous
+                cancel = true
+          if ygopro.stoc_follows[stoc_proto] and !cancel
+            result = ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
+            if result and ygopro.stoc_follows[stoc_proto].synchronous
+              cancel = true
+          if ygopro.stoc_follows_after[stoc_proto] and !cancel
+            for stoc_event in ygopro.stoc_follows_after[stoc_proto]
+              result = stoc_event.callback b, info, server.client, server, datas
+              if result and stoc_event.synchronous
+                cancel = true
           datas.push stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
           stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
           stoc_message_length = 0

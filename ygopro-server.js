@@ -2037,7 +2037,7 @@
     }
     client.pre_establish_buffers = new Array();
     client.on('data', function(ctos_buffer) {
-      var b, bad_ip_count, buffer, cancel, ctos_message_length, ctos_proto, datas, info, len2, len3, looplimit, m, n, room, struct;
+      var b, bad_ip_count, buffer, cancel, ctos_event, ctos_message_length, ctos_proto, datas, info, len2, len3, len4, len5, looplimit, m, n, o, p, ref2, ref3, result, room, struct;
       if (client.is_post_watcher) {
         room = ROOM_all[client.rid];
         if (room && !CLIENT_is_banned_by_mc(client)) {
@@ -2071,17 +2071,36 @@
               if (settings.modules.reconnect.enabled && client.pre_reconnecting && ygopro.constants.CTOS[ctos_proto] !== 'UPDATE_DECK') {
                 cancel = true;
               }
-              if (ygopro.ctos_follows[ctos_proto] && !cancel) {
-                b = ctos_buffer.slice(3, ctos_message_length - 1 + 3);
-                info = null;
-                if (struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]) {
-                  struct._setBuff(b);
-                  info = _.clone(struct.fields);
+              b = ctos_buffer.slice(3, ctos_message_length - 1 + 3);
+              info = null;
+              if (struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]) {
+                struct._setBuff(b);
+                info = _.clone(struct.fields);
+              }
+              if (ygopro.ctos_follows_before[ctos_proto] && !cancel) {
+                ref2 = ygopro.ctos_follows_before[ctos_proto];
+                for (m = 0, len2 = ref2.length; m < len2; m++) {
+                  ctos_event = ref2[m];
+                  result = ctos_event.callback(b, info, client, client.server, datas);
+                  if (result && ctos_event.synchronous) {
+                    cancel = true;
+                  }
                 }
-                if (ygopro.ctos_follows[ctos_proto].synchronous) {
-                  cancel = ygopro.ctos_follows[ctos_proto].callback(b, info, client, client.server, datas);
-                } else {
-                  ygopro.ctos_follows[ctos_proto].callback(b, info, client, client.server, datas);
+              }
+              if (ygopro.ctos_follows[ctos_proto] && !cancel) {
+                result = ygopro.ctos_follows[ctos_proto].callback(b, info, client, client.server, datas);
+                if (result && ygopro.ctos_follows[ctos_proto].synchronous) {
+                  cancel = true;
+                }
+              }
+              if (ygopro.ctos_follows_after[ctos_proto] && !cancel) {
+                ref3 = ygopro.ctos_follows_after[ctos_proto];
+                for (n = 0, len3 = ref3.length; n < len3; n++) {
+                  ctos_event = ref3[n];
+                  result = ctos_event.callback(b, info, client, client.server, datas);
+                  if (result && ctos_event.synchronous) {
+                    cancel = true;
+                  }
                 }
               }
               if (!cancel) {
@@ -2114,20 +2133,20 @@
           return;
         }
         if (client.established) {
-          for (m = 0, len2 = datas.length; m < len2; m++) {
-            buffer = datas[m];
+          for (o = 0, len4 = datas.length; o < len4; o++) {
+            buffer = datas[o];
             client.server.write(buffer);
           }
         } else {
-          for (n = 0, len3 = datas.length; n < len3; n++) {
-            buffer = datas[n];
+          for (p = 0, len5 = datas.length; p < len5; p++) {
+            buffer = datas[p];
             client.pre_establish_buffers.push(buffer);
           }
         }
       }
     });
     server.on('data', function(stoc_buffer) {
-      var b, buffer, cancel, datas, info, len2, looplimit, m, stanzas, stoc_message_length, stoc_proto, struct;
+      var b, buffer, cancel, datas, info, len2, len3, len4, looplimit, m, n, o, ref2, ref3, result, stoc_event, stoc_message_length, stoc_proto, struct;
       stoc_message_length = 0;
       stoc_proto = 0;
       datas = [];
@@ -2152,18 +2171,36 @@
         } else {
           if (stoc_buffer.length >= 2 + stoc_message_length) {
             cancel = false;
-            stanzas = stoc_proto;
-            if (ygopro.stoc_follows[stoc_proto]) {
-              b = stoc_buffer.slice(3, stoc_message_length - 1 + 3);
-              info = null;
-              if (struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]) {
-                struct._setBuff(b);
-                info = _.clone(struct.fields);
+            b = stoc_buffer.slice(3, stoc_message_length - 1 + 3);
+            info = null;
+            if (struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]) {
+              struct._setBuff(b);
+              info = _.clone(struct.fields);
+            }
+            if (ygopro.stoc_follows_before[stoc_proto] && !cancel) {
+              ref2 = ygopro.stoc_follows_before[stoc_proto];
+              for (m = 0, len2 = ref2.length; m < len2; m++) {
+                stoc_event = ref2[m];
+                result = stoc_event.callback(b, info, server.client, server, datas);
+                if (result && stoc_event.synchronous) {
+                  cancel = true;
+                }
               }
-              if (ygopro.stoc_follows[stoc_proto].synchronous) {
-                cancel = ygopro.stoc_follows[stoc_proto].callback(b, info, server.client, server, datas);
-              } else {
-                ygopro.stoc_follows[stoc_proto].callback(b, info, server.client, server, datas);
+            }
+            if (ygopro.stoc_follows[stoc_proto] && !cancel) {
+              result = ygopro.stoc_follows[stoc_proto].callback(b, info, server.client, server, datas);
+              if (result && ygopro.stoc_follows[stoc_proto].synchronous) {
+                cancel = true;
+              }
+            }
+            if (ygopro.stoc_follows_after[stoc_proto] && !cancel) {
+              ref3 = ygopro.stoc_follows_after[stoc_proto];
+              for (n = 0, len3 = ref3.length; n < len3; n++) {
+                stoc_event = ref3[n];
+                result = stoc_event.callback(b, info, server.client, server, datas);
+                if (result && stoc_event.synchronous) {
+                  cancel = true;
+                }
               }
             }
             if (!cancel) {
@@ -2185,8 +2222,8 @@
         }
       }
       if (server.client && !server.client.closed) {
-        for (m = 0, len2 = datas.length; m < len2; m++) {
-          buffer = datas[m];
+        for (o = 0, len4 = datas.length; o < len4; o++) {
+          buffer = datas[o];
           server.client.write(buffer);
         }
       }

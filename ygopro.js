@@ -58,48 +58,100 @@
 
   this.stoc_follows = {};
 
+  this.stoc_follows_before = {};
+
+  this.stoc_follows_after = {};
+
   this.ctos_follows = {};
 
-  this.stoc_follow = function(proto, synchronous, callback) {
-    var key, ref, value;
-    if (typeof proto === 'string') {
-      ref = this.constants.STOC;
-      for (key in ref) {
-        value = ref[key];
-        if (value === proto) {
-          proto = key;
-          break;
-        }
-      }
-      if (!this.constants.STOC[proto]) {
-        throw "unknown proto";
+  this.ctos_follows_before = {};
+
+  this.ctos_follows_after = {};
+
+  this.replace_proto = function(proto, tp) {
+    var changed_proto, key, ref, value;
+    if (typeof proto !== "string") {
+      return proto;
+    }
+    changed_proto = proto;
+    ref = this.constants[tp];
+    for (key in ref) {
+      value = ref[key];
+      if (value === proto) {
+        changed_proto = key;
+        break;
       }
     }
-    this.stoc_follows[proto] = {
+    if (!this.constants[tp][changed_proto]) {
+      throw "unknown proto";
+    }
+    return changed_proto;
+  };
+
+  this.stoc_follow = function(proto, synchronous, callback) {
+    var changed_proto;
+    changed_proto = this.replace_proto(proto, "STOC");
+    this.stoc_follows[changed_proto] = {
       callback: callback,
       synchronous: synchronous
     };
   };
 
-  this.ctos_follow = function(proto, synchronous, callback) {
-    var key, ref, value;
-    if (typeof proto === 'string') {
-      ref = this.constants.CTOS;
-      for (key in ref) {
-        value = ref[key];
-        if (value === proto) {
-          proto = key;
-          break;
-        }
-      }
-      if (!this.constants.CTOS[proto]) {
-        throw "unknown proto";
-      }
+  this.stoc_follow_before = function(proto, synchronous, callback) {
+    var changed_proto;
+    changed_proto = this.replace_proto(proto, "STOC");
+    if (!this.stoc_follows_before[changed_proto]) {
+      this.stoc_follows_before[changed_proto] = [];
     }
-    this.ctos_follows[proto] = {
+    this.stoc_follows_before[changed_proto].push({
+      callback: callback,
+      synchronous: synchronous
+    });
+  };
+
+  this.stoc_follow_after = function(proto, synchronous, callback) {
+    var changed_proto;
+    changed_proto = this.replace_proto(proto, "STOC");
+    if (!this.stoc_follows_after[changed_proto]) {
+      this.stoc_follows_after[changed_proto] = [];
+    }
+    this.stoc_follows_after[changed_proto].push({
+      callback: callback,
+      synchronous: synchronous
+    });
+  };
+
+  this.ctos_follow = function(proto, synchronous, callback) {
+    var changed_proto;
+    changed_proto = this.replace_proto(proto, "CTOS");
+    this.ctos_follows[changed_proto] = {
       callback: callback,
       synchronous: synchronous
     };
+  };
+
+  this.ctos_follow_before = function(proto, synchronous, callback) {
+    var changed_proto;
+    changed_proto = this.replace_proto(proto, "CTOS");
+    if (!this.ctos_follows_before[changed_proto]) {
+      this.ctos_follows_before[changed_proto] = [];
+    }
+    this.ctos_follows_before[changed_proto].push({
+      callback: callback,
+      synchronous: synchronous
+    });
+  };
+
+  this.ctos_follow_after = function(proto, synchronous, callback) {
+    var changed_proto;
+    changed_proto = this.replace_proto(proto, "CTOS");
+    if (!this.ctos_follows_after[changed_proto]) {
+      this.ctos_follows_after[changed_proto] = [];
+    }
+    this.ctos_follows_after[changed_proto].push({
+      callback: callback,
+      synchronous: synchronous
+    });
   };
 
   this.stoc_send = function(socket, proto, info) {
