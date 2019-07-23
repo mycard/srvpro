@@ -19,7 +19,7 @@ _.mixin(_.str.exports())
 request = require 'request'
 
 bunyan = require 'bunyan'
-log = bunyan.createLogger name: "mycard"
+log = global.log = bunyan.createLogger name: "mycard"
 
 moment = require 'moment'
 moment.updateLocale('zh-cn', {

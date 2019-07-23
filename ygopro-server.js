@@ -34,7 +34,7 @@
 
   bunyan = require('bunyan');
 
-  log = bunyan.createLogger({
+  log = global.log = bunyan.createLogger({
     name: "mycard"
   });
 
