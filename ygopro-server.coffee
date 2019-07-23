@@ -131,11 +131,11 @@ try
 catch e
   log.info e unless e.code == 'ENOENT'
 
-setting_save = (settings) ->
+setting_save = global.setting_save = (settings) ->
   fs.writeFileSync(settings.file, JSON.stringify(settings, null, 2))
   return
 
-setting_change = (settings, path, val) ->
+setting_change = global.setting_change = (settings, path, val) ->
   # path should be like "modules:welcome"
   log.info("setting changed", path, val) if _.isString(val)
   path=path.split(':')
@@ -159,7 +159,7 @@ catch
   config = {}
 settings = global.settings = merge(default_config, config, { arrayMerge: (destination, source) -> source })
 
-auth = require './ygopro-auth.js'
+auth = global.auth = require './ygopro-auth.js'
 
 #import old configs
 imported = false
@@ -227,29 +227,29 @@ if imported
 # 读取数据
 default_data = loadJSON('./data/default_data.json')
 try
-  tips = loadJSON('./config/tips.json')
+  tips = global.tips = loadJSON('./config/tips.json')
 catch
-  tips = default_data.tips
+  tips = global.tips = default_data.tips
   setting_save(tips)
 try
-  dialogues = loadJSON('./config/dialogues.json')
+  dialogues = global.dialogues = loadJSON('./config/dialogues.json')
 catch
-  dialogues = default_data.dialogues
+  dialogues = global.dialogues = default_data.dialogues
   setting_save(dialogues)
 try
-  badwords = loadJSON('./config/badwords.json')
+  badwords = global.badwords = loadJSON('./config/badwords.json')
 catch
-  badwords = default_data.badwords
+  badwords = global.badwords = default_data.badwords
   setting_save(badwords)
 try
-  duel_log = loadJSON('./config/duel_log.json')
+  duel_log = global.duel_log = loadJSON('./config/duel_log.json')
 catch
-  duel_log = default_data.duel_log
+  duel_log = global.duel_log = default_data.duel_log
   setting_save(duel_log)
 try
-  chat_color = loadJSON('./config/chat_color.json')
+  chat_color = global.chat_color = loadJSON('./config/chat_color.json')
 catch
-  chat_color = default_data.chat_color
+  chat_color = global.chat_color = default_data.chat_color
   setting_save(chat_color)
 
 try
@@ -260,7 +260,7 @@ catch
   #settings.version = settings.version_default
   log.info "ygopro version 0x"+settings.version.toString(16), "(from config)"
 # load the lflist of current date
-lflists = []
+lflists = global.lflists = []
 # expansions/lflist
 try
   for list in fs.readFileSync('ygopro/expansions/lflist.conf', 'utf8').match(/!.*/g)
@@ -296,11 +296,11 @@ if settings.modules.windbot.enabled
 
 
 if settings.modules.heartbeat_detection.enabled
-  long_resolve_cards = loadJSON('./data/long_resolve_cards.json')
+  long_resolve_cards = global.long_resolve_cards = loadJSON('./data/long_resolve_cards.json')
 
 # 组件
-ygopro = require './ygopro.js'
-roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
+ygopro = global.ygopro = require './ygopro.js'
+roomlist = global.roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
 
 if settings.modules.i18n.auto_pick
   geoip = require('geoip-country-lite')
@@ -416,8 +416,8 @@ if settings.modules.challonge.enabled
     setInterval(refresh_challonge_cache, settings.modules.challonge.cache_ttl)
 
 # 获取可用内存
-memory_usage = 0
-get_memory_usage = ()->
+memory_usage = global.memory_usage = 0
+get_memory_usage = get_memory_usage = ()->
   prc_free = exec("free")
   prc_free.stdout.on 'data', (data)->
     lines = data.toString().split(/\n/g)
@@ -439,17 +439,17 @@ get_memory_usage = ()->
 get_memory_usage()
 setInterval(get_memory_usage, 3000)
 
-Cloud_replay_ids = []
+Cloud_replay_ids = global.Cloud_replay_ids = []
 
-ROOM_all = []
-ROOM_players_oppentlist = {}
-ROOM_players_banned = []
-ROOM_players_scores = {}
-ROOM_connected_ip = {}
-ROOM_bad_ip = {}
+ROOM_all = global.ROOM_all = []
+ROOM_players_oppentlist = global.ROOM_players_oppentlist = {}
+ROOM_players_banned = global.ROOM_players_banned = []
+ROOM_players_scores = global.ROOM_players_scores = {}
+ROOM_connected_ip = global.ROOM_connected_ip = {}
+ROOM_bad_ip = global.ROOM_bad_ip = {}
 
 # ban a user manually and permanently
-ban_user = (name) ->
+ban_user = global.ban_user = (name) ->
   settings.ban.banned_user.push(name)
   setting_save(settings)
   bad_ip=0
@@ -466,7 +466,7 @@ ban_user = (name) ->
   return
 
 # automatically ban user to use random duel
-ROOM_ban_player = (name, ip, reason, countadd = 1)->
+ROOM_ban_player = global.ROOM_ban_player = (name, ip, reason, countadd = 1)->
   return if settings.modules.test_mode.no_ban_player
   bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
     ip == bannedplayer.ip
@@ -483,28 +483,28 @@ ROOM_ban_player = (name, ip, reason, countadd = 1)->
   #log.info("banned", name, ip, reason, bannedplayer.count)
   return
 
-ROOM_player_win = (name)->
+ROOM_player_win = global.ROOM_player_win = (name)->
   if !ROOM_players_scores[name]
     ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
   ROOM_players_scores[name].win = ROOM_players_scores[name].win + 1
   ROOM_players_scores[name].combo = ROOM_players_scores[name].combo + 1
   return
 
-ROOM_player_lose = (name)->
+ROOM_player_lose = global.ROOM_player_lose = (name)->
   if !ROOM_players_scores[name]
     ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
   ROOM_players_scores[name].lose = ROOM_players_scores[name].lose + 1
   ROOM_players_scores[name].combo = 0
   return
 
-ROOM_player_flee = (name)->
+ROOM_player_flee = global.ROOM_player_flee = (name)->
   if !ROOM_players_scores[name]
     ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
   ROOM_players_scores[name].flee = ROOM_players_scores[name].flee + 1
   ROOM_players_scores[name].combo = 0
   return
 
-ROOM_player_get_score = (player)->
+ROOM_player_get_score = global.ROOM_player_get_score = (player)->
   name = player.name_vpass
   score = ROOM_players_scores[name] 
   if !score
@@ -541,7 +541,7 @@ if settings.modules.random_duel.post_match_scores
     return
   , 60000)
 
-ROOM_find_or_create_by_name = (name, player_ip)->
+ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player_ip)->
   uname=name.toUpperCase()
   if settings.modules.windbot.enabled and (uname[0...2] == 'AI' or (!settings.modules.random_duel.enabled and uname == ''))
     return ROOM_find_or_create_ai(name)
@@ -554,7 +554,7 @@ ROOM_find_or_create_by_name = (name, player_ip)->
   else
     return new Room(name)
 
-ROOM_find_or_create_random = (type, player_ip)->
+ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_ip)->
   bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
     return player_ip == bannedplayer.ip
   if bannedplayer
@@ -594,7 +594,7 @@ ROOM_find_or_create_random = (type, player_ip)->
   if result.random_type=='M' then result.welcome = result.welcome + '\n${random_duel_enter_room_match}'
   return result
 
-ROOM_find_or_create_ai = (name)->
+ROOM_find_or_create_ai = global.ROOM_find_or_create_ai = (name)->
   if name == ''
     name = 'AI'
   namea = name.split('#')
@@ -622,21 +622,25 @@ ROOM_find_or_create_ai = (name)->
   result.private = true
   return result
 
-ROOM_find_by_name = (name)->
+ROOM_find_by_name = global.ROOM_find_by_name = (name)->
   result = _.find ROOM_all, (room)->
     return room and room.name == name
   return result
 
-ROOM_find_by_title = (title)->
+ROOM_find_by_title = global.ROOM_find_by_title = (title)->
   result = _.find ROOM_all, (room)->
     return room and room.title == title
   return result
 
-ROOM_find_by_port = (port)->
+ROOM_find_by_port = global.ROOM_find_by_port = (port)->
   _.find ROOM_all, (room)->
     return room and room.port == port
 
-ROOM_validate = (name)->
+ROOM_find_by_pid = global.ROOM_find_by_pid = (pid)->
+  _.find ROOM_all, (room)->
+    return room and room.process_pid == pid
+
+ROOM_validate = global.ROOM_validate = (name)->
   client_name_and_pass = name.split('$', 2)
   client_name = client_name_and_pass[0]
   client_pass = client_name_and_pass[1]
@@ -648,7 +652,7 @@ ROOM_validate = (name)->
     room_pass = room_name_and_pass[1]
     client_name == room_name and client_pass != room_pass
 
-ROOM_unwelcome = (room, bad_player, reason)->
+ROOM_unwelcome = global.ROOM_unwelcome = (room, bad_player, reason)->
   return unless room
   for player in room.players
     if player and player == bad_player
@@ -658,7 +662,7 @@ ROOM_unwelcome = (room, bad_player, reason)->
       ygopro.stoc_send_chat(player, "${unwelcome_tip_part1}#{reason}${unwelcome_tip_part2}", ygopro.constants.COLORS.BABYBLUE)
   return
 
-CLIENT_kick = (client) ->
+CLIENT_kick = global.CLIENT_kick = (client) ->
   if !client
     return false
   client.system_kicked = true
@@ -669,7 +673,7 @@ CLIENT_kick = (client) ->
     client.destroy()
   return true
 
-release_disconnect = (dinfo, reconnected) ->
+release_disconnect = global.release_disconnect = (dinfo, reconnected) ->
   if dinfo.old_client and !reconnected
     dinfo.old_client.destroy()
   if dinfo.old_server and !reconnected
@@ -677,7 +681,7 @@ release_disconnect = (dinfo, reconnected) ->
   clearTimeout(dinfo.timeout)
   return
 
-CLIENT_get_authorize_key = (client) ->
+CLIENT_get_authorize_key = global.CLIENT_get_authorize_key = (client) ->
   if !settings.modules.mycard.enabled and client.vpass
     return client.name_vpass
   else if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or settings.modules.challonge.enabled or client.is_local
@@ -685,7 +689,7 @@ CLIENT_get_authorize_key = (client) ->
   else
     return client.ip + ":" + client.name
 
-CLIENT_reconnect_unregister = (client, reconnected, exact) ->
+CLIENT_reconnect_unregister = global.CLIENT_reconnect_unregister = (client, reconnected, exact) ->
   if !settings.modules.reconnect.enabled
     return false
   if disconnect_list[CLIENT_get_authorize_key(client)]
@@ -696,7 +700,7 @@ CLIENT_reconnect_unregister = (client, reconnected, exact) ->
     return true
   return false
 
-CLIENT_reconnect_register = (client, room_id, error) ->
+CLIENT_reconnect_register = global.CLIENT_reconnect_register = (client, room_id, error) ->
   room = ROOM_all[room_id]
   if client.had_new_reconnection
     return false
@@ -727,7 +731,7 @@ CLIENT_reconnect_register = (client, room_id, error) ->
     ygopro.ctos_send(client.server, 'SURRENDER')
   return true
 
-CLIENT_import_data = (client, old_client, room) ->
+CLIENT_import_data = global.CLIENT_import_data = (client, old_client, room) ->
   for player,index in room.players
     if player == old_client
       room.players[index] = client
@@ -744,7 +748,7 @@ CLIENT_import_data = (client, old_client, room) ->
   old_client.had_new_reconnection = true
   return
 
-SERVER_clear_disconnect = (server) ->
+SERVER_clear_disconnect = global.SERVER_clear_disconnect = (server) ->
   return false unless settings.modules.reconnect.enabled
   for k,v of disconnect_list
     if v and server == v.old_server
@@ -753,7 +757,7 @@ SERVER_clear_disconnect = (server) ->
       return true
   return false
 
-ROOM_clear_disconnect = (room_id) ->
+ROOM_clear_disconnect = global.ROOM_clear_disconnect = (room_id) ->
   return false unless settings.modules.reconnect.enabled
   for k,v of disconnect_list
     if v and room_id == v.room_id
@@ -762,7 +766,7 @@ ROOM_clear_disconnect = (room_id) ->
       return true
   return false
 
-CLIENT_is_player = (client, room) ->
+CLIENT_is_player = global.CLIENT_is_player = (client, room) ->
   is_player = false
   for player in room.players
     if client == player
@@ -770,7 +774,7 @@ CLIENT_is_player = (client, room) ->
       break
   return is_player and client.pos <= 3
 
-CLIENT_is_able_to_reconnect = (client, deckbuf) ->
+CLIENT_is_able_to_reconnect = global.CLIENT_is_able_to_reconnect = (client, deckbuf) ->
   unless settings.modules.reconnect.enabled
     return false
   if client.system_kicked
@@ -786,20 +790,20 @@ CLIENT_is_able_to_reconnect = (client, deckbuf) ->
     return false
   return true
 
-CLIENT_get_kick_reconnect_target = (client, deckbuf) ->
+CLIENT_get_kick_reconnect_target = global.CLIENT_get_kick_reconnect_target = (client, deckbuf) ->
   for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and !room.windbot
     for player in room.get_playing_player() when !player.closed and player.name == client.name and (settings.modules.challonge.enabled or player.pass == client.pass) and (settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or player.ip == client.ip or (client.vpass and client.vpass == player.vpass)) and (!deckbuf or _.isEqual(player.start_deckbuf, deckbuf))
       return player
   return null
 
-CLIENT_is_able_to_kick_reconnect = (client, deckbuf) ->
+CLIENT_is_able_to_kick_reconnect = global.CLIENT_is_able_to_kick_reconnect = (client, deckbuf) ->
   unless settings.modules.reconnect.enabled and settings.modules.reconnect.allow_kick_reconnect
     return false
   if !CLIENT_get_kick_reconnect_target(client, deckbuf)
     return false
   return true
 
-CLIENT_send_pre_reconnect_info = (client, room, old_client) ->
+CLIENT_send_pre_reconnect_info = global.CLIENT_send_pre_reconnect_info = (client, room, old_client) ->
   ygopro.stoc_send_chat(client, "${pre_reconnecting_to_room}", ygopro.constants.COLORS.BABYBLUE)
   ygopro.stoc_send(client, 'JOIN_GAME', room.join_game_buffer)
   req_pos = old_client.pos
@@ -815,7 +819,7 @@ CLIENT_send_pre_reconnect_info = (client, room, old_client) ->
     })
   return
 
-CLIENT_send_reconnect_info = (client, server, room) ->
+CLIENT_send_reconnect_info = global.CLIENT_send_reconnect_info = (client, server, room) ->
   client.reconnecting = true
   ygopro.stoc_send_chat(client, "${reconnecting_to_room}", ygopro.constants.COLORS.BABYBLUE)
   switch room.duel_stage
@@ -842,7 +846,7 @@ CLIENT_send_reconnect_info = (client, server, room) ->
       break
   return
 
-CLIENT_pre_reconnect = (client) ->
+CLIENT_pre_reconnect = global.CLIENT_pre_reconnect = (client) ->
   if CLIENT_is_able_to_reconnect(client)
     dinfo = disconnect_list[CLIENT_get_authorize_key(client)]
     client.pre_reconnecting = true
@@ -857,7 +861,7 @@ CLIENT_pre_reconnect = (client) ->
     CLIENT_send_pre_reconnect_info(client, ROOM_all[player.rid], player)
   return
 
-CLIENT_reconnect = (client) ->
+CLIENT_reconnect = global.CLIENT_reconnect = (client) ->
   if !CLIENT_is_able_to_reconnect(client)
     ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED)
     CLIENT_kick(client)
@@ -883,7 +887,7 @@ CLIENT_reconnect = (client) ->
   CLIENT_reconnect_unregister(client, true)
   return
 
-CLIENT_kick_reconnect = (client, deckbuf) ->
+CLIENT_kick_reconnect = global.CLIENT_kick_reconnect = (client, deckbuf) ->
   if !CLIENT_is_able_to_kick_reconnect(client)
     ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED)
     CLIENT_kick(client)
@@ -915,7 +919,7 @@ CLIENT_kick_reconnect = (client, deckbuf) ->
 if settings.modules.reconnect.enabled
   disconnect_list = {} # {old_client, old_server, room_id, timeout, deckbuf}
 
-CLIENT_heartbeat_unregister = (client) ->
+CLIENT_heartbeat_unregister = global.CLIENT_heartbeat_unregister = (client) ->
   if !settings.modules.heartbeat_detection.enabled or !client.heartbeat_timeout
     return false
   clearTimeout(client.heartbeat_timeout)
@@ -923,7 +927,7 @@ CLIENT_heartbeat_unregister = (client) ->
   #log.info(2, client.name)
   return true
 
-CLIENT_heartbeat_register = (client, send) ->
+CLIENT_heartbeat_register = global.CLIENT_heartbeat_register = (client, send) ->
   if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.waiting_for_last or client.pos > 3 or client.heartbeat_protected
     return false
   if client.heartbeat_timeout
@@ -946,10 +950,10 @@ CLIENT_heartbeat_register = (client, send) ->
   #log.info(1, client.name)
   return true
 
-CLIENT_is_banned_by_mc = (client) ->
+CLIENT_is_banned_by_mc = global.CLIENT_is_banned_by_mc = (client) ->
   return client.ban_mc and client.ban_mc.banned and moment().isBefore(client.ban_mc.until)
 
-CLIENT_send_replays = (client, room) ->
+CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
   return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
   client.replays_sent = true
   i = 0
@@ -960,7 +964,7 @@ CLIENT_send_replays = (client, room) ->
       ygopro.stoc_send(client, "REPLAY", buffer)
   return true
 
-SOCKET_flush_data = (sk, datas) ->
+SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
   if !sk or sk.closed
     return false
   for buffer in datas
@@ -1611,16 +1615,25 @@ net.createServer (client) ->
             cancel = false
             if settings.modules.reconnect.enabled and client.pre_reconnecting and ygopro.constants.CTOS[ctos_proto] != 'UPDATE_DECK'
               cancel = true
+            b = ctos_buffer.slice(3, ctos_message_length - 1 + 3)
+            info = null
+            if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
+              struct._setBuff(b)
+              info = _.clone(struct.fields)
+            if ygopro.ctos_follows_before[ctos_proto] and !cancel
+              for ctos_event in ygopro.ctos_follows_before[ctos_proto]
+                result = ctos_event.callback b, info, client, client.server, datas
+                if result and ctos_event.synchronous
+                  cancel = true
             if ygopro.ctos_follows[ctos_proto] and !cancel
-              b = ctos_buffer.slice(3, ctos_message_length - 1 + 3)
-              info = null
-              if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
-                struct._setBuff(b)
-                info = _.clone(struct.fields)
-              if ygopro.ctos_follows[ctos_proto].synchronous
-                cancel = ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
-              else
-                ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
+              result = ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
+              if result and ygopro.ctos_follows[ctos_proto].synchronous
+                cancel = true
+            if ygopro.ctos_follows_after[ctos_proto] and !cancel
+              for ctos_event in ygopro.ctos_follows_after[ctos_proto]
+                result = ctos_event.callback b, info, client, client.server, datas
+                if result and ctos_event.synchronous
+                  cancel = true
             datas.push ctos_buffer.slice(0, 2 + ctos_message_length) unless cancel
             ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
             ctos_message_length = 0
@@ -1679,17 +1692,25 @@ net.createServer (client) ->
         if stoc_buffer.length >= 2 + stoc_message_length
           #console.log "STOC", ygopro.constants.STOC[stoc_proto]
           cancel = false
-          stanzas = stoc_proto
-          if ygopro.stoc_follows[stoc_proto]
-            b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
-            info = null
-            if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
-              struct._setBuff(b)
-              info = _.clone(struct.fields)
-            if ygopro.stoc_follows[stoc_proto].synchronous
-              cancel = ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
-            else
-              ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
+          b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
+          info = null
+          if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
+            struct._setBuff(b)
+            info = _.clone(struct.fields)
+          if ygopro.stoc_follows_before[stoc_proto] and !cancel
+            for stoc_event in ygopro.stoc_follows_before[stoc_proto]
+              result = stoc_event.callback b, info, server.client, server, datas
+              if result and stoc_event.synchronous
+                cancel = true
+          if ygopro.stoc_follows[stoc_proto] and !cancel
+            result = ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
+            if result and ygopro.stoc_follows[stoc_proto].synchronous
+              cancel = true
+          if ygopro.stoc_follows_after[stoc_proto] and !cancel
+            for stoc_event in ygopro.stoc_follows_after[stoc_proto]
+              result = stoc_event.callback b, info, server.client, server, datas
+              if result and stoc_event.synchronous
+                cancel = true
           datas.push stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
           stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
           stoc_message_length = 0
@@ -2262,7 +2283,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
   return
 
 # 登场台词
-load_dialogues = () ->
+load_dialogues = global.load_dialogues = () ->
   request
     url: settings.modules.dialogues.get
     json: true
@@ -2718,7 +2739,7 @@ ygopro.stoc_send_random_tip_to_room = (room)->
     ygopro.stoc_send_chat_to_room(room, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
   return
 
-load_tips = ()->
+load_tips = global.load_tips = ()->
   request
     url: settings.modules.tips.get
     json: true
@@ -2818,7 +2839,7 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server, datas)->
     return true
   return false
 
-report_to_big_brother = (roomname, sender, ip, level, content, match) ->
+report_to_big_brother = global.report_to_big_brother = (roomname, sender, ip, level, content, match) ->
   return unless settings.modules.big_brother.enabled
   request.post { url : settings.modules.big_brother.post , form : {
     accesskey: settings.modules.big_brother.accesskey,
@@ -3381,9 +3402,9 @@ setInterval ()->
 
 # spawn windbot
 windbot_looplimit = 0
-windbot_process = null
+windbot_process = global.windbot_process = null
 
-spawn_windbot = () ->
+spawn_windbot = global.spawn_windbot = () ->
   if /^win/.test(process.platform)
     windbot_bin = 'WindBot.exe'
     windbot_parameters = []
@@ -3709,3 +3730,11 @@ if settings.modules.http
     if settings.modules.http.websocket_roomlist and roomlist
       roomlist.init https_server, ROOM_all
     https_server.listen settings.modules.http.ssl.port
+
+if not fs.existsSync('./plugins')
+  fs.mkdirSync('./plugins')
+
+plugin_list = fs.readdirSync("./plugins")
+for plugin_filename in plugin_list
+  plugin_path = "./plugins/" + plugin_filename
+  require(plugin_path)

@@ -37,26 +37,55 @@ for name, declaration of structs_declaration
 
 #消息跟踪函数 需要重构, 另暂时只支持异步, 同步没做.
 @stoc_follows = {}
+@stoc_follows_before = {}
+@stoc_follows_after = {}
 @ctos_follows = {}
+@ctos_follows_before = {}
+@ctos_follows_after = {}
+
+@replace_proto = (proto, tp) ->
+  if typeof(proto) != "string"
+    return proto
+  changed_proto = proto
+  for key, value of @constants[tp]
+    if value == proto
+      changed_proto = key
+      break
+  throw "unknown proto" if !@constants[tp][changed_proto]
+  return changed_proto
+
 @stoc_follow = (proto, synchronous, callback)->
-  if typeof proto == 'string'
-    for key, value of @constants.STOC
-      if value == proto
-        proto = key
-        break
-    throw "unknown proto" if !@constants.STOC[proto]
-  @stoc_follows[proto] = {callback: callback, synchronous: synchronous}
+  changed_proto = @replace_proto(proto, "STOC")
+  @stoc_follows[changed_proto] = {callback: callback, synchronous: synchronous}
+  return
+@stoc_follow_before = (proto, synchronous, callback)->
+  changed_proto = @replace_proto(proto, "STOC")
+  if !@stoc_follows_before[changed_proto]
+    @stoc_follows_before[changed_proto] = []
+  @stoc_follows_before[changed_proto].push({callback: callback, synchronous: synchronous})
+  return
+@stoc_follow_after = (proto, synchronous, callback)->
+  changed_proto = @replace_proto(proto, "STOC")
+  if !@stoc_follows_after[changed_proto]
+    @stoc_follows_after[changed_proto] = []
+  @stoc_follows_after[changed_proto].push({callback: callback, synchronous: synchronous})
   return
 @ctos_follow = (proto, synchronous, callback)->
-  if typeof proto == 'string'
-    for key, value of @constants.CTOS
-      if value == proto
-        proto = key
-        break
-    throw "unknown proto" if !@constants.CTOS[proto]
-  @ctos_follows[proto] = {callback: callback, synchronous: synchronous}
+  changed_proto = @replace_proto(proto, "CTOS")
+  @ctos_follows[changed_proto] = {callback: callback, synchronous: synchronous}
   return
-
+@ctos_follow_before = (proto, synchronous, callback)->
+  changed_proto = @replace_proto(proto, "CTOS")
+  if !@ctos_follows_before[changed_proto]
+    @ctos_follows_before[changed_proto] = []
+  @ctos_follows_before[changed_proto].push({callback: callback, synchronous: synchronous})
+  return
+@ctos_follow_after = (proto, synchronous, callback)->
+  changed_proto = @replace_proto(proto, "CTOS")
+  if !@ctos_follows_after[changed_proto]
+    @ctos_follows_after[changed_proto] = []
+  @ctos_follows_after[changed_proto].push({callback: callback, synchronous: synchronous})
+  return
 
 #消息发送函数,至少要把俩合起来....
 @stoc_send = (socket, proto, info)->
