@@ -246,37 +246,37 @@
   default_data = loadJSON('./data/default_data.json');
 
   try {
-    tips = loadJSON('./config/tips.json');
+    tips = global.tips = loadJSON('./config/tips.json');
   } catch (error1) {
-    tips = default_data.tips;
+    tips = global.tips = default_data.tips;
     setting_save(tips);
   }
 
   try {
-    dialogues = loadJSON('./config/dialogues.json');
+    dialogues = global.dialogues = loadJSON('./config/dialogues.json');
   } catch (error1) {
-    dialogues = default_data.dialogues;
+    dialogues = global.dialogues = default_data.dialogues;
     setting_save(dialogues);
   }
 
   try {
-    badwords = loadJSON('./config/badwords.json');
+    badwords = global.badwords = loadJSON('./config/badwords.json');
   } catch (error1) {
-    badwords = default_data.badwords;
+    badwords = global.badwords = default_data.badwords;
     setting_save(badwords);
   }
 
   try {
-    duel_log = loadJSON('./config/duel_log.json');
+    duel_log = global.duel_log = loadJSON('./config/duel_log.json');
   } catch (error1) {
-    duel_log = default_data.duel_log;
+    duel_log = global.duel_log = default_data.duel_log;
     setting_save(duel_log);
   }
 
   try {
-    chat_color = loadJSON('./config/chat_color.json');
+    chat_color = global.chat_color = loadJSON('./config/chat_color.json');
   } catch (error1) {
-    chat_color = default_data.chat_color;
+    chat_color = global.chat_color = default_data.chat_color;
     setting_save(chat_color);
   }
 
@@ -347,7 +347,7 @@
   }
 
   if (settings.modules.heartbeat_detection.enabled) {
-    long_resolve_cards = loadJSON('./data/long_resolve_cards.json');
+    long_resolve_cards = global.long_resolve_cards = loadJSON('./data/long_resolve_cards.json');
   }
 
   ygopro = global.ygopro = require('./ygopro.js');
