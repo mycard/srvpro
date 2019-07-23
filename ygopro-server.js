@@ -24,7 +24,7 @@
 
   spawnSync = require('child_process').spawnSync;
 
-  _ = require('underscore');
+  _ = global._ = require('underscore');
 
   _.str = require('underscore.string');
 
@@ -38,7 +38,7 @@
     name: "mycard"
   });
 
-  moment = require('moment');
+  moment = global.moment = require('moment');
 
   moment.updateLocale('zh-cn', {
     relativeTime: {
