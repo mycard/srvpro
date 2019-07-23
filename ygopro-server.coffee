@@ -636,6 +636,10 @@ ROOM_find_by_port = global.ROOM_find_by_port = (port)->
   _.find ROOM_all, (room)->
     return room and room.port == port
 
+ROOM_find_by_pid = global.ROOM_find_by_pid = (pid)->
+  _.find ROOM_all, (room)->
+    return room and room.process_pid == pid
+
 ROOM_validate = global.ROOM_validate = (name)->
   client_name_and_pass = name.split('$', 2)
   client_name = client_name_and_pass[0]
