@@ -159,7 +159,7 @@ catch
   config = {}
 settings = global.settings = merge(default_config, config, { arrayMerge: (destination, source) -> source })
 
-auth = require './ygopro-auth.js'
+auth = global.auth = require './ygopro-auth.js'
 
 #import old configs
 imported = false
@@ -299,8 +299,8 @@ if settings.modules.heartbeat_detection.enabled
   long_resolve_cards = loadJSON('./data/long_resolve_cards.json')
 
 # 组件
-ygopro = require './ygopro.js'
-roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
+ygopro = global.ygopro = require './ygopro.js'
+roomlist = global.roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
 
 if settings.modules.i18n.auto_pick
   geoip = require('geoip-country-lite')
@@ -3709,3 +3709,11 @@ if settings.modules.http
     if settings.modules.http.websocket_roomlist and roomlist
       roomlist.init https_server, ROOM_all
     https_server.listen settings.modules.http.ssl.port
+
+if not fs.existsSync('./plugins')
+  fs.mkdirSync('./plugins')
+
+plugin_list = fs.readdirSync("./plugins")
+for plugin_filename in plugin_list
+  plugin_path = "./plugins/" + plugin_filename
+  require(plugin_path)
