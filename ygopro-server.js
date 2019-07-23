@@ -128,11 +128,11 @@
     }
   }
 
-  setting_save = function(settings) {
+  setting_save = global.setting_save = function(settings) {
     fs.writeFileSync(settings.file, JSON.stringify(settings, null, 2));
   };
 
-  setting_change = function(settings, path, val) {
+  setting_change = global.setting_change = function(settings, path, val) {
     var key, target;
     if (_.isString(val)) {
       log.info("setting changed", path, val);
@@ -288,7 +288,7 @@
     log.info("ygopro version 0x" + settings.version.toString(16), "(from config)");
   }
 
-  lflists = [];
+  lflists = global.lflists = [];
 
   try {
     ref = fs.readFileSync('ygopro/expansions/lflist.conf', 'utf8').match(/!.*/g);
@@ -482,9 +482,9 @@
     }
   }
 
-  memory_usage = 0;
+  memory_usage = global.memory_usage = 0;
 
-  get_memory_usage = function() {
+  get_memory_usage = get_memory_usage = function() {
     var prc_free;
     prc_free = exec("free");
     prc_free.stdout.on('data', function(data) {
@@ -511,21 +511,21 @@
 
   setInterval(get_memory_usage, 3000);
 
-  Cloud_replay_ids = [];
+  Cloud_replay_ids = global.Cloud_replay_ids = [];
 
-  ROOM_all = [];
+  ROOM_all = global.ROOM_all = [];
 
-  ROOM_players_oppentlist = {};
+  ROOM_players_oppentlist = global.ROOM_players_oppentlist = {};
 
-  ROOM_players_banned = [];
+  ROOM_players_banned = global.ROOM_players_banned = [];
 
-  ROOM_players_scores = {};
+  ROOM_players_scores = global.ROOM_players_scores = {};
 
-  ROOM_connected_ip = {};
+  ROOM_connected_ip = global.ROOM_connected_ip = {};
 
-  ROOM_bad_ip = {};
+  ROOM_bad_ip = global.ROOM_bad_ip = {};
 
-  ban_user = function(name) {
+  ban_user = global.ban_user = function(name) {
     var bad_ip, len2, len3, m, n, player, ref2, room;
     settings.ban.banned_user.push(name);
     setting_save(settings);
@@ -550,7 +550,7 @@
     }
   };
 
-  ROOM_ban_player = function(name, ip, reason, countadd) {
+  ROOM_ban_player = global.ROOM_ban_player = function(name, ip, reason, countadd) {
     var bannedplayer, bantime;
     if (countadd == null) {
       countadd = 1;
@@ -583,7 +583,7 @@
     }
   };
 
-  ROOM_player_win = function(name) {
+  ROOM_player_win = global.ROOM_player_win = function(name) {
     if (!ROOM_players_scores[name]) {
       ROOM_players_scores[name] = {
         win: 0,
@@ -596,7 +596,7 @@
     ROOM_players_scores[name].combo = ROOM_players_scores[name].combo + 1;
   };
 
-  ROOM_player_lose = function(name) {
+  ROOM_player_lose = global.ROOM_player_lose = function(name) {
     if (!ROOM_players_scores[name]) {
       ROOM_players_scores[name] = {
         win: 0,
@@ -609,7 +609,7 @@
     ROOM_players_scores[name].combo = 0;
   };
 
-  ROOM_player_flee = function(name) {
+  ROOM_player_flee = global.ROOM_player_flee = function(name) {
     if (!ROOM_players_scores[name]) {
       ROOM_players_scores[name] = {
         win: 0,
@@ -622,7 +622,7 @@
     ROOM_players_scores[name].combo = 0;
   };
 
-  ROOM_player_get_score = function(player) {
+  ROOM_player_get_score = global.ROOM_player_get_score = function(player) {
     var name, score, total;
     name = player.name_vpass;
     score = ROOM_players_scores[name];
@@ -671,7 +671,7 @@
     }, 60000);
   }
 
-  ROOM_find_or_create_by_name = function(name, player_ip) {
+  ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = function(name, player_ip) {
     var room, uname;
     uname = name.toUpperCase();
     if (settings.modules.windbot.enabled && (uname.slice(0, 2) === 'AI' || (!settings.modules.random_duel.enabled && uname === ''))) {
@@ -689,7 +689,7 @@
     }
   };
 
-  ROOM_find_or_create_random = function(type, player_ip) {
+  ROOM_find_or_create_random = global.ROOM_find_or_create_random = function(type, player_ip) {
     var bannedplayer, max_player, name, playerbanned, result;
     bannedplayer = _.find(ROOM_players_banned, function(bannedplayer) {
       return player_ip === bannedplayer.ip;
@@ -738,7 +738,7 @@
     return result;
   };
 
-  ROOM_find_or_create_ai = function(name) {
+  ROOM_find_or_create_ai = global.ROOM_find_or_create_ai = function(name) {
     var ainame, namea, result, room, uname, windbot;
     if (name === '') {
       name = 'AI';
@@ -777,7 +777,7 @@
     return result;
   };
 
-  ROOM_find_by_name = function(name) {
+  ROOM_find_by_name = global.ROOM_find_by_name = function(name) {
     var result;
     result = _.find(ROOM_all, function(room) {
       return room && room.name === name;
@@ -785,7 +785,7 @@
     return result;
   };
 
-  ROOM_find_by_title = function(title) {
+  ROOM_find_by_title = global.ROOM_find_by_title = function(title) {
     var result;
     result = _.find(ROOM_all, function(room) {
       return room && room.title === title;
@@ -793,13 +793,13 @@
     return result;
   };
 
-  ROOM_find_by_port = function(port) {
+  ROOM_find_by_port = global.ROOM_find_by_port = function(port) {
     return _.find(ROOM_all, function(room) {
       return room && room.port === port;
     });
   };
 
-  ROOM_validate = function(name) {
+  ROOM_validate = global.ROOM_validate = function(name) {
     var client_name, client_name_and_pass, client_pass;
     client_name_and_pass = name.split('$', 2);
     client_name = client_name_and_pass[0];
@@ -819,7 +819,7 @@
     });
   };
 
-  ROOM_unwelcome = function(room, bad_player, reason) {
+  ROOM_unwelcome = global.ROOM_unwelcome = function(room, bad_player, reason) {
     var len2, m, player, ref2;
     if (!room) {
       return;
@@ -836,7 +836,7 @@
     }
   };
 
-  CLIENT_kick = function(client) {
+  CLIENT_kick = global.CLIENT_kick = function(client) {
     if (!client) {
       return false;
     }
@@ -851,7 +851,7 @@
     return true;
   };
 
-  release_disconnect = function(dinfo, reconnected) {
+  release_disconnect = global.release_disconnect = function(dinfo, reconnected) {
     if (dinfo.old_client && !reconnected) {
       dinfo.old_client.destroy();
     }
@@ -861,7 +861,7 @@
     clearTimeout(dinfo.timeout);
   };
 
-  CLIENT_get_authorize_key = function(client) {
+  CLIENT_get_authorize_key = global.CLIENT_get_authorize_key = function(client) {
     if (!settings.modules.mycard.enabled && client.vpass) {
       return client.name_vpass;
     } else if (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || settings.modules.challonge.enabled || client.is_local) {
@@ -871,7 +871,7 @@
     }
   };
 
-  CLIENT_reconnect_unregister = function(client, reconnected, exact) {
+  CLIENT_reconnect_unregister = global.CLIENT_reconnect_unregister = function(client, reconnected, exact) {
     if (!settings.modules.reconnect.enabled) {
       return false;
     }
@@ -886,7 +886,7 @@
     return false;
   };
 
-  CLIENT_reconnect_register = function(client, room_id, error) {
+  CLIENT_reconnect_register = global.CLIENT_reconnect_register = function(client, room_id, error) {
     var dinfo, room, tmot;
     room = ROOM_all[room_id];
     if (client.had_new_reconnection) {
@@ -918,7 +918,7 @@
     return true;
   };
 
-  CLIENT_import_data = function(client, old_client, room) {
+  CLIENT_import_data = global.CLIENT_import_data = function(client, old_client, room) {
     var index, key, len2, len3, m, n, player, ref2;
     ref2 = room.players;
     for (index = m = 0, len2 = ref2.length; m < len2; index = ++m) {
@@ -945,7 +945,7 @@
     old_client.had_new_reconnection = true;
   };
 
-  SERVER_clear_disconnect = function(server) {
+  SERVER_clear_disconnect = global.SERVER_clear_disconnect = function(server) {
     var k, v;
     if (!settings.modules.reconnect.enabled) {
       return false;
@@ -961,7 +961,7 @@
     return false;
   };
 
-  ROOM_clear_disconnect = function(room_id) {
+  ROOM_clear_disconnect = global.ROOM_clear_disconnect = function(room_id) {
     var k, v;
     if (!settings.modules.reconnect.enabled) {
       return false;
@@ -977,7 +977,7 @@
     return false;
   };
 
-  CLIENT_is_player = function(client, room) {
+  CLIENT_is_player = global.CLIENT_is_player = function(client, room) {
     var is_player, len2, m, player, ref2;
     is_player = false;
     ref2 = room.players;
@@ -991,7 +991,7 @@
     return is_player && client.pos <= 3;
   };
 
-  CLIENT_is_able_to_reconnect = function(client, deckbuf) {
+  CLIENT_is_able_to_reconnect = global.CLIENT_is_able_to_reconnect = function(client, deckbuf) {
     var disconnect_info, room;
     if (!settings.modules.reconnect.enabled) {
       return false;
@@ -1014,7 +1014,7 @@
     return true;
   };
 
-  CLIENT_get_kick_reconnect_target = function(client, deckbuf) {
+  CLIENT_get_kick_reconnect_target = global.CLIENT_get_kick_reconnect_target = function(client, deckbuf) {
     var len2, len3, m, n, player, ref2, room;
     for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
       room = ROOM_all[m];
@@ -1031,7 +1031,7 @@
     return null;
   };
 
-  CLIENT_is_able_to_kick_reconnect = function(client, deckbuf) {
+  CLIENT_is_able_to_kick_reconnect = global.CLIENT_is_able_to_kick_reconnect = function(client, deckbuf) {
     if (!(settings.modules.reconnect.enabled && settings.modules.reconnect.allow_kick_reconnect)) {
       return false;
     }
@@ -1041,7 +1041,7 @@
     return true;
   };
 
-  CLIENT_send_pre_reconnect_info = function(client, room, old_client) {
+  CLIENT_send_pre_reconnect_info = global.CLIENT_send_pre_reconnect_info = function(client, room, old_client) {
     var len2, m, player, ref2, req_pos;
     ygopro.stoc_send_chat(client, "${pre_reconnecting_to_room}", ygopro.constants.COLORS.BABYBLUE);
     ygopro.stoc_send(client, 'JOIN_GAME', room.join_game_buffer);
@@ -1062,7 +1062,7 @@
     }
   };
 
-  CLIENT_send_reconnect_info = function(client, server, room) {
+  CLIENT_send_reconnect_info = global.CLIENT_send_reconnect_info = function(client, server, room) {
     client.reconnecting = true;
     ygopro.stoc_send_chat(client, "${reconnecting_to_room}", ygopro.constants.COLORS.BABYBLUE);
     switch (room.duel_stage) {
@@ -1093,7 +1093,7 @@
     }
   };
 
-  CLIENT_pre_reconnect = function(client) {
+  CLIENT_pre_reconnect = global.CLIENT_pre_reconnect = function(client) {
     var dinfo, player;
     if (CLIENT_is_able_to_reconnect(client)) {
       dinfo = disconnect_list[CLIENT_get_authorize_key(client)];
@@ -1110,7 +1110,7 @@
     }
   };
 
-  CLIENT_reconnect = function(client) {
+  CLIENT_reconnect = global.CLIENT_reconnect = function(client) {
     var current_old_server, dinfo, room;
     if (!CLIENT_is_able_to_reconnect(client)) {
       ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED);
@@ -1138,7 +1138,7 @@
     CLIENT_reconnect_unregister(client, true);
   };
 
-  CLIENT_kick_reconnect = function(client, deckbuf) {
+  CLIENT_kick_reconnect = global.CLIENT_kick_reconnect = function(client, deckbuf) {
     var current_old_server, player, room;
     if (!CLIENT_is_able_to_kick_reconnect(client)) {
       ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED);
@@ -1173,7 +1173,7 @@
     disconnect_list = {};
   }
 
-  CLIENT_heartbeat_unregister = function(client) {
+  CLIENT_heartbeat_unregister = global.CLIENT_heartbeat_unregister = function(client) {
     if (!settings.modules.heartbeat_detection.enabled || !client.heartbeat_timeout) {
       return false;
     }
@@ -1182,7 +1182,7 @@
     return true;
   };
 
-  CLIENT_heartbeat_register = function(client, send) {
+  CLIENT_heartbeat_register = global.CLIENT_heartbeat_register = function(client, send) {
     if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.waiting_for_last || client.pos > 3 || client.heartbeat_protected) {
       return false;
     }
@@ -1209,11 +1209,11 @@
     return true;
   };
 
-  CLIENT_is_banned_by_mc = function(client) {
+  CLIENT_is_banned_by_mc = global.CLIENT_is_banned_by_mc = function(client) {
     return client.ban_mc && client.ban_mc.banned && moment().isBefore(client.ban_mc.until);
   };
 
-  CLIENT_send_replays = function(client, room) {
+  CLIENT_send_replays = global.CLIENT_send_replays = function(client, room) {
     var buffer, i, len2, m, ref2;
     if (!(settings.modules.replay_delay && !(settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe && settings.modules.tournament_mode.block_replay_to_player) && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.closed)) {
       return false;
@@ -1232,7 +1232,7 @@
     return true;
   };
 
-  SOCKET_flush_data = function(sk, datas) {
+  SOCKET_flush_data = global.SOCKET_flush_data = function(sk, datas) {
     var buffer, len2, m;
     if (!sk || sk.closed) {
       return false;
@@ -2798,7 +2798,7 @@
     }
   });
 
-  load_dialogues = function() {
+  load_dialogues = global.load_dialogues = function() {
     request({
       url: settings.modules.dialogues.get,
       json: true
@@ -3422,7 +3422,7 @@
     }
   };
 
-  load_tips = function() {
+  load_tips = global.load_tips = function() {
     request({
       url: settings.modules.tips.get,
       json: true
@@ -3567,7 +3567,7 @@
     return false;
   });
 
-  report_to_big_brother = function(roomname, sender, ip, level, content, match) {
+  report_to_big_brother = global.report_to_big_brother = function(roomname, sender, ip, level, content, match) {
     if (!settings.modules.big_brother.enabled) {
       return;
     }
@@ -4360,9 +4360,9 @@
 
   windbot_looplimit = 0;
 
-  windbot_process = null;
+  windbot_process = global.windbot_process = null;
 
-  spawn_windbot = function() {
+  spawn_windbot = global.spawn_windbot = function() {
     var windbot_bin, windbot_parameters;
     if (/^win/.test(process.platform)) {
       windbot_bin = 'WindBot.exe';
