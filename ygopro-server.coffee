@@ -279,7 +279,7 @@ catch
 if settings.modules.cloud_replay.enabled
   redis = require 'redis'
   zlib = require 'zlib'
-  redisdb = redis.createClient(settings.modules.cloud_replay.redis)
+  redisdb = global.redisdb = redis.createClient(settings.modules.cloud_replay.redis)
   redisdb.on 'error', (err)->
     log.warn err
     return
@@ -293,6 +293,7 @@ if settings.modules.windbot.enabled
       if(!err)
         real_windbot_server_ip = addr
     )
+  global.real_windbot_server_ip = real_windbot_server_ip
 
 
 if settings.modules.heartbeat_detection.enabled
@@ -310,7 +311,7 @@ users_cache = {}
 
 if settings.modules.mycard.enabled
   pgClient = require('pg').Client
-  pg_client = new pgClient(settings.modules.mycard.auth_database)
+  pg_client = global.pg_client = new pgClient(settings.modules.mycard.auth_database)
   pg_client.on 'error', (err) ->
     log.warn "PostgreSQL ERROR: ", err
     return
@@ -346,7 +347,7 @@ if settings.modules.challonge.enabled
   challonge_module_name = 'challonge'
   if settings.modules.challonge.use_custom_module
     challonge_module_name = settings.modules.challonge.use_custom_module
-  challonge = require(challonge_module_name).createClient(settings.modules.challonge.options)
+  challonge = global.challonge = require(challonge_module_name).createClient(settings.modules.challonge.options)
   if settings.modules.challonge.cache_ttl
     challonge_cache = []
   challonge_queue_callbacks = [[], []]
@@ -394,7 +395,7 @@ if settings.modules.challonge.enabled
     catch err
       log.warn("Errored pushing scores to Challonge.", err)
     return
-  refresh_challonge_cache = () ->
+  refresh_challonge_cache = global.refresh_challonge_cache = () ->
     if settings.modules.challonge.cache_ttl
       challonge_cache[0] = null
       challonge_cache[1] = null
@@ -433,7 +434,7 @@ get_memory_usage = get_memory_usage = ()->
       cached = parseInt(line[6], 10)
       actualFree = free + buffers + cached
     percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2))
-    memory_usage = percentUsed
+    memory_usage = global.memory_usage = percentUsed
     return
   return
 get_memory_usage()

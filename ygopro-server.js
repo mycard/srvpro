@@ -327,7 +327,7 @@
   if (settings.modules.cloud_replay.enabled) {
     redis = require('redis');
     zlib = require('zlib');
-    redisdb = redis.createClient(settings.modules.cloud_replay.redis);
+    redisdb = global.redisdb = redis.createClient(settings.modules.cloud_replay.redis);
     redisdb.on('error', function(err) {
       log.warn(err);
     });
@@ -344,6 +344,7 @@
         }
       });
     }
+    global.real_windbot_server_ip = real_windbot_server_ip;
   }
 
   if (settings.modules.heartbeat_detection.enabled) {
@@ -364,7 +365,7 @@
 
   if (settings.modules.mycard.enabled) {
     pgClient = require('pg').Client;
-    pg_client = new pgClient(settings.modules.mycard.auth_database);
+    pg_client = global.pg_client = new pgClient(settings.modules.mycard.auth_database);
     pg_client.on('error', function(err) {
       log.warn("PostgreSQL ERROR: ", err);
     });
@@ -407,7 +408,7 @@
     if (settings.modules.challonge.use_custom_module) {
       challonge_module_name = settings.modules.challonge.use_custom_module;
     }
-    challonge = require(challonge_module_name).createClient(settings.modules.challonge.options);
+    challonge = global.challonge = require(challonge_module_name).createClient(settings.modules.challonge.options);
     if (settings.modules.challonge.cache_ttl) {
       challonge_cache = [];
     }
@@ -470,7 +471,7 @@
         log.warn("Errored pushing scores to Challonge.", err);
       }
     };
-    refresh_challonge_cache = function() {
+    refresh_challonge_cache = global.refresh_challonge_cache = function() {
       if (settings.modules.challonge.cache_ttl) {
         challonge_cache[0] = null;
         challonge_cache[1] = null;
@@ -503,7 +504,7 @@
         actualFree = free + buffers + cached;
       }
       percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2));
-      memory_usage = percentUsed;
+      memory_usage = global.memory_usage = percentUsed;
     });
   };
 
