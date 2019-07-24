@@ -40,7 +40,7 @@ moment.updateLocale('zh-cn', {
   }
 })
 
-import_datas = [
+import_datas = global.import_datas = [
   "abuse_count",
   "ban_mc",
   "vpass",
