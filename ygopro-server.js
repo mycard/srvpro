@@ -3860,7 +3860,7 @@
   });
 
   ygopro.ctos_follow('UPDATE_DECK', true, function(buffer, info, client, server, datas) {
-    var buff_main, buff_side, card, code, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, len2, len3, len4, line, m, n, o, oppo_pos, ref2, room, struct, win_pos;
+    var buff_main, buff_side, card, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, len2, len3, line, m, n, oppo_pos, room, struct, win_pos;
     if (settings.modules.reconnect.enabled && client.pre_reconnecting) {
       if (!CLIENT_is_able_to_reconnect(client) && !CLIENT_is_able_to_kick_reconnect(client)) {
         ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED);
@@ -3936,6 +3936,7 @@
       }
       return true;
     }
+<<<<<<< HEAD
     if (settings.modules.side_restrict.enabled && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN) {
       ref2 = settings.modules.side_restrict.restrict_cards;
       for (m = 0, len2 = ref2.length; m < len2; m++) {
@@ -3950,6 +3951,8 @@
         }
       }
     }
+=======
+>>>>>>> parent of 6a67ab4... restrict siding for some tournaments
     if (room.random_type || room.arena) {
       if (client.pos === 0) {
         room.waiting_for_player = room.waiting_for_player2;
@@ -3964,8 +3967,8 @@
       buffer = struct.buffer;
       found_deck = false;
       decks = fs.readdirSync(settings.modules.tournament_mode.deck_path);
-      for (n = 0, len3 = decks.length; n < len3; n++) {
-        deck = decks[n];
+      for (m = 0, len2 = decks.length; m < len2; m++) {
+        deck = decks[m];
         if (_.endsWith(deck, client.name + ".ydk")) {
           found_deck = deck;
         }
@@ -3981,8 +3984,8 @@
         deck_main = [];
         deck_side = [];
         current_deck = deck_main;
-        for (o = 0, len4 = deck_array.length; o < len4; o++) {
-          line = deck_array[o];
+        for (n = 0, len3 = deck_array.length; n < len3; n++) {
+          line = deck_array[n];
           if (line.indexOf("!side") >= 0) {
             current_deck = deck_side;
           }
