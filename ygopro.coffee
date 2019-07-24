@@ -5,7 +5,7 @@ _.mixin(_.str.exports())
 Struct = require('./struct.js').Struct
 loadJSON = require('load-json-file').sync
 
-i18ns = loadJSON './data/i18n.json'
+@i18ns = loadJSON './data/i18n.json'
 
 #常量/类型声明
 structs_declaration = loadJSON './data/structs.json'  #结构体声明
@@ -152,7 +152,7 @@ for name, declaration of structs_declaration
   for line in _.lines(msg)
     if player>=10
       line="[Server]: "+line
-    for o,r of i18ns[client.lang]
+    for o,r of @i18ns[client.lang]
       re=new RegExp("\\$\\{"+o+"\\}",'g')
       line=line.replace(re,r)
     @stoc_send client, 'CHAT', {
