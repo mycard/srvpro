@@ -4829,7 +4829,7 @@
 
   for (m = 0, len2 = plugin_list.length; m < len2; m++) {
     plugin_filename = plugin_list[m];
-    plugin_path = "./plugins/" + plugin_filename;
+    plugin_path = process.cwd() + "/plugins/" + plugin_filename;
     require(plugin_path);
   }
 

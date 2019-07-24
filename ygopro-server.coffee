@@ -3742,5 +3742,5 @@ if not fs.existsSync('./plugins')
 
 plugin_list = fs.readdirSync("./plugins")
 for plugin_filename in plugin_list
-  plugin_path = "./plugins/" + plugin_filename
+  plugin_path = process.cwd() + "/plugins/" + plugin_filename
   require(plugin_path)
