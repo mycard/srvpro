@@ -285,7 +285,7 @@ if settings.modules.cloud_replay.enabled
     return
 
 if settings.modules.windbot.enabled
-  windbots = loadJSON(settings.modules.windbot.botlist).windbots
+  windbots = global.windbots = loadJSON(settings.modules.windbot.botlist).windbots
   real_windbot_server_ip = settings.modules.windbot.server_ip
   if !settings.modules.windbot.server_ip.includes("127.0.0.1")
     dns = require('dns')
