@@ -1617,7 +1617,8 @@ net.createServer (client) ->
               cancel = true
             b = ctos_buffer.slice(3, ctos_message_length - 1 + 3)
             info = null
-            if struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
+            struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
+            if struct and !cancel
               struct._setBuff(b)
               info = _.clone(struct.fields)
             if ygopro.ctos_follows_before[ctos_proto] and !cancel
@@ -1625,10 +1626,16 @@ net.createServer (client) ->
                 result = ctos_event.callback b, info, client, client.server, datas
                 if result and ctos_event.synchronous
                   cancel = true
+            if struct and !cancel
+              struct._setBuff(b)
+              info = _.clone(struct.fields)
             if ygopro.ctos_follows[ctos_proto] and !cancel
               result = ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
               if result and ygopro.ctos_follows[ctos_proto].synchronous
                 cancel = true
+            if struct and !cancel
+              struct._setBuff(b)
+              info = _.clone(struct.fields)
             if ygopro.ctos_follows_after[ctos_proto] and !cancel
               for ctos_event in ygopro.ctos_follows_after[ctos_proto]
                 result = ctos_event.callback b, info, client, client.server, datas
@@ -1694,7 +1701,8 @@ net.createServer (client) ->
           cancel = false
           b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
           info = null
-          if struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
+          struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
+          if struct and !cancel
             struct._setBuff(b)
             info = _.clone(struct.fields)
           if ygopro.stoc_follows_before[stoc_proto] and !cancel
@@ -1702,10 +1710,16 @@ net.createServer (client) ->
               result = stoc_event.callback b, info, server.client, server, datas
               if result and stoc_event.synchronous
                 cancel = true
+          if struct and !cancel
+            struct._setBuff(b)
+            info = _.clone(struct.fields)
           if ygopro.stoc_follows[stoc_proto] and !cancel
             result = ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
             if result and ygopro.stoc_follows[stoc_proto].synchronous
               cancel = true
+          if struct and !cancel
+            struct._setBuff(b)
+            info = _.clone(struct.fields)
           if ygopro.stoc_follows_after[stoc_proto] and !cancel
             for stoc_event in ygopro.stoc_follows_after[stoc_proto]
               result = stoc_event.callback b, info, server.client, server, datas
