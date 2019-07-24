@@ -3936,23 +3936,6 @@
       }
       return true;
     }
-<<<<<<< HEAD
-    if (settings.modules.side_restrict.enabled && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN) {
-      ref2 = settings.modules.side_restrict.restrict_cards;
-      for (m = 0, len2 = ref2.length; m < len2; m++) {
-        code = ref2[m];
-        if (_.indexOf(buff_side, code) > -1) {
-          ygopro.stoc_send_chat_to_room(room, "${invalid_side_rule}", ygopro.constants.COLORS.RED);
-          ygopro.stoc_send(client, 'ERROR_MSG', {
-            msg: 3,
-            code: 0
-          });
-          return true;
-        }
-      }
-    }
-=======
->>>>>>> parent of 6a67ab4... restrict siding for some tournaments
     if (room.random_type || room.arena) {
       if (client.pos === 0) {
         room.waiting_for_player = room.waiting_for_player2;
