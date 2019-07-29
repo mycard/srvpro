@@ -31,7 +31,7 @@
         }
         return results;
       })(),
-      options: room.hostinfo,
+      options: room.get_old_hostinfo(),
       arena: settings.modules.arena_mode.enabled && room.arena && settings.modules.arena_mode.mode
     };
   };

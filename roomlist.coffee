@@ -9,7 +9,7 @@ room_data = (room)->
   title: room.title,
   user: {username: room.username}
   users: ({username: client.name, position: client.pos} for client in room.players),
-  options: room.hostinfo,
+  options: room.get_old_hostinfo(), # Should be updated when MyCard client updates
   arena: settings.modules.arena_mode.enabled && room.arena && settings.modules.arena_mode.mode
 
 init = (http_server, ROOM_all)->

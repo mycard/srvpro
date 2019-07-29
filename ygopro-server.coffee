@@ -1326,6 +1326,11 @@ class Room
         challonge_duel_log.scoresCsv = "0-0"
     return challonge_duel_log
 
+  get_old_hostinfo: () -> # Just for supporting websocket roomlist in old MyCard client....
+    ret = _.clone(@hostinfo)
+    ret.enable_priority = (@hostinfo.duel_rule == 4)
+    return ret
+
   send_replays: () ->
     return false unless settings.modules.replay_delay and @replays.length and @hostinfo.mode == 1
     for player in @players
