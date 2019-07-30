@@ -1717,7 +1717,7 @@
     Room.prototype.get_old_hostinfo = function() {
       var ret;
       ret = _.clone(this.hostinfo);
-      ret.enable_priority = this.hostinfo.duel_rule === 4;
+      ret.enable_priority = this.hostinfo.duel_rule !== 4;
       return ret;
     };
 
