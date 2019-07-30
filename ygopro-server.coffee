@@ -3351,7 +3351,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
 
 if settings.modules.random_duel.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0
+    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING)
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
@@ -3370,7 +3370,7 @@ if settings.modules.random_duel.enabled
 
 if settings.modules.mycard.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.arena and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0
+    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.arena and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING)
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
