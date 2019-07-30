@@ -2885,7 +2885,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   return unless room
   msg = _.trim(info.msg)
   cancel = _.startsWith(msg, "/")
-  room.last_active_time = moment() unless cancel or not (room.random_type or room.arena)
+  room.last_active_time = moment() unless cancel or not (room.random_type or room.arena) or room.duel_stage == ygopro.constants.DUEL_STAGE.FINGER or room.duel_stage == ygopro.constants.DUEL_STAGE.FIRSTGO or room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING
   cmd = msg.split(' ')
   switch cmd[0]
     when '/投降', '/surrender'

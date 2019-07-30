@@ -3670,7 +3670,7 @@
     }
     msg = _.trim(info.msg);
     cancel = _.startsWith(msg, "/");
-    if (!(cancel || !(room.random_type || room.arena))) {
+    if (!(cancel || !(room.random_type || room.arena) || room.duel_stage === ygopro.constants.DUEL_STAGE.FINGER || room.duel_stage === ygopro.constants.DUEL_STAGE.FIRSTGO || room.duel_stage === ygopro.constants.DUEL_STAGE.SIDING)) {
       room.last_active_time = moment();
     }
     cmd = msg.split(' ');
