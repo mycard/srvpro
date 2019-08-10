@@ -3566,8 +3566,15 @@ if settings.modules.http
         response.end("密码错误")
         return
       else
-        getpath=u.pathname.split("/")
-        filename=path.basename(decodeURIComponent(getpath.pop()))
+        getpath = null
+        filename = null
+        try
+          getpath=u.pathname.split("/")
+          filename=path.basename(decodeURIComponent(getpath.pop()))
+        catch
+          response.writeHead(404)
+          response.end("bad filename")
+          return
         fs.readFile(settings.modules.tournament_mode.replay_path + filename, (error, buffer)->
           if error
             response.writeHead(404)
