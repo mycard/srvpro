@@ -286,14 +286,13 @@ if settings.modules.cloud_replay.enabled
 
 if settings.modules.windbot.enabled
   windbots = global.windbots = loadJSON(settings.modules.windbot.botlist).windbots
-  real_windbot_server_ip = settings.modules.windbot.server_ip
+  real_windbot_server_ip = global.real_windbot_server_ip = settings.modules.windbot.server_ip
   if !settings.modules.windbot.server_ip.includes("127.0.0.1")
     dns = require('dns')
     dns.lookup(settings.modules.windbot.server_ip,(err,addr) ->
       if(!err)
-        real_windbot_server_ip = addr
+        real_windbot_server_ip = global.real_windbot_server_ip = addr
     )
-  global.real_windbot_server_ip = real_windbot_server_ip
 
 
 if settings.modules.heartbeat_detection.enabled
