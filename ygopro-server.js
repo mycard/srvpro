@@ -1340,9 +1340,6 @@
           if (time_limit < 0) {
             time_limit = 180;
           }
-          if (time_limit >= 1 && time_limit <= 60) {
-            time_limit = time_limit * 60;
-          }
           if (time_limit >= 999) {
             time_limit = 999;
           }
