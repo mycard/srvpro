@@ -2,10 +2,12 @@ services:
   - docker
 
 script:
-  - docker build -t srvpro .
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t mycard/ygopro-server:latest .
   - mkdir output dist
-  - docker run --rm -v "$PWD/output:/output" srvpro -e 'require("child_process").execSync("cp -rf ./* /output")'
+  - docker run --rm -v "$PWD/output:/output" mycard/ygopro-server:latest -e 'require("child_process").execSync("cp -rf ./* /output")'
   - cd output && tar -zcf ../dist/ygopro-server.tar.gz --format=posix --exclude='.git*' ./* && cd ..
+  - docker push mycard/ygopro-server:latest
 
 deploy:
   provider: s3
