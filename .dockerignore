@@ -37,6 +37,7 @@ $RECYCLE.BIN/
 
 .git*
 .dockerignore
+.travis.yml
 Dockerfile*
 /docs
 /README.md

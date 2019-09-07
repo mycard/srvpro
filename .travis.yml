@@ -1,0 +1,19 @@
+services:
+  - docker
+
+script:
+  - docker build -t srvpro .
+  - mkdir output dist
+  - docker run --rm -v "$PWD/output:/output" srvpro -e 'require("child_process").execSync("cp -rf ./* /output")'
+  - cd output && tar -zcf ../dist/ygopro-server.tar.gz --format=posix --exclude='.git*' ./* && cd ..
+
+deploy:
+  provider: s3
+  access_key_id: ztDf0fCxr0eCgSIi
+  secret_access_key:
+    secure: pjWuLKCdhR8B4RqaF+filHCBiyQWhUJa/nXQp/2mzzzxtkYiP8POP2zTuw6PCHWeIJz2lTzPmhxShOwoPGx3YdwHEjZEjP/B3xX0PsI+ZDxFfNskFClglqbfAO3f29YwBtEeFoBukWWq5tgiGrCOyIVIdtJyqIpl+lgrSxk6JuaXJ1s+7wy+C2BIGVeoGxuBhBIfKrBHyvusDxvCa+/KXuCfduiscnSPtLYIC4qTXbgiUv3eOrj5AygBlzQ5MUXYG8oIVgWoKv8E2gk7JmhDfntNIhIwBgI0ZXVUFkwwtwxAOc2BIQUEE68oG8gonSbkCq+Q8g74xiO9fXxbDT1Z5aHIHZyMzVTTzA8lAE2F6259D2ResxQy0FkU7Ai3eza9ESPbxKORZSgHxs4jdh9BhMpWyX8Kj0mzaf4xh8yJ0Sbg75Io2PNFHUE+Q7U5IguQ6yZatRbTDOQ58mHJEd8tXR7kYB0C98Jv1Z664Pa3w9/YHdlSWW7xSlGMAz/aGCtszdh+tV9X52oQSzAJmxyKs0WwmLjUt52v7R0WftOhlUzltzP/PgR6eaq86FFxQycvBqAHmVRSQsdsuC0bb9j2bQG9zWcmhxoDGaVDk7Cmx0yBRhvoKrWonalXgswHmZI31HADTihkbH/mT6NE39XMsdtBoAcFwPrfqCmDfNTMmb4=
+  bucket: mycard
+  skip_cleanup: true
+  local-dir: dist
+  upload-dir: srvpro
+  endpoint: https://minio.mycard.moe:9000
