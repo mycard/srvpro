@@ -18,7 +18,7 @@ RUN npm ci && \
 RUN git clone --branch=server --recursive --depth=1 https://github.com/moecube/ygopro && \
     cd ygopro && \
     git submodule foreach git checkout master && \
-    wget -O - https://github.com/premake/premake-core/releases/download/v5.0.0-alpha12/premake-5.0.0-alpha13-linux.tar.gz | tar zfx - && \
+    wget -O - https://github.com/premake/premake-core/releases/download/v5.0.0-alpha13/premake-5.0.0-alpha13-linux.tar.gz | tar zfx - && \
     ./premake5 gmake && \
     cd build && \
     make config=release && \
