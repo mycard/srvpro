@@ -1273,6 +1273,7 @@
       this.turn = 0;
       this.duel_stage = ygopro.constants.DUEL_STAGE.BEGIN;
       this.replays = [];
+      this.first_list = [];
       ROOM_all.push(this);
       this.hostinfo || (this.hostinfo = JSON.parse(JSON.stringify(settings.hostinfo)));
       delete this.hostinfo.comment;
@@ -1555,6 +1556,7 @@
             userscoreB: score_array[1].score,
             userdeckA: score_array[0].deck,
             userdeckB: score_array[1].deck,
+            first: this.first_list,
             replays: formatted_replays,
             start: this.start_time,
             end: end_time,
@@ -2934,6 +2936,9 @@
     if (ygopro.constants.MSG[msg] === 'START') {
       playertype = buffer.readUInt8(1);
       client.is_first = !(playertype & 0xf);
+      if (client.is_first && (room.hostinfo.mode !== 2 || client.pos === 0 || client.pos === 2)) {
+        room.first_list[room.duel_count - 1] = client.name_vpass;
+      }
       client.lp = room.hostinfo.start_lp;
       if (room.hostinfo.mode !== 2) {
         client.card_count = 0;
