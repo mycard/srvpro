@@ -2551,7 +2551,7 @@
           json: true
         }, function(error, response, body) {
           var len3, n, ref3;
-          if (body && body.user) {
+          if (!error && body && body.user) {
             users_cache[client.name] = body.user.id;
             secret = body.user.id % 65535 + 1;
             decrypted_buffer = Buffer.allocUnsafe(6);
@@ -2563,6 +2563,10 @@
             if (check_buffer_indentity(decrypted_buffer)) {
               buffer = decrypted_buffer;
             }
+          } else {
+            log.warn("READ USER FAIL", error, body);
+            ygopro.stoc_die(client, "${create_room_failed}");
+            return;
           }
           if (!check_buffer_indentity(buffer)) {
             ygopro.stoc_die(client, '${invalid_password_checksum}');
