@@ -2023,7 +2023,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
           skip_track_visit: true
         json: true
       , (error, response, body)->
-        if body and body.user
+        if !error and body and body.user
           users_cache[client.name] = body.user.id
           secret = body.user.id % 65535 + 1
           decrypted_buffer = Buffer.allocUnsafe(6)
@@ -2031,6 +2031,10 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
           if check_buffer_indentity(decrypted_buffer)
             buffer = decrypted_buffer
+        else
+          log.warn("READ USER FAIL", error, body)
+          ygopro.stoc_die(client, "${create_room_failed}")
+          return
 
         # buffer != decrypted_buffer  ==> auth failed
 
