@@ -1,12 +1,12 @@
 services:
   - docker
 script:
-  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+  # - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
   - docker build -t mycard/ygopro-server:latest .
   - mkdir output dist
   - docker run --rm -v "$PWD/output:/output" mycard/ygopro-server:latest -e 'require("child_process").execSync("cp -rf ./* /output")'
   - cd output && tar -zcf ../dist/ygopro-server.tar.gz --format=posix --exclude='.git*' ./* && cd ..
-  - docker push mycard/ygopro-server:latest
+  # - docker push mycard/ygopro-server:latest
 deploy:
   provider: s3
   access_key_id: ztDf0fCxr0eCgSIi
