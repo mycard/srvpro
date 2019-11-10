@@ -1202,8 +1202,8 @@ class Room
         userscoreB: score_array[1].score,
         userdeckA: score_array[0].deck,
         userdeckB: score_array[1].deck,
-        first: @first_list,
-        replays: formatted_replays,
+        first: JSON.stringify(@first_list),
+        replays: JSON.stringify(formatted_replays),
         start: @start_time,
         end: end_time,
         arena: @arena

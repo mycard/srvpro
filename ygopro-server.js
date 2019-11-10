@@ -1556,8 +1556,8 @@
             userscoreB: score_array[1].score,
             userdeckA: score_array[0].deck,
             userdeckB: score_array[1].deck,
-            first: this.first_list,
-            replays: formatted_replays,
+            first: JSON.stringify(this.first_list),
+            replays: JSON.stringify(formatted_replays),
             start: this.start_time,
             end: end_time,
             arena: this.arena
