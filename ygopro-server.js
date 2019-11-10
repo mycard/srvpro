@@ -1984,15 +1984,15 @@
     });
     server.on('close', function(had_error) {
       var room;
-      room = ROOM_all[server.client.rid];
-      if (room) {
-        room.disconnector = 'server';
-      }
       if (!server.closed) {
         server.closed = true;
       }
       if (!server.client) {
         return;
+      }
+      room = ROOM_all[server.client.rid];
+      if (room) {
+        room.disconnector = 'server';
       }
       if (!server.client.closed) {
         ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED);
@@ -2002,13 +2002,13 @@
     });
     server.on('error', function(error) {
       var room;
-      room = ROOM_all[server.client.rid];
-      if (room) {
-        room.disconnector = 'server';
-      }
       server.closed = error;
       if (!server.client) {
         return;
+      }
+      room = ROOM_all[server.client.rid];
+      if (room) {
+        room.disconnector = 'server';
       }
       if (!server.client.closed) {
         ygopro.stoc_send_chat(server.client, "${server_error}: " + error, ygopro.constants.COLORS.RED);
