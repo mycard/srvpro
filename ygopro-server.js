@@ -2268,7 +2268,7 @@
     if (deck_name === player_name || deck_name === player_name + ".ydk" || deck_name === player_name + ".ydk.ydk") {
       return true;
     }
-    parsed_deck_name = deck_name.match(/^([^\+]+)[\+ ](.+?)(\.ydk){0,2}$/);
+    parsed_deck_name = deck_name.match(/^([^\+]+)[\+ \uff0b](.+?)(\.ydk){0,2}$/);
     return parsed_deck_name && (player_name === parsed_deck_name[1] || player_name === parsed_deck_name[2]);
   };
 
