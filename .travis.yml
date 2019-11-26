@@ -1,5 +1,6 @@
 services:
   - docker
+dist: bionic 
 script:
   # - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
   - docker build -t mycard/ygopro-server:latest .
@@ -17,3 +18,6 @@ deploy:
   local-dir: dist
   upload-dir: srvpro
   endpoint: https://minio.mycard.moe:9000
+branches:
+  only:
+    - master
