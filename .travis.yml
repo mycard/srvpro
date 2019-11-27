@@ -8,16 +8,16 @@ script:
   - docker run --rm -v "$PWD/output:/output" mycard/ygopro-server:latest -e 'require("child_process").execSync("cp -rf ./* /output")'
   - cd output && tar -zcf ../dist/ygopro-server.tar.gz --format=posix --exclude='.git*' ./* && cd ..
   # - docker push mycard/ygopro-server:latest
-deploy:
-  provider: s3
-  access_key_id: ztDf0fCxr0eCgSIi
-  secret_access_key:
-    secure: Bm63Gi9Ok19pxhPiCbNnXlRYCmxxZWsj/PfxqGm1ruWLxinjJfpQHSRzSNTb/j0D8kK3uzUB+9MjrtcA5Nnfby4r+zuU+gvpW+3hOX2TiEtCSqYjenQmSsLD5WelMrBHXwfAQ5jOBzkdtC0vX4UTLAGcwJ8DhL9CbMJi0ZqDK9o=
-  bucket: mycard
-  skip_cleanup: true
-  local-dir: dist
-  upload-dir: srvpro
-  endpoint: https://minio.mycard.moe:9000
+#deploy:
+#  provider: s3
+#  access_key_id: ztDf0fCxr0eCgSIi
+#  secret_access_key:
+#    secure: Bm63Gi9Ok19pxhPiCbNnXlRYCmxxZWsj/PfxqGm1ruWLxinjJfpQHSRzSNTb/j0D8kK3uzUB+9MjrtcA5Nnfby4r+zuU+gvpW+3hOX2TiEtCSqYjenQmSsLD5WelMrBHXwfAQ5jOBzkdtC0vX4UTLAGcwJ8DhL9CbMJi0ZqDK9o=
+#  bucket: mycard
+#  skip_cleanup: true
+#  local-dir: dist
+#  upload-dir: srvpro
+#  endpoint: https://minio.mycard.moe:9000
 branches:
   only:
     - master
