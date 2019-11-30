@@ -1761,7 +1761,7 @@ if settings.modules.stop
 deck_name_match = global.deck_name_match = (deck_name, player_name) ->
   if deck_name == player_name or deck_name == player_name + ".ydk" or deck_name == player_name + ".ydk.ydk"
     return true
-  parsed_deck_name = deck_name.match(/^([^\+]+)[\+ \uff0b](.+?)(\.ydk){0,2}$/)
+  parsed_deck_name = deck_name.match(/^([^\+ \uff0b]+)[\+ \uff0b](.+?)(\.ydk){0,2}$/)
   return parsed_deck_name and (player_name == parsed_deck_name[1] or player_name == parsed_deck_name[2])
 
 # 功能模块
