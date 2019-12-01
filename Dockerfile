@@ -21,7 +21,7 @@ RUN git clone --branch=server --recursive --depth=1 https://github.com/moecube/y
     wget -O - https://github.com/premake/premake-core/releases/download/v5.0.0-alpha13/premake-5.0.0-alpha13-linux.tar.gz | tar zfx - && \
     ./premake5 gmake && \
     cd build && \
-    make config=release && \
+    make config=release -j$(nproc) && \
     cd .. && \
     mv ./bin/release/ygopro . && \
     strip ygopro && \
