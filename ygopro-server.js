@@ -1816,6 +1816,9 @@
                 this.scores[player.name_vpass] = -5;
               }
             }
+            if (this.players.length === 2) {
+              this.scores[client.name_vpass] = -9;
+            }
           }
           this.arena_score_handled = true;
         }

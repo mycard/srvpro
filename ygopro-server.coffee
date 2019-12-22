@@ -1395,6 +1395,8 @@ class Room
         else
           for player in @players when player.pos != 7
             @scores[player.name_vpass] = -5
+          if @players.length == 2
+            @scores[client.name_vpass] = -9
         @arena_score_handled = true
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
