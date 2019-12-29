@@ -2377,8 +2377,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   if ygopro.constants.MSG[msg] == 'START'
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf)
-    if client.is_first and (room.hostinfo.mode != 2 or client.pos == 0 or client.pos == 2)
-      room.first_list[room.duel_count - 1] = client.name_vpass
     client.lp = room.hostinfo.start_lp
     client.card_count = 0 if room.hostinfo.mode != 2
     room.duel_stage = ygopro.constants.DUEL_STAGE.DUELING
@@ -2390,6 +2388,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
           ygopro.stoc_send_chat_to_room(room, "${death_start_final}", ygopro.constants.COLORS.BABYBLUE)
         else
           ygopro.stoc_send_chat_to_room(room, "${death_start_extra}", ygopro.constants.COLORS.BABYBLUE)
+    if client.is_first and (room.hostinfo.mode != 2 or client.pos == 0 or client.pos == 2)
+      room.first_list[room.duel_count - 1] = client.name_vpass
     if settings.modules.retry_handle.enabled
       client.retry_count = 0
       client.last_game_msg = null
