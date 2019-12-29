@@ -2969,7 +2969,7 @@
         }
       }
       if (client.is_first && (room.hostinfo.mode !== 2 || client.pos === 0 || client.pos === 2)) {
-        room.first_list[room.duel_count - 1] = client.name_vpass;
+        room.first_list.push(client.name_vpass);
       }
       if (settings.modules.retry_handle.enabled) {
         client.retry_count = 0;
