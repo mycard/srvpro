@@ -2420,7 +2420,7 @@
         return (checksum & 0xFF) === 0;
       };
       buffer_handle_callback = function(buffer, decrypted_buffer, match_permit) {
-        var action, len2, len3, m, n, name, opt1, opt2, opt3, options, player, ref2, ref3, room, title;
+        var action, len2, len3, m, n, name, opt1, opt2, opt3, options, player, ref2, ref3, room, room_title, title;
         if (client.closed) {
           return;
         }
@@ -2457,9 +2457,35 @@
             options.lflist = _.findIndex(lflists, function(list) {
               return ((options.rule === 1) === list.tcg) && list.date.isBefore();
             });
+            room_title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ');
+            if (_.any(badwords.level3, function(badword) {
+              var regexp;
+              regexp = new RegExp(badword, 'i');
+              return room_title.match(regexp);
+            }, room_title)) {
+              log.warn("BAD NAME LEVEL 3", room_title, client.name, client.ip);
+              ygopro.stoc_die(client, "${bad_name_level3}");
+              return;
+            } else if (_.any(badwords.level2, function(badword) {
+              var regexp;
+              regexp = new RegExp(badword, 'i');
+              return room_title.match(regexp);
+            }, room_title)) {
+              log.warn("BAD NAME LEVEL 2", room_title, client.name, client.ip);
+              ygopro.stoc_die(client, "${bad_name_level2}");
+              return;
+            } else if (_.any(badwords.level1, function(badword) {
+              var regexp;
+              regexp = new RegExp(badword, 'i');
+              return room_title.match(regexp);
+            }, room_title)) {
+              log.warn("BAD NAME LEVEL 1", room_title, client.name, client.ip);
+              ygopro.stoc_die(client, "${bad_name_level1}");
+              return;
+            }
             room = new Room(name, options);
             if (room) {
-              room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ');
+              room.title = room_title;
               room["private"] = action === 2;
             }
             break;

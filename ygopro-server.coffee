@@ -1951,9 +1951,31 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             auto_death: false
           }
           options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
+          room_title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
+          if _.any(badwords.level3, (badword) ->
+            regexp = new RegExp(badword, 'i')
+            return room_title.match(regexp)
+          , room_title)
+            log.warn("BAD NAME LEVEL 3", room_title, client.name, client.ip)
+            ygopro.stoc_die(client, "${bad_name_level3}")
+            return
+          else if _.any(badwords.level2, (badword) ->
+            regexp = new RegExp(badword, 'i')
+            return room_title.match(regexp)
+          , room_title)
+            log.warn("BAD NAME LEVEL 2", room_title, client.name, client.ip)
+            ygopro.stoc_die(client, "${bad_name_level2}")
+            return
+          else if _.any(badwords.level1, (badword) ->
+            regexp = new RegExp(badword, 'i')
+            return room_title.match(regexp)
+          , room_title)
+            log.warn("BAD NAME LEVEL 1", room_title, client.name, client.ip)
+            ygopro.stoc_die(client, "${bad_name_level1}")
+            return
           room = new Room(name, options)
           if room
-            room.title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
+            room.title = room_title
             room.private = action == 2
         when 3
           name = info.pass.slice(8)
