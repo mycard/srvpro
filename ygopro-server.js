@@ -2463,7 +2463,7 @@
               regexp = new RegExp(badword, 'i');
               return room_title.match(regexp);
             }, room_title)) {
-              log.warn("BAD NAME LEVEL 3", room_title, client.name, client.ip);
+              log.warn("BAD ROOM NAME LEVEL 3", room_title, client.name, client.ip);
               ygopro.stoc_die(client, "${bad_roomname_level3}");
               return;
             } else if (_.any(badwords.level2, function(badword) {
@@ -2471,7 +2471,7 @@
               regexp = new RegExp(badword, 'i');
               return room_title.match(regexp);
             }, room_title)) {
-              log.warn("BAD NAME LEVEL 2", room_title, client.name, client.ip);
+              log.warn("BAD ROOM NAME LEVEL 2", room_title, client.name, client.ip);
               ygopro.stoc_die(client, "${bad_roomname_level2}");
               return;
             } else if (_.any(badwords.level1, function(badword) {
@@ -2479,7 +2479,7 @@
               regexp = new RegExp(badword, 'i');
               return room_title.match(regexp);
             }, room_title)) {
-              log.warn("BAD NAME LEVEL 1", room_title, client.name, client.ip);
+              log.warn("BAD ROOM NAME LEVEL 1", room_title, client.name, client.ip);
               ygopro.stoc_die(client, "${bad_roomname_level1}");
               return;
             }
