@@ -2838,6 +2838,12 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
         ROOM_players_oppentlist[player.ip] = null
     if room.hostinfo.auto_death
       ygopro.stoc_send_chat_to_room(room, "${auto_death_part1}#{room.hostinfo.auto_death}${auto_death_part2}", ygopro.constants.COLORS.BABYBLUE)
+  else if room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING and client.pos < 4 # side deck verified
+    client.selected_preduel = true
+    if client.side_tcount
+      clearInterval client.side_interval
+      client.side_interval = null
+      client.side_tcount = null
   if settings.modules.hide_name and room.duel_count == 0
     for player in room.get_playing_player() when player != client
       ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
@@ -3102,13 +3108,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
   buff_side = (info.deckbuf[i] for i in [info.mainc...info.mainc + info.sidec])
   client.main = buff_main
   client.side = buff_side
-  if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
-    client.selected_preduel = true
-    if client.side_tcount
-      clearInterval client.side_interval
-      client.side_interval = null
-      client.side_tcount = null
-  else
+  if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
     client.start_deckbuf = Buffer.from(buffer)
   oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
   if settings.modules.http.quick_death_rule >= 2 and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.death and room.scores[room.dueling_players[0].name_vpass] != room.scores[room.dueling_players[oppo_pos].name_vpass]

@@ -3601,6 +3601,13 @@
       if (room.hostinfo.auto_death) {
         ygopro.stoc_send_chat_to_room(room, "${auto_death_part1}" + room.hostinfo.auto_death + "${auto_death_part2}", ygopro.constants.COLORS.BABYBLUE);
       }
+    } else if (room.duel_stage === ygopro.constants.DUEL_STAGE.SIDING && client.pos < 4) {
+      client.selected_preduel = true;
+      if (client.side_tcount) {
+        clearInterval(client.side_interval);
+        client.side_interval = null;
+        client.side_tcount = null;
+      }
     }
     if (settings.modules.hide_name && room.duel_count === 0) {
       ref3 = room.get_playing_player();
@@ -3960,14 +3967,7 @@
     })();
     client.main = buff_main;
     client.side = buff_side;
-    if (room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN) {
-      client.selected_preduel = true;
-      if (client.side_tcount) {
-        clearInterval(client.side_interval);
-        client.side_interval = null;
-        client.side_tcount = null;
-      }
-    } else {
+    if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN) {
       client.start_deckbuf = Buffer.from(buffer);
     }
     oppo_pos = room.hostinfo.mode === 2 ? 2 : 1;
