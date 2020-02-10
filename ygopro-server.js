@@ -850,7 +850,7 @@
     client.system_kicked = true;
     if (settings.modules.reconnect.enabled && client.closed) {
       if (client.server && !client.had_new_reconnection) {
-        room = ROOM_all[room_id];
+        room = ROOM_all[client.rid];
         if (room) {
           room.disconnect(client);
         } else {

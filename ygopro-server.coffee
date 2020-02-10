@@ -668,7 +668,7 @@ CLIENT_kick = global.CLIENT_kick = (client) ->
   client.system_kicked = true
   if settings.modules.reconnect.enabled and client.closed
     if client.server and !client.had_new_reconnection
-      room = ROOM_all[room_id]
+      room = ROOM_all[client.rid]
       if room
         room.disconnect(client)
       else
