@@ -668,7 +668,11 @@ CLIENT_kick = global.CLIENT_kick = (client) ->
   client.system_kicked = true
   if settings.modules.reconnect.enabled and client.closed
     if client.server and !client.had_new_reconnection
-      client.server.destroy()
+      room = ROOM_all[room_id]
+      if room
+        room.disconnect(client)
+      else
+        client.server.destroy()
   else
     client.destroy()
   return true
@@ -1537,7 +1541,7 @@ net.createServer (client) ->
     room=ROOM_all[server.client.rid]
     #log.info "server close", server.client.ip, ROOM_connected_ip[server.client.ip]
     room.disconnector = 'server' if room
-    unless server.client.closed
+    if server.client.closed
       ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED)
       #if room and settings.modules.replay_delay
       #  room.send_replays()

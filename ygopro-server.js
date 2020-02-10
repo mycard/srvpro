@@ -843,13 +843,19 @@
   };
 
   CLIENT_kick = global.CLIENT_kick = function(client) {
+    var room;
     if (!client) {
       return false;
     }
     client.system_kicked = true;
     if (settings.modules.reconnect.enabled && client.closed) {
       if (client.server && !client.had_new_reconnection) {
-        client.server.destroy();
+        room = ROOM_all[room_id];
+        if (room) {
+          room.disconnect(client);
+        } else {
+          client.server.destroy();
+        }
       }
     } else {
       client.destroy();
@@ -1997,7 +2003,7 @@
       if (room) {
         room.disconnector = 'server';
       }
-      if (!server.client.closed) {
+      if (server.client.closed) {
         ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED);
         CLIENT_kick(server.client);
         SERVER_clear_disconnect(server);
