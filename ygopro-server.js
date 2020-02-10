@@ -2003,7 +2003,7 @@
       if (room) {
         room.disconnector = 'server';
       }
-      if (server.client.closed) {
+      if (!server.client.closed) {
         ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED);
         CLIENT_kick(server.client);
         SERVER_clear_disconnect(server);
