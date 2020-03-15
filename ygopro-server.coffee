@@ -212,7 +212,7 @@ if settings.hostinfo.enable_priority or settings.hostinfo.enable_priority == fal
   if settings.hostinfo.enable_priority
     settings.hostinfo.duel_rule = 3
   else
-    settings.hostinfo.duel_rule = 4
+    settings.hostinfo.duel_rule = 5
   delete settings.hostinfo.enable_priority
   imported = true
 #import the old Challonge api key option
@@ -1091,7 +1091,7 @@ class Room
         @hostinfo.no_shuffle_deck = true
 
       if (rule.match /(^|，|,)(IGPRIORITY|PR)(，|,|$)/) # deprecated
-        @hostinfo.duel_rule = 3
+        @hostinfo.duel_rule = 4
 
       if (param = rule.match /(^|，|,)(DUELRULE|MR)(\d+)(，|,|$)/)
         duel_rule = parseInt(param[3])
@@ -1333,7 +1333,7 @@ class Room
 
   get_old_hostinfo: () -> # Just for supporting websocket roomlist in old MyCard client....
     ret = _.clone(@hostinfo)
-    ret.enable_priority = (@hostinfo.duel_rule != 4)
+    ret.enable_priority = (@hostinfo.duel_rule != 5)
     return ret
 
   send_replays: () ->
@@ -1945,7 +1945,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             time_limit: 180
             rule: (opt1 >> 5) & 3
             mode: (opt1 >> 3) & 3
-            duel_rule: (if !!((opt1 >> 2) & 1) then 3 else 4)
+            duel_rule: (if !!((opt1 >> 2) & 1) then 4 else 5)
             no_check_deck: !!((opt1 >> 1) & 1)
             no_shuffle_deck: !!(opt1 & 1)
             start_lp: opt2

@@ -227,7 +227,7 @@
     if (settings.hostinfo.enable_priority) {
       settings.hostinfo.duel_rule = 3;
     } else {
-      settings.hostinfo.duel_rule = 4;
+      settings.hostinfo.duel_rule = 5;
     }
     delete settings.hostinfo.enable_priority;
     imported = true;
@@ -1389,7 +1389,7 @@
           this.hostinfo.no_shuffle_deck = true;
         }
         if (rule.match(/(^|，|,)(IGPRIORITY|PR)(，|,|$)/)) {
-          this.hostinfo.duel_rule = 3;
+          this.hostinfo.duel_rule = 4;
         }
         if ((param = rule.match(/(^|，|,)(DUELRULE|MR)(\d+)(，|,|$)/))) {
           duel_rule = parseInt(param[3]);
@@ -1724,7 +1724,7 @@
     Room.prototype.get_old_hostinfo = function() {
       var ret;
       ret = _.clone(this.hostinfo);
-      ret.enable_priority = this.hostinfo.duel_rule !== 4;
+      ret.enable_priority = this.hostinfo.duel_rule !== 5;
       return ret;
     };
 
@@ -2451,7 +2451,7 @@
               time_limit: 180,
               rule: (opt1 >> 5) & 3,
               mode: (opt1 >> 3) & 3,
-              duel_rule: (!!((opt1 >> 2) & 1) ? 3 : 4),
+              duel_rule: (!!((opt1 >> 2) & 1) ? 4 : 5),
               no_check_deck: !!((opt1 >> 1) & 1),
               no_shuffle_deck: !!(opt1 & 1),
               start_lp: opt2,
