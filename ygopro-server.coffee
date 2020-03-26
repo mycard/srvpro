@@ -721,7 +721,7 @@ CLIENT_reconnect_register = global.CLIENT_reconnect_register = (client, room_id,
   }
   tmot = setTimeout(() ->
     room.disconnect(client, error)
-    dinfo.old_server.destroy()
+    #dinfo.old_server.destroy()
     return
   , settings.modules.reconnect.wait_time)
   dinfo.timeout = tmot
