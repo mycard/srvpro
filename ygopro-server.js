@@ -915,7 +915,6 @@
     };
     tmot = setTimeout(function() {
       room.disconnect(client, error);
-      dinfo.old_server.destroy();
     }, settings.modules.reconnect.wait_time);
     dinfo.timeout = tmot;
     disconnect_list[CLIENT_get_authorize_key(client)] = dinfo;
