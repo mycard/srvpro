@@ -678,7 +678,7 @@ CLIENT_kick = global.CLIENT_kick = (client) ->
   return true
 
 SERVER_kick = global.SERVER_kick = (server) ->
-  if !client
+  if !server
     return false
   server.system_kicked = true
   server.destroy()

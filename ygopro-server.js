@@ -864,7 +864,7 @@
   };
 
   SERVER_kick = global.SERVER_kick = function(server) {
-    if (!client) {
+    if (!server) {
       return false;
     }
     server.system_kicked = true;
