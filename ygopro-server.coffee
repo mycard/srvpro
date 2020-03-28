@@ -672,16 +672,23 @@ CLIENT_kick = global.CLIENT_kick = (client) ->
       if room
         room.disconnect(client)
       else
-        client.server.destroy()
+        SERVER_kick(client.server)
   else
     client.destroy()
+  return true
+
+SERVER_kick = global.SERVER_kick = (server) ->
+  if !client
+    return false
+  server.system_kicked = true
+  server.destroy()
   return true
 
 release_disconnect = global.release_disconnect = (dinfo, reconnected) ->
   if dinfo.old_client and !reconnected
     dinfo.old_client.destroy()
   if dinfo.old_server and !reconnected
-    dinfo.old_server.destroy()
+    SERVER_kick(dinfo.old_server)
   clearTimeout(dinfo.timeout)
   return
 
@@ -721,7 +728,7 @@ CLIENT_reconnect_register = global.CLIENT_reconnect_register = (client, room_id,
   }
   tmot = setTimeout(() ->
     room.disconnect(client, error)
-    #dinfo.old_server.destroy()
+    #SERVER_kick(dinfo.old_server)
     return
   , settings.modules.reconnect.wait_time)
   dinfo.timeout = tmot
@@ -879,7 +886,7 @@ CLIENT_reconnect = global.CLIENT_reconnect = (client) ->
   dinfo.old_client.server = null
   current_old_server.client = null
   current_old_server.had_new_reconnection = true
-  current_old_server.destroy()
+  SERVER_kick(current_old_server)
   client.established = true
   client.pre_establish_buffers = []
   if room.random_type or room.arena
@@ -908,7 +915,7 @@ CLIENT_kick_reconnect = global.CLIENT_kick_reconnect = (client, deckbuf) ->
   CLIENT_kick(player)
   current_old_server.client = null
   current_old_server.had_new_reconnection = true
-  current_old_server.destroy()
+  SERVER_kick(current_old_server)
   client.established = true
   client.pre_establish_buffers = []
   if room.random_type or room.arena
@@ -1388,7 +1395,7 @@ class Room
       index = _.indexOf(@watchers, client)
       @watchers.splice(index, 1) unless index == -1
       #client.room = null
-      client.server.destroy()
+      SERVER_kick(client.server)
     else
       #log.info(client.name, @duel_stage != ygopro.constants.DUEL_STAGE.BEGIN, @disconnector, @random_type, @players.length)
       if @arena and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and @disconnector != 'server' and !@arena_score_handled
@@ -1423,7 +1430,7 @@ class Room
         #client.room = null
         this.delete()
       if !CLIENT_reconnect_unregister(client, false, true)
-        client.server.destroy()
+        SERVER_kick(client.server)
     return
 
   start_death: () ->
@@ -1508,7 +1515,7 @@ net.createServer (client) ->
         if !CLIENT_reconnect_register(client, client.rid)
           room.disconnect(client)
       else if !client.had_new_reconnection
-        client.server.destroy()
+        SERVER_kick(client.server)
     return
 
   client.on 'error', (error)->
@@ -1525,7 +1532,7 @@ net.createServer (client) ->
         if !CLIENT_reconnect_register(client, client.rid, error)
           room.disconnect(client, error)
       else if !client.had_new_reconnection
-        client.server.destroy()
+        SERVER_kick(client.server)
     return
 
   client.on 'timeout', ()->
@@ -1540,7 +1547,7 @@ net.createServer (client) ->
     #log.info "server closed", server.client.name, had_error
     room=ROOM_all[server.client.rid]
     #log.info "server close", server.client.ip, ROOM_connected_ip[server.client.ip]
-    room.disconnector = 'server' if room
+    room.disconnector = 'server' if room and !server.system_kicked
     unless server.client.closed
       ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED)
       #if room and settings.modules.replay_delay
@@ -1556,7 +1563,7 @@ net.createServer (client) ->
     #log.info "server error", client.name, error
     room=ROOM_all[server.client.rid]
     #log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
-    room.disconnector = 'server' if room
+    room.disconnector = 'server' if room and !server.system_kicked
     unless server.client.closed
       ygopro.stoc_send_chat(server.client, "${server_error}: #{error}", ygopro.constants.COLORS.RED)
       #if room and settings.modules.replay_delay
@@ -1750,7 +1757,7 @@ net.createServer (client) ->
       #log.info(looplimit)
       if looplimit > 800
         log.info("error stoc", server.client.name)
-        server.destroy()
+        SERVER_kick(server)
         break
     if server.client and !server.client.closed
       server.client.write buffer for buffer in datas
