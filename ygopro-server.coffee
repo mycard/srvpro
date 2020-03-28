@@ -1757,7 +1757,7 @@ net.createServer (client) ->
       #log.info(looplimit)
       if looplimit > 800
         log.info("error stoc", server.client.name)
-        SERVER_kick(server)
+        server.destroy()
         break
     if server.client and !server.client.closed
       server.client.write buffer for buffer in datas

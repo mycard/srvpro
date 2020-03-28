@@ -2261,7 +2261,7 @@
         looplimit++;
         if (looplimit > 800) {
           log.info("error stoc", server.client.name);
-          SERVER_kick(server);
+          server.destroy();
           break;
         }
       }
