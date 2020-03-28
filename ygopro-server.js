@@ -2008,7 +2008,7 @@
         return;
       }
       room = ROOM_all[server.client.rid];
-      if (room && !server.system_kicked) {
+      if (room && !server.system_kicked && !server.had_new_reconnection) {
         room.disconnector = 'server';
       }
       if (!server.client.closed) {
@@ -2024,7 +2024,7 @@
         return;
       }
       room = ROOM_all[server.client.rid];
-      if (room && !server.system_kicked) {
+      if (room && !server.system_kicked && !server.had_new_reconnection) {
         room.disconnector = 'server';
       }
       if (!server.client.closed) {
