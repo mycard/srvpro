@@ -213,15 +213,23 @@ var writeToFile = function(message, callback) {
         message="<li>"+moment().format('L HH:mm')+"<ul><li>"+message.split("！换行符！").join("</li><li>")+"</li></ul></li>";
         fileContent=fileContent.replace(/<ul class="auto-generated">/,'<ul class="auto-generated">\n'+message);
     }
-    fs.writeFile(config.html_path + config.html_filename, fileContent, (err) => {
+    _async.auto({
+        write: (done) => { 
+            fs.writeFile(config.html_path + config.html_filename, fileContent, done)
+        },
+        copy: ["write", (results, done) => { 
+            if (!config.cdn.enabled) {
+                copyImages(done);
+            } else { 
+                done();
+            }
+        }]
+    }, (err) => { 
         if (!err) {
             sendResponse("列表更新完成。");
         }
-        callback(err);
-    });
-    if (!config.cdn.enabled) {
-        copyImages();
-    }
+        callback(err);  
+    })
 }
 
 //读取指定文件夹里所有数据库，异步
