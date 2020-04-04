@@ -28,6 +28,9 @@ var challonge;
 if (challonge_config.enabled) {
     challonge = require('challonge').createClient(challonge_config.options);
 }
+let _async = require("async");
+const os = require("os");
+const PROCESS_COUNT = os.cpus().length;
 
 //http长连接
 var responder;
@@ -95,7 +98,7 @@ var readDeck = function(deck_name, deck_full_path) {
 }
 
 //读取指定文件夹中所有卡组
-var getDecks = function() {
+var getDecks = function(callback) {
     var decks=[];
     var decks_list = fs.readdirSync(config.deck_path);
     for (var k in decks_list) {
@@ -105,34 +108,43 @@ var getDecks = function() {
             decks.push(deck);
         }
     }
-    return decks;
+    _async.auto({
+        readDir: (done) => {
+            fs.readdir(config.deck_path, done);
+        },
+        handleDecks: ["readDir", (results, done) => {
+            const decks_list = results.readDir;
+            _async.each(decks_list, (deck_name, _done) => {
+                if (_.endsWith(deck_name, ".ydk")) {
+                    var deck = readDeck(deck_name, config.deck_path + deck_name);
+                    decks.push(deck);
+                }
+            }, done)
+        }]
+    }, callback);
+
 }
 
-var delDeck = function(deck_name) {
-    var result=0;
-    try {
-        fs.unlinkSync(config.deck_path+deck_name);
-        result="已删除"+deck_name+"。";
+var delDeck = function (deck_name, callback) {
+    if (deck_name.startsWith("../") || deck_name.contains("/../")) { //security issue
+        callback("Invalid deck");
     }
-    catch(e) {
-        result=e.toString();
-    }
-    finally {
-        return result;
-    }
+    fs.unlink(config.deck_path + deck_name, callback);
 }
 
-var clearDecks = function() {
-    var decks_list = fs.readdirSync(config.deck_path);
-    for (var k in decks_list) {
-        var deck_name = decks_list[k];
-        if (_.endsWith(deck_name, ".ydk")) {
-            delDeck(deck_name);
-        }
-    }
+var clearDecks = function (callback) {
+    _async.auto({
+        deckList: (done) => { 
+            fs.readdir(config.deck_path, done);
+        },
+        removeAll: ["deckList", (results, done) => { 
+            const decks_list = results.deckList;
+            _async.each(decks_list, delDeck, done);
+        }]
+    }, callback);
 }
 
-var UploadToChallonge = function() {
+var UploadToChallonge = function () {
     if (!challonge) {
         sendResponse("未开启Challonge模式。");
         return false;
@@ -150,47 +162,41 @@ var UploadToChallonge = function() {
         sendResponse("玩家列表为空。");
         return false;
     }
-    sendResponse("读取玩家列表完毕，共有"+player_list.length+"名玩家。");
+    sendResponse("读取玩家列表完毕，共有" + player_list.length + "名玩家。");
     sendResponse("开始上传玩家列表至Challonge。");
-    var success_count = [0];
-    for (var k in player_list) {
-        var player_name = player_list[k];
-        sendResponse("正在上传玩家 "+player_name+" 至Challonge。");
+    _async.each(player_list, (player_name, done) => {
+        sendResponse("正在上传玩家 " + player_name + " 至Challonge。");
         challonge.participants.create({
             id: challonge_config.tournament_id,
             participant: {
                 name: player_name
             },
-            callback: (function(player_name, success_count) {
-                return function(err, data) {
-                    if (err) {
-                        sendResponse("玩家 "+player_name+" 上传失败："+err.text);
+            callback: (err, data) => { 
+                if (err) {
+                    sendResponse("玩家 "+player_name+" 上传失败："+err.text);
+                } else {
+                    if (data.participant) {
+                        sendResponse("玩家 "+player_name+" 上传完毕，其Challonge ID是 "+data.participant.id+" 。");
                     } else {
-                        if (data.participant) {
-                            sendResponse("玩家 "+player_name+" 上传完毕，其Challonge ID是 "+data.participant.id+" 。");
-                        } else {
-                            sendResponse("玩家 "+player_name+" 上传完毕。");
-                        }
-                        ++success_count[0];
-                        if (success_count[0] >= player_list.length) {
-                            sendResponse("玩家列表上传完成。");
-                        }
+                        sendResponse("玩家 "+player_name+" 上传完毕。");
                     }
-                };
-            })(player_name, success_count)
+                }
+                done();
+            }
         });
-    }
+    }, (err) => { 
+        sendResponse("玩家列表上传完成。");
+    });
     return true;
 }
 
-var receiveDecks = function(files) {
-    var result=[];
-    for (var i in files) {
-        var file=files[i];
+var receiveDecks = function(files, callback) {
+    var result = [];
+    _async.each(files, (file, done) => {
         if (_.endsWith(file.name, ".ydk")) {
-            var deck=readDeck(file.name, file.path);
-            if (deck.main.length>=40) {
-                fs.createReadStream(file.path).pipe(fs.createWriteStream(config.deck_path+file.name));
+            var deck = readDeck(file.name, file.path);
+            if (deck.main.length >= 40) {
+                fs.createReadStream(file.path).pipe(fs.createWriteStream(config.deck_path + file.name));
                 result.push({
                     file: file.name,
                     status: "OK"
@@ -209,8 +215,8 @@ var receiveDecks = function(files) {
                 status: "不是卡组文件"
             });
         }
-    }
-    return result;
+        done();
+    }, callback);
 }
 
 //建立一个http服务器，接收API操作
@@ -231,13 +237,20 @@ function requestListener(req, res) {
         }
         var form = new formidable.IncomingForm();
         form.parse(req, function(err, fields, files) {
-            res.writeHead(200, {
-                "Access-Control-Allow-origin": "*",
-                'content-type': 'text/plain'
+            receiveDecks(files, (err, result) => { 
+                if (err) {
+                    res.writeHead(200, {
+                        "Access-Control-Allow-origin": "*",
+                        'content-type': 'text/plain'
+                    });
+                    res.end(err.toString());
+                }
+                res.writeHead(200, {
+                    "Access-Control-Allow-origin": "*",
+                    'content-type': 'text/plain'
+                });
+                res.end(JSON.stringify(result));
             });
-            var result=receiveDecks(files);
-            //console.log(files);
-            res.end(JSON.stringify(result));
         });
     }
     else if (u.pathname === '/api/msg') {
@@ -276,9 +289,15 @@ function requestListener(req, res) {
             res.end("Auth Failed.");
             return;
         }
-        res.writeHead(200);
-        var decklist=getDecks();
-        res.end(u.query.callback+'('+JSON.stringify(decklist)+');');
+        getDecks((err, decks) => { 
+            if (err) {
+                res.writeHead(500);
+                res.end(u.query.callback + '(' + err.toString() +');');
+            } else { 
+                res.writeHead(200);
+                res.end(u.query.callback+'('+JSON.stringify(decks)+');');
+            }
+        })
     }
     else if (u.pathname === '/api/del_deck') {
         if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "delete_deck")) { 
@@ -287,8 +306,16 @@ function requestListener(req, res) {
             return;
         }
         res.writeHead(200);
-        var result=delDeck(u.query.msg);
-        res.end(u.query.callback+'("'+result+'");');
+        delDeck(u.query.msg, (err) => { 
+            let result;
+            if (err) {
+                result = "删除卡组 " + u.query.msg + "失败: " + err.toString();
+            } else { 
+                result = "删除卡组 " + u.query.msg + "成功。";
+            }
+            res.writeHead(200);
+            res.end(u.query.callback+'("'+result+'");');
+        });
     }
     else if (u.pathname === '/api/clear_decks') {
         if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "clear_decks")) { 
@@ -296,8 +323,17 @@ function requestListener(req, res) {
             res.end("Auth Failed.");
             return;
         }
+        clearDecks((err) => { 
+            let result;
+            if (err) {
+                result = "删除全部卡组失败。" + err.toString();
+            } else { 
+                result = "删除全部卡组成功。";
+            }
+            res.writeHead(200);
+            res.end(u.query.callback+'("'+result+'");');
+        });
         res.writeHead(200);
-        clearDecks();
         res.end(u.query.callback+'("已删除全部卡组。");');
     }
     else if (u.pathname === '/api/upload_to_challonge') {
