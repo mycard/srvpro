@@ -242,7 +242,7 @@ var loadAllDbs = function(callback) {
         loadDbs: ["files", (results, done) => {
             _async.each(results.files.filter((filename) => { 
                 return filename.slice(-4) === ".cdb" && (!config.only_show_dbs || config.only_show_dbs.length == 0 || config.only_show_dbs[filename])
-            } ), loadDb, done);
+            } ).map(filename => config.db_path + "expansions/" + filename), loadDb, done);
         }]
     }, callback);
 }
