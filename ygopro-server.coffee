@@ -3430,6 +3430,8 @@ if settings.modules.random_duel.enabled
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
         ROOM_unwelcome(room, room.waiting_for_player, "${random_ban_reason_AFK}")
+      done()
+      return
     )
     return
   , 1000
