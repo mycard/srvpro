@@ -3414,7 +3414,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
 
 if settings.modules.random_duel.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING)
+    _async.each(ROOM_all.filter((room) ->
+      return room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING)
+    ), (room, done) ->
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
@@ -3428,12 +3430,15 @@ if settings.modules.random_duel.enabled
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
         ROOM_unwelcome(room, room.waiting_for_player, "${random_ban_reason_AFK}")
+    )
     return
   , 1000
 
 if settings.modules.mycard.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.arena and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING)
+    _async.each(ROOM_all.filter((room) ->
+      return room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.arena and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING)
+    ), (room, done) ->
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
@@ -3445,8 +3450,14 @@ if settings.modules.mycard.enabled
         CLIENT_kick(room.waiting_for_player)
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
+      done()
+      return
+    )
+    
     if settings.modules.arena_mode.punish_quit_before_match
-      for room in ROOM_all when room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2
+      async.each(ROOM_all.filter((room) ->
+        return room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2
+      ), (room, done) ->
         player = room.get_playing_player()[0]
         if player and player.join_time and !player.arena_quit_free
           waited_time = moment() - player.join_time
@@ -3455,6 +3466,9 @@ if settings.modules.mycard.enabled
             player.arena_quit_free = true
           else if waited_time >= 5000 and waited_time < 6000
             ygopro.stoc_send_chat(player, "${arena_wait_hint}", ygopro.constants.COLORS.BABYBLUE)
+        done()
+        return
+      )
     return
   , 1000
 
