@@ -5,7 +5,7 @@ RUN npm install -g pm2
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libevent-dev libsqlite3-dev mono-complete p7zip-full redis-server && \
+    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libevent-dev libsqlite3-dev mono-complete p7zip-full redis-server python3 && \
     rm -rf /var/lib/apt/lists/*
 
 # srvpro
