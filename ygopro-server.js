@@ -539,9 +539,11 @@
     settings.ban.banned_user.push(name);
     setting_save(settings);
     bad_ip = [];
-    _async.each(ROOM_all.filter(function(room) {
-      return room && room.established;
-    }), function(room, done) {
+    _async.each(ROOM_all, function(room, done) {
+      if (!(room && room.established)) {
+        done();
+        return;
+      }
       return _async.each(["players", "watchers"], function(player_type, _done) {
         return _async.each(room[player_type].filter(function(player) {
           return player && (player.name === name || bad_ip.indexOf(player.ip) !== -1);
@@ -592,14 +594,14 @@
   };
 
   ROOM_kick = function(name, callback) {
-    var rooms;
-    rooms = ROOM_all.filter(function(room) {
-      return room && room.established && (name === "all" || name === room.process_pid.toString() || name === room.name);
-    });
-    if (!rooms.length) {
-      callback(null, false);
-    }
-    return _async.each(rooms, function(room, done) {
+    var found;
+    found = false;
+    return _async.each(ROOM_all, function(room, done) {
+      if (!(room && room.established && (name === "all" || name === room.process_pid.toString() || name === room.name))) {
+        done();
+        return;
+      }
+      found = true;
       if (room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN) {
         room.scores[room.dueling_players[0].name_vpass] = 0;
         room.scores[room.dueling_players[1].name_vpass] = 0;
@@ -610,7 +612,7 @@
       room["delete"]();
       done();
     }, function(err) {
-      callback(null, true);
+      callback(null, found);
     });
   };
 
@@ -4426,10 +4428,12 @@
 
   if (settings.modules.random_duel.enabled) {
     setInterval(function() {
-      _async.each(ROOM_all.filter(function(room) {
-        return room && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && room.random_type && room.last_active_time && room.waiting_for_player && room.get_disconnected_count() === 0 && (!settings.modules.side_timeout || room.duel_stage !== ygopro.constants.DUEL_STAGE.SIDING);
-      }), function(room, done) {
+      _async.each(ROOM_all, function(room, done) {
         var time_passed;
+        if (!(room && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && room.random_type && room.last_active_time && room.waiting_for_player && room.get_disconnected_count() === 0 && (!settings.modules.side_timeout || room.duel_stage !== ygopro.constants.DUEL_STAGE.SIDING))) {
+          done();
+          return;
+        }
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
         if (time_passed >= settings.modules.random_duel.hang_timeout) {
           room.last_active_time = moment();
@@ -4449,10 +4453,12 @@
 
   if (settings.modules.mycard.enabled) {
     setInterval(function() {
-      _async.each(ROOM_all.filter(function(room) {
-        return room && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && room.arena && room.last_active_time && room.waiting_for_player && room.get_disconnected_count() === 0 && (!settings.modules.side_timeout || room.duel_stage !== ygopro.constants.DUEL_STAGE.SIDING);
-      }), function(room, done) {
+      _async.each(ROOM_all, function(room, done) {
         var time_passed;
+        if (!(room && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && room.arena && room.last_active_time && room.waiting_for_player && room.get_disconnected_count() === 0 && (!settings.modules.side_timeout || room.duel_stage !== ygopro.constants.DUEL_STAGE.SIDING))) {
+          done();
+          return;
+        }
         time_passed = Math.floor((moment() - room.last_active_time) / 1000);
         if (time_passed >= settings.modules.random_duel.hang_timeout) {
           room.last_active_time = moment();
@@ -4466,10 +4472,12 @@
         done();
       });
       if (settings.modules.arena_mode.punish_quit_before_match) {
-        _async.each(ROOM_all.filter(function(room) {
-          return room && room.arena && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && room.get_playing_player().length < 2;
-        }), function(room, done) {
+        _async.each(ROOM_all, function(room, done) {
           var player, waited_time;
+          if (!(room && room.arena && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && room.get_playing_player().length < 2)) {
+            done();
+            return;
+          }
           player = room.get_playing_player()[0];
           if (player && player.join_time && !player.arena_quit_free) {
             waited_time = moment() - player.join_time;
@@ -4575,7 +4583,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, len2, len3, m, n, parseQueryString, pass_validated, ref2, replay, room, rooms, roomsjson, u;
+      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, len2, len3, m, n, parseQueryString, pass_validated, ref2, replay, room, roomsjson, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       if (u.pathname === '/api/getrooms') {
@@ -4867,15 +4875,16 @@
             response.end(addCallback(u.query.callback, "['密码错误', 0]"));
             return;
           }
-          rooms = ROOM_all.filter(function(room) {
-            return room && (u.query.death === "all" || u.query.death === room.process_pid.toString() || u.query.death === room.name);
-          });
           death_room_found = false;
-          _async.each(rooms, function(room, done) {
+          _async.each(ROOM_all, function(room, done) {
+            if (!(room && (u.query.death === "all" || u.query.death === room.process_pid.toString() || u.query.death === room.name))) {
+              done();
+              return;
+            }
             if (room.start_death()) {
               death_room_found = true;
             }
-            return done();
+            done();
           }, function() {
             response.writeHead(200);
             if (death_room_found) {
@@ -4890,11 +4899,12 @@
             response.end(addCallback(u.query.callback, "['密码错误', 0]"));
             return;
           }
-          rooms = ROOM_all.filter(function(room) {
-            return room && (u.query.deathcancel === "all" || u.query.deathcancel === room.process_pid.toString() || u.query.deathcancel === room.name);
-          });
           death_room_found = false;
           _async.each(rooms, function(room, done) {
+            if (!(room && (u.query.deathcancel === "all" || u.query.deathcancel === room.process_pid.toString() || u.query.deathcancel === room.name))) {
+              done();
+              return;
+            }
             if (room.cancel_death()) {
               death_room_found = true;
             }

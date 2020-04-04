@@ -458,9 +458,10 @@ ban_user = global.ban_user = (name, callback) ->
   settings.ban.banned_user.push(name)
   setting_save(settings)
   bad_ip = []
-  _async.each(ROOM_all.filter((room)->
-    return room and room.established
-  ), (room, done)-> 
+  _async.each(ROOM_all, (room, done)-> 
+    if !(room and room.established)
+      done()
+      return
     _async.each(["players", "watchers"], (player_type, _done)->
       _async.each(room[player_type].filter((player)->
         return player and (player.name == name or bad_ip.indexOf(player.ip) != -1)
@@ -496,12 +497,12 @@ ROOM_ban_player = global.ROOM_ban_player = (name, ip, reason, countadd = 1)->
   return
 
 ROOM_kick = (name, callback)->
-  rooms = ROOM_all.filter((room)->
-    return room and room.established and (name == "all" or name == room.process_pid.toString() or name == room.name)
-  )
-  if !rooms.length
-    callback(null, false)
-  _async.each(rooms, (room, done)->
+  found = false
+  _async.each(ROOM_all, (room, done)->
+    if !(room and room.established and (name == "all" or name == room.process_pid.toString() or name == room.name))
+      done()
+      return
+    found = true
     if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
       room.scores[room.dueling_players[0].name_vpass] = 0
       room.scores[room.dueling_players[1].name_vpass] = 0
@@ -512,7 +513,7 @@ ROOM_kick = (name, callback)->
     done()
     return
   , (err)->
-    callback(null, true)
+    callback(null, found)
     return
   )
 
@@ -3451,9 +3452,10 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
 
 if settings.modules.random_duel.enabled
   setInterval ()->
-    _async.each(ROOM_all.filter((room) ->
-      return room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING)
-    ), (room, done) ->
+    _async.each(ROOM_all, (room, done) ->
+      if !(room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING))
+        done()
+        return
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
@@ -3475,9 +3477,10 @@ if settings.modules.random_duel.enabled
 
 if settings.modules.mycard.enabled
   setInterval ()->
-    _async.each(ROOM_all.filter((room) ->
-      return room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.arena and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING)
-    ), (room, done) ->
+    _async.each(ROOM_all, (room, done) ->
+      if not (room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.arena and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING))
+        done()
+        return
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
@@ -3494,9 +3497,10 @@ if settings.modules.mycard.enabled
     )
     
     if settings.modules.arena_mode.punish_quit_before_match
-      _async.each(ROOM_all.filter((room) ->
-        return room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2
-      ), (room, done) ->
+      _async.each(ROOM_all, (room, done) ->
+        if not (room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2)
+          done()
+          return
         player = room.get_playing_player()[0]
         if player and player.join_time and !player.arena_quit_free
           waited_time = moment() - player.join_time
@@ -3822,14 +3826,15 @@ if settings.modules.http
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        rooms = ROOM_all.filter((room)->
-          return room and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name)
-        )
         death_room_found = false
-        _async.each(rooms, (room, done)->
+        _async.each(ROOM_all, (room, done)->
+          if !(room and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name))
+            done()
+            return
           if room.start_death()
             death_room_found = true
           done()
+          return
         , () ->
           response.writeHead(200)
           if death_room_found
@@ -3843,11 +3848,11 @@ if settings.modules.http
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        rooms = ROOM_all.filter((room)->
-          return room and (u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString() or u.query.deathcancel == room.name)
-        )
         death_room_found = false
         _async.each(rooms, (room, done)->
+          if !(room and (u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString() or u.query.deathcancel == room.name))
+            done()
+            return
           if room.cancel_death()
             death_room_found = true
           done()
