@@ -2122,31 +2122,29 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     else
       ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
       client.setTimeout(300000) #连接后超时5分钟
-      _async.parallel([
-        (done) ->
+      _async.auto({
+        participant_data: (done) ->
           challonge.participants._index({
             id: settings.modules.challonge.tournament_id,
             callback: done
           })
           return
         ,
-        (done) ->
+        match_data: (done) ->
           challonge.matches._index({
             id: settings.modules.challonge.tournament_id,
             callback: done
           })
           return
-      ], (err, datas) ->
+      }, (err, datas) ->
         if client.closed
           return
-        participant_data = datas[0]
-        match_data = datas[1]
-        if err or !participant_data or !match_data
+        if err or !datas.participant_data or !datas.match_data
           log.warn("Failed loading Challonge user info", err)
           ygopro.stoc_die(client, '${challonge_match_load_failed}')
           return
         found = false
-        for k,user of participant_data
+        for k,user of datas.participant_data
           if user.participant and user.participant.name and deck_name_match(user.participant.name, client.name)
             found = user.participant
             break
@@ -2155,7 +2153,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
           return
         client.challonge_info = found
         found = false
-        for k,match of match_data
+        for k,match of datas.match_data
           if match and match.match and !match.match.winnerId and match.match.state != "complete" and match.match.player1Id and match.match.player2Id and (match.match.player1Id == client.challonge_info.id or match.match.player2Id == client.challonge_info.id)
             found = match.match
             break

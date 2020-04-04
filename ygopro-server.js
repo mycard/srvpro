@@ -2670,33 +2670,33 @@
       } else {
         ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE);
         client.setTimeout(300000);
-        _async.parallel([
-          function(done) {
+        _async.auto({
+          participant_data: function(done) {
             challonge.participants._index({
               id: settings.modules.challonge.tournament_id,
               callback: done
             });
-          }, function(done) {
+          },
+          match_data: function(done) {
             challonge.matches._index({
               id: settings.modules.challonge.tournament_id,
               callback: done
             });
           }
-        ], function(err, datas) {
-          var found, k, len3, len4, match, match_data, n, o, participant_data, player, ref3, ref4, user;
+        }, function(err, datas) {
+          var found, k, len3, len4, match, n, o, player, ref3, ref4, ref5, ref6, user;
           if (client.closed) {
             return;
           }
-          participant_data = datas[0];
-          match_data = datas[1];
-          if (err || !participant_data || !match_data) {
+          if (err || !datas.participant_data || !datas.match_data) {
             log.warn("Failed loading Challonge user info", err);
             ygopro.stoc_die(client, '${challonge_match_load_failed}');
             return;
           }
           found = false;
-          for (k in participant_data) {
-            user = participant_data[k];
+          ref3 = datas.participant_data;
+          for (k in ref3) {
+            user = ref3[k];
             if (user.participant && user.participant.name && deck_name_match(user.participant.name, client.name)) {
               found = user.participant;
               break;
@@ -2708,8 +2708,9 @@
           }
           client.challonge_info = found;
           found = false;
-          for (k in match_data) {
-            match = match_data[k];
+          ref4 = datas.match_data;
+          for (k in ref4) {
+            match = ref4[k];
             if (match && match.match && !match.match.winnerId && match.match.state !== "complete" && match.match.player1Id && match.match.player2Id && (match.match.player1Id === client.challonge_info.id || match.match.player2Id === client.challonge_info.id)) {
               found = match.match;
               break;
@@ -2735,9 +2736,9 @@
               ygopro.stoc_send_chat_to_room(room, client.name + " ${watch_join}");
               room.watchers.push(client);
               ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE);
-              ref3 = room.watcher_buffers;
-              for (n = 0, len3 = ref3.length; n < len3; n++) {
-                buffer = ref3[n];
+              ref5 = room.watcher_buffers;
+              for (n = 0, len3 = ref5.length; n < len3; n++) {
+                buffer = ref5[n];
                 client.write(buffer);
               }
             } else {
@@ -2746,9 +2747,9 @@
           } else if (room.hostinfo.no_watch && room.players.length >= (room.hostinfo.mode === 2 ? 4 : 2)) {
             ygopro.stoc_die(client, "${watch_denied_room}");
           } else {
-            ref4 = room.get_playing_player();
-            for (o = 0, len4 = ref4.length; o < len4; o++) {
-              player = ref4[o];
+            ref6 = room.get_playing_player();
+            for (o = 0, len4 = ref6.length; o < len4; o++) {
+              player = ref6[o];
               if (!(player && player !== client && player.challonge_info.id === client.challonge_info.id)) {
                 continue;
               }
