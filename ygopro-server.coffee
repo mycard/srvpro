@@ -463,15 +463,14 @@ ban_user = global.ban_user = (name, callback) ->
       done()
       return
     _async.each(["players", "watchers"], (player_type, _done)->
-      _async.each(room[player_type].filter((player)->
-        return player and (player.name == name or bad_ip.indexOf(player.ip) != -1)
-      ), (player, __done)->
-        bad_ip = player.ip
-        ROOM_bad_ip[bad_ip]=99
-        settings.ban.banned_ip.push(player.ip)
-        ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-        CLIENT_send_replays(player, room)
-        CLIENT_kick(player)
+      _async.each(room[player_type], (player, __done)->
+        if player and (player.name == name or bad_ip.indexOf(player.ip) != -1)
+          bad_ip.push(player.ip)
+          ROOM_bad_ip[bad_ip]=99
+          settings.ban.banned_ip.push(player.ip)
+          ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
+          CLIENT_send_replays(player, room)
+          CLIENT_kick(player)
         __done()
       , _done)
     , done)
@@ -3517,17 +3516,25 @@ if settings.modules.mycard.enabled
 
 if settings.modules.heartbeat_detection.enabled
   setInterval ()->
-    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and (room.hostinfo.time_limit == 0 or room.duel_stage != ygopro.constants.DUEL_STAGE.DUELING) and !room.windbot
-      for player in room.get_playing_player() when player and (room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING or player.selected_preduel)
-        CLIENT_heartbeat_register(player, true)
+    _async.each ROOM_all, (room, done)->
+      if room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and (room.hostinfo.time_limit == 0 or room.duel_stage != ygopro.constants.DUEL_STAGE.DUELING) and !room.windbot
+        _async.each(room.get_playing_player(), (player, _done)->
+          if player and (room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING or player.selected_preduel)
+            CLIENT_heartbeat_register(player, true)
+          _done()
+        , done)
+      else
+        done()
     return
   , settings.modules.heartbeat_detection.interval
 
 setInterval ()->
   current_time = moment()
-  for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.hostinfo.auto_death and !room.auto_death_triggered and current_time - moment(room.start_time) > 60000 * room.hostinfo.auto_death
-    room.auto_death_triggered = true
-    room.start_death()
+  _async.each ROOM_all, (room, done)->
+    if room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.hostinfo.auto_death and !room.auto_death_triggered and current_time - moment(room.start_time) > 60000 * room.hostinfo.auto_death
+      room.auto_death_triggered = true
+      room.start_death()
+    done()
 
 , 1000
 

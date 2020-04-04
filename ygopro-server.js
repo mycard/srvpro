@@ -545,15 +545,15 @@
         return;
       }
       return _async.each(["players", "watchers"], function(player_type, _done) {
-        return _async.each(room[player_type].filter(function(player) {
-          return player && (player.name === name || bad_ip.indexOf(player.ip) !== -1);
-        }), function(player, __done) {
-          bad_ip = player.ip;
-          ROOM_bad_ip[bad_ip] = 99;
-          settings.ban.banned_ip.push(player.ip);
-          ygopro.stoc_send_chat_to_room(room, player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
-          CLIENT_send_replays(player, room);
-          CLIENT_kick(player);
+        return _async.each(room[player_type], function(player, __done) {
+          if (player && (player.name === name || bad_ip.indexOf(player.ip) !== -1)) {
+            bad_ip.push(player.ip);
+            ROOM_bad_ip[bad_ip] = 99;
+            settings.ban.banned_ip.push(player.ip);
+            ygopro.stoc_send_chat_to_room(room, player.name + " ${kicked_by_system}", ygopro.constants.COLORS.RED);
+            CLIENT_send_replays(player, room);
+            CLIENT_kick(player);
+          }
           return __done();
         }, _done);
       }, done);
@@ -4496,35 +4496,31 @@
 
   if (settings.modules.heartbeat_detection.enabled) {
     setInterval(function() {
-      var len2, len3, m, n, player, ref2, room;
-      for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
-        room = ROOM_all[m];
+      _async.each(ROOM_all, function(room, done) {
         if (room && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && (room.hostinfo.time_limit === 0 || room.duel_stage !== ygopro.constants.DUEL_STAGE.DUELING) && !room.windbot) {
-          ref2 = room.get_playing_player();
-          for (n = 0, len3 = ref2.length; n < len3; n++) {
-            player = ref2[n];
+          return _async.each(room.get_playing_player(), function(player, _done) {
             if (player && (room.duel_stage !== ygopro.constants.DUEL_STAGE.SIDING || player.selected_preduel)) {
               CLIENT_heartbeat_register(player, true);
             }
-          }
+            return _done();
+          }, done);
+        } else {
+          return done();
         }
-      }
+      });
     }, settings.modules.heartbeat_detection.interval);
   }
 
   setInterval(function() {
-    var current_time, len2, m, results, room;
+    var current_time;
     current_time = moment();
-    results = [];
-    for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
-      room = ROOM_all[m];
-      if (!(room && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && room.hostinfo.auto_death && !room.auto_death_triggered && current_time - moment(room.start_time) > 60000 * room.hostinfo.auto_death)) {
-        continue;
+    return _async.each(ROOM_all, function(room, done) {
+      if (room && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && room.hostinfo.auto_death && !room.auto_death_triggered && current_time - moment(room.start_time) > 60000 * room.hostinfo.auto_death) {
+        room.auto_death_triggered = true;
+        room.start_death();
       }
-      room.auto_death_triggered = true;
-      results.push(room.start_death());
-    }
-    return results;
+      return done();
+    });
   }, 1000);
 
   windbot_looplimit = 0;
