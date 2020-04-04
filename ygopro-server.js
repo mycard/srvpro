@@ -2610,6 +2610,10 @@
       };
       _async.auto({
         match_permit: function(done) {
+          if (client.closed) {
+            done();
+            return;
+          }
           if (!settings.modules.arena_mode.check_permit) {
             done(null, null);
             return;
@@ -2638,6 +2642,7 @@
         get_user: function(done) {
           var decrypted_buffer, i, id, len2, m, ref2, secret;
           if (client.closed) {
+            done();
             return;
           }
           if (id = users_cache[client.name]) {
@@ -2653,6 +2658,7 @@
                 original: decrypted_buffer,
                 decrypted: decrypted_buffer
               });
+              return;
             }
           }
           request({

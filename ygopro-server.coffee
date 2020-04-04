@@ -2079,6 +2079,9 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
 
     _async.auto({
       match_permit: (done) ->
+        if client.closed
+          done()
+          return
         if(!settings.modules.arena_mode.check_permit)
           done(null, null)
           return
@@ -2102,6 +2105,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         return
       get_user: (done) ->
         if client.closed
+          done()
           return
         if id = users_cache[client.name]
           secret = id % 65535 + 1
@@ -2113,6 +2117,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
               original: decrypted_buffer,
               decrypted: decrypted_buffer
             })
+            return
 
         #TODO: query database directly, like preload.
         request
