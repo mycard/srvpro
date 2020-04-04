@@ -3457,7 +3457,7 @@ if settings.modules.mycard.enabled
     )
     
     if settings.modules.arena_mode.punish_quit_before_match
-      async.each(ROOM_all.filter((room) ->
+      _async.each(ROOM_all.filter((room) ->
         return room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2
       ), (room, done) ->
         player = room.get_playing_player()[0]

@@ -4431,7 +4431,7 @@
         done();
       });
       if (settings.modules.arena_mode.punish_quit_before_match) {
-        async.each(ROOM_all.filter(function(room) {
+        _async.each(ROOM_all.filter(function(room) {
           return room && room.arena && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && room.get_playing_player().length < 2;
         }), function(room, done) {
           var player, waited_time;
