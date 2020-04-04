@@ -132,11 +132,15 @@ try
 catch e
   log.info e unless e.code == 'ENOENT'
 
-setting_save = global.setting_save = (settings) ->
-  fs.writeFileSync(settings.file, JSON.stringify(settings, null, 2))
+setting_save = global.setting_save = (settings, callback) ->
+  if !callback
+    callback = (err) ->
+      if(err)
+        log.warn("setting save fail", err.toString())
+  fs.writeFile(settings.file, JSON.stringify(settings, null, 2), callback)
   return
 
-setting_change = global.setting_change = (settings, path, val) ->
+setting_change = global.setting_change = (settings, path, val, callback) ->
   # path should be like "modules:welcome"
   log.info("setting changed", path, val) if _.isString(val)
   path=path.split(':')
@@ -149,7 +153,7 @@ setting_change = global.setting_change = (settings, path, val) ->
       target=target[key]
     key = path.shift()
     target[key] = val
-  setting_save(settings)
+  setting_save(settings, callback)
   return
 
 # 读取配置
@@ -450,20 +454,27 @@ ROOM_connected_ip = global.ROOM_connected_ip = {}
 ROOM_bad_ip = global.ROOM_bad_ip = {}
 
 # ban a user manually and permanently
-ban_user = global.ban_user = (name) ->
+ban_user = global.ban_user = (name, callback) ->
   settings.ban.banned_user.push(name)
   setting_save(settings)
-  bad_ip=0
-  for room in ROOM_all when room and room.established
-    for player in room.players
-      if player and (player.name == name or player.ip == bad_ip)
+  bad_ip = []
+  _async.each(ROOM_all.filter((room)->
+    return room and room.established
+  ), (room, done)-> 
+    _async.each(["players", "watchers"], (player_type, _done)->
+      _async.each(room[player_type].filter((player)->
+        return player and (player.name == name or bad_ip.indexOf(player.ip) != -1)
+      ), (player, __done)->
         bad_ip = player.ip
         ROOM_bad_ip[bad_ip]=99
         settings.ban.banned_ip.push(player.ip)
         ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
         CLIENT_send_replays(player, room)
         CLIENT_kick(player)
-        continue
+        __done()
+      , _done)
+    , done)
+  , callback)
   return
 
 # automatically ban user to use random duel
@@ -483,6 +494,28 @@ ROOM_ban_player = global.ROOM_ban_player = (name, ip, reason, countadd = 1)->
     ROOM_players_banned.push(bannedplayer)
   #log.info("banned", name, ip, reason, bannedplayer.count)
   return
+
+ROOM_kick = (name, callback)->
+  rooms = ROOM_all.filter((room)->
+    return room and room.established and (name == "all" or name == room.process_pid.toString() or name == room.name)
+  )
+  if !rooms.length
+    callback(null, false)
+  _async.each(rooms, (room, done)->
+    if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
+      room.scores[room.dueling_players[0].name_vpass] = 0
+      room.scores[room.dueling_players[1].name_vpass] = 0
+    room.kicked = true
+    room.send_replays()
+    room.process.kill()
+    room.delete()
+    done()
+    return
+  , (err)->
+    callback(null, true)
+    return
+  )
+
 
 ROOM_player_win = global.ROOM_player_win = (name)->
   if !ROOM_players_scores[name]
@@ -2366,7 +2399,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
   return
 
 # 登场台词
-load_dialogues = global.load_dialogues = () ->
+load_dialogues = global.load_dialogues = (callback) ->
   request
     url: settings.modules.dialogues.get
     json: true
@@ -2378,6 +2411,8 @@ load_dialogues = global.load_dialogues = () ->
     else
       setting_change(dialogues, "dialogues", body)
       log.info "dialogues loaded", _.size dialogues.dialogues
+    if callback
+      callback(error, body)
     return
   return
 
@@ -2824,7 +2859,7 @@ ygopro.stoc_send_random_tip_to_room = (room)->
     ygopro.stoc_send_chat_to_room(room, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
   return
 
-load_tips = global.load_tips = ()->
+load_tips = global.load_tips = (callback)->
   request
     url: settings.modules.tips.get
     json: true
@@ -2836,6 +2871,8 @@ load_tips = global.load_tips = ()->
     else
       setting_change(tips, "tips", body)
       log.info "tips loaded", tips.tips.length
+    if callback
+      callback(error, body)
     return
   return
 
@@ -3506,13 +3543,13 @@ spawn_windbot = global.spawn_windbot = () ->
   windbot_process = spawn windbot_bin, windbot_parameters, {cwd: 'windbot'}
   windbot_process.on 'error', (err)->
     log.warn 'WindBot ERROR', err
-    if windbot_looplimit < 1000 and !rebooted
+    if windbot_looplimit < 1000 and !global.rebooted
       windbot_looplimit++
       spawn_windbot()
     return
   windbot_process.on 'exit', (code)->
     log.warn 'WindBot EXIT', code
-    if windbot_looplimit < 1000 and !rebooted
+    if windbot_looplimit < 1000 and !global.rebooted
       windbot_looplimit++
       spawn_windbot()
     return
@@ -3529,7 +3566,7 @@ spawn_windbot = global.spawn_windbot = () ->
 if settings.modules.windbot.enabled and settings.modules.windbot.spawn
   spawn_windbot()
 
-rebooted = false
+global.rebooted = false
 #http
 if settings.modules.http
 
@@ -3687,18 +3724,26 @@ if settings.modules.http
           return
         if u.query.stop == 'false'
           u.query.stop = false
-        setting_change(settings, 'modules:stop', u.query.stop)
-        response.writeHead(200)
-        response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
+        setting_change(settings, 'modules:stop', u.query.stop, (err)->
+          response.writeHead(200)
+          if(err)
+            response.end(addCallback(u.query.callback, "['stop fail', '" + u.query.stop + "']"))
+          else
+            response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
+        )
 
       else if u.query.welcome
         if !auth.auth(u.query.username, u.query.pass, "change_settings", "change_welcome")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        setting_change(settings, 'modules:welcome', u.query.welcome)
-        response.writeHead(200)
-        response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
+        setting_change(settings, 'modules:welcome', (err)->
+          response.writeHead(200)
+          if(err)
+            response.end(addCallback(u.query.callback, "['welcome fail', '" + u.query.welcome + "']"))
+          else
+            response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
+        )
 
       else if u.query.getwelcome
         if !auth.auth(u.query.username, u.query.pass, "change_settings", "get_welcome")
@@ -3713,98 +3758,112 @@ if settings.modules.http
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        load_tips()
-        response.writeHead(200)
-        response.end(addCallback(u.query.callback, "['loading tip', '" + settings.modules.tips.get + "']"))
+        load_tips((err)->
+          response.writeHead(200)
+          if(err)
+            response.end(addCallback(u.query.callback, "['tip fail', '" + u.query.loadtips + "']"))
+          else
+            response.end(addCallback(u.query.callback, "['tip ok', '" + u.query.loadtips + "']"))
+        )
 
       else if u.query.loaddialogues
         if !auth.auth(u.query.username, u.query.pass, "change_settings", "change_dialogues")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        load_dialogues()
-        response.writeHead(200)
-        response.end(addCallback(u.query.callback, "['loading dialogues', '" + settings.modules.dialogues.get + "']"))
+        load_dialogues((err)->
+          response.writeHead(200)
+          if(err)
+            response.end(addCallback(u.query.callback, "['dialogues fail', '" + u.query.loaddialogues + "']"))
+          else
+            response.end(addCallback(u.query.callback, "['dialogues ok', '" + u.query.loaddialogues + "']"))
+        )
 
       else if u.query.ban
         if !auth.auth(u.query.username, u.query.pass, "ban_user", "ban_user")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        ban_user(u.query.ban)
-        response.writeHead(200)
-        response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"))
+        ban_user(u.query.ban, (err)->
+          response.writeHead(200)
+          if(err)
+            response.end(addCallback(u.query.callback, "['ban fail', '" + u.query.ban + "']"))
+          else
+            response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"))
+        )
 
       else if u.query.kick
         if !auth.auth(u.query.username, u.query.pass, "kick_user", "kick_user")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        kick_room_found = false
-        for room in ROOM_all when room and room.established and (u.query.kick == "all" or u.query.kick == room.process_pid.toString() or u.query.kick == room.name)
-          kick_room_found = true
-          if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
-            room.scores[room.dueling_players[0].name_vpass] = 0
-            room.scores[room.dueling_players[1].name_vpass] = 0
-          room.kicked = true
-          room.send_replays()
-          room.process.kill()
-          room.delete()
-        response.writeHead(200)
-        if kick_room_found
-          response.end(addCallback(u.query.callback, "['kick ok', '" + u.query.kick + "']"))
-        else
-          response.end(addCallback(u.query.callback, "['room not found', '" + u.query.kick + "']"))
+        ROOM_kick(u.query.kick, (err, found)->
+          response.writeHead(200)
+          if err
+            response.end(addCallback(u.query.callback, "['kick fail', '" + u.query.kick + "']"))
+          else if found
+            response.end(addCallback(u.query.callback, "['kick ok', '" + u.query.kick + "']"))
+          else
+            response.end(addCallback(u.query.callback, "['room not found', '" + u.query.kick + "']"))
+        )
+        
 
       else if u.query.death
         if !auth.auth(u.query.username, u.query.pass, "start_death", "start_death")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
+        rooms = ROOM_all.filter((room)->
+          return room and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name)
+        )
         death_room_found = false
-        for room in ROOM_all when room and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name)
+        _async.each(rooms, (room, done)->
           if room.start_death()
             death_room_found = true
-        response.writeHead(200)
-        if death_room_found
-          response.end(addCallback(u.query.callback, "['death ok', '" + u.query.death + "']"))
-        else
-          response.end(addCallback(u.query.callback, "['room not found', '" + u.query.death + "']"))
+          done()
+        , () ->
+          response.writeHead(200)
+          if death_room_found
+            response.end(addCallback(u.query.callback, "['death ok', '" + u.query.death + "']"))
+          else
+            response.end(addCallback(u.query.callback, "['room not found', '" + u.query.death + "']"))
+        )
 
       else if u.query.deathcancel
         if !auth.auth(u.query.username, u.query.pass, "start_death", "cancel_death")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
+        rooms = ROOM_all.filter((room)->
+          return room and (u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString() or u.query.deathcancel == room.name)
+        )
         death_room_found = false
-        for room in ROOM_all when room and (u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString() or u.query.deathcancel == room.name)
+        _async.each(rooms, (room, done)->
           if room.cancel_death()
             death_room_found = true
-        response.writeHead(200)
-        if death_room_found
-          response.end(addCallback(u.query.callback, "['death cancel ok', '" + u.query.deathcancel + "']"))
-        else
-          response.end(addCallback(u.query.callback, "['room not found', '" + u.query.deathcancel + "']"))
+          done()
+        , () ->
+          response.writeHead(200)
+          if death_room_found
+            response.end(addCallback(u.query.callback, "['death cancel ok', '" + u.query.deathcancel + "']"))
+          else
+            response.end(addCallback(u.query.callback, "['room not found', '" + u.query.deathcancel + "']"))
+        )
 
       else if u.query.reboot
         if !auth.auth(u.query.username, u.query.pass, "stop", "reboot")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        for room in ROOM_all when room
-          if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
-            room.scores[room.dueling_players[0].name_vpass] = 0
-            room.scores[room.dueling_players[1].name_vpass] = 0
-          room.kicked = true
-          room.send_replays()
-          room.process.kill()
-          room.delete()
-        rebooted = true
-        if windbot_process
-          windbot_process.kill()
-        response.writeHead(200)
-        response.end(addCallback(u.query.callback, "['reboot ok', '" + u.query.reboot + "']"))
-        throw "rebooted"
+        ROOM_kick("all", (err, found)->
+          global.rebooted = true
+          if windbot_process
+            windbot_process.kill()
+          response.writeHead(200)
+          response.end(addCallback(u.query.callback, "['reboot ok', '" + u.query.reboot + "']"))
+          process.exit()
+        )
+        
 
       else
         response.writeHead(400)
