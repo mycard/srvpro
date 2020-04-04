@@ -2628,7 +2628,7 @@
               return;
             }
             if (!error && body) {
-              done(null, boddy);
+              done(null, body);
             } else {
               log.warn("Match permit request error", error);
               match_permit_callback(null, null);
