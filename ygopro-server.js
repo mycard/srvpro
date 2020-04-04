@@ -4816,9 +4816,9 @@
           load_tips(function(err) {
             response.writeHead(200);
             if (err) {
-              return response.end(addCallback(u.query.callback, "['tip fail', '" + u.query.loadtips + "']"));
+              return response.end(addCallback(u.query.callback, "['tip fail', '" + settings.modules.tips.get + "']"));
             } else {
-              return response.end(addCallback(u.query.callback, "['tip ok', '" + u.query.loadtips + "']"));
+              return response.end(addCallback(u.query.callback, "['tip ok', '" + settings.modules.tips.get + "']"));
             }
           });
         } else if (u.query.loaddialogues) {
@@ -4830,9 +4830,9 @@
           load_dialogues(function(err) {
             response.writeHead(200);
             if (err) {
-              return response.end(addCallback(u.query.callback, "['dialogues fail', '" + u.query.loaddialogues + "']"));
+              return response.end(addCallback(u.query.callback, "['dialogues fail', '" + settings.modules.dialogues.get + "']"));
             } else {
-              return response.end(addCallback(u.query.callback, "['dialogues ok', '" + u.query.loaddialogues + "']"));
+              return response.end(addCallback(u.query.callback, "['dialogues ok', '" + settings.modules.dialogues.get + "']"));
             }
           });
         } else if (u.query.ban) {

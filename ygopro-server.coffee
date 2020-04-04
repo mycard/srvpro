@@ -3781,9 +3781,9 @@ if settings.modules.http
         load_tips((err)->
           response.writeHead(200)
           if(err)
-            response.end(addCallback(u.query.callback, "['tip fail', '" + u.query.loadtips + "']"))
+            response.end(addCallback(u.query.callback, "['tip fail', '" + settings.modules.tips.get + "']"))
           else
-            response.end(addCallback(u.query.callback, "['tip ok', '" + u.query.loadtips + "']"))
+            response.end(addCallback(u.query.callback, "['tip ok', '" +  settings.modules.tips.get + "']"))
         )
 
       else if u.query.loaddialogues
@@ -3794,9 +3794,9 @@ if settings.modules.http
         load_dialogues((err)->
           response.writeHead(200)
           if(err)
-            response.end(addCallback(u.query.callback, "['dialogues fail', '" + u.query.loaddialogues + "']"))
+            response.end(addCallback(u.query.callback, "['dialogues fail', '" + settings.modules.dialogues.get + "']"))
           else
-            response.end(addCallback(u.query.callback, "['dialogues ok', '" + u.query.loaddialogues + "']"))
+            response.end(addCallback(u.query.callback, "['dialogues ok', '" +settings.modules.dialogues.get + "']"))
         )
 
       else if u.query.ban
