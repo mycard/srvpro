@@ -2701,7 +2701,7 @@
           ygopro.stoc_die(client, err);
           return;
         }
-        return create_room_with_action(data.get_user.original, data.get_user.decrypted, match_permit);
+        return create_room_with_action(data.get_user.original, data.get_user.decrypted, data.match_permit);
       });
     } else if (settings.modules.challonge.enabled) {
       pre_room = ROOM_find_by_name(info.pass);

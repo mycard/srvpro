@@ -2153,7 +2153,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       if(err)
         ygopro.stoc_die(client, err)
         return
-      create_room_with_action(data.get_user.original, data.get_user.decrypted, match_permit)
+      create_room_with_action(data.get_user.original, data.get_user.decrypted, data.match_permit)
     )
 
 
