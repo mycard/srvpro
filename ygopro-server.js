@@ -4575,7 +4575,7 @@
       return callback + "( " + text + " );";
     };
     requestListener = function(request, response) {
-      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, len2, len3, m, n, parseQueryString, pass_validated, player, ref2, replay, room, rooms, roomsjson, u;
+      var archive_args, archive_name, archive_process, check, death_room_found, duellog, error, filename, getpath, len2, len3, m, n, parseQueryString, pass_validated, ref2, replay, room, rooms, roomsjson, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       if (u.pathname === '/api/getrooms') {
@@ -4584,49 +4584,49 @@
           response.writeHead(200);
           response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'));
         } else {
-          response.writeHead(200);
-          roomsjson = JSON.stringify({
-            rooms: (function() {
-              var len2, m, results;
-              results = [];
-              for (m = 0, len2 = ROOM_all.length; m < len2; m++) {
-                room = ROOM_all[m];
-                if (room && room.established) {
-                  results.push({
-                    roomid: room.process_pid.toString(),
-                    roomname: pass_validated ? room.name : room.name.split('$', 2)[0],
-                    roommode: room.hostinfo.mode,
-                    needpass: (room.name.indexOf('$') !== -1).toString(),
-                    users: _.sortBy((function() {
-                      var len3, n, ref2, results1;
-                      ref2 = room.players;
-                      results1 = [];
-                      for (n = 0, len3 = ref2.length; n < len3; n++) {
-                        player = ref2[n];
-                        if (player.pos != null) {
-                          results1.push({
-                            id: (-1).toString(),
-                            name: player.name,
-                            ip: settings.modules.http.show_ip && pass_validated && !player.is_local ? player.ip.slice(7) : null,
-                            status: settings.modules.http.show_info && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && player.pos !== 7 ? {
-                              score: room.scores[player.name_vpass],
-                              lp: player.lp != null ? player.lp : room.hostinfo.start_lp,
-                              cards: room.hostinfo.mode !== 2 ? (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : null
-                            } : null,
-                            pos: player.pos
-                          });
-                        }
-                      }
-                      return results1;
-                    })(), "pos"),
-                    istart: room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " " + (room.duel_stage === ygopro.constants.DUEL_STAGE.SIDING ? "Siding" : "Turn:" + (room.turn != null ? room.turn : 0) + (room.death ? "/" + (room.death > 0 ? room.death - 1 : "Death") : "")) : 'start') : 'wait'
-                  });
+          roomsjson = [];
+          _async.each(ROOM_all, function(room, done) {
+            var player;
+            if (!(room && room.established)) {
+              done();
+              return;
+            }
+            roomsjson.push({
+              roomid: room.process_pid.toString(),
+              roomname: pass_validated ? room.name : room.name.split('$', 2)[0],
+              roommode: room.hostinfo.mode,
+              needpass: (room.name.indexOf('$') !== -1).toString(),
+              users: _.sortBy((function() {
+                var len2, m, ref2, results;
+                ref2 = room.players;
+                results = [];
+                for (m = 0, len2 = ref2.length; m < len2; m++) {
+                  player = ref2[m];
+                  if (player.pos != null) {
+                    results.push({
+                      id: (-1).toString(),
+                      name: player.name,
+                      ip: settings.modules.http.show_ip && pass_validated && !player.is_local ? player.ip.slice(7) : null,
+                      status: settings.modules.http.show_info && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && player.pos !== 7 ? {
+                        score: room.scores[player.name_vpass],
+                        lp: player.lp != null ? player.lp : room.hostinfo.start_lp,
+                        cards: room.hostinfo.mode !== 2 ? (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : null
+                      } : null,
+                      pos: player.pos
+                    });
+                  }
                 }
-              }
-              return results;
-            })()
-          }, null, 2);
-          response.end(addCallback(u.query.callback, roomsjson));
+                return results;
+              })(), "pos"),
+              istart: room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN ? (settings.modules.http.show_info ? "Duel:" + room.duel_count + " " + (room.duel_stage === ygopro.constants.DUEL_STAGE.SIDING ? "Siding" : "Turn:" + (room.turn != null ? room.turn : 0) + (room.death ? "/" + (room.death > 0 ? room.death - 1 : "Death") : "")) : 'start') : 'wait'
+            });
+            return done();
+          }, function() {
+            response.writeHead(200);
+            return response.end(addCallback(u.query.callback, JSON.stringify({
+              rooms: roomsjson
+            })));
+          });
         }
       } else if (u.pathname === '/api/duellog' && settings.modules.tournament_mode.enabled) {
         if (!auth.auth(u.query.username, u.query.pass, "duel_log", "duel_log")) {

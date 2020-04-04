@@ -3586,26 +3586,35 @@ if settings.modules.http
         response.writeHead(200)
         response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'))
       else
-        response.writeHead(200)
-        roomsjson = JSON.stringify rooms: (for room in ROOM_all when room and room.established
-          roomid: room.process_pid.toString(),
-          roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
-          roommode: room.hostinfo.mode,
-          needpass: (room.name.indexOf('$') != -1).toString(),
-          users: _.sortBy((for player in room.players when player.pos?
-            id: (-1).toString(),
-            name: player.name,
-            ip: if settings.modules.http.show_ip and pass_validated and !player.is_local then player.ip.slice(7) else null,
-            status: if settings.modules.http.show_info and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and player.pos != 7 then (
-              score: room.scores[player.name_vpass],
-              lp: if player.lp? then player.lp else room.hostinfo.start_lp,
-              cards: if room.hostinfo.mode != 2 then (if player.card_count? then player.card_count else room.hostinfo.start_hand) else null
-            ) else null,
-            pos: player.pos
-          ), "pos"),
-          istart: if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " " + (if room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING then "Siding" else "Turn:" + (if room.turn? then room.turn else 0) + (if room.death then "/" + (if room.death > 0 then room.death - 1 else "Death") else ""))) else 'start') else 'wait'
-        ), null, 2
-        response.end(addCallback(u.query.callback, roomsjson))
+        roomsjson = [];
+        _async.each(ROOM_all, (room, done)->
+          if !(room and room.established)
+            done()
+            return
+          roomsjson.push({
+            roomid: room.process_pid.toString(),
+            roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
+            roommode: room.hostinfo.mode,
+            needpass: (room.name.indexOf('$') != -1).toString(),
+            users: _.sortBy((for player in room.players when player.pos?
+              id: (-1).toString(),
+              name: player.name,
+              ip: if settings.modules.http.show_ip and pass_validated and !player.is_local then player.ip.slice(7) else null,
+              status: if settings.modules.http.show_info and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and player.pos != 7 then (
+                score: room.scores[player.name_vpass],
+                lp: if player.lp? then player.lp else room.hostinfo.start_lp,
+                cards: if room.hostinfo.mode != 2 then (if player.card_count? then player.card_count else room.hostinfo.start_hand) else null
+              ) else null,
+              pos: player.pos
+            ), "pos"),
+            istart: if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " " + (if room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING then "Siding" else "Turn:" + (if room.turn? then room.turn else 0) + (if room.death then "/" + (if room.death > 0 then room.death - 1 else "Death") else ""))) else 'start') else 'wait'
+          })
+          done()
+        , ()->
+          response.writeHead(200)
+          response.end(addCallback(u.query.callback, JSON.stringify({rooms: roomsjson})))
+        )
+
 
     else if u.pathname == '/api/duellog' and settings.modules.tournament_mode.enabled
       if !auth.auth(u.query.username, u.query.pass, "duel_log", "duel_log")
