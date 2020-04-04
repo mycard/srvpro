@@ -2146,6 +2146,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             original: buffer,
             decrypted: decrypted_buffer
           })
+          return
         return
     }, (err, data) ->
       if(client.closed)

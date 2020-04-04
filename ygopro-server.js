@@ -2687,7 +2687,7 @@
               done('${invalid_password_checksum}');
               return;
             }
-            return done(null, {
+            done(null, {
               original: buffer,
               decrypted: decrypted_buffer
             });
