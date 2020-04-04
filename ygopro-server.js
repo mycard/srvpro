@@ -4579,7 +4579,7 @@
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       if (u.pathname === '/api/getrooms') {
-        pass_validated = auth.auth(u.query.username, u.query.pass, "get_rooms", "get_rooms");
+        pass_validated = auth.auth(u.query.username, u.query.pass, "get_rooms", "get_rooms", true);
         if (!settings.modules.http.public_roomlist && !pass_validated) {
           response.writeHead(200);
           response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'));

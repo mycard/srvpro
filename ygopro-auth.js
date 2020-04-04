@@ -122,7 +122,7 @@ or as follows, to use a specific set of permissions.
     return permission[permission_required];
   };
 
-  this.auth = function(name, pass, permission_required, action) {
+  this.auth = function(name, pass, permission_required, action, no_log) {
     var user;
     if (action == null) {
       action = 'unknown';
@@ -145,7 +145,9 @@ or as follows, to use a specific set of permissions.
       add_log("Permission denied. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
       return false;
     }
-    add_log("Operation success. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
+    if (!no_log) {
+      add_log("Operation success. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
+    }
     return true;
   };
 

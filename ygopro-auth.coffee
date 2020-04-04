@@ -100,7 +100,7 @@ check_permission = (user, permission_required) ->
     return false
   return permission[permission_required]
 
-@auth = (name, pass, permission_required, action = 'unknown') ->
+@auth = (name, pass, permission_required, action = 'unknown', no_log) ->
   reload()
   user = users.users[name]
   if !user
@@ -115,7 +115,8 @@ check_permission = (user, permission_required) ->
   if !check_permission(user, permission_required)
     add_log("Permission denied. User: "+ name+", Permission needed: "+ permission_required+", Action: " +action)
     return false
-  add_log("Operation success. User: "+ name+", Permission needed: "+ permission_required+", Action: " +action)
+  if !no_log
+    add_log("Operation success. User: "+ name+", Permission needed: "+ permission_required+", Action: " +action)
   return true
 
 @add_user = (name, pass, enabled, permissions) ->
