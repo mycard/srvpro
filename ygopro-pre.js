@@ -407,7 +407,7 @@ function run7z(params, callback) {
     });
     proc.on('close', function (code) {
         callback(code === 0 ? null : "exit " + code);
-    }
+    });
 } 
 
 //生成更新包，异步
