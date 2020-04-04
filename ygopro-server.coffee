@@ -1925,7 +1925,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         checksum += buf.readUInt8(i)
       (checksum & 0xFF) == 0
 
-    buffer_handle_callback = (buffer, decrypted_buffer, match_permit)->
+    create_room_with_action = (buffer, decrypted_buffer, match_permit)->
       if client.closed
         return
       action = buffer.readUInt8(1) >> 4
@@ -2044,67 +2044,84 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         room.connect(client)
       return
 
-    match_permit_callback = (buffer, match_permit) ->
-      if client.closed
+    _async.auto({
+      match_permit: (done) ->
+        if(!settings.modules.arena_mode.check_permit)
+          done(null, null)
+          return
+        request
+          url: settings.modules.arena_mode.check_permit,
+          json: true,
+          qs:
+            username: client.name,
+            password: info.pass,
+            arena: settings.modules.arena_mode.mode
+        , (error, response, body)->
+          if client.closed
+            done(null, null)
+            return
+          if !error and body
+            done(null, boddy)
+          else
+            log.warn("Match permit request error", error)
+            match_permit_callback(null, null)
+          return
         return
-      if id = users_cache[client.name]
-        secret = id % 65535 + 1
-        decrypted_buffer = Buffer.allocUnsafe(6)
-        for i in [0, 2, 4]
-          decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
-        if check_buffer_indentity(decrypted_buffer)
-          return buffer_handle_callback(decrypted_buffer, decrypted_buffer, match_permit)
-
-      #TODO: query database directly, like preload.
-      request
-        baseUrl: settings.modules.mycard.auth_base_url,
-        url: '/users/' + encodeURIComponent(client.name) + '.json',
-        qs:
-          api_key: settings.modules.mycard.auth_key,
-          api_username: client.name,
-          skip_track_visit: true
-        json: true
-      , (error, response, body)->
-        if !error and body and body.user
-          users_cache[client.name] = body.user.id
-          secret = body.user.id % 65535 + 1
+      get_user: (done) ->
+        if client.closed
+          return
+        if id = users_cache[client.name]
+          secret = id % 65535 + 1
           decrypted_buffer = Buffer.allocUnsafe(6)
           for i in [0, 2, 4]
             decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
           if check_buffer_indentity(decrypted_buffer)
-            buffer = decrypted_buffer
-        else
-          log.warn("READ USER FAIL", error, body)
-          ygopro.stoc_die(client, "${create_room_failed}")
-          return
+            done(null, {
+              original: decrypted_buffer,
+              decrypted: decrypted_buffer
+            })
 
-        # buffer != decrypted_buffer  ==> auth failed
+        #TODO: query database directly, like preload.
+        request
+          baseUrl: settings.modules.mycard.auth_base_url,
+          url: '/users/' + encodeURIComponent(client.name) + '.json',
+          qs:
+            api_key: settings.modules.mycard.auth_key,
+            api_username: client.name,
+            skip_track_visit: true
+          json: true
+        , (error, response, body)->
+          if !error and body and body.user
+            users_cache[client.name] = body.user.id
+            secret = body.user.id % 65535 + 1
+            decrypted_buffer = Buffer.allocUnsafe(6)
+            for i in [0, 2, 4]
+              decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
+            if check_buffer_indentity(decrypted_buffer)
+              buffer = decrypted_buffer
+          else
+            log.warn("READ USER FAIL", error, body)
+            done("${create_room_failed}")
+            return
 
-        if !check_buffer_indentity(buffer)
-          ygopro.stoc_die(client, '${invalid_password_checksum}')
-          return
-        return buffer_handle_callback(buffer, decrypted_buffer, match_permit)
-      return
+          # buffer != decrypted_buffer  ==> auth failed
 
-    if settings.modules.arena_mode.check_permit
-      request
-        url: settings.modules.arena_mode.check_permit,
-        json: true,
-        qs:
-          username: client.name,
-          password: info.pass,
-          arena: settings.modules.arena_mode.mode
-      , (error, response, body)->
-        if client.closed
-          return
-        if !error and body
-          match_permit_callback(buffer, body)
-        else
-          log.warn("Match permit request error", error)
-          match_permit_callback(buffer, null)
+          if !check_buffer_indentity(buffer)
+            done('${invalid_password_checksum}')
+            return
+          done(null, {
+            original: buffer,
+            decrypted: decrypted_buffer
+          })
         return
-    else
-      match_permit_callback(buffer, null)
+    }, (err, data) ->
+      if(client.closed)
+        return
+      if(err)
+        ygopro.stoc_die(client, err)
+        return
+      create_room_with_action(data.get_user.original, data.get_user.decrypted, match_permit)
+    )
 
 
   else if settings.modules.challonge.enabled

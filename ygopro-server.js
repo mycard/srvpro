@@ -2354,7 +2354,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server, datas) {
-    var buffer_handle_callback, check_buffer_indentity, len2, len3, m, match_permit_callback, n, name, pre_room, ref2, ref3, replay_id, room;
+    var check_buffer_indentity, create_room_with_action, len2, len3, m, n, name, pre_room, ref2, ref3, replay_id, room;
     info.pass = info.pass.trim();
     client.pass = info.pass;
     if (CLIENT_is_able_to_reconnect(client) || CLIENT_is_able_to_kick_reconnect(client)) {
@@ -2435,7 +2435,7 @@
         }
         return (checksum & 0xFF) === 0;
       };
-      buffer_handle_callback = function(buffer, decrypted_buffer, match_permit) {
+      create_room_with_action = function(buffer, decrypted_buffer, match_permit) {
         var action, len2, len3, m, n, name, opt1, opt2, opt3, options, player, ref2, ref3, room, room_title, title;
         if (client.closed) {
           return;
@@ -2577,81 +2577,101 @@
           room.connect(client);
         }
       };
-      match_permit_callback = function(buffer, match_permit) {
-        var decrypted_buffer, i, id, len2, m, ref2, secret;
-        if (client.closed) {
-          return;
-        }
-        if (id = users_cache[client.name]) {
-          secret = id % 65535 + 1;
-          decrypted_buffer = Buffer.allocUnsafe(6);
-          ref2 = [0, 2, 4];
-          for (m = 0, len2 = ref2.length; m < len2; m++) {
-            i = ref2[m];
-            decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
-          }
-          if (check_buffer_indentity(decrypted_buffer)) {
-            return buffer_handle_callback(decrypted_buffer, decrypted_buffer, match_permit);
-          }
-        }
-        request({
-          baseUrl: settings.modules.mycard.auth_base_url,
-          url: '/users/' + encodeURIComponent(client.name) + '.json',
-          qs: {
-            api_key: settings.modules.mycard.auth_key,
-            api_username: client.name,
-            skip_track_visit: true
-          },
-          json: true
-        }, function(error, response, body) {
-          var len3, n, ref3;
-          if (!error && body && body.user) {
-            users_cache[client.name] = body.user.id;
-            secret = body.user.id % 65535 + 1;
-            decrypted_buffer = Buffer.allocUnsafe(6);
-            ref3 = [0, 2, 4];
-            for (n = 0, len3 = ref3.length; n < len3; n++) {
-              i = ref3[n];
-              decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
-            }
-            if (check_buffer_indentity(decrypted_buffer)) {
-              buffer = decrypted_buffer;
-            }
-          } else {
-            log.warn("READ USER FAIL", error, body);
-            ygopro.stoc_die(client, "${create_room_failed}");
+      _async.auto({
+        match_permit: function(done) {
+          if (!settings.modules.arena_mode.check_permit) {
+            done(null, null);
             return;
           }
-          if (!check_buffer_indentity(buffer)) {
-            ygopro.stoc_die(client, '${invalid_password_checksum}');
-            return;
-          }
-          return buffer_handle_callback(buffer, decrypted_buffer, match_permit);
-        });
-      };
-      if (settings.modules.arena_mode.check_permit) {
-        request({
-          url: settings.modules.arena_mode.check_permit,
-          json: true,
-          qs: {
-            username: client.name,
-            password: info.pass,
-            arena: settings.modules.arena_mode.mode
-          }
-        }, function(error, response, body) {
+          request({
+            url: settings.modules.arena_mode.check_permit,
+            json: true,
+            qs: {
+              username: client.name,
+              password: info.pass,
+              arena: settings.modules.arena_mode.mode
+            }
+          }, function(error, response, body) {
+            if (client.closed) {
+              done(null, null);
+              return;
+            }
+            if (!error && body) {
+              done(null, boddy);
+            } else {
+              log.warn("Match permit request error", error);
+              match_permit_callback(null, null);
+            }
+          });
+        },
+        get_user: function(done) {
+          var decrypted_buffer, i, id, len2, m, ref2, secret;
           if (client.closed) {
             return;
           }
-          if (!error && body) {
-            match_permit_callback(buffer, body);
-          } else {
-            log.warn("Match permit request error", error);
-            match_permit_callback(buffer, null);
+          if (id = users_cache[client.name]) {
+            secret = id % 65535 + 1;
+            decrypted_buffer = Buffer.allocUnsafe(6);
+            ref2 = [0, 2, 4];
+            for (m = 0, len2 = ref2.length; m < len2; m++) {
+              i = ref2[m];
+              decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
+            }
+            if (check_buffer_indentity(decrypted_buffer)) {
+              done(null, {
+                original: decrypted_buffer,
+                decrypted: decrypted_buffer
+              });
+            }
           }
-        });
-      } else {
-        match_permit_callback(buffer, null);
-      }
+          request({
+            baseUrl: settings.modules.mycard.auth_base_url,
+            url: '/users/' + encodeURIComponent(client.name) + '.json',
+            qs: {
+              api_key: settings.modules.mycard.auth_key,
+              api_username: client.name,
+              skip_track_visit: true
+            },
+            json: true
+          }, function(error, response, body) {
+            var len3, n, ref3;
+            if (!error && body && body.user) {
+              users_cache[client.name] = body.user.id;
+              secret = body.user.id % 65535 + 1;
+              decrypted_buffer = Buffer.allocUnsafe(6);
+              ref3 = [0, 2, 4];
+              for (n = 0, len3 = ref3.length; n < len3; n++) {
+                i = ref3[n];
+                decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
+              }
+              if (check_buffer_indentity(decrypted_buffer)) {
+                buffer = decrypted_buffer;
+              }
+            } else {
+              log.warn("READ USER FAIL", error, body);
+              done("${create_room_failed}");
+              return;
+            }
+            if (!check_buffer_indentity(buffer)) {
+              done('${invalid_password_checksum}');
+              return;
+            }
+            return done(null, {
+              original: buffer,
+              decrypted: decrypted_buffer
+            });
+          });
+        }
+      }, function(err, data) {
+        if (client.closed) {
+          return;
+        }
+        if (err) {
+          ygopro.stoc_die(client, err);
+          return;
+        }
+        return create_room_with_action(data.get_user.original, data.get_user.decrypted, match_permit);
+      });
     } else if (settings.modules.challonge.enabled) {
       pre_room = ROOM_find_by_name(info.pass);
       if (pre_room && pre_room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && settings.modules.cloud_replay.enable_halfway_watch && !pre_room.hostinfo.no_watch) {
