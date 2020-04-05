@@ -26,11 +26,13 @@
         }
       },
   */
-  var add_log, bunyan, check_permission, default_data, fs, loadJSON, log, moment, reload, save, setting_save, users;
+  var add_log, bunyan, check_permission, default_data, fs, loadJSON, loadJSONPromise, log, moment, reload, save, setting_save, users;
 
   fs = require('fs');
 
   loadJSON = require('load-json-file').sync;
+
+  loadJSONPromise = require('load-json-file');
 
   moment = require('moment');
 
@@ -62,24 +64,31 @@
     fs.mkdirSync('./logs');
   }
 
-  add_log = function(message) {
+  add_log = async function(message) {
     var mt, res, text;
     mt = moment();
     log.info(message);
     text = mt.format('YYYY-MM-DD HH:mm:ss') + " --> " + message + "\n";
     res = false;
     try {
-      fs.appendFileSync("./logs/" + mt.format('YYYY-MM-DD') + ".log", text);
+      await util.promisfy(fs.appendFile)("./logs/" + mt.format('YYYY-MM-DD') + ".log", text);
       res = true;
     } catch (error) {
       res = false;
     }
+    return res;
   };
 
   default_data = loadJSON('./data/default_data.json');
 
-  setting_save = function(settings) {
-    fs.writeFileSync(settings.file, JSON.stringify(settings, null, 2));
+  setting_save = async function(settings) {
+    var e;
+    try {
+      await util.promisfy(fs.writeFile)(settings.file, JSON.stringify(settings, null, 2));
+    } catch (error) {
+      e = error;
+      add_log("save fail");
+    }
   };
 
   default_data = loadJSON('./data/default_data.json');
@@ -91,22 +100,22 @@
     setting_save(users);
   }
 
-  save = function() {
-    setting_save(users);
+  save = async function() {
+    return (await setting_save(users));
   };
 
-  reload = function() {
+  reload = async function() {
     var user_backup;
     user_backup = users;
     try {
-      users = loadJSON('./config/admin_user.json');
+      users = (await loadJSONPromise('./config/admin_user.json'));
     } catch (error) {
       users = user_backup;
-      add_log("Invalid user data JSON");
+      await add_log("Invalid user data JSON");
     }
   };
 
-  check_permission = function(user, permission_required) {
+  check_permission = async function(user, permission_required) {
     var _permission, permission;
     _permission = user.permissions;
     permission = _permission;
@@ -114,40 +123,40 @@
       permission = users.permission_examples[_permission];
     }
     if (!permission) {
-      add_log("Permision not set:" + _permission);
+      await add_log("Permision not set:" + _permission);
       return false;
     }
     return permission[permission_required];
   };
 
-  this.auth = function(name, pass, permission_required, action = 'unknown', no_log) {
+  this.auth = async function(name, pass, permission_required, action = 'unknown', no_log) {
     var user;
-    reload();
+    await reload();
     user = users.users[name];
     if (!user) {
-      add_log("Unknown user login. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
+      await add_log("Unknown user login. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
       return false;
     }
     if (user.password !== pass) {
-      add_log("Unauthorized user login. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
+      await add_log("Unauthorized user login. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
       return false;
     }
     if (!user.enabled) {
-      add_log("Disabled user login. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
+      await add_log("Disabled user login. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
       return false;
     }
-    if (!check_permission(user, permission_required)) {
-      add_log("Permission denied. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
+    if (!(await check_permission(user, permission_required))) {
+      await add_log("Permission denied. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
       return false;
     }
     if (!no_log) {
-      add_log("Operation success. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
+      await add_log("Operation success. User: " + name + ", Permission needed: " + permission_required + ", Action: " + action);
     }
     return true;
   };
 
-  this.add_user = function(name, pass, enabled, permissions) {
-    reload();
+  this.add_user = async function(name, pass, enabled, permissions) {
+    await reload();
     if (users.users[name]) {
       return false;
     }
@@ -156,28 +165,26 @@
       "enabled": enabled,
       "permissions": permissions
     };
-    save();
+    await save();
     return true;
   };
 
-  this.delete_user = function(name) {
-    reload();
+  this.delete_user = async function(name) {
+    await reload();
     if (!users.users[name]) {
       return false;
     }
     delete users.users[name];
-    save();
-    return true;
+    await save();
   };
 
-  this.update_user = function(name, key, value) {
-    reload();
+  this.update_user = async function(name, key, value) {
+    await reload();
     if (!users.users[name]) {
       return false;
     }
     users.users[name][key] = value;
-    save();
-    return true;
+    await save();
   };
 
 }).call(this);

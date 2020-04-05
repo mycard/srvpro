@@ -480,7 +480,7 @@ var packDatas = function (callback) {
 function requestListener(req, res) {
     var u = url.parse(req.url, true);
     
-    if (!auth.auth(u.query.username, u.query.password, "pre_dashboard", "pre_dashboard")) {
+    if (!await auth.auth(u.query.username, u.query.password, "pre_dashboard", "pre_dashboard")) {
         res.writeHead(403);
         res.end("Auth Failed.");
         return;
@@ -505,7 +505,7 @@ function requestListener(req, res) {
     else if (u.pathname === '/api/load_db') {
         res.writeHead(200);
         res.end(u.query.callback+'({"message":"开始加载数据库。"});');
-        loadAllDbs(() => { });
+        await util.promisify(loadAllDbs)();
     }
     else if (u.pathname === '/api/fetch_datas') {
         res.writeHead(200);
@@ -514,23 +514,23 @@ function requestListener(req, res) {
     }
     else if (u.pathname === '/api/push_datas') {
         res.writeHead(200);
-        res.end(u.query.callback+'({"message":"开始上传数据。"});');
-        pushDatas(() => { });
+        res.end(u.query.callback + '({"message":"开始上传数据。"});');
+        await util.promisify(pushDatas)();
     }
     else if (u.pathname === '/api/write_to_file') {
         res.writeHead(200);
         res.end(u.query.callback+'({"message":"开始写列表页。"});');
-        writeToFile(u.query.message, () => { });
+        await util.promisify(writeToFile)(u.query.message);
     }
     else if (u.pathname === '/api/copy_to_ygopro') {
         res.writeHead(200);
         res.end(u.query.callback+'({"message":"开始更新到服务器。"});');
-        copyToYGOPRO(() => { });
+        await util.promisify(copyToYGOPRO)();
     }
     else if (u.pathname === '/api/pack_data') {
         res.writeHead(200);
         res.end(u.query.callback+'({"message":"开始生成更新包。"});');
-        packDatas(() => { });
+        await util.promisify(packDatas)();
     }
     else {
         res.writeHead(400);

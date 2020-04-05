@@ -80,6 +80,8 @@ merge = require 'deepmerge'
 
 loadJSON = require('load-json-file').sync
 
+util = require("util")
+
 #heapdump = require 'heapdump'
 
 # 配置
@@ -1756,6 +1758,7 @@ net.createServer (client) ->
           b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
           info = null
           struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
+
           if struct and !cancel
             struct._setBuff(b)
             info = _.clone(struct.fields)
@@ -3598,7 +3601,7 @@ if settings.modules.http
 
     #console.log(u.query.username, u.query.pass)
     if u.pathname == '/api/getrooms'
-      pass_validated = auth.auth(u.query.username, u.query.pass, "get_rooms", "get_rooms", true)
+      pass_validated = await auth.auth(u.query.username, u.query.pass, "get_rooms", "get_rooms", true)
       if !settings.modules.http.public_roomlist and !pass_validated
         response.writeHead(200)
         response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'))
@@ -3634,7 +3637,7 @@ if settings.modules.http
 
 
     else if u.pathname == '/api/duellog' and settings.modules.tournament_mode.enabled
-      if !auth.auth(u.query.username, u.query.pass, "duel_log", "duel_log")
+      if !await auth.auth(u.query.username, u.query.pass, "duel_log", "duel_log")
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
         return
@@ -3644,7 +3647,7 @@ if settings.modules.http
         response.end(addCallback(u.query.callback, duellog))
 
     else if u.pathname == '/api/archive.zip' and settings.modules.tournament_mode.enabled
-      if !auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay_archive")
+      if !await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay_archive")
         response.writeHead(403)
         response.end("Invalid password.")
         return
@@ -3687,7 +3690,7 @@ if settings.modules.http
           response.end("Failed reading replays. " + error)
 
     else if u.pathname == '/api/clearlog' and settings.modules.tournament_mode.enabled
-      if !auth.auth(u.query.username, u.query.pass, "clear_duel_log", "clear_duel_log")
+      if !await auth.auth(u.query.username, u.query.pass, "clear_duel_log", "clear_duel_log")
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
         return
@@ -3703,7 +3706,7 @@ if settings.modules.http
         response.end(addCallback(u.query.callback, "[{name:'Success'}]"))
 
     else if _.startsWith(u.pathname, '/api/replay') and settings.modules.tournament_mode.enabled
-      if !auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay")
+      if !await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay")
         response.writeHead(403)
         response.end("密码错误")
         return
@@ -3734,7 +3737,7 @@ if settings.modules.http
       #  return
 
       if u.query.shout
-        if !auth.auth(u.query.username, u.query.pass, "shout", "shout")
+        if !await auth.auth(u.query.username, u.query.pass, "shout", "shout")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
@@ -3744,35 +3747,32 @@ if settings.modules.http
         response.end(addCallback(u.query.callback, "['shout ok', '" + u.query.shout + "']"))
 
       else if u.query.stop
-        if !auth.auth(u.query.username, u.query.pass, "stop", "stop")
+        if !await auth.auth(u.query.username, u.query.pass, "stop", "stop")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         if u.query.stop == 'false'
           u.query.stop = false
-        setting_change(settings, 'modules:stop', u.query.stop, (err)->
-          response.writeHead(200)
-          if(err)
-            response.end(addCallback(u.query.callback, "['stop fail', '" + u.query.stop + "']"))
-          else
-            response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
-        )
+        response.writeHead(200)
+        try
+          await util.promisfy(setting_change)(settings, 'modules:stop', u.query.stop)
+          response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
+        catch err
+          response.end(addCallback(u.query.callback, "['stop fail', '" + u.query.stop + "']"))
 
       else if u.query.welcome
-        if !auth.auth(u.query.username, u.query.pass, "change_settings", "change_welcome")
+        if !await auth.auth(u.query.username, u.query.pass, "change_settings", "change_welcome")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        setting_change(settings, 'modules:welcome', (err)->
-          response.writeHead(200)
-          if(err)
-            response.end(addCallback(u.query.callback, "['welcome fail', '" + u.query.welcome + "']"))
-          else
-            response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
-        )
+        try
+          await util.promisfy(setting_change)(settings, 'modules:stop', u.query.welcome)
+          response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
+        catch err
+          response.end(addCallback(u.query.callback, "['welcome fail', '" + u.query.welcome + "']"))
 
       else if u.query.getwelcome
-        if !auth.auth(u.query.username, u.query.pass, "change_settings", "get_welcome")
+        if !await auth.auth(u.query.username, u.query.pass, "change_settings", "get_welcome")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
@@ -3780,7 +3780,7 @@ if settings.modules.http
         response.end(addCallback(u.query.callback, "['get ok', '" + settings.modules.welcome + "']"))
 
       else if u.query.loadtips
-        if !auth.auth(u.query.username, u.query.pass, "change_settings", "change_tips")
+        if !await auth.auth(u.query.username, u.query.pass, "change_settings", "change_tips")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
@@ -3793,7 +3793,7 @@ if settings.modules.http
         )
 
       else if u.query.loaddialogues
-        if !auth.auth(u.query.username, u.query.pass, "change_settings", "change_dialogues")
+        if !await auth.auth(u.query.username, u.query.pass, "change_settings", "change_dialogues")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
@@ -3806,7 +3806,7 @@ if settings.modules.http
         )
 
       else if u.query.ban
-        if !auth.auth(u.query.username, u.query.pass, "ban_user", "ban_user")
+        if !await auth.auth(u.query.username, u.query.pass, "ban_user", "ban_user")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
@@ -3819,7 +3819,7 @@ if settings.modules.http
         )
 
       else if u.query.kick
-        if !auth.auth(u.query.username, u.query.pass, "kick_user", "kick_user")
+        if !await auth.auth(u.query.username, u.query.pass, "kick_user", "kick_user")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
@@ -3835,7 +3835,7 @@ if settings.modules.http
         
 
       else if u.query.death
-        if !auth.auth(u.query.username, u.query.pass, "start_death", "start_death")
+        if !await auth.auth(u.query.username, u.query.pass, "start_death", "start_death")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
@@ -3857,7 +3857,7 @@ if settings.modules.http
         )
 
       else if u.query.deathcancel
-        if !auth.auth(u.query.username, u.query.pass, "start_death", "cancel_death")
+        if !await auth.auth(u.query.username, u.query.pass, "start_death", "cancel_death")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
@@ -3878,7 +3878,7 @@ if settings.modules.http
         )
 
       else if u.query.reboot
-        if !auth.auth(u.query.username, u.query.pass, "stop", "reboot")
+        if !await auth.auth(u.query.username, u.query.pass, "stop", "reboot")
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return

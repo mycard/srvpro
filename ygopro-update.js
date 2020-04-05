@@ -210,10 +210,10 @@ var pushHTMLs = function() {
 
 
 //建立一个http服务器，接收API操作
-function requestListener(req, res) {
+async function requestListener(req, res) {
     var u = url.parse(req.url, true);
     
-    if (!auth.auth(u.query.username, u.query.password, "update_dashboard", "update_dashboard")) {
+    if (!await auth.auth(u.query.username, u.query.password, "update_dashboard", "update_dashboard")) {
         res.writeHead(403);
         res.end("Auth Failed.");
         return;
