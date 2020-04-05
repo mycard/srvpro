@@ -3741,8 +3741,9 @@ if settings.modules.http
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        for room in ROOM_all when room and room.established
-          ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
+        _async.each ROOM_all, (room)->
+          if room and room.established
+            ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "['shout ok', '" + u.query.shout + "']"))
 
