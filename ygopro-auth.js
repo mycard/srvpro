@@ -26,7 +26,7 @@
         }
       },
   */
-  var add_log, bunyan, check_permission, default_data, fs, loadJSON, loadJSONPromise, log, moment, reload, save, setting_save, users;
+  var add_log, bunyan, check_permission, default_data, fs, loadJSON, loadJSONPromise, log, moment, reload, save, setting_save, users, util;
 
   fs = require('fs');
 
@@ -60,6 +60,8 @@
     name: "auth"
   });
 
+  util = require('util');
+
   if (!fs.existsSync('./logs')) {
     fs.mkdirSync('./logs');
   }
@@ -71,7 +73,7 @@
     text = mt.format('YYYY-MM-DD HH:mm:ss') + " --> " + message + "\n";
     res = false;
     try {
-      await util.promisfy(fs.appendFile)("./logs/" + mt.format('YYYY-MM-DD') + ".log", text);
+      await util.promisify(fs.appendFile)("./logs/" + mt.format('YYYY-MM-DD') + ".log", text);
       res = true;
     } catch (error) {
       res = false;
@@ -84,7 +86,7 @@
   setting_save = async function(settings) {
     var e;
     try {
-      await util.promisfy(fs.writeFile)(settings.file, JSON.stringify(settings, null, 2));
+      await util.promisify(fs.writeFile)(settings.file, JSON.stringify(settings, null, 2));
     } catch (error) {
       e = error;
       add_log("save fail");

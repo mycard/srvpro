@@ -4968,7 +4968,7 @@
           }
           response.writeHead(200);
           try {
-            await util.promisfy(setting_change)(settings, 'modules:stop', u.query.stop);
+            await util.promisify(setting_change)(settings, 'modules:stop', u.query.stop);
             response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"));
           } catch (error1) {
             err = error1;
@@ -4981,7 +4981,7 @@
             return;
           }
           try {
-            await util.promisfy(setting_change)(settings, 'modules:stop', u.query.welcome);
+            await util.promisify(setting_change)(settings, 'modules:stop', u.query.welcome);
             response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"));
           } catch (error1) {
             err = error1;

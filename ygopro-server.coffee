@@ -3755,7 +3755,7 @@ if settings.modules.http
           u.query.stop = false
         response.writeHead(200)
         try
-          await util.promisfy(setting_change)(settings, 'modules:stop', u.query.stop)
+          await util.promisify(setting_change)(settings, 'modules:stop', u.query.stop)
           response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
         catch err
           response.end(addCallback(u.query.callback, "['stop fail', '" + u.query.stop + "']"))
@@ -3766,7 +3766,7 @@ if settings.modules.http
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         try
-          await util.promisfy(setting_change)(settings, 'modules:stop', u.query.welcome)
+          await util.promisify(setting_change)(settings, 'modules:stop', u.query.welcome)
           response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
         catch err
           response.end(addCallback(u.query.callback, "['welcome fail', '" + u.query.welcome + "']"))
