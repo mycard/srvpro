@@ -129,7 +129,7 @@ var getDecks = function(callback) {
 }
 
 var delDeck = function (deck_name, callback) {
-    if (deck_name.startsWith("../") || deck_name.contains("/../")) { //security issue
+    if (deck_name.startsWith("../") || deck_name.match(/\/\.\.\//)) { //security issue
         callback("Invalid deck");
     }
     fs.unlink(config.deck_path + deck_name, callback);
