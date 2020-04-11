@@ -100,14 +100,6 @@ var readDeck = function(deck_name, deck_full_path) {
 //读取指定文件夹中所有卡组
 var getDecks = function(callback) {
     var decks=[];
-    var decks_list = fs.readdirSync(config.deck_path);
-    for (var k in decks_list) {
-        var deck_name = decks_list[k];
-        if (_.endsWith(deck_name, ".ydk")) {
-            var deck = readDeck(deck_name, config.deck_path+deck_name);
-            decks.push(deck);
-        }
-    }
     _async.auto({
         readDir: (done) => {
             fs.readdir(config.deck_path, done);
