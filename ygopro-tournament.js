@@ -187,7 +187,7 @@ var UploadToChallonge = function () {
 
 var receiveDecks = function(files, callback) {
     var result = [];
-    _async.each(files, (file, done) => {
+    _async.eachSeries(files, (file, done) => {
         if (_.endsWith(file.name, ".ydk")) {
             var deck = readDeck(file.name, file.path);
             if (deck.main.length >= 40) {
