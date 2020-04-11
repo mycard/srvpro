@@ -219,7 +219,9 @@ var receiveDecks = function(files, callback) {
             });
         }
         done();
-    }, callback);
+    }, (err) => { 
+        callback(err, result);
+    });
 }
 
 //建立一个http服务器，接收API操作
