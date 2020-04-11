@@ -119,6 +119,7 @@ var getDecks = function(callback) {
                     var deck = readDeck(deck_name, config.deck_path + deck_name);
                     decks.push(deck);
                 }
+                _done();
             }, done)
         }]
     }, callback);
