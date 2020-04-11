@@ -122,7 +122,9 @@ var getDecks = function(callback) {
                 _done();
             }, done)
         }]
-    }, callback);
+    }, (err) => { 
+            callback(err, decks);
+    });
 
 }
 
@@ -334,8 +336,6 @@ function requestListener(req, res) {
             res.writeHead(200);
             res.end(u.query.callback+'("'+result+'");');
         });
-        res.writeHead(200);
-        res.end(u.query.callback+'("已删除全部卡组。");');
     }
     else if (u.pathname === '/api/upload_to_challonge') {
         if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "upload_to_challonge")) { 
