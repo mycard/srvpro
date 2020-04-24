@@ -824,7 +824,9 @@
     if (room = ROOM_find_by_name(name)) {
       return room;
     } else if (uname === 'AI') {
-      windbot = _.sample(windbots);
+      windbot = _.sample(_.filter(windbots, function(w) {
+        return !w.hidden;
+      }));
       name = 'AI#' + Math.floor(Math.random() * 100000);
     } else if (namea.length > 1) {
       ainame = namea[namea.length - 1];
@@ -836,10 +838,12 @@
           "error": "${windbot_deck_not_found}"
         };
       }
-      name = name + ',' + Math.floor(Math.random() * 100000);
+      name = namea[0] + ',N#' + Math.floor(Math.random() * 100000);
     } else {
-      windbot = _.sample(windbots);
-      name = name + '#' + Math.floor(Math.random() * 100000);
+      windbot = _.sample(_.filter(windbots, function(w) {
+        return !w.hidden;
+      }));
+      name = name + '#' + Math.floor(Math.random() * 10000);
     }
     if (name.replace(/[^\x00-\xff]/g, "00").length > 20) {
       log.info("long ai name", name);
@@ -4009,7 +4013,8 @@
         break;
       case '/ai':
         if (settings.modules.windbot.enabled && client.is_host && !settings.modules.challonge.enabled && !room.arena && room.random_type !== 'M') {
-          if (name = cmd[1]) {
+          cmd.shift();
+          if (name = cmd.join(' ')) {
             windbot = _.sample(_.filter(windbots, function(w) {
               return w.name === name || w.deck === name;
             }));
@@ -4018,7 +4023,9 @@
               return;
             }
           } else {
-            windbot = _.sample(windbots);
+            windbot = _.sample(_.filter(windbots, function(w) {
+              return !w.hidden;
+            }));
           }
           if (room.random_type) {
             ygopro.stoc_send_chat(client, "${windbot_disable_random_room} " + room.name, ygopro.constants.COLORS.BABYBLUE);

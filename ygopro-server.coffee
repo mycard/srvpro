@@ -638,7 +638,8 @@ ROOM_find_or_create_ai = global.ROOM_find_or_create_ai = (name)->
   if room = ROOM_find_by_name(name)
     return room
   else if uname == 'AI'
-    windbot = _.sample windbots
+    windbot = _.sample _.filter windbots, (w)->
+      !w.hidden
     name = 'AI#' + Math.floor(Math.random() * 100000)
   else if namea.length>1
     ainame = namea[namea.length-1]
@@ -646,10 +647,11 @@ ROOM_find_or_create_ai = global.ROOM_find_or_create_ai = (name)->
       w.name == ainame or w.deck == ainame
     if !windbot
       return { "error": "${windbot_deck_not_found}" }
-    name = name + ',' + Math.floor(Math.random() * 100000)
+    name = namea[0] + ',N#' + Math.floor(Math.random() * 100000)
   else
-    windbot = _.sample windbots
-    name = name + '#' + Math.floor(Math.random() * 100000)
+    windbot = _.sample _.filter windbots, (w)->
+      !w.hidden
+    name = name + '#' + Math.floor(Math.random() * 10000)
   if name.replace(/[^\x00-\xff]/g,"00").length>20
     log.info "long ai name", name
     return { "error": "${windbot_name_too_long}" }
@@ -3031,14 +3033,16 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
 
     when '/ai'
       if settings.modules.windbot.enabled and client.is_host and !settings.modules.challonge.enabled and !room.arena and room.random_type != 'M'
-        if name = cmd[1]
+        cmd.shift()
+        if name = cmd.join(' ')
           windbot = _.sample _.filter windbots, (w)->
             w.name == name or w.deck == name
           if !windbot
             ygopro.stoc_send_chat(client, "${windbot_deck_not_found}", ygopro.constants.COLORS.RED)
             return
         else
-          windbot = _.sample windbots
+          windbot = _.sample _.filter windbots, (w)->
+            !w.hidden
         if room.random_type
           ygopro.stoc_send_chat(client, "${windbot_disable_random_room} " + room.name, ygopro.constants.COLORS.BABYBLUE)
         room.add_windbot(windbot)
