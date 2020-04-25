@@ -15,6 +15,7 @@ var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
 var spawn = require('child_process').spawn;
 var url = require('url');
+var util = require('util');
 var moment = require('moment');
 moment.locale('zh-cn');
 var loadJSON = require('load-json-file').sync;
