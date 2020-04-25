@@ -29,6 +29,10 @@
   },
   "license": "AGPL-3.0",
   "scripts": {
-    "start": "node ygopro-server.js"
+    "start": "node ygopro-server.js",
+    "tournament": "node ygopro-tournament.js",
+    "pre": "node ygopro-pre.js",
+    "updated": "node ygopro-update.js",
+    "webhook": "node ygopro-webhook.ks"
   }
 }
