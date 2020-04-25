@@ -217,7 +217,7 @@ var receiveDecks = function(files, callback) {
 }
 
 //建立一个http服务器，接收API操作
-function requestListener(req, res) {
+async function requestListener(req, res) {
     var u = url.parse(req.url, true);
     
     /*if (u.query.password !== config.password) {
