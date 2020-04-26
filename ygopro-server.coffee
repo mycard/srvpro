@@ -349,6 +349,15 @@ if settings.modules.mycard.enabled
         #  log.info 'ARENA INIT POST OK', response.statusCode, response.statusMessage
       return
 
+class ResolveData
+  constructor: (@func) ->
+  resolved: false
+  resolve: (err, data) ->
+    if @resolved
+      return false
+    @func(err, data)
+    return true
+
 if settings.modules.challonge.enabled
   challonge_module_name = 'challonge'
   if settings.modules.challonge.use_custom_module
@@ -363,23 +372,16 @@ if settings.modules.challonge.enabled
       if settings.modules.challonge.cache_ttl and !err and data
         challonge_cache[challonge_type] = data
       is_requesting[challonge_type] =null
-      resolve_data.resolved = true
-      resolve_data.func(err, data)
+      resolve_data.resolve(err, data)
       while challonge_queue_callbacks[challonge_type].length
         cur_resolve_data = challonge_queue_callbacks[challonge_type].splice(0, 1)[0]
-        if !cur_resolve_data.resolved
-          cur_resolve_data.resolved = true
-          cur_resolve_data.func(err, data)
+        cur_resolve_data.resolve(err, data)
       return
     )
   challonge.participants._index = (_data) ->
-    resolve_data = {
-        func: _data.callback
-        resolved: false
-      }
+    resolve_data = new ResolveData(_data.callback)
     if settings.modules.challonge.cache_ttl and challonge_cache[0]
-      resolve_data.resolved = true
-      _data.callback(null, challonge_cache[0])
+      resolve_data.resolve(null, challonge_cache[0])
     else if is_requesting[0] and moment() - is_requesting[0] <= 5000
       challonge_queue_callbacks[0].push(resolve_data)
     else
@@ -391,13 +393,9 @@ if settings.modules.challonge.enabled
         _data.callback(err, null)
     return 
   challonge.matches._index = (_data) ->
-    resolve_data = {
-        func: _data.callback
-        resolved: false
-      }
+    resolve_data = new ResolveData(_data.callback)
     if settings.modules.challonge.cache_ttl and challonge_cache[1]
-      resolve_data.resolved = true
-      _data.callback(null, challonge_cache[1])
+      resolve_data.resolve(null, challonge_cache[1])
     else if is_requesting[1] and moment() - is_requesting[1] <= 5000
       challonge_queue_callbacks[1].push(resolve_data)
     else
