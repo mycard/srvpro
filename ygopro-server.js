@@ -448,28 +448,37 @@
     }
     challonge_queue_callbacks = [[], []];
     is_requesting = [null, null];
-    get_callback = function(challonge_type, _callback) {
+    get_callback = function(challonge_type, resolve_data) {
       return (function(err, data) {
-        var cur_callback;
+        var cur_resolve_data;
         if (settings.modules.challonge.cache_ttl && !err && data) {
           challonge_cache[challonge_type] = data;
         }
         is_requesting[challonge_type] = null;
-        _callback(err, data);
+        resolve_data.resolved = true;
+        resolve_data.func(err, data);
         while (challonge_queue_callbacks[challonge_type].length) {
-          cur_callback = challonge_queue_callbacks[challonge_type].splice(0, 1)[0];
-          cur_callback(err, data);
+          cur_resolve_data = challonge_queue_callbacks[challonge_type].splice(0, 1)[0];
+          if (!cur_resolve_data.resolved) {
+            cur_resolve_data.resolved = true;
+            cur_resolve_data.func(err, data);
+          }
         }
       });
     };
     challonge.participants._index = function(_data) {
-      var err;
+      var err, resolve_data;
+      resolve_data = {
+        func: _data.callback,
+        resolved: false
+      };
       if (settings.modules.challonge.cache_ttl && challonge_cache[0]) {
+        resolve_data.resolved = true;
         _data.callback(null, challonge_cache[0]);
       } else if (is_requesting[0] && moment() - is_requesting[0] <= 5000) {
-        challonge_queue_callbacks[0].push(_data.callback);
+        challonge_queue_callbacks[0].push(resolve_data);
       } else {
-        _data.callback = get_callback(0, _data.callback);
+        _data.callback = get_callback(0, resolve_data);
         is_requesting[0] = moment();
         try {
           challonge.participants.index(_data);
@@ -480,13 +489,18 @@
       }
     };
     challonge.matches._index = function(_data) {
-      var err;
+      var err, resolve_data;
+      resolve_data = {
+        func: _data.callback,
+        resolved: false
+      };
       if (settings.modules.challonge.cache_ttl && challonge_cache[1]) {
+        resolve_data.resolved = true;
         _data.callback(null, challonge_cache[1]);
       } else if (is_requesting[1] && moment() - is_requesting[1] <= 5000) {
-        challonge_queue_callbacks[1].push(_data.callback);
+        challonge_queue_callbacks[1].push(resolve_data);
       } else {
-        _data.callback = get_callback(1, _data.callback);
+        _data.callback = get_callback(1, resolve_data);
         is_requesting[1] = moment();
         try {
           challonge.matches.index(_data);
