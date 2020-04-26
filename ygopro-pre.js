@@ -15,6 +15,7 @@ var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
 var spawn = require('child_process').spawn;
 var url = require('url');
+var util = require('util');
 var moment = require('moment');
 moment.locale('zh-cn');
 var loadJSON = require('load-json-file').sync;
@@ -291,9 +292,9 @@ var pushDatas = function(callback) {
             local: (done) => {
                 uploadCDN(config.cdn.local, config.cdn.remote + "/" + dataver, done);
             },
-            pics: (done) => {
+            pics: ["local", (results, done) => {
                 uploadCDN(config.db_path + "pics", config.cdn.pics_remote + "pics", done);
-            },
+            }],
             push: ["local", "pics", (results, done) => {
                 sendResponse("CDN上传全部完成。");
                 pushHTMLs(done);
@@ -432,10 +433,10 @@ var packDatas = function (callback) {
             run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!mobile.cdb", "-x!cdb", "-x!picn", "-x!field", "-x!script", "-x!pics", "-x!expansions/pics/thumbnail", "-x!picture", "ygosrv233-pre.zip", "*"], done);
         }],
         run7zMobile: ["preCommands", (results, done) => {
-            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!mobile.cdb", "-x!cdb", "-x!picn", "-x!field", "-x!script", "-x!pics", "-x!expansions/pics/thumbnail", "-x!picture", "ygosrv233-pre.zip", "*"], done);
+            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!expansions/pics", "-x!expansions/script", "-x!cdb", "-x!picn", "-x!field", "-x!pics/thumbnail", "-x!picture", "ygosrv233-pre-mobile.zip", "*"], done);
         }],
         run7zPro2: ["preCommands", (results, done) => {
-            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!mobile.cdb", "-x!cdb", "-x!picn", "-x!field", "-x!script", "-x!pics", "-x!expansions/pics/thumbnail", "-x!picture", "ygosrv233-pre.zip", "*"], done);
+            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!expansions", "-x!pics", "-x!picn", "-x!field", "ygosrv233-pre-2.zip", "*"], done);
         }],
         commandsAfterPC: ["run7zPC", (results, done) => {
             execCommands([

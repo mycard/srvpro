@@ -862,7 +862,7 @@
           "error": "${windbot_deck_not_found}"
         };
       }
-      name = namea[0] + ',N#' + Math.floor(Math.random() * 100000);
+      name = namea[0].toUpperCase() + '#N' + Math.floor(Math.random() * 100000);
     } else {
       windbot = _.sample(_.filter(windbots, function(w) {
         return !w.hidden;

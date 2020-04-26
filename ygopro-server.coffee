@@ -658,7 +658,7 @@ ROOM_find_or_create_ai = global.ROOM_find_or_create_ai = (name)->
       w.name == ainame or w.deck == ainame
     if !windbot
       return { "error": "${windbot_deck_not_found}" }
-    name = namea[0] + ',N#' + Math.floor(Math.random() * 100000)
+    name = namea[0].toUpperCase() + '#N' + Math.floor(Math.random() * 100000)
   else
     windbot = _.sample _.filter windbots, (w)->
       !w.hidden

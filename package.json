@@ -33,6 +33,6 @@
     "tournament": "node ygopro-tournament.js",
     "pre": "node ygopro-pre.js",
     "updated": "node ygopro-update.js",
-    "webhook": "node ygopro-webhook.ks"
+    "webhook": "node ygopro-webhook.js"
   }
 }
