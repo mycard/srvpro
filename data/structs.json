@@ -99,5 +99,13 @@
     ],
     "chat": [
         {"name": "msg", "type": "unsigned short", "length":"255", "encoding": "UTF-16LE"}
+    ],
+    "STOC_DeckCount": [
+        {"name": "mainc_s", "type": "unsigned short"},
+        {"name": "sidec_s", "type": "unsigned short"},
+        {"name": "extrac_s", "type": "unsigned short"},
+        {"name": "mainc_o", "type": "unsigned short"},
+        {"name": "sidec_o", "type": "unsigned short"},
+        {"name": "extrac_o", "type": "unsigned short"}
     ]
 }

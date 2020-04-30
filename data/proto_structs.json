@@ -23,6 +23,7 @@
         "HAND_RESULT": "STOC_HandResult",
         "REPLAY": "",
         "TIME_LIMIT": "STOC_TimeLimit",
-        "CHAT": "STOC_Chat"
+        "CHAT": "STOC_Chat",
+        "DECK_COUNT": "STOC_DeckCount"
     }
 }

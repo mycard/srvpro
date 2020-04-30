@@ -41,6 +41,7 @@
         "6": "TP_RESULT",
         "7": "CHANGE_SIDE",
         "8": "WAITING_SIDE",
+        "9": "DECK_COUNT",
         "17": "CREATE_GAME",
         "18": "JOIN_GAME",
         "19": "TYPE_CHANGE",
