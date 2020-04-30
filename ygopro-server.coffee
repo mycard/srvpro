@@ -2416,7 +2416,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       return
 
     watcher.on 'error', (error)->
-#log.error "watcher error", error
+      log.error "watcher error", error
       return
   return
 

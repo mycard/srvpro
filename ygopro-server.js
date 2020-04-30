@@ -3130,12 +3130,13 @@
           }
         }
       });
-      watcher.on('error', function(error) {});
+      watcher.on('error', function(error) {
+        log.error("watcher error", error);
+      });
     }
   });
 
   // 登场台词
-  //log.error "watcher error", error
   load_dialogues = global.load_dialogues = function(callback) {
     request({
       url: settings.modules.dialogues.get,
