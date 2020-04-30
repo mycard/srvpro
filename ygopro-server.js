@@ -265,6 +265,27 @@
     imported = true;
   }
 
+  //import the old random_duel.blank_pass_match option
+  if (settings.modules.random_duel.blank_pass_match === true) {
+    settings.modules.random_duel.blank_pass_modes = {
+      "S": true,
+      "M": true,
+      "T": false
+    };
+    delete settings.modules.random_duel.blank_pass_match;
+    imported = true;
+  }
+
+  if (settings.modules.random_duel.blank_pass_match === false) {
+    settings.modules.random_duel.blank_pass_modes = {
+      "S": true,
+      "M": false,
+      "T": false
+    };
+    delete settings.modules.random_duel.blank_pass_match;
+    imported = true;
+  }
+
   //finish
   if (imported) {
     setting_save(settings);
@@ -815,13 +836,13 @@
     max_player = type === 'T' ? 4 : 2;
     playerbanned = bannedplayer && bannedplayer.count > 3 && moment() < bannedplayer.time;
     result = _.find(ROOM_all, function(room) {
-      return room && room.random_type !== '' && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && !room.windbot && ((type === '' && (room.random_type === 'S' || (settings.modules.random_duel.blank_pass_match && room.random_type !== 'T'))) || room.random_type === type) && room.get_playing_player().length < max_player && (settings.modules.random_duel.no_rematch_check || room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated || type === 'T');
+      return room && room.random_type !== '' && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && !room.windbot && ((type === '' && (room.random_type === settings.modules.random_duel.default_type || settings.modules.random_duel.blank_pass_modes[room.random_type])) || room.random_type === type) && room.get_playing_player().length < max_player && (settings.modules.random_duel.no_rematch_check || room.get_host() === null || room.get_host().ip !== ROOM_players_oppentlist[player_ip]) && (playerbanned === room.deprecated || type === 'T');
     });
     if (result) {
       result.welcome = '${random_duel_enter_room_waiting}';
     //log.info 'found room', player_name
     } else if (memory_usage < 90) {
-      type = type ? type : 'S';
+      type = type ? type : settings.modules.random_duel.default_type;
       name = type + ',RANDOM#' + Math.floor(Math.random() * 100000);
       result = new Room(name);
       result.random_type = type;
@@ -832,8 +853,14 @@
       //log.info 'create room', player_name, name
       return null;
     }
+    if (result.random_type === 'S') {
+      result.welcome2 = '${random_duel_enter_room_single}';
+    }
     if (result.random_type === 'M') {
-      result.welcome = result.welcome + '\n${random_duel_enter_room_match}';
+      result.welcome2 = '${random_duel_enter_room_match}';
+    }
+    if (result.random_type === 'T') {
+      result.welcome2 = '${random_duel_enter_room_tag}';
     }
     return result;
   };
@@ -3055,6 +3082,9 @@
     }
     if (room.welcome) {
       ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE);
+    }
+    if (room.welcome2) {
+      ygopro.stoc_send_chat(client, room.welcome2, ygopro.constants.COLORS.PINK);
     }
     if (settings.modules.arena_mode.enabled && !client.is_local) { //and not client.score_shown
       request({
