@@ -227,6 +227,15 @@ if settings.modules.challonge.api_key
   settings.modules.challonge.options.apiKey = settings.modules.challonge.api_key
   delete settings.modules.challonge.api_key
   imported = true
+#import the old random_duel.blank_pass_match option
+if settings.modules.random_duel.blank_pass_match == true
+  settings.modules.random_duel.blank_pass_modes = {"S":true,"M":true,"T":false}
+  delete settings.modules.random_duel.blank_pass_match
+  imported = true
+if settings.modules.random_duel.blank_pass_match == false
+  settings.modules.random_duel.blank_pass_modes = {"S":true,"M":false,"T":false}
+  delete settings.modules.random_duel.blank_pass_match
+  imported = true
 #finish
 if imported
   setting_save(settings)
@@ -619,7 +628,10 @@ ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_i
   playerbanned = (bannedplayer and bannedplayer.count > 3 and moment() < bannedplayer.time)
   result = _.find ROOM_all, (room)->
     return room and room.random_type != '' and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and !room.windbot and
-    ((type == '' and (room.random_type == 'S' or (settings.modules.random_duel.blank_pass_match and room.random_type != 'T'))) or room.random_type == type) and
+    ((type == '' and
+      (room.random_type == settings.modules.random_duel.default_type or
+        settings.modules.random_duel.blank_pass_modes[room.random_type])) or
+      room.random_type == type) and
     room.get_playing_player().length < max_player and
     (settings.modules.random_duel.no_rematch_check or room.get_host() == null or
     room.get_host().ip != ROOM_players_oppentlist[player_ip]) and
@@ -628,7 +640,7 @@ ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_i
     result.welcome = '${random_duel_enter_room_waiting}'
     #log.info 'found room', player_name
   else if memory_usage < 90
-    type = if type then type else 'S'
+    type = if type then type else settings.modules.random_duel.default_type
     name = type + ',RANDOM#' + Math.floor(Math.random() * 100000)
     result = new Room(name)
     result.random_type = type
@@ -638,7 +650,9 @@ ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_i
     #log.info 'create room', player_name, name
   else
     return null
-  if result.random_type=='M' then result.welcome = result.welcome + '\n${random_duel_enter_room_match}'
+  if result.random_type=='S' then result.welcome2 = '${random_duel_enter_room_single}'
+  if result.random_type=='M' then result.welcome2 = '${random_duel_enter_room_match}'
+  if result.random_type=='T' then result.welcome2 = '${random_duel_enter_room_tag}'
   return result
 
 ROOM_find_or_create_ai = global.ROOM_find_or_create_ai = (name)->
@@ -2355,6 +2369,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome
     ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
+  if room.welcome2
+    ygopro.stoc_send_chat(client, room.welcome2, ygopro.constants.COLORS.PINK)
   if settings.modules.arena_mode.enabled and !client.is_local #and not client.score_shown
     request
       url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
@@ -2416,7 +2432,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       return
 
     watcher.on 'error', (error)->
-#log.error "watcher error", error
+      log.error "watcher error", error
       return
   return
 

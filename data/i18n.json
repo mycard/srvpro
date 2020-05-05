@@ -312,7 +312,9 @@
   "zh-cn": {
     "random_duel_enter_room_waiting": "对手已经在等你了，开始决斗吧！",
     "random_duel_enter_room_new": "已建立随机对战房间，正在等待对手！",
-    "random_duel_enter_room_match": "您进入了比赛模式的房间，我们推荐使用竞技卡组！",
+    "random_duel_enter_room_single": "您进入了单局模式的房间，我们不推荐使用竞技卡组！密码输入M进入比赛模式，输入T进入双打模式！",
+    "random_duel_enter_room_match": "您进入了比赛模式的房间，我们推荐使用竞技卡组！密码输入S进入单局模式，输入T进入双打模式！",
+    "random_duel_enter_room_tag": "您进入了双打模式的房间，我们不推荐使用竞技卡组！密码输入S进入单局模式，输入M进入比赛模式！",
     "random_banned_part1": "因为您近期在游戏中多次",
     "random_banned_part2": "，您已被禁止使用随机对战功能，将在",
     "random_banned_part3": "后解封",
