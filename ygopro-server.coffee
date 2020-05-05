@@ -1394,9 +1394,9 @@ class Room
 
   send_replays: () ->
     return false unless settings.modules.replay_delay and @replays.length and @hostinfo.mode == 1
-    for player in @players
+    for player in @players when player
       CLIENT_send_replays(player, this)
-    for player in @watchers
+    for player in @watchers when player
       CLIENT_send_replays(player, this)
     return true
 

@@ -1857,12 +1857,16 @@
       ref2 = this.players;
       for (m = 0, len2 = ref2.length; m < len2; m++) {
         player = ref2[m];
-        CLIENT_send_replays(player, this);
+        if (player) {
+          CLIENT_send_replays(player, this);
+        }
       }
       ref3 = this.watchers;
       for (n = 0, len3 = ref3.length; n < len3; n++) {
         player = ref3[n];
-        CLIENT_send_replays(player, this);
+        if (player) {
+          CLIENT_send_replays(player, this);
+        }
       }
       return true;
     }
