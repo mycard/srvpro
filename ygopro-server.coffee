@@ -2130,7 +2130,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
             done(null, body)
           else
             log.warn("Match permit request error", error)
-            match_permit_callback(null, null)
+            done(null, null)
           return
         return
       get_user: (done) ->
