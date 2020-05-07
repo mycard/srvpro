@@ -169,7 +169,7 @@
       "replay_path": "./replays/",
       "replay_archive_tool": "7z",
       "block_replay_to_player": false,
-      "enable_recover": true,
+      "enable_recover": false,
       "show_ip": false,
       "show_info": true,
       "log_save_path": "./config/",

@@ -1026,7 +1026,7 @@ CLIENT_is_banned_by_mc = global.CLIENT_is_banned_by_mc = (client) ->
   return client.ban_mc and client.ban_mc.banned and moment().isBefore(client.ban_mc.until)
 
 CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
-  return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
+  return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
   client.replays_sent = true
   i = 0
   for buffer in room.replays
@@ -1195,7 +1195,7 @@ class Room
 
     if settings.modules.tournament_mode.enabled
       @hostinfo.replay_mode |= 0x1
-    if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe) or (@hostinfo.mode == 1 and settings.modules.replay_delay)
+    if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) or (@hostinfo.mode == 1 and settings.modules.replay_delay)
       @hostinfo.replay_mode |= 0x2
 
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, @hostinfo.duel_rule,
@@ -3566,13 +3566,13 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay unless room
+  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay unless room
   if settings.modules.cloud_replay.enabled and room.random_type
     Cloud_replay_ids.push room.cloud_replay_id
   if !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
-  if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
+  if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe or settings.modules.tournament_mode.enable_recover
     if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
       replay_filename=dueltime

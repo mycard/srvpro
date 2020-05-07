@@ -1375,7 +1375,7 @@
 
   CLIENT_send_replays = global.CLIENT_send_replays = function(client, room) {
     var buffer, i, len2, m, ref2;
-    if (!(settings.modules.replay_delay && !(settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe && settings.modules.tournament_mode.block_replay_to_player) && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.closed)) {
+    if (!(settings.modules.replay_delay && !(settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player) && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.closed)) {
       return false;
     }
     client.replays_sent = true;
@@ -1579,7 +1579,7 @@
       if (settings.modules.tournament_mode.enabled) {
         this.hostinfo.replay_mode |= 0x1;
       }
-      if ((settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) || (this.hostinfo.mode === 1 && settings.modules.replay_delay)) {
+      if ((settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player) || (this.hostinfo.mode === 1 && settings.modules.replay_delay)) {
         this.hostinfo.replay_mode |= 0x2;
       }
       param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, this.hostinfo.duel_rule, (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode];
@@ -4764,7 +4764,7 @@
     var duellog, dueltime, i, len2, len3, m, n, player, ref2, ref3, replay_filename, room;
     room = ROOM_all[client.rid];
     if (!room) {
-      return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe && settings.modules.tournament_mode.block_replay_to_player || settings.modules.replay_delay;
+      return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player || settings.modules.replay_delay;
     }
     if (settings.modules.cloud_replay.enabled && room.random_type) {
       Cloud_replay_ids.push(room.cloud_replay_id);
@@ -4773,7 +4773,7 @@
       // console.log("Replay saved: ", room.duel_count - 1, client.pos)
       room.replays[room.duel_count - 1] = buffer;
     }
-    if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
+    if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe || settings.modules.tournament_mode.enable_recover) {
       if (client.pos === 0) {
         dueltime = moment().format('YYYY-MM-DD HH-mm-ss');
         replay_filename = dueltime;
