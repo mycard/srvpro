@@ -33,6 +33,8 @@
     "recover_replay_hint": "These are the recent duels, please enter the code RC[ID]%[TURN]#[ROOMNAME] at the password column to recover the duel.",
     "recover_hint": "You entered a recover room. Please be ready with your deck on that duel.",
     "recover_start_hint": "Started recovering...",
+    "recover_success": "Recover success. Please wait until current turn.",
+    "recover_fail": "Recover failed.",
     "blank_room_name": "Blank room name is unallowed, please fill in something.",
     "loading_user_info": "Loading user info...",
     "invalid_password_length": "Password invalid (Invalid Length)",
