@@ -3467,6 +3467,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
           replay_filename=replay_filename + (if i > 0 then (if i == 2 then " VS " else " & ") else " ") + player.name
       replay_filename=replay_filename.replace(/[\/\\\?\*]/g, '_')+".yrp"
       duellog = {
+        id: duel_log.duel_log.length + 1,
         time: dueltime,
         name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
         roomid: room.process_pid.toString(),
@@ -3474,6 +3475,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
         replay_filename: replay_filename,
         roommode: room.hostinfo.mode,
         players: (for player in room.dueling_players
+          real_name: player.name,
+          deckbuf: player.deckbuf.toString("base64"),
+          pos: player.pos
           name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
           winner: player.pos == room.winner
         )

@@ -4639,6 +4639,7 @@
         }
         replay_filename = replay_filename.replace(/[\/\\\?\*]/g, '_') + ".yrp";
         duellog = {
+          id: duel_log.duel_log.length + 1,
           time: dueltime,
           name: room.name + (settings.modules.tournament_mode.show_info ? " (Duel:" + room.duel_count + ")" : ""),
           roomid: room.process_pid.toString(),
@@ -4652,6 +4653,9 @@
             for (o = 0, len4 = ref4.length; o < len4; o++) {
               player = ref4[o];
               results.push({
+                real_name: player.name,
+                deckbuf: player.deckbuf.toString("base64"),
+                pos: player.pos,
                 name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name_vpass] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + (room.hostinfo.mode !== 2 ? " Cards:" + (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : "") + ")" : ""),
                 winner: player.pos === room.winner
               });
