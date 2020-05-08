@@ -2634,7 +2634,7 @@
       }).slice(0, 8);
       _.each(available_logs, function(duel) {
         var player_names;
-        player_names = duel.players[0].real_name + (duel.players[2] ? "+" + duel.players[2].real_name : "") + " VS " + (duel.players[1] ? duel.players[1].real_name : "AI") + (duel.players[3] ? "+" + duel.players[3].real_name : "");
+        player_names = duel.players[0].real_name.split("$")[0] + (duel.players[2] ? "+" + duel.players[2].real_name.split("$")[0] : "") + " VS " + (duel.players[1] ? duel.players[1].real_name.split("$")[0] : "AI") + (duel.players[3] ? "+" + duel.players[3].real_name.split("$")[0] : "");
         return ygopro.stoc_send_chat(client, `<${duel.id}> ${player_names} ${duel.time}`, ygopro.constants.COLORS.BABYBLUE);
       });
       // 强行等待异步执行完毕_(:з」∠)_
@@ -4417,9 +4417,9 @@
     }
     if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && room.recovering) {
       recover_player_data = _.find(room.recover_duel_log.players, function(player) {
-        return player.real_name === client.name_vpass;
+        return player.real_name === client.name_vpass && _.isEqual(buffer, Buffer.from(player.deckbuf, "base64"));
       });
-      if (recover_player_data && _.isEqual(buffer, Buffer.from(recover_player_data.deckbuf, "base64"))) {
+      if (recover_player_data) {
         if (recover_player_data.is_first) {
           room.determine_firstgo = client;
         }

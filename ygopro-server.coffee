@@ -3317,9 +3317,9 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
     room.last_active_time = moment()
   if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.recovering
     recover_player_data = _.find(room.recover_duel_log.players, (player) ->
-      return player.real_name == client.name_vpass
+      return player.real_name == client.name_vpass and _.isEqual(buffer, Buffer.from(player.deckbuf, "base64"))
     )
-    if recover_player_data and _.isEqual(buffer, Buffer.from(recover_player_data.deckbuf, "base64"))
+    if recover_player_data
       if recover_player_data.is_first
         room.determine_firstgo = client
     else
