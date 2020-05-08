@@ -1972,10 +1972,10 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       )
     ).slice(0, 8)
     _.each(available_logs, (duel) ->
-      player_names = duel.players[0].real_name + (if duel.players[2] then "+" + duel.players[2].real_name else "") +
+      player_names = duel.players[0].real_name.split("$")[0] + (if duel.players[2] then "+" + duel.players[2].real_name.split("$")[0] else "") +
                     " VS " +
-                   (if duel.players[1] then duel.players[1].real_name else "AI") +
-                   (if duel.players[3] then "+" + duel.players[3].real_name else "")
+                   (if duel.players[1] then duel.players[1].real_name.split("$")[0] else "AI") +
+                   (if duel.players[3] then "+" + duel.players[3].real_name.split("$")[0] else "")
       ygopro.stoc_send_chat(client,"<#{duel.id}> #{player_names} #{duel.time}", ygopro.constants.COLORS.BABYBLUE)
     )
     # 强行等待异步执行完毕_(:з」∠)_
