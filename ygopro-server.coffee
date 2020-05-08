@@ -377,47 +377,42 @@ if settings.modules.challonge.enabled
   challonge = global.challonge = require(challonge_module_name).createClient(settings.modules.challonge.options)
   if settings.modules.challonge.cache_ttl
     challonge_cache = []
-  challonge_queue_callbacks = [[], []]
-  is_requesting = [null, null]
+  challonge_queue_callbacks = {
+    participants: []
+    matches: []
+  }
+  is_challonge_requesting = {
+    participants: null
+    matches: null
+  }
   get_callback = (challonge_type, resolve_data) ->
     return ((err, data) ->
       if settings.modules.challonge.cache_ttl and !err and data
         challonge_cache[challonge_type] = data
-      is_requesting[challonge_type] =null
+      is_challonge_requesting[challonge_type] = null
       resolve_data.resolve(err, data)
       while challonge_queue_callbacks[challonge_type].length
         cur_resolve_data = challonge_queue_callbacks[challonge_type].splice(0, 1)[0]
         cur_resolve_data.resolve(err, data)
       return
     )
-  challonge.participants._index = (_data) ->
-    resolve_data = new ResolveData(_data.callback)
-    if settings.modules.challonge.cache_ttl and challonge_cache[0]
-      resolve_data.resolve(null, challonge_cache[0])
-    else if is_requesting[0] and moment() - is_requesting[0] <= 5000
-      challonge_queue_callbacks[0].push(resolve_data)
-    else
-      _data.callback = get_callback(0, resolve_data)
-      is_requesting[0] = moment()
-      try
-        challonge.participants.index(_data)
-      catch err
-        _data.callback(err, null)
-    return 
-  challonge.matches._index = (_data) ->
-    resolve_data = new ResolveData(_data.callback)
-    if settings.modules.challonge.cache_ttl and challonge_cache[1]
-      resolve_data.resolve(null, challonge_cache[1])
-    else if is_requesting[1] and moment() - is_requesting[1] <= 5000
-      challonge_queue_callbacks[1].push(resolve_data)
-    else
-      _data.callback = get_callback(1, resolve_data)
-      is_requesting[1] = moment()
-      try
-        challonge.matches.index(_data)
-      catch err
-        _data.callback(err, null)
-    return
+  replaced_index = (challonge_type) ->
+    return (_data) ->
+      resolve_data = new ResolveData(_data.callback)
+      if settings.modules.challonge.cache_ttl and !_data.no_cache and challonge_cache[0]
+        resolve_data.resolve(null, challonge_cache[challonge_type])
+      else if is_challonge_requesting[challonge_type] and moment() - is_challonge_requesting[challonge_type] <= 5000
+        challonge_queue_callbacks[challonge_type].push(resolve_data)
+      else
+        _data.callback = get_callback(challonge_type, resolve_data)
+        is_challonge_requesting[challonge_type] = moment()
+        try
+          challonge[challonge_type].index(_data)
+        catch err
+          _data.callback(err, null)
+      return
+  for challonge_type in ["participants", "matches"]
+    challonge[challonge_type]._index = replaced_index(challonge_type)
   challonge.matches._update = (_data) ->
     try
       challonge.matches.update(_data)
@@ -1176,7 +1171,7 @@ class Room
         else
           @hostinfo.auto_death = 40
 
-      if settings.modules.tournament_mode.enable_recover and (param = rule.match /(^|，|,)(RC|RECOVER)(\d*)%(\d*)(，|,|$)/)
+      if settings.modules.tournament_mode.enable_recover and (param = rule.match /(^|，|,)(RC|RECOVER)(\d*)T(\d*)(，|,|$)/)
         @recovered = true
         @recovering = true
         @recover_from_turn = parseInt(param[4])
@@ -2267,6 +2262,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     else
       ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
       client.setTimeout(300000) #连接后超时5分钟
+      recover_match = info.pass.match(/^(RC|RECOVER)(\d*)T(\d*)$/)
       _async.auto({
         participant_data: (done) ->
           challonge.participants._index({
@@ -2278,7 +2274,8 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         match_data: (done) ->
           challonge.matches._index({
             id: settings.modules.challonge.tournament_id,
-            callback: done
+            callback: done,
+            no_cache: !!recover_match
           })
           return
       }, (err, datas) ->
@@ -2308,7 +2305,10 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         #if found.winnerId
         #  ygopro.stoc_die(client, '${challonge_match_already_finished}')
         #  return
-        room = ROOM_find_or_create_by_name('M#' + found.id)
+        create_room_name = 'M#' + found.id
+        if recover_match
+          create_room_name = recover_match[0] + ',' + create_room_name
+        room = ROOM_find_or_create_by_name(create_room_name)
         if room
           room.challonge_info = found
           # room.max_player = 2
