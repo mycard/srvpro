@@ -7,7 +7,7 @@
     "rule": 0,
     "mode": 0,
     "comment": "rule: 0=OCGONLY, 1=TCGONLY, 2=OT; mode: 0=SINGLE, 1=MATCH, 2=TAG",
-    "duel_rule": 4,
+    "duel_rule": 5,
     "no_check_deck": false,
     "no_shuffle_deck": false,
     "start_lp": 8000,
