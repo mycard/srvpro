@@ -1200,6 +1200,9 @@ class Room
 
     if @recovered
       param.push(@recover_replay.header.seed)
+      param.push(Math.floor(Math.random() * 2147483647)) for i in [1..2]
+    else
+      param.push(Math.floor(Math.random() * 2147483647)) for i in [1..3]
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}

@@ -1403,7 +1403,7 @@
 
   Room = class Room {
     constructor(name, hostinfo) {
-      var death_time, draw_count, duel_log_id, duel_rule, lflist, param, rule, start_hand, start_lp, time_limit;
+      var death_time, draw_count, duel_log_id, duel_rule, i, lflist, n, o, param, rule, start_hand, start_lp, time_limit;
       this.hostinfo = hostinfo;
       this.name = name;
       //@alive = true
@@ -1581,6 +1581,13 @@
       param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, this.hostinfo.duel_rule, (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode];
       if (this.recovered) {
         param.push(this.recover_replay.header.seed);
+        for (i = n = 1; n <= 2; i = ++n) {
+          param.push(Math.floor(Math.random() * 2147483647));
+        }
+      } else {
+        for (i = o = 1; o <= 3; i = ++o) {
+          param.push(Math.floor(Math.random() * 2147483647));
+        }
       }
       try {
         this.process = spawn('./ygopro', param, {
@@ -1608,10 +1615,10 @@
           this.port = parseInt(data);
           _.each(this.players, (player) => {
             player.server.connect(this.port, '127.0.0.1', function() {
-              var buffer, len3, n, ref3;
+              var buffer, len3, p, ref3;
               ref3 = player.pre_establish_buffers;
-              for (n = 0, len3 = ref3.length; n < len3; n++) {
-                buffer = ref3[n];
+              for (p = 0, len3 = ref3.length; p < len3; p++) {
+                buffer = ref3[p];
                 player.server.write(buffer);
               }
               player.established = true;
