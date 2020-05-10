@@ -555,8 +555,8 @@
     };
     refresh_challonge_cache = global.refresh_challonge_cache = function() {
       if (settings.modules.challonge.cache_ttl) {
-        challonge_cache[0] = null;
-        challonge_cache[1] = null;
+        challonge_cache.participants = null;
+        challonge_cache.matches = null;
       }
     };
     refresh_challonge_cache();

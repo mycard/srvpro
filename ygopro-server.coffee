@@ -425,8 +425,8 @@ if settings.modules.challonge.enabled
     return
   refresh_challonge_cache = global.refresh_challonge_cache = () ->
     if settings.modules.challonge.cache_ttl
-      challonge_cache[0] = null
-      challonge_cache[1] = null
+      challonge_cache.participants = null
+      challonge_cache.matches = null
     return
   refresh_challonge_cache()
   # challonge.participants._index({
