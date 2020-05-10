@@ -523,7 +523,7 @@
       return function(_data) {
         var err, resolve_data;
         resolve_data = new ResolveData(_data.callback);
-        if (settings.modules.challonge.cache_ttl && !_data.no_cache && challonge_cache[0]) {
+        if (settings.modules.challonge.cache_ttl && !_data.no_cache && challonge_cache[challonge_type]) {
           resolve_data.resolve(null, challonge_cache[challonge_type]);
         } else if (is_challonge_requesting[challonge_type] && moment() - is_challonge_requesting[challonge_type] <= 5000) {
           challonge_queue_callbacks[challonge_type].push(resolve_data);

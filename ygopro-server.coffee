@@ -403,7 +403,7 @@ if settings.modules.challonge.enabled
   replaced_index = (challonge_type) ->
     return (_data) ->
       resolve_data = new ResolveData(_data.callback)
-      if settings.modules.challonge.cache_ttl and !_data.no_cache and challonge_cache[0]
+      if settings.modules.challonge.cache_ttl and !_data.no_cache and challonge_cache[challonge_type]
         resolve_data.resolve(null, challonge_cache[challonge_type])
       else if is_challonge_requesting[challonge_type] and moment() - is_challonge_requesting[challonge_type] <= 5000
         challonge_queue_callbacks[challonge_type].push(resolve_data)
