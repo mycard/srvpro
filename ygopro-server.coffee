@@ -1178,7 +1178,7 @@ class Room
         @recover_from_turn = parseInt(param[4])
         duel_log_id = parseInt(param[3])
         @recover_duel_log = _.find(duel_log.duel_log, (duel) ->
-          return duel.id == duel_log_id and duel.roommode != 2
+          return duel.id == duel_log_id and duel.roommode != 2 and duel.players[0].deck
         )
         if !@recover_duel_log || !fs.existsSync(settings.modules.tournament_mode.replay_path + @recover_duel_log.replay_filename)
           @error = "${cloud_replay_no}"
@@ -1968,7 +1968,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
   else if info.pass.toUpperCase()=="RC" and settings.modules.tournament_mode.enable_recover
     ygopro.stoc_send_chat(client,"${recover_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
     available_logs = duel_log.duel_log.filter((duel) ->
-      return duel.roommode != 2 and _.any(duel.players, (player) ->
+      return duel.id and duel.players[0].deck and duel.roommode != 2 and _.any(duel.players, (player) ->
         return player.real_name == client.name_vpass
       )
     ).slice(0, 8)
@@ -3321,6 +3321,9 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
       return player.real_name == client.name_vpass and _.isEqual(buffer, Buffer.from(player.deckbuf, "base64"))
     )
     if recover_player_data
+      struct.set("mainc", recover_player_data.deck.main.length)
+      struct.set("sidec", recover_player_data.deck.side.length)
+      struct.set("deckbuf", recover_player_data.deck.main.concat(recover_player_data.deck.side))
       if recover_player_data.is_first
         room.determine_firstgo = client
     else
@@ -3595,6 +3598,10 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
         players: (for player in room.dueling_players
           real_name: player.name_vpass,
           deckbuf: player.start_deckbuf.toString("base64"),
+          deck: {
+            main: player.main,
+            side: player.side
+          }
           pos: player.pos
           is_first: player.is_first
           name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
