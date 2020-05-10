@@ -377,7 +377,10 @@ if settings.modules.challonge.enabled
     challonge_module_name = settings.modules.challonge.use_custom_module
   challonge = global.challonge = require(challonge_module_name).createClient(settings.modules.challonge.options)
   if settings.modules.challonge.cache_ttl
-    challonge_cache = []
+    challonge_cache = {
+      participants: null
+      matches: null
+    }
   challonge_queue_callbacks = {
     participants: []
     matches: []
