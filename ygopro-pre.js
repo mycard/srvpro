@@ -396,8 +396,8 @@ var copyToYGOPRO = function(callback) {
     });
 }
 
-function run7z(params, callback) { 
-    let proc = spawn(settings.modules.tournament_mode.replay_archive_tool, params, { cwd: config.db_path, env: process.env });
+function run7z(params, cwd, callback) { 
+    let proc = spawn(settings.modules.tournament_mode.replay_archive_tool, params, { cwd: cwd, env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
         //sendResponse("7z: "+data);
@@ -421,28 +421,43 @@ var packDatas = function (callback) {
     _async.auto({
         preCommands: (done) => {
             execCommands([
+                'rm -rf "' + config.db_path +'expansions/' + config.ypk_name + '"',
+                'rm -rf "' + config.db_path +'expansions/script"',
+                'rm -rf "' + config.db_path +'expansions/pics"',
+                'rm -rf "' + config.db_path +'cdb"',
+                'rm -rf "' + config.db_path +'picture"',
+                'mkdir "' + config.db_path +'picture"',
                 'cp -r "' + config.db_path + 'expansions" "' + config.db_path + 'cdb"',
-                'cp -r "' + config.db_path + 'script" "' + config.db_path + 'expansions/script"',
-                'cp -r "' + config.db_path + 'field" "' + config.db_path + 'pics/field"',
                 'cp -r "' + config.db_path + 'pics" "' + config.db_path + 'expansions/pics"',
-                'cp -r "' + config.db_path + 'picn" "' + config.db_path + 'picture/card"',
+                'cp -r "' + config.db_path + 'field" "' + config.db_path + 'expansions/pics/field"',
+                'cp -r "' + config.db_path + 'script" "' + config.db_path + 'expansions/script"',
+                'cp -r "' + config.db_path + 'pics" "' + config.db_path + 'picture/card"',
                 'cp -r "' + config.db_path + 'field" "' + config.db_path + 'picture/field"'
             ], done);
         },
-        run7zPC: ["preCommands", (results, done) => {
-            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!mobile.cdb", "-x!cdb", "-x!picn", "-x!field", "-x!script", "-x!pics", "-x!expansions/pics/thumbnail", "-x!picture", "ygosrv233-pre.zip", "*"], done);
+        run7zYPK: ["preCommands", (results, done) => {
+            run7z(["a", "-tzip", "-x!*.ypk", config.ypk_name, "*"], config.db_path + "expansions/", done);
         }],
-        run7zMobile: ["preCommands", (results, done) => {
-            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!expansions/pics", "-x!expansions/script", "-x!cdb", "-x!picn", "-x!field", "-x!pics/thumbnail", "-x!picture", "ygosrv233-pre-mobile.zip", "*"], done);
+        run7zPC: ["run7zYPK", (results, done) => {
+            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md",
+                        "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
+                        "-x!expansions/pics", "-x!expansions/script", "-x!expansions/*.cdb", "-x!expansions/*.conf",
+                        "ygosrv233-pre.zip", "*"], config.db_path, done);
+        }],
+        run7zMobile: ["run7zYPK", (results, done) => {
+            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md",
+                        "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
+                        "-x!expansions/pics", "-x!expansions/script", "-x!expansions/*.cdb", "-x!expansions/*.conf",
+                        "ygosrv233-pre-mobile.zip", "*"], config.db_path, done);
         }],
         run7zPro2: ["preCommands", (results, done) => {
-            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!expansions", "-x!pics", "-x!picn", "-x!field", "ygosrv233-pre-2.zip", "*"], done);
+            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md",
+                        "-x!expansions", "-x!pics", "-x!field",
+                        "ygosrv233-pre-2.zip", "*"], config.db_path, done);
         }],
         commandsAfterPC: ["run7zPC", (results, done) => {
             execCommands([
-                'mv -f "' + config.db_path + 'ygosrv233-pre.zip" "' + file_path + '"',
-                'rm -rf "' + config.db_path +'expansions/script"',
-                'rm -rf "' + config.db_path +'expansions/pics"'
+                'mv -f "' + config.db_path + 'ygosrv233-pre.zip" "' + file_path + '"'
             ], (err) => { 
                     if (!err) { 
                         sendResponse("电脑更新包打包完成。");
@@ -450,10 +465,12 @@ var packDatas = function (callback) {
                     done(err);
             });
         }],
-        commandsAfterMobile: ["run7zMobile", (results, done) => {
+        commandsAfterMobile: ["run7zPC", "run7zMobile", (results, done) => {
             execCommands([
                 'mv -f "' + config.db_path +'ygosrv233-pre-mobile.zip" "'+ file_path +'"',
-                'rm -rf "' + config.db_path +'pics/field"'
+                'rm -rf "' + config.db_path +'expansions/' + config.ypk_name + '"',
+                'rm -rf "' + config.db_path +'expansions/script"',
+                'rm -rf "' + config.db_path +'expansions/pics"'
             ], (err) => { 
                     if (!err) { 
                         sendResponse("手机更新包打包完成。");
@@ -465,8 +482,7 @@ var packDatas = function (callback) {
             execCommands([
                 'mv -f "' + config.db_path + 'ygosrv233-pre-2.zip" "' + file_path + '"',
                 'rm -rf "' + config.db_path +'cdb"',
-                'rm -rf "' + config.db_path +'picture/card"',
-                'rm -rf "' + config.db_path +'picture/field"'
+                'rm -rf "' + config.db_path +'picture"'
             ], (err) => { 
                     if (!err) { 
                         sendResponse("Pro2更新包打包完成。");

@@ -188,6 +188,7 @@
       "html_filename": "pre.html",
       "git_db_path": "../ygopro-pre-data/",
       "db_path": "../ygopro-pre-data/unofficial/",
+      "ypk_name": "pre-release.ypk",
       "html_img_rel_path": "pre/pics/",
       "html_img_thumbnail": "thumbnail/",
       "html_img_thumbnail_suffix": "!thumb",
