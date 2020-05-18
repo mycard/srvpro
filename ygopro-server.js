@@ -5046,7 +5046,7 @@
             return;
           }
           try {
-            await util.promisify(setting_change)(settings, 'modules:stop', u.query.welcome);
+            await util.promisify(setting_change)(settings, 'modules:welcome', u.query.welcome);
             response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"));
           } catch (error1) {
             err = error1;

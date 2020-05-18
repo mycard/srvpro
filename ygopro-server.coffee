@@ -3798,7 +3798,7 @@ if settings.modules.http
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         try
-          await util.promisify(setting_change)(settings, 'modules:stop', u.query.welcome)
+          await util.promisify(setting_change)(settings, 'modules:welcome', u.query.welcome)
           response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
         catch err
           response.end(addCallback(u.query.callback, "['welcome fail', '" + u.query.welcome + "']"))
