@@ -62,7 +62,7 @@
       "get": false
     },
     "dialogues": {
-      "enabled": true,
+      "enabled": false,
       "get": "http://mercury233.me/ygosrv233/dialogues.json"
     },
     "random_duel": {

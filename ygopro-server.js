@@ -3279,7 +3279,7 @@
     });
   };
 
-  if (settings.modules.dialogues.get) {
+  if (settings.modules.dialogues.enabled && settings.modules.dialogues.get) {
     load_dialogues();
   }
 
@@ -3966,7 +3966,7 @@
     });
   };
 
-  if (settings.modules.tips.get) {
+  if (settings.modules.tips.enabled && settings.modules.tips.get) {
     load_tips();
     setInterval(function() {
       var len3, n, room;
