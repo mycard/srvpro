@@ -174,9 +174,15 @@
   // 读取配置
   default_config = loadJSON('./data/default_config.json');
 
-  try {
-    config = loadJSON('./config/config.json');
-  } catch (error1) {
+  if (fs.existsSync('./config/config.json')) {
+    try {
+      config = loadJSON('./config/config.json');
+    } catch (error1) {
+      e = error1;
+      console.error("Failed reading config: ", e.toString());
+      process.exit(1);
+    }
+  } else {
     config = {};
   }
 
