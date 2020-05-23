@@ -2525,7 +2525,7 @@ load_dialogues = global.load_dialogues = (callback) ->
     return
   return
 
-if settings.modules.dialogues.enabled and settings.modules.dialogues.get
+if settings.modules.dialogues.get
   load_dialogues()
 
 ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
@@ -3008,7 +3008,7 @@ load_tips = global.load_tips = (callback)->
     return
   return
 
-if settings.modules.tips.enabled and settings.modules.tips.get
+if settings.modules.tips.get
   load_tips()
   setInterval ()->
     for room in ROOM_all when room and room.established
