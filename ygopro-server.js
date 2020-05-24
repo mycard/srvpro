@@ -2744,8 +2744,8 @@
             opt2 = buffer.readUInt16LE(3);
             opt3 = buffer.readUInt8(5);
             options = {
-              lflist: 0,
-              time_limit: 180,
+              lflist: settings.hostinfo.lflist,
+              time_limit: settings.hostinfo.time_limit,
               rule: (opt1 >> 5) & 3,
               mode: (opt1 >> 3) & 3,
               duel_rule: (!!((opt1 >> 2) & 1) ? 4 : 5),
@@ -2754,8 +2754,8 @@
               start_lp: opt2,
               start_hand: opt3 >> 4,
               draw_count: opt3 & 0xF,
-              no_watch: false,
-              auto_death: false
+              no_watch: settings.hostinfo.no_watch,
+              auto_death: settings.hostinfo.auto_death
             };
             options.lflist = _.findIndex(lflists, function(list) {
               return ((options.rule === 1) === list.tcg) && list.date.isBefore();
