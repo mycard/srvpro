@@ -1048,6 +1048,25 @@ SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
   datas.splice(0, datas.length)
   return true
 
+getSeedTimet = global.getSeedTimet = (count) ->
+  ret = []
+  for i in [0...count]
+    curTime = null
+    while !curTime or _.any(ret, (time) ->
+      return time == curTime.unix()
+    )
+      curTime = moment()
+      offset = Math.floor(Math.random() * 240) - 120
+      if offset > 0
+        curTime = curTime.add(offset, "s")
+      else if offset < 0
+        curTime = curTime.subtract(-offset, "s")
+    ret.push(curTime.unix())
+  ret.sort((a, b) ->
+    return a - b
+  )
+  return ret
+
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -1208,9 +1227,11 @@ class Room
 
     if @recovered
       param.push(@recover_replay.header.seed)
-      param.push(Math.floor(Math.random() * 2147483647)) for i in [1..2]
+      seeds = getSeedTimet(2)
+      param.push(seeds[i]) for i in [0...2]
     else
-      param.push(Math.floor(Math.random() * 2147483647)) for i in [1..3]
+      seeds = getSeedTimet(3)
+      param.push(seeds[i]) for i in [0...3]
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}
