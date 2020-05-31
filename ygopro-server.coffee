@@ -1732,163 +1732,60 @@ net.createServer (client) ->
   client.on 'data', (ctos_buffer) ->
     if client.is_post_watcher
       room=ROOM_all[client.rid]
-      room.watcher.write ctos_buffer if room and !CLIENT_is_banned_by_mc(client)
+      if room
+        handle_data = await ygopro.helper.handleBuffer(ctos_buffer, "CTOS", ["CHAT"], {
+          client: client,
+          server: client.server
+        })
+        if handle_data.feedback
+          log.warn(handle_data.feedback.message, client.name, client.ip)
+          if handle_data.feedback.type == "OVERSIZE" or ROOM_bad_ip[client.ip] > 5
+            bad_ip_count = ROOM_bad_ip[client.ip]
+            if bad_ip_count
+              ROOM_bad_ip[client.ip] = bad_ip_count + 1
+            else
+              ROOM_bad_ip[client.ip] = 1
+            CLIENT_kick(client)
+            return
+        room.watcher.write(buffer) for buffer in handle_data.datas
     else
-      #ctos_buffer = Buffer.alloc(0)
-      ctos_message_length = 0
-      ctos_proto = 0
-      #ctos_buffer = Buffer.concat([ctos_buffer, data], ctos_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
-
-      datas = []
-
-      looplimit = 0
-
-      while true
-        if ctos_message_length == 0
-          if ctos_buffer.length >= 2
-            ctos_message_length = ctos_buffer.readUInt16LE(0)
-          else
-            log.warn("bad ctos_buffer length", client.ip) unless ctos_buffer.length == 0
-            break
-        else if ctos_proto == 0
-          if ctos_buffer.length >= 3
-            ctos_proto = ctos_buffer.readUInt8(2)
-          else
-            log.warn("bad ctos_proto length", client.ip)
-            break
-        else
-          if ctos_buffer.length >= 2 + ctos_message_length
-            #console.log client.pos, "CTOS", ygopro.constants.CTOS[ctos_proto]
-            cancel = false
-            if settings.modules.reconnect.enabled and client.pre_reconnecting and ygopro.constants.CTOS[ctos_proto] != 'UPDATE_DECK'
-              cancel = true
-            b = ctos_buffer.slice(3, ctos_message_length - 1 + 3)
-            info = null
-            struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]]
-            if struct and !cancel
-              struct._setBuff(b)
-              info = _.clone(struct.fields)
-            if ygopro.ctos_follows_before[ctos_proto] and !cancel
-              for ctos_event in ygopro.ctos_follows_before[ctos_proto]
-                result = ctos_event.callback b, info, client, client.server, datas
-                if result and ctos_event.synchronous
-                  cancel = true
-            if struct and !cancel
-              struct._setBuff(b)
-              info = _.clone(struct.fields)
-            if ygopro.ctos_follows[ctos_proto] and !cancel
-              result = ygopro.ctos_follows[ctos_proto].callback b, info, client, client.server, datas
-              if result and ygopro.ctos_follows[ctos_proto].synchronous
-                cancel = true
-            if struct and !cancel
-              struct._setBuff(b)
-              info = _.clone(struct.fields)
-            if ygopro.ctos_follows_after[ctos_proto] and !cancel
-              for ctos_event in ygopro.ctos_follows_after[ctos_proto]
-                result = ctos_event.callback b, info, client, client.server, datas
-                if result and ctos_event.synchronous
-                  cancel = true
-            datas.push ctos_buffer.slice(0, 2 + ctos_message_length) unless cancel
-            ctos_buffer = ctos_buffer.slice(2 + ctos_message_length)
-            ctos_message_length = 0
-            ctos_proto = 0
-          else
-            log.warn("bad ctos_message length", client.ip, ctos_buffer.length, ctos_message_length, ctos_proto) if ctos_message_length != 17735
-            break
-
-        looplimit++
-        #log.info(looplimit)
-        if looplimit > 800 or ROOM_bad_ip[client.ip] > 5
-          log.info("error ctos", client.name, client.ip)
+      ctos_filter = if settings.modules.reconnect.enabled and client.pre_reconnecting then ["UPDATE_DECK"] else null
+      handle_data = await ygopro.helper.handleBuffer(ctos_buffer, "CTOS", ctos_filter, {
+        client: client,
+        server: client.server
+      })
+      if handle_data.feedback
+        log.warn(handle_data.feedback.message, client.name, client.ip)
+        if handle_data.feedback.type == "OVERSIZE" or ROOM_bad_ip[client.ip] > 5
           bad_ip_count = ROOM_bad_ip[client.ip]
           if bad_ip_count
             ROOM_bad_ip[client.ip] = bad_ip_count + 1
           else
             ROOM_bad_ip[client.ip] = 1
           CLIENT_kick(client)
-          break
+          return
       if !client.server
         return
       if client.established
-        client.server.write buffer for buffer in datas
+        client.server.write buffer for buffer in handle_data.datas
       else
-        client.pre_establish_buffers.push buffer for buffer in datas
+        client.pre_establish_buffers.push buffer for buffer in handle_data.datas
 
     return
 
   # 服务端到客户端(stoc)
   server.on 'data', (stoc_buffer)->
-    #stoc_buffer = Buffer.alloc(0)
-    stoc_message_length = 0
-    stoc_proto = 0
-    #stoc_buffer = Buffer.concat([stoc_buffer, data], stoc_buffer.length + data.length) #buffer的错误使用方式，好孩子不要学
-
-    #unless ygopro.stoc_follows[stoc_proto] and ygopro.stoc_follows[stoc_proto].synchronous
-    #server.client.write data
-    datas = []
-
-    looplimit = 0
-
-    while true
-      if stoc_message_length == 0
-        if stoc_buffer.length >= 2
-          stoc_message_length = stoc_buffer.readUInt16LE(0)
-        else
-          log.warn("bad stoc_buffer length", server.client.ip) unless stoc_buffer.length == 0
-          break
-      else if stoc_proto == 0
-        if stoc_buffer.length >= 3
-          stoc_proto = stoc_buffer.readUInt8(2)
-        else
-          log.warn("bad stoc_proto length", server.client.ip)
-          break
-      else
-        if stoc_buffer.length >= 2 + stoc_message_length
-          #console.log client.pos, "STOC", ygopro.constants.STOC[stoc_proto]
-          cancel = false
-          b = stoc_buffer.slice(3, stoc_message_length - 1 + 3)
-          info = null
-          struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]]
-
-          if struct and !cancel
-            struct._setBuff(b)
-            info = _.clone(struct.fields)
-          if ygopro.stoc_follows_before[stoc_proto] and !cancel
-            for stoc_event in ygopro.stoc_follows_before[stoc_proto]
-              result = stoc_event.callback b, info, server.client, server, datas
-              if result and stoc_event.synchronous
-                cancel = true
-          if struct and !cancel
-            struct._setBuff(b)
-            info = _.clone(struct.fields)
-          if ygopro.stoc_follows[stoc_proto] and !cancel
-            result = ygopro.stoc_follows[stoc_proto].callback b, info, server.client, server, datas
-            if result and ygopro.stoc_follows[stoc_proto].synchronous
-              cancel = true
-          if struct and !cancel
-            struct._setBuff(b)
-            info = _.clone(struct.fields)
-          if ygopro.stoc_follows_after[stoc_proto] and !cancel
-            for stoc_event in ygopro.stoc_follows_after[stoc_proto]
-              result = stoc_event.callback b, info, server.client, server, datas
-              if result and stoc_event.synchronous
-                cancel = true
-          datas.push stoc_buffer.slice(0, 2 + stoc_message_length) unless cancel
-          stoc_buffer = stoc_buffer.slice(2 + stoc_message_length)
-          stoc_message_length = 0
-          stoc_proto = 0
-        else
-          log.warn("bad stoc_message length", server.client.ip)
-          break
-
-      looplimit++
-      #log.info(looplimit)
-      if looplimit > 800
-        log.info("error stoc", server.client.name)
+    handle_data = await ygopro.helper.handleBuffer(stoc_buffer, "STOC", null, {
+      client: server.client,
+      server: server
+    })
+    if handle_data.feedback
+      log.warn(handle_data.feedback.message, server.client.name, server.client.ip)
+      if handle_data.feedback.type == "OVERSIZE"
         server.destroy()
-        break
+        return
     if server.client and !server.client.closed
-      server.client.write buffer for buffer in datas
+      server.client.write buffer for buffer in handle_data.datas
 
     return
   return

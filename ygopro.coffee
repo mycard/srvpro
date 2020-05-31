@@ -7,142 +7,44 @@ loadJSON = require('load-json-file').sync
 
 @i18ns = loadJSON './data/i18n.json'
 
-#常量/类型声明
-structs_declaration = loadJSON './data/structs.json'  #结构体声明
-typedefs = loadJSON './data/typedefs.json'            #类型声明
-@proto_structs = loadJSON './data/proto_structs.json' #消息与结构体的对应，未完成，对着duelclient.cpp加
-@constants = loadJSON './data/constants.json'          #network.h里定义的常量
+YGOProMessageHelper = require("./YGOProMessages.js") # 为 SRVPro2 准备的库，这里拿这个库只用来测试，SRVPro1 对异步支持不是特别完善，因此不会有很多异步优化
+@helper = new YGOProMessageHelper()
 
-#结构体定义
-@structs = {}
-for name, declaration of structs_declaration
-  result = Struct()
-  for field in declaration
-    if field.encoding
-      switch field.encoding
-        when "UTF-16LE" then result.chars field.name, field.length*2, field.encoding
-        else throw "unsupported encoding: #{field.encoding}"
-    else
-      type = field.type
-      type = typedefs[type] if typedefs[type]
-      if field.length
-        result.array field.name, field.length, type #不支持结构体
-      else
-        if @structs[type]
-          result.struct field.name, @structs[type]
-        else
-          result[type] field.name
-  @structs[name] = result
+@structs = @helper.structs
+@structs_declaration = @helper.structs_declaration
+@typedefs = @helper.typedefs
+@proto_structs = @helper.proto_structs
+@constants = @helper.constants
 
-
-#消息跟踪函数 需要重构, 另暂时只支持异步, 同步没做.
-@stoc_follows = {}
-@stoc_follows_before = {}
-@stoc_follows_after = {}
-@ctos_follows = {}
-@ctos_follows_before = {}
-@ctos_follows_after = {}
-
-@replace_proto = (proto, tp) ->
-  if typeof(proto) != "string"
-    return proto
-  changed_proto = proto
-  for key, value of @constants[tp]
-    if value == proto
-      changed_proto = key
-      break
-  throw "unknown proto" if !@constants[tp][changed_proto]
-  return changed_proto
+translateHandler = (handler) ->
+  return (buffer, info, datas, params)->
+    await return handler(buffer, info, params.client, params.server, datas)
 
 @stoc_follow = (proto, synchronous, callback)->
-  changed_proto = @replace_proto(proto, "STOC")
-  @stoc_follows[changed_proto] = {callback: callback, synchronous: synchronous}
+  @helper.addHandler("STOC_#{proto}", translateHandler(callback), synchronous, 1)
   return
 @stoc_follow_before = (proto, synchronous, callback)->
-  changed_proto = @replace_proto(proto, "STOC")
-  if !@stoc_follows_before[changed_proto]
-    @stoc_follows_before[changed_proto] = []
-  @stoc_follows_before[changed_proto].push({callback: callback, synchronous: synchronous})
+  @helper.addHandler("STOC_#{proto}", translateHandler(callback), synchronous, 0)
   return
 @stoc_follow_after = (proto, synchronous, callback)->
-  changed_proto = @replace_proto(proto, "STOC")
-  if !@stoc_follows_after[changed_proto]
-    @stoc_follows_after[changed_proto] = []
-  @stoc_follows_after[changed_proto].push({callback: callback, synchronous: synchronous})
+  @helper.addHandler("STOC_#{proto}", translateHandler(callback), synchronous, 2)
   return
 @ctos_follow = (proto, synchronous, callback)->
-  changed_proto = @replace_proto(proto, "CTOS")
-  @ctos_follows[changed_proto] = {callback: callback, synchronous: synchronous}
+  @helper.addHandler("CTOS_#{proto}", translateHandler(callback), synchronous, 1)
   return
 @ctos_follow_before = (proto, synchronous, callback)->
-  changed_proto = @replace_proto(proto, "CTOS")
-  if !@ctos_follows_before[changed_proto]
-    @ctos_follows_before[changed_proto] = []
-  @ctos_follows_before[changed_proto].push({callback: callback, synchronous: synchronous})
+  @helper.addHandler("CTOS_#{proto}", translateHandler(callback), synchronous, 0)
   return
 @ctos_follow_after = (proto, synchronous, callback)->
-  changed_proto = @replace_proto(proto, "CTOS")
-  if !@ctos_follows_after[changed_proto]
-    @ctos_follows_after[changed_proto] = []
-  @ctos_follows_after[changed_proto].push({callback: callback, synchronous: synchronous})
+  @helper.addHandler("CTOS_#{proto}", translateHandler(callback), synchronous, 2)
   return
 
 #消息发送函数,至少要把俩合起来....
 @stoc_send = (socket, proto, info)->
-  if socket.closed
-    return
-  #console.log proto, proto_structs.STOC[proto], structs[proto_structs.STOC[proto]]
-  if typeof info == 'undefined'
-    buffer = ""
-  else if Buffer.isBuffer(info)
-    buffer = info
-  else
-    struct = @structs[@proto_structs.STOC[proto]]
-    struct.allocate()
-    struct.set info
-    buffer = struct.buffer()
-
-  if typeof proto == 'string' #需要重构
-    for key, value of @constants.STOC
-      if value == proto
-        proto = key
-        break
-    throw "unknown proto" if !@constants.STOC[proto]
-
-  header = Buffer.allocUnsafe(3)
-  header.writeUInt16LE buffer.length + 1, 0
-  header.writeUInt8 proto, 2
-  socket.write header
-  socket.write buffer if buffer.length
-  return
+  return @helper.sendMessage(socket, "STOC_#{proto}", info)
 
 @ctos_send = (socket, proto, info)->
-  if socket.closed
-    return
-  #console.log proto, proto_structs.CTOS[proto], structs[proto_structs.CTOS[proto]]
-  if typeof info == 'undefined'
-    buffer = ""
-  else if Buffer.isBuffer(info)
-    buffer = info
-  else
-    struct = @structs[@proto_structs.CTOS[proto]]
-    struct.allocate()
-    struct.set info
-    buffer = struct.buffer()
-
-  if typeof proto == 'string' #需要重构
-    for key, value of @constants.CTOS
-      if value == proto
-        proto = key
-        break
-    throw "unknown proto" if !@constants.CTOS[proto]
-
-  header = Buffer.allocUnsafe(3)
-  header.writeUInt16LE buffer.length + 1, 0
-  header.writeUInt8 proto, 2
-  socket.write header
-  socket.write buffer if buffer.length
-  return
+  return @helper.sendMessage(socket, "CTOS_#{proto}", info)
 
 #util
 @stoc_send_chat = (client, msg, player = 8)->
