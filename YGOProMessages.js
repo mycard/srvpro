@@ -180,7 +180,7 @@ class YGOProMessagesHelper {
 					const proto = this.constants[direction][bufferProto];
 					let cancel = proto && protoFilter && _.indexOf(protoFilter, proto) === -1;
 					let buffer = messageBuffer.slice(3, 2 + messageLength);
-					console.log(l, direction, proto, cancel);
+					//console.log(l, direction, proto, cancel);
 					for (let priority = 0; priority < 4; ++priority) {
 						if (cancel) {
 							break;

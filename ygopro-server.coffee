@@ -1732,7 +1732,22 @@ net.createServer (client) ->
   client.on 'data', (ctos_buffer) ->
     if client.is_post_watcher
       room=ROOM_all[client.rid]
-      room.watcher.write ctos_buffer if room and !CLIENT_is_banned_by_mc(client)
+      if room
+        handle_data = await ygopro.helper.handleBuffer(ctos_buffer, "CTOS", ["CHAT"], {
+          client: client,
+          server: client.server
+        })
+        if handle_data.feedback
+          log.warn(handle_data.feedback.message, client.name, client.ip)
+          if handle_data.feedback.type == "OVERSIZE" or ROOM_bad_ip[client.ip] > 5
+            bad_ip_count = ROOM_bad_ip[client.ip]
+            if bad_ip_count
+              ROOM_bad_ip[client.ip] = bad_ip_count + 1
+            else
+              ROOM_bad_ip[client.ip] = 1
+            CLIENT_kick(client)
+            return
+        room.watcher.write(buffer) for buffer in handle_data.datas
     else
       ctos_filter = if settings.modules.reconnect.enabled and client.pre_reconnecting then ["UPDATE_DECK"] else null
       handle_data = await ygopro.helper.handleBuffer(ctos_buffer, "CTOS", ctos_filter, {

@@ -2326,11 +2326,32 @@
     // 客户端到服务端(ctos)协议分析
     client.pre_establish_buffers = new Array();
     client.on('data', async function(ctos_buffer) {
-      var bad_ip_count, buffer, ctos_filter, handle_data, len3, len4, n, o, ref3, ref4, room;
+      var bad_ip_count, buffer, ctos_filter, handle_data, len3, len4, len5, n, o, p, ref3, ref4, ref5, room;
       if (client.is_post_watcher) {
         room = ROOM_all[client.rid];
-        if (room && !CLIENT_is_banned_by_mc(client)) {
-          room.watcher.write(ctos_buffer);
+        if (room) {
+          handle_data = (await ygopro.helper.handleBuffer(ctos_buffer, "CTOS", ["CHAT"], {
+            client: client,
+            server: client.server
+          }));
+          if (handle_data.feedback) {
+            log.warn(handle_data.feedback.message, client.name, client.ip);
+            if (handle_data.feedback.type === "OVERSIZE" || ROOM_bad_ip[client.ip] > 5) {
+              bad_ip_count = ROOM_bad_ip[client.ip];
+              if (bad_ip_count) {
+                ROOM_bad_ip[client.ip] = bad_ip_count + 1;
+              } else {
+                ROOM_bad_ip[client.ip] = 1;
+              }
+              CLIENT_kick(client);
+              return;
+            }
+          }
+          ref3 = handle_data.datas;
+          for (n = 0, len3 = ref3.length; n < len3; n++) {
+            buffer = ref3[n];
+            room.watcher.write(buffer);
+          }
         }
       } else {
         ctos_filter = settings.modules.reconnect.enabled && client.pre_reconnecting ? ["UPDATE_DECK"] : null;
@@ -2339,7 +2360,7 @@
           server: client.server
         }));
         if (handle_data.feedback) {
-          log.warn(handle_data.feedback, client.name, client.ip);
+          log.warn(handle_data.feedback.message, client.name, client.ip);
           if (handle_data.feedback.type === "OVERSIZE" || ROOM_bad_ip[client.ip] > 5) {
             bad_ip_count = ROOM_bad_ip[client.ip];
             if (bad_ip_count) {
@@ -2355,15 +2376,15 @@
           return;
         }
         if (client.established) {
-          ref3 = handle_data.datas;
-          for (n = 0, len3 = ref3.length; n < len3; n++) {
-            buffer = ref3[n];
-            client.server.write(buffer);
-          }
-        } else {
           ref4 = handle_data.datas;
           for (o = 0, len4 = ref4.length; o < len4; o++) {
             buffer = ref4[o];
+            client.server.write(buffer);
+          }
+        } else {
+          ref5 = handle_data.datas;
+          for (p = 0, len5 = ref5.length; p < len5; p++) {
+            buffer = ref5[p];
             client.pre_establish_buffers.push(buffer);
           }
         }
@@ -2377,7 +2398,7 @@
         server: server
       }));
       if (handle_data.feedback) {
-        log.warn(handle_data.feedback, server.client.name, server.client.ip);
+        log.warn(handle_data.feedback.message, server.client.name, server.client.ip);
         if (handle_data.feedback.type === "OVERSIZE") {
           server.destroy();
           return;
