@@ -30,7 +30,7 @@
 
   translateHandler = function(handler) {
     return async function(buffer, info, datas, params) {
-      return handler(buffer, info, params.client, params.server, datas);
+      return (await handler(buffer, info, params.client, params.server, datas));
     };
   };
 

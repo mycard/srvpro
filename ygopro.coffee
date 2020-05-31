@@ -18,7 +18,7 @@ YGOProMessageHelper = require("./YGOProMessages.js") # 为 SRVPro2 准备的库�
 
 translateHandler = (handler) ->
   return (buffer, info, datas, params)->
-    await return handler(buffer, info, params.client, params.server, datas)
+    await return await handler(buffer, info, params.client, params.server, datas)
 
 @stoc_follow = (proto, synchronous, callback)->
   @helper.addHandler("STOC_#{proto}", translateHandler(callback), synchronous, 1)

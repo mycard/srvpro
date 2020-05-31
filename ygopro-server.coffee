@@ -1859,7 +1859,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
       else
         #log.info("Not in map", geo.country, client.name, client.ip)
         client.lang=settings.modules.i18n.fallback
-  return false
+  await return false
 
 ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
 #log.info info
@@ -2346,7 +2346,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       client.setTimeout(300000) #连接后超时5分钟
       client.rid = _.indexOf(ROOM_all, room)
       room.connect(client)
-  return
+  await return
 
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
   #欢迎信息
@@ -2423,7 +2423,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     watcher.on 'error', (error)->
       log.error "watcher error", error
       return
-  return
+  await return
 
 # 登场台词
 load_dialogues = global.load_dialogues = (callback) ->
@@ -2441,7 +2441,7 @@ load_dialogues = global.load_dialogues = (callback) ->
     if callback
       callback(error, body)
     return
-  return
+  await return
 
 if settings.modules.dialogues.get
   load_dialogues()
@@ -2738,7 +2738,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       room.recover_buffers[client.pos].push(buffer)
     return true
 
-  return false
+  await return false
 
 #房间管理
 ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server, datas)->
@@ -2753,7 +2753,7 @@ ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server, datas)-
     if player == client
       ygopro.stoc_send_chat(client, "${cannot_to_observer}", ygopro.constants.COLORS.BABYBLUE)
       return true
-  return false
+  await return false
 
 ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -2771,7 +2771,7 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server, datas)->
         CLIENT_kick(client)
         return true
       ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_player}", ygopro.constants.COLORS.RED)
-  return false
+  await return false
 
 ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server, datas)->
   selftype = info.type & 0xf
@@ -2782,7 +2782,7 @@ ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server, datas)->
   client.is_host = is_host
   client.pos = selftype
   #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
-  return false
+  await return false
 
 ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -2793,7 +2793,7 @@ ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas
     struct._setBuff(buffer)
     struct.set("name", "********")
     buffer = struct.buffer
-  return false
+  await return false
 
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -2839,10 +2839,10 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server, dat
       if room.ready_player_count_without_host >= room.max_player - 1
         #log.info "all ready"
         setTimeout (()-> wait_room_start(ROOM_all[client.rid], settings.modules.random_duel.ready_time);return), 1000
-  return
+  await return
 
 ygopro.ctos_follow 'REQUEST_FIELD', true, (buffer, info, client, server, datas)->
-  return true
+  await return true
 
 ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -2854,7 +2854,7 @@ ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server, datas)->
     if client.last_hint_msg
       ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
     ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
-  return true
+  await return true
 
 ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -2867,6 +2867,7 @@ ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server, datas)->
       CLIENT_send_replays(player, room)
     for player in room.watchers when player
       CLIENT_send_replays(player, room)
+  await return
 
 wait_room_start = (room, time)->
   if room and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.ready_player_count_without_host >= room.max_player - 1
@@ -2881,7 +2882,7 @@ wait_room_start = (room, time)->
           ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}")
           ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
           CLIENT_kick(player)
-  return
+  await return
 
 wait_room_start_arena = (room)->
   if room and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.waiting_for_player
@@ -2897,17 +2898,17 @@ wait_room_start_arena = (room)->
       if room.waiting_for_player_interval
         clearInterval room.waiting_for_player_interval
         room.waiting_for_player_interval = null
-  return
+  await return
 
 #tip
 ygopro.stoc_send_random_tip = (client)->
   if settings.modules.tips.enabled && tips.tips.length
     ygopro.stoc_send_chat(client, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
-  return
+  await return
 ygopro.stoc_send_random_tip_to_room = (room)->
   if settings.modules.tips.enabled && tips.tips.length
     ygopro.stoc_send_chat_to_room(room, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
-  return
+  await return
 
 load_tips = global.load_tips = (callback)->
   request
@@ -2924,7 +2925,7 @@ load_tips = global.load_tips = (callback)->
     if callback
       callback(error, body)
     return
-  return
+  await return
 
 if settings.modules.tips.get
   load_tips()
@@ -3005,7 +3006,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
             #log.info 'DECK POST OK', response.statusCode, client.name, body
         return
     client.deck_saved = true
-  return
+  await return
 
 ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3015,7 +3016,7 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server, datas)->
   if room.random_type and room.turn < 3 and not client.flee_free and not settings.modules.test_mode.surrender_anytime and not (room.random_type=='M' and settings.modules.random_duel.record_match_scores)
     ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
     return true
-  return false
+  await return false
 
 report_to_big_brother = global.report_to_big_brother = (roomname, sender, ip, level, content, match) ->
   return unless settings.modules.big_brother.enabled
@@ -3036,7 +3037,7 @@ report_to_big_brother = global.report_to_big_brother = (roomname, sender, ip, le
       #else
         #log.info 'BIG BROTHER OK', response.statusCode, roomname, body
     return
-  return
+  await return
 
 ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3194,7 +3195,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   if client.abuse_count>=5
     ygopro.stoc_send_chat_to_room(room, "#{client.name} ${chat_banned}", ygopro.constants.COLORS.RED)
     ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
-  return cancel
+  await return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
   if settings.modules.reconnect.enabled and client.pre_reconnecting
@@ -3295,13 +3296,13 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
     else
       #log.info("player deck not found: " + client.name)
       ygopro.stoc_send_chat(client, "#{client.name}${deck_not_found}", ygopro.constants.COLORS.RED)
-  return false
+  await return false
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and (room.random_type or room.arena)
   room.last_active_time = moment()
-  return
+  await return
 
 ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3341,7 +3342,7 @@ ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server, datas)->
   return unless settings.modules.heartbeat_detection.enabled and room.duel_stage == ygopro.constants.DUEL_STAGE.DUELING and !room.windbot
   if check
     CLIENT_heartbeat_register(client, false)
-  return false
+  await return false
 
 ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3360,7 +3361,7 @@ ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server, datas)-
     client.heartbeat_protected = false
     client.heartbeat_responsed = true
     CLIENT_heartbeat_unregister(client)
-  return
+  await return
 
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3370,7 +3371,7 @@ ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
     room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
-  return
+  await return
 
 ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3379,7 +3380,7 @@ ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
   # room.selecting_tp = false
   return unless room.random_type or room.arena
   room.last_active_time = moment()
-  return
+  await return
 
 ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3405,7 +3406,7 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server, datas)->
         msg: tplayer.name + ": " + info.msg
       }
     return true
-  return
+  await return
 
 ygopro.stoc_follow 'SELECT_HAND', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3425,12 +3426,12 @@ ygopro.stoc_follow 'SELECT_HAND', true, (buffer, info, client, server, datas)->
     return true
   else
     client.selected_preduel = false
-  return false
+  await return false
 
 ygopro.stoc_follow 'HAND_RESULT', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return false unless room
-  return room.determine_firstgo
+  await return room.determine_firstgo
 
 ygopro.stoc_follow 'SELECT_TP', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3447,7 +3448,7 @@ ygopro.stoc_follow 'SELECT_TP', true, (buffer, info, client, server, datas)->
   else
     client.selected_preduel = false
     room.selecting_tp = client
-  return false
+  await return false
 
 ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3495,7 +3496,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
     else
       room.waiting_for_player2 = client
     room.last_active_time = moment()
-  return
+  await return
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
@@ -3544,9 +3545,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
       )
     if settings.modules.cloud_replay.enabled and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
       ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
-    return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
+    await return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
   else
-    return settings.modules.replay_delay and room.hostinfo.mode == 1
+    await return settings.modules.replay_delay and room.hostinfo.mode == 1
 
 if settings.modules.random_duel.enabled
   setInterval ()->
