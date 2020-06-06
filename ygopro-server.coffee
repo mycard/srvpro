@@ -19,7 +19,7 @@ _.mixin(_.str.exports())
 
 request = require 'request'
 axios = require 'axios'
-qs = require "querystrig"
+qs = require "querystring"
 
 bunyan = require 'bunyan'
 log = global.log = bunyan.createLogger name: "mycard"
