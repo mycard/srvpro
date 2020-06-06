@@ -18,6 +18,8 @@ _.str = require 'underscore.string'
 _.mixin(_.str.exports())
 
 request = require 'request'
+axios = require 'axios'
+qs = require "querystrig"
 
 bunyan = require 'bunyan'
 log = global.log = bunyan.createLogger name: "mycard"
@@ -1823,21 +1825,18 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
   , name))
     client.rag = true
   if settings.modules.mycard.enabled
-    #console.log(name)
-    request
-      url: settings.modules.mycard.ban_get
-      json: true
-      qs:
-        user: name
-    , (error, response, body)->
-      #console.log(body)
-      if _.isString body
-        log.warn "ban get bad json", body
-      else if error or !body
-        log.warn 'ban get error', error, response
+    try
+      banMCRequest = await axios.get 
+        url: settings.modules.mycard.ban_get
+        paramsSerializer: qs.stringify
+        params:
+          user: name
+      if typeof(banMCRequest.data) == "object"
+        client.ban_mc = banMCRequest.data
       else
-        client.ban_mc = body
-      return
+        log.warn "ban get bad json", banMCRequest.data
+    catch e
+      log.warn 'ban get error', e.toString()
   struct = ygopro.structs["CTOS_PlayerInfo"]
   struct._setBuff(buffer)
   struct.set("name", name)
