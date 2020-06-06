@@ -38,7 +38,7 @@
 
   axios = require('axios');
 
-  qs = require("querystrig");
+  qs = require("querystring");
 
   bunyan = require('bunyan');
 
@@ -2457,10 +2457,9 @@
     }, name)) {
       client.rag = true;
     }
-    if (settings.modules.mycard.enabled) {
+    if (settings.modules.mycard.enabled && settings.modules.mycard.ban_get) {
       try {
-        banMCRequest = (await axios.get({
-          url: settings.modules.mycard.ban_get,
+        banMCRequest = (await axios.get(settings.modules.mycard.ban_get, {
           paramsSerializer: qs.stringify,
           params: {
             user: name
