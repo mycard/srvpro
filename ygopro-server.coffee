@@ -1859,7 +1859,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
         client.lang=settings.modules.i18n.fallback
   await return false
 
-ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
+ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
 #log.info info
   info.pass=info.pass.trim()
   client.pass = info.pass

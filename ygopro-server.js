@@ -2501,7 +2501,7 @@
     return false;
   });
 
-  ygopro.ctos_follow('JOIN_GAME', false, async function(buffer, info, client, server, datas) {
+  ygopro.ctos_follow('JOIN_GAME', true, async function(buffer, info, client, server, datas) {
     var available_logs, check_buffer_indentity, create_room_with_action, len3, len4, n, name, o, pre_room, recover_match, ref3, ref4, replay_id, room;
     //log.info info
     info.pass = info.pass.trim();
