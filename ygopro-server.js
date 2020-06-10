@@ -2457,7 +2457,7 @@
     }, name)) {
       client.rag = true;
     }
-    if (settings.modules.mycard.enabled && settings.modules.mycard.ban_get) {
+    if (settings.modules.mycard.enabled && settings.modules.mycard.ban_get && !client.is_local) {
       try {
         banMCRequest = (await axios.get(settings.modules.mycard.ban_get, {
           paramsSerializer: qs.stringify,

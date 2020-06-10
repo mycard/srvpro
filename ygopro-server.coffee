@@ -1824,7 +1824,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
     return false
   , name))
     client.rag = true
-  if settings.modules.mycard.enabled and settings.modules.mycard.ban_get
+  if settings.modules.mycard.enabled and settings.modules.mycard.ban_get and !client.is_local
     try
       banMCRequest = await axios.get settings.modules.mycard.ban_get, 
         paramsSerializer: qs.stringify
