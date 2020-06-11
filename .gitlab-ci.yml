@@ -1,0 +1,79 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  GIT_DEPTH: "1"
+  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  CONTAINER_TEST_IMAGE_LITE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-lite
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+  CONTAINER_RELEASE_IMAGE_LITE: $CI_REGISTRY_IMAGE:lite
+
+after_script:
+  - docker system prune -f
+
+build:
+  stage: build
+  tags: 
+    - docker
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build --pull --no-cache -t $CONTAINER_TEST_IMAGE .
+    - docker push $CONTAINER_TEST_IMAGE
+
+build_lite:
+  stage: build
+  tags: 
+    - docker
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build --pull --no-cache -t $CONTAINER_TEST_IMAGE_LITE .
+    - docker push $CONTAINER_TEST_IMAGE_LITE
+
+upload_stuff_to_minio:
+  stage: deploy
+  tags:
+    - linux
+  image: $CONTAINER_TEST_IMAGE
+  script:
+    - apt update ; apt -y install python3-pip
+    - pip3 install -U -i https://mirrors.aliyun.com/pypi/simple/ awscli
+    - cd /ygopro-server
+    - mkdir /dist
+    - tar zcfv /dist/ygopro-server.tar.gz ./*
+    - aws s3 --endpoint=https://minio.mycard.moe:9000 cp /dist/ygopro-server.tar.gz s3://mycard/srvpro/ygopro-server.tar.gz 
+  only:
+    - master
+
+deploy_latest:
+  stage: deploy
+  tags: 
+    - docker
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+    - docker pull $CONTAINER_TEST_IMAGE_LITE
+    - docker tag $CONTAINER_TEST_IMAGE_LITE $CONTAINER_RELEASE_IMAGE_LITE
+    - docker push $CONTAINER_RELEASE_IMAGE_LITE
+  only:
+    - master
+
+deploy_tag:
+  stage: deploy
+  tags: 
+    - docker
+  variables:
+    CONTAINER_TAG_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    CONTAINER_TAG_IMAGE_LITE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-lite
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_TAG_IMAGE
+    - docker push $CONTAINER_TAG_IMAGE
+    - docker pull $CONTAINER_TEST_IMAGE_LITE
+    - docker tag $CONTAINER_TEST_IMAGE_LITE $CONTAINER_RELEASE_IMAGE_LITE
+    - docker push $CONTAINER_RELEASE_IMAGE_LITE
+  only:
+    - tags
