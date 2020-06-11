@@ -27,7 +27,7 @@ build_lite:
     - docker
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build --pull --no-cache -t $CONTAINER_TEST_IMAGE_LITE .
+    - docker build --pull --no-cache -f ./Dockerfile.lite -t $CONTAINER_TEST_IMAGE_LITE .
     - docker push $CONTAINER_TEST_IMAGE_LITE
 
 upload_stuff_to_minio:
