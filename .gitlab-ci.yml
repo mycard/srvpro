@@ -9,9 +9,6 @@ variables:
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
   CONTAINER_RELEASE_IMAGE_LITE: $CI_REGISTRY_IMAGE:lite
 
-after_script:
-  - docker system prune -f
-
 build:
   stage: build
   tags: 
