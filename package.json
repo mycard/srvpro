@@ -11,6 +11,8 @@
   ],
   "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>, Nanahira <78877@qq.com>",
   "dependencies": {
+    "@types/node": "^14.0.13",
+    "@types/underscore": "^1.10.0",
     "async": "^3.2.0",
     "axios": "^0.19.2",
     "bunyan": "latest",

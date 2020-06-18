@@ -1836,7 +1836,7 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
         log.warn "ban get bad json", banMCRequest.data
     catch e
       log.warn 'ban get error', e.toString()
-  struct = ygopro.structs["CTOS_PlayerInfo"]
+  struct = ygopro.structs.get("CTOS_PlayerInfo")
   struct._setBuff(buffer)
   struct.set("name", name)
   buffer = struct.buffer
@@ -1953,7 +1953,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
 
     #if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
     #  info.version = settings.version
-    #  struct = ygopro.structs["CTOS_JoinGame"]
+    #  struct = ygopro.structs.get("CTOS_JoinGame")
     #  struct._setBuff(buffer)
     #  struct.set("version", info.version)
     #  buffer = struct.buffer
@@ -2314,7 +2314,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
   else
     #if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
     #  info.version = settings.version
-    #  struct = ygopro.structs["CTOS_JoinGame"]
+    #  struct = ygopro.structs.get("CTOS_JoinGame")
     #  struct._setBuff(buffer)
     #  struct.set("version", info.version)
     #  buffer = struct.buffer
@@ -2787,7 +2787,7 @@ ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas
   return false unless room and settings.modules.hide_name and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
   pos = info.pos
   if pos < 4 and pos != client.pos
-    struct = ygopro.structs["STOC_HS_PlayerEnter"]
+    struct = ygopro.structs.get("STOC_HS_PlayerEnter")
     struct._setBuff(buffer)
     struct.set("name", "********")
     buffer = struct.buffer
@@ -3178,7 +3178,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
       report_to_big_brother room.name, client.name, client.ip, 1, oldmsg, RegExp.$1
       client.abuse_count=client.abuse_count+1
       ygopro.stoc_send_chat(client, "${chat_warn_level1}")
-      struct = ygopro.structs["chat"]
+      struct = ygopro.structs.get("chat")
       struct._setBuff(buffer)
       struct.set("msg", msg)
       buffer = struct.buffer
@@ -3238,7 +3238,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
     CLIENT_kick(room.dueling_players[oppo_pos - win_pos])
     CLIENT_kick(room.dueling_players[oppo_pos - win_pos + 1]) if room.hostinfo.mode == 2
     return true
-  struct = ygopro.structs["deck"]
+  struct = ygopro.structs.get("deck")
   struct._setBuff(buffer)
   if room.random_type or room.arena
     if client.pos == 0

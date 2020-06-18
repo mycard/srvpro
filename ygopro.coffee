@@ -7,8 +7,8 @@ loadJSON = require('load-json-file').sync
 
 @i18ns = loadJSON './data/i18n.json'
 
-YGOProMessageHelper = require("./YGOProMessages.js") # 为 SRVPro2 准备的库，这里拿这个库只用来测试，SRVPro1 对异步支持不是特别完善，因此不会有很多异步优化
-@helper = new YGOProMessageHelper()
+YGOProMessagesHelper = require("./YGOProMessages.js").YGOProMessagesHelper # 为 SRVPro2 准备的库，这里拿这个库只用来测试，SRVPro1 对异步支持不是特别完善，因此不会有很多异步优化
+@helper = new YGOProMessagesHelper()
 
 @structs = @helper.structs
 @structs_declaration = @helper.structs_declaration
