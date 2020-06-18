@@ -22,9 +22,9 @@
     "update": "请更新游戏版本",
     "stop": false,
     "side_timeout": false,
-    "replay_delay": false,
+    "replay_delay": true,
     "hide_name": false,
-    "display_watchers": true,
+    "display_watchers": false,
     "i18n": {
       "auto_pick": false,
       "default": "zh-cn",
@@ -171,7 +171,7 @@
       "replay_archive_tool": "7z",
       "block_replay_to_player": false,
       "enable_recover": false,
-      "show_ip": false,
+      "show_ip": true,
       "show_info": true,
       "log_save_path": "./config/",
       "port": 7933
@@ -291,7 +291,7 @@
       "port": 7922,
       "websocket_roomlist": false,
       "public_roomlist": false,
-      "show_ip": false,
+      "show_ip": true,
       "show_info": true,
       "quick_death_rule": 2,
       "ssl": {
