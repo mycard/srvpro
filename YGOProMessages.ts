@@ -1,5 +1,4 @@
 import { Struct } from "./struct";
-import fs from "fs";
 import _ from "underscore";
 import structs_declaration from "./data/structs.json";
 import typedefs from "./data/typedefs.json";
