@@ -24,6 +24,7 @@
     "side_timeout": false,
     "replay_delay": false,
     "hide_name": false,
+    "display_watchers": true,
     "i18n": {
       "auto_pick": false,
       "default": "zh-cn",

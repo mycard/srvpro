@@ -3122,6 +3122,9 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
   if !(room and (room.random_type or room.arena))
+    if !cancel and settings.modules.display_watchers and client.is_post_watcher
+      ygopro.stoc_send_chat_to_room(room, "#{client.name}: #{msg}", 9)
+      return true
     return cancel
   if client.abuse_count>=5 or CLIENT_is_banned_by_mc(client)
     log.warn "BANNED CHAT", client.name, client.ip, msg
@@ -3193,6 +3196,9 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   if client.abuse_count>=5
     ygopro.stoc_send_chat_to_room(room, "#{client.name} ${chat_banned}", ygopro.constants.COLORS.RED)
     ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
+  if !cancel and settings.modules.display_watchers and client.is_post_watcher
+    ygopro.stoc_send_chat_to_room(room, "#{client.name}: #{msg}", 9)
+    return true
   await return cancel
 
 ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
