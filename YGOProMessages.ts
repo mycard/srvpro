@@ -181,7 +181,6 @@ export class YGOProMessagesHelper {
 			proto
 		} = this.getDirectionAndProto(protostr);
 		synchronous = synchronous || false;
-		priority = priority || 1;
 		const handlerObj = new Handler(handler, synchronous);
 		let handlerCollection: Map<number, Handler[]> = this.handlers[direction][priority];
 		const translatedProto = this.translateProto(proto, direction);
