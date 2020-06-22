@@ -120,7 +120,7 @@ class YGOProMessagesHelper {
         //console.log(proto, this.proto_structs[direction][proto]);
         //const directionProtoList = this.constants[direction];
         if (typeof info === 'undefined') {
-            buffer = "";
+            buffer = null;
         }
         else if (Buffer.isBuffer(info)) {
             buffer = info;
@@ -132,13 +132,13 @@ class YGOProMessagesHelper {
             buffer = struct.buffer();
         }
         const translatedProto = this.translateProto(proto, direction);
-        let header = Buffer.allocUnsafe(3);
-        header.writeUInt16LE(buffer.length + 1, 0);
-        header.writeUInt8(translatedProto, 2);
-        socket.write(header);
-        if (buffer.length) {
-            socket.write(buffer);
+        let sendBuffer = Buffer.allocUnsafe(3 + (buffer ? buffer.length : 0));
+        sendBuffer.writeUInt16LE(buffer.length + 1, 0);
+        sendBuffer.writeUInt8(translatedProto, 2);
+        if (buffer) {
+            buffer.copy(sendBuffer, 3);
         }
+        socket.write(sendBuffer);
     }
     addHandler(protostr, handler, synchronous, priority) {
         if (priority < 0 || priority > 4) {
