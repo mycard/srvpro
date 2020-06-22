@@ -54,8 +54,9 @@ export class YGOProMessagesHelper {
 	typedefs: any;
 	proto_structs: any;
 	constants: any;
+	singleHandleLimit: number;
 
-	constructor() {
+	constructor(singleHandleLimit?: number) {
 		this.handlers = {
 			STOC: [new Map(),
 			new Map(),
@@ -72,6 +73,11 @@ export class YGOProMessagesHelper {
 		}
 		this.initDatas();
 		this.initStructs();
+		if (singleHandleLimit) {
+			this.singleHandleLimit = singleHandleLimit;
+		} else {
+			this.singleHandleLimit = 1000;
+		}
 	}
 
 	initDatas() {
@@ -195,7 +201,7 @@ export class YGOProMessagesHelper {
 		let messageLength = 0;
 		let bufferProto = 0;
 		let datas: Buffer[] = [];
-		for (let l = 0; l < 1000; ++l) {
+		for (let l = 0; l < this.singleHandleLimit; ++l) {
 			if (messageLength === 0) {
 				if (messageBuffer.length >= 2) {
 					messageLength = messageBuffer.readUInt16LE(0);
@@ -260,7 +266,7 @@ export class YGOProMessagesHelper {
 					break;
 				}
 			}
-			if (l === 999) {
+			if (l === this.singleHandleLimit - 1) {
 				feedback = {
 					type: "OVERSIZE",
 					message: `Oversized ${direction}`
