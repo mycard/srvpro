@@ -145,7 +145,7 @@ class YGOProMessagesHelper {
             sendBuffer.writeUInt16LE(1, 0);
             sendBuffer.writeUInt8(translatedProto, 2);
         }
-        return buffer;
+        return sendBuffer;
     }
     sendMessage(socket, protostr, info) {
         const sendBuffer = this.prepareMessage(protostr, info);
