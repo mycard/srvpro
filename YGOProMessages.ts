@@ -147,15 +147,12 @@ export class YGOProMessagesHelper {
 		return parseInt(translatedProto);
 	}
 
-	sendMessage(socket: net.Socket, protostr: string, info: string | Buffer | any) {
+	prepareMessage(protostr: string, info?: string | Buffer | any): Buffer {
 		const {
 			direction,
 			proto
 		} = this.getDirectionAndProto(protostr);
 		let buffer: Buffer;
-		if (!socket.remoteAddress) {
-			return;
-		}
 		//console.log(proto, this.proto_structs[direction][proto]);
 		//const directionProtoList = this.constants[direction];
 		if (typeof info === 'undefined') {
@@ -170,12 +167,27 @@ export class YGOProMessagesHelper {
 		}
 		const translatedProto = this.translateProto(proto, direction);
 		let sendBuffer = Buffer.allocUnsafe(3 + (buffer ? buffer.length : 0));
-		sendBuffer.writeUInt16LE(buffer.length + 1, 0);
-		sendBuffer.writeUInt8(translatedProto, 2);
 		if (buffer) {
-			buffer.copy(sendBuffer, 3)
+			sendBuffer.writeUInt16LE(buffer.length + 1, 0);
+			sendBuffer.writeUInt8(translatedProto, 2);
+			buffer.copy(sendBuffer, 3);
+		} else {
+			sendBuffer.writeUInt16LE(1, 0);
+			sendBuffer.writeUInt8(translatedProto, 2);
 		}
+		return buffer;
+	}
+
+	sendMessage(socket: net.Socket, protostr: string, info?: string | Buffer | any) {
+		const sendBuffer = this.prepareMessage(protostr, info);
 		socket.write(sendBuffer);
+	}
+
+	sendMessageAsync(socket: net.Socket, protostr: string, info?: string | Buffer | any): Promise<Error> {
+		const sendBuffer = this.prepareMessage(protostr, info);
+		return new Promise(done => {
+			socket.write(sendBuffer, done);
+		});
 	}
 
 	addHandler(protostr: string, handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean>, synchronous: boolean, priority: number) {
@@ -196,7 +208,7 @@ export class YGOProMessagesHelper {
 		handlerCollection.get(translatedProto).push(handlerObj);
 	}
 
-	async handleBuffer(messageBuffer: Buffer, direction: string, protoFilter: string[], params: any): Promise<HandleResult> {
+	async handleBuffer(messageBuffer: Buffer, direction: string, protoFilter?: string[], params?: any): Promise<HandleResult> {
 		let feedback: Feedback = null;
 		let messageLength = 0;
 		let bufferProto = 0;

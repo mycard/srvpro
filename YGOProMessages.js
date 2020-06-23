@@ -117,12 +117,9 @@ class YGOProMessagesHelper {
         }
         return parseInt(translatedProto);
     }
-    sendMessage(socket, protostr, info) {
+    prepareMessage(protostr, info) {
         const { direction, proto } = this.getDirectionAndProto(protostr);
         let buffer;
-        if (!socket.remoteAddress) {
-            return;
-        }
         //console.log(proto, this.proto_structs[direction][proto]);
         //const directionProtoList = this.constants[direction];
         if (typeof info === 'undefined') {
@@ -139,12 +136,26 @@ class YGOProMessagesHelper {
         }
         const translatedProto = this.translateProto(proto, direction);
         let sendBuffer = Buffer.allocUnsafe(3 + (buffer ? buffer.length : 0));
-        sendBuffer.writeUInt16LE(buffer.length + 1, 0);
-        sendBuffer.writeUInt8(translatedProto, 2);
         if (buffer) {
+            sendBuffer.writeUInt16LE(buffer.length + 1, 0);
+            sendBuffer.writeUInt8(translatedProto, 2);
             buffer.copy(sendBuffer, 3);
         }
+        else {
+            sendBuffer.writeUInt16LE(1, 0);
+            sendBuffer.writeUInt8(translatedProto, 2);
+        }
+        return buffer;
+    }
+    sendMessage(socket, protostr, info) {
+        const sendBuffer = this.prepareMessage(protostr, info);
         socket.write(sendBuffer);
+    }
+    sendMessageAsync(socket, protostr, info) {
+        const sendBuffer = this.prepareMessage(protostr, info);
+        return new Promise(done => {
+            socket.write(sendBuffer, done);
+        });
     }
     addHandler(protostr, handler, synchronous, priority) {
         if (priority < 0 || priority > 4) {
