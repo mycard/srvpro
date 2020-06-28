@@ -2793,9 +2793,9 @@ ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas
     buffer = struct.buffer
   await return false
 
-ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server, datas)->
+ygopro.stoc_follow 'HS_PLAYER_CHANGE', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return unless room and room.max_player and client.is_host
+  return unless room and room.max_player and client.pos == 0
   pos = info.status >> 4
   is_ready = (info.status & 0xf) == 9
   if pos < room.max_player
