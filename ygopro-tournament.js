@@ -159,7 +159,7 @@ var UploadToChallonge = function () {
     }
     sendResponse("读取玩家列表完毕，共有" + player_list.length + "名玩家。");
     sendResponse("开始上传玩家列表至Challonge。");
-    _async.eachSeries(player_list, (player_name, done) => {
+    _async.each(player_list, (player_name, done) => {
         sendResponse("正在上传玩家 " + player_name + " 至Challonge。");
         challonge.participants.create({
             id: challonge_config.tournament_id,
