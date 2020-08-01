@@ -1515,7 +1515,7 @@ class Room
         else
           for player in @players when player.pos != 7
             @scores[player.name_vpass] = -5
-          if @players.length == 2
+          if @players.length == 2 and !client.arena_quit_free
             @scores[client.name_vpass] = -9
         @arena_score_handled = true
       index = _.indexOf(@players, client)
@@ -3599,7 +3599,7 @@ if settings.modules.mycard.enabled
       return
     )
     
-    if settings.modules.arena_mode.punish_quit_before_match
+    if true # settings.modules.arena_mode.punish_quit_before_match
       _async.each(ROOM_all, (room, done) ->
         if not (room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2)
           done()

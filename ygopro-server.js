@@ -2039,7 +2039,7 @@
                 this.scores[player.name_vpass] = -5;
               }
             }
-            if (this.players.length === 2) {
+            if (this.players.length === 2 && !client.arena_quit_free) {
               this.scores[client.name_vpass] = -9;
             }
           }
@@ -4808,7 +4808,7 @@
         }
         done();
       });
-      if (settings.modules.arena_mode.punish_quit_before_match) {
+      if (true) { // settings.modules.arena_mode.punish_quit_before_match
         _async.each(ROOM_all, function(room, done) {
           var player, waited_time;
           if (!(room && room.arena && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && room.get_playing_player().length < 2)) {
