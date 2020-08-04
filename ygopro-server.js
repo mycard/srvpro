@@ -2502,7 +2502,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', true, async function(buffer, info, client, server, datas) {
-    var available_logs, check_buffer_indentity, create_room_with_action, len3, len4, n, name, o, pre_room, recover_match, ref3, ref4, replay_id, room;
+    var available_logs, check_buffer_indentity, create_room_with_action, len3, len4, n, name, o, pre_room, recover_match, ref3, ref4, replay_id, room, struct;
     //log.info info
     info.pass = info.pass.trim();
     client.pass = info.pass;
@@ -2577,7 +2577,7 @@
     } else if (info.pass.toUpperCase() === "W" && settings.modules.cloud_replay.enabled) {
       replay_id = Cloud_replay_ids[Math.floor(Math.random() * Cloud_replay_ids.length)];
       redisdb.hgetall("replay:" + replay_id, client.open_cloud_replay);
-    } else if (info.version !== settings.version) { // and (info.version < 9020 or settings.version != 4927) #强行兼容23333版
+    } else if (info.version !== settings.version && !settings.alternative_versions.includes(info.version)) {
       ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
@@ -2592,12 +2592,13 @@
         ygopro.stoc_die(client, '${invalid_password_length}');
         return;
       }
-      //if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
-      //  info.version = settings.version
-      //  struct = ygopro.structs.get("CTOS_JoinGame")
-      //  struct._setBuff(buffer)
-      //  struct.set("version", info.version)
-      //  buffer = struct.buffer
+      if (info.version !== settings.version && settings.alternative_versions.includes(info.version)) {
+        info.version = settings.version;
+        struct = ygopro.structs.get("CTOS_JoinGame");
+        struct._setBuff(buffer);
+        struct.set("version", info.version);
+        buffer = struct.buffer;
+      }
       buffer = Buffer.from(info.pass.slice(0, 8), 'base64');
       if (buffer.length !== 6) {
         ygopro.stoc_die(client, '${invalid_password_payload}');
@@ -2862,6 +2863,13 @@
         return create_room_with_action(data.get_user.original, data.get_user.decrypted, data.match_permit);
       });
     } else if (settings.modules.challonge.enabled) {
+      if (info.version !== settings.version && settings.alternative_versions.includes(info.version)) {
+        info.version = settings.version;
+        struct = ygopro.structs.get("CTOS_JoinGame");
+        struct._setBuff(buffer);
+        struct.set("version", info.version);
+        buffer = struct.buffer;
+      }
       pre_room = ROOM_find_by_name(info.pass);
       if (pre_room && pre_room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && settings.modules.cloud_replay.enable_halfway_watch && !pre_room.hostinfo.no_watch) {
         room = pre_room;
@@ -3020,14 +3028,13 @@
     } else if (info.pass.length && !ROOM_validate(info.pass)) {
       ygopro.stoc_die(client, "${invalid_password_room}");
     } else {
-      //if info.version >= 9020 and settings.version == 4927 #强行兼容23333版
-      //  info.version = settings.version
-      //  struct = ygopro.structs.get("CTOS_JoinGame")
-      //  struct._setBuff(buffer)
-      //  struct.set("version", info.version)
-      //  buffer = struct.buffer
-      //  #ygopro.stoc_send_chat(client, "看起来你是YGOMobile的用户，请记得更新先行卡补丁，否则会看到白卡", ygopro.constants.COLORS.GREEN)
-
+      if (info.version !== settings.version && settings.alternative_versions.includes(info.version)) {
+        info.version = settings.version;
+        struct = ygopro.structs.get("CTOS_JoinGame");
+        struct._setBuff(buffer);
+        struct.set("version", info.version);
+        buffer = struct.buffer;
+      }
       //log.info 'join_game',info.pass, client.name
       room = ROOM_find_or_create_by_name(info.pass, client.ip);
       if (!room) {
