@@ -177,6 +177,17 @@
       "log_save_path": "./config/",
       "port": 7933
     },
+    "athletic_check": {
+      "enabled": false,
+      "rankURL": "https://api.mycard.moe/ygopro/analytics/deck/type",
+      "identifierURL": "https://api.mycard.moe/ygopro/identifier/production",
+      "athleticFetchParams": {
+        "type": "week",
+        "source": "mycard-athletic"
+      },
+      "rankCount": 10,
+      "ttl": 600
+    },
     "test_mode": {
       "watch_public_hand": false,
       "no_connect_count_limit": false,

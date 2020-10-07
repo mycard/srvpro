@@ -168,7 +168,8 @@
     "auto_death_part1": "This room is an auto-extra-duel room. The Extra Duel will begin after ",
     "auto_death_part2": " minutes.",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender.",
-    "windbot_disable_random_room": "By adding the AI, this random game won't get any new player unless they enter the room name:"
+    "windbot_disable_random_room": "By adding the AI, this random game won't get any new player unless they enter the room name:",
+    "using_athletic_deck": " is using an athletic deck."
   },
   "es-es": {
     "random_duel_enter_room_waiting": "Tu oponente esta listo, Iniciar!",
@@ -485,7 +486,8 @@
     "auto_death_part1": "本房间为自动加时赛房间。比赛开始",
     "auto_death_part2": "分钟后，将自动进入加时赛。",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。",
-    "windbot_disable_random_room": "因为添加了AI，本随机对战房间将只能通过房间名加入："
+    "windbot_disable_random_room": "因为添加了AI，本随机对战房间将只能通过房间名加入：",
+    "using_athletic_deck": " 正在使用竞技卡组。"
   },
  "ko-kr": {
     "random_duel_enter_room_waiting": "땅콩: 게임을 진행하게 준비 또는 시작을 하십시오.",
