@@ -169,7 +169,7 @@
     "auto_death_part2": " minutes.",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender.",
     "windbot_disable_random_room": "By adding the AI, this random game won't get any new player unless they enter the room name:",
-    "using_athletic_deck": " is using an athletic deck."
+    "using_athletic_deck": " is using a competitive deck."
   },
   "es-es": {
     "random_duel_enter_room_waiting": "Tu oponente esta listo, Iniciar!",
