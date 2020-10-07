@@ -324,6 +324,10 @@ if settings.modules.heartbeat_detection.enabled
 if settings.modules.tournament_mode.enable_recover
   ReplayParser = global.ReplayParser = require "./Replay.js"
 
+if settings.modules.athletic_check.enabled
+  AthleticChecker = require("./athletic-check.js").AthleticChecker
+  athleticChecker = global.athleticChecker = new AthleticChecker(settings.modules.athletic_check)
+
 # 组件
 ygopro = global.ygopro = require './ygopro.js'
 roomlist = global.roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
@@ -1609,6 +1613,20 @@ class Room
         for buffer in @recover_buffers[player.pos]
           ygopro.stoc_send(player, "GAME_MSG", buffer)
 
+  check_athletic: ->
+    players = @get_playing_player()
+    room = this
+    await Promise.all(players.map((player) ->
+      main = _.clone(player.main)
+      side = _.clone(player.side)
+      using_athletic = await athleticChecker.checkAthletic({main: main, side: side})
+      if !using_athletic.success
+        log.warn("GET ATHLETIC FAIL", player.name, using_athletic.message)
+      else if using_athletic.athletic
+        ygopro.stoc_send_chat_to_room(room, "#{player.name}${using_athletic_deck}", ygopro.constants.COLORS.BABYBLUE)
+    ))
+    await return
+
 # 网络连接
 net.createServer (client) ->
   client.ip = client.remoteAddress
@@ -2800,15 +2818,24 @@ ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas
 
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return unless room and room.max_player and client.pos == 0
+  return unless room and client.pos == 0
   pos = info.status >> 4
   is_ready = (info.status & 0xf) == 9
-  if pos < room.max_player
-    if room.arena
-      room.ready_player_count = 0
-      for player in room.players
-        if player.pos == pos
-          player.is_ready = is_ready
+  room.ready_player_count = 0
+  room.ready_player_count_without_host = 0
+  for player in room.players
+    if player.pos == pos
+      player.is_ready = is_ready
+    if player.is_ready
+      ++room.ready_player_count
+      unless player.is_host
+        ++room.ready_player_count_without_host
+  if settings.modules.athletic_check.enabled
+    possibly_max_player = if room.hostinfo.mode == 2 then 4 else 2
+    if room.ready_player_count >= possibly_max_player
+      room.check_athletic()
+  if room.max_player and pos < room.max_player
+    if room.arena # mycard
       p1 = room.players[0]
       p2 = room.players[1]
       if !p1 or !p2
@@ -2832,13 +2859,7 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', true, (buffer, info, client, server, data
         clearInterval room.waiting_for_player_interval
         room.waiting_for_player_interval = null
         room.waiting_for_player_time = settings.modules.arena_mode.ready_time
-    else
-      room.ready_player_count_without_host = 0
-      for player in room.players
-        if player.pos == pos
-          player.is_ready = is_ready
-        unless player.is_host
-          room.ready_player_count_without_host += player.is_ready
+    else # random duel
       if room.ready_player_count_without_host >= room.max_player - 1
         #log.info "all ready"
         setTimeout (()-> wait_room_start(ROOM_all[client.rid], settings.modules.random_duel.ready_time);return), 1000
