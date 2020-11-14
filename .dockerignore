@@ -2,6 +2,7 @@
 jsconfig.json
 coffeelint.json
 .vscode/
+.idea
 
 password.json
 config.*.json

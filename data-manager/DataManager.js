@@ -9,6 +9,8 @@ const typeorm_1 = require("typeorm");
 const CloudReplay_1 = require("./entities/CloudReplay");
 const CloudReplayPlayer_1 = require("./entities/CloudReplayPlayer");
 const Ban_1 = require("./entities/Ban");
+const RandomDuelBan_1 = require("./entities/RandomDuelBan");
+const underscore_1 = __importDefault(require("underscore"));
 class DataManager {
     constructor(config, log) {
         this.config = config;
@@ -122,6 +124,62 @@ class DataManager {
         }
         catch (e) {
             this.log.warn(`Failed to update ban ${JSON.stringify(ban)}: ${e.toString()}`);
+            return null;
+        }
+    }
+    async getRandomDuelBan(ip) {
+        const repo = this.db.getRepository(RandomDuelBan_1.RandomDuelBan);
+        try {
+            const ban = await repo.findOne(ip);
+            //console.log(ip, ban);
+            return ban;
+        }
+        catch (e) {
+            this.log.warn(`Failed to fetch random duel ban ${ip}: ${e.toString()}`);
+            return null;
+        }
+    }
+    async updateRandomDuelBan(ban) {
+        const repo = this.db.getRepository(RandomDuelBan_1.RandomDuelBan);
+        try {
+            await repo.save(ban);
+        }
+        catch (e) {
+            this.log.warn(`Failed to update random duel ban ${ban.ip}: ${e.toString()}`);
+        }
+    }
+    async randomDuelBanPlayer(ip, reason, countadd) {
+        const count = countadd || 1;
+        const repo = this.db.getRepository(RandomDuelBan_1.RandomDuelBan);
+        try {
+            let ban = await repo.findOne(ip);
+            if (ban) {
+                ban.count += count;
+                const banTime = ban.count > 3 ? Math.pow(2, ban.count - 3) * 2 : 0;
+                const banDate = moment_1.default(ban.time);
+                if (moment_1.default().isAfter(banDate)) {
+                    ban.time = moment_1.default().add(banTime, 'm').toDate();
+                }
+                else {
+                    ban.time = moment_1.default(banDate).add(banTime, 'm').toDate();
+                }
+                if (!underscore_1.default.contains(ban.reasons, reason)) {
+                    ban.reasons.push(reason);
+                }
+                ban.needTip = 1;
+            }
+            else {
+                ban = new RandomDuelBan_1.RandomDuelBan();
+                ban.ip = ip;
+                ban.time = moment_1.default().toDate();
+                ban.count = count;
+                ban.reasons = [reason];
+                ban.needTip = 1;
+            }
+            return await repo.save(ban);
+        }
+        catch (e) {
+            this.log.warn(`Failed to update random duel ban ${ip}: ${e.toString()}`);
             return null;
         }
     }

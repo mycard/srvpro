@@ -479,11 +479,8 @@ get_memory_usage = get_memory_usage = ()->
 get_memory_usage()
 setInterval(get_memory_usage, 3000)
 
-Cloud_replay_ids = global.Cloud_replay_ids = []
-
 ROOM_all = global.ROOM_all = []
 ROOM_players_oppentlist = global.ROOM_players_oppentlist = {}
-ROOM_players_banned = global.ROOM_players_banned = []
 ROOM_players_scores = global.ROOM_players_scores = {}
 ROOM_connected_ip = global.ROOM_connected_ip = {}
 ROOM_bad_ip = global.ROOM_bad_ip = {}
@@ -507,20 +504,8 @@ ban_user = global.ban_user = (name) ->
 
 # automatically ban user to use random duel
 ROOM_ban_player = global.ROOM_ban_player = (name, ip, reason, countadd = 1)->
-  return if settings.modules.test_mode.no_ban_player
-  bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
-    ip == bannedplayer.ip
-  if bannedplayer
-    bannedplayer.count = bannedplayer.count + countadd
-    bantime = if bannedplayer.count > 3 then Math.pow(2, bannedplayer.count - 3) * 2 else 0
-    bannedplayer.time = if moment() < bannedplayer.time then moment(bannedplayer.time).add(bantime, 'm') else moment().add(bantime, 'm')
-    bannedplayer.reasons.push(reason) if not _.find bannedplayer.reasons, (bannedreason)->
-      bannedreason == reason
-    bannedplayer.need_tip = true
-  else
-    bannedplayer = {"ip": ip, "time": moment(), "count": countadd, "reasons": [reason], "need_tip": true}
-    ROOM_players_banned.push(bannedplayer)
-  #log.info("banned", name, ip, reason, bannedplayer.count)
+  return if settings.modules.test_mode.no_ban_player or !settings.modules.mysql.enabled
+  await dataManager.randomDuelBanPlayer(ip, reason, countadd)
   return
 
 ROOM_kick = (name, callback)->
@@ -601,7 +586,7 @@ ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player
   if settings.modules.windbot.enabled and (uname[0...2] == 'AI' or (!settings.modules.random_duel.enabled and uname == ''))
     return ROOM_find_or_create_ai(name)
   if settings.modules.random_duel.enabled and (uname == '' or uname == 'S' or uname == 'M' or uname == 'T')
-    return ROOM_find_or_create_random(uname, player_ip)
+    return await ROOM_find_or_create_random(uname, player_ip)
   if room = ROOM_find_by_name(name)
     return room
   else if memory_usage >= 90
@@ -610,21 +595,24 @@ ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player
     return new Room(name)
 
 ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_ip)->
-  bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
-    return player_ip == bannedplayer.ip
-  if bannedplayer
-    if bannedplayer.count > 6 and moment() < bannedplayer.time
-      return {"error": "${random_banned_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_banned_part2}#{moment(bannedplayer.time).fromNow(true)}${random_banned_part3}"}
-    if bannedplayer.count > 3 and moment() < bannedplayer.time and bannedplayer.need_tip and type != 'T'
-      bannedplayer.need_tip = false
-      return {"error": "${random_deprecated_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_deprecated_part2}#{moment(bannedplayer.time).fromNow(true)}${random_deprecated_part3}"}
-    else if bannedplayer.need_tip
-      bannedplayer.need_tip = false
-      return {"error": "${random_warn_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_warn_part2}"}
-    else if bannedplayer.count > 2
-      bannedplayer.need_tip = true
+  if settings.modules.mysql.enabled
+    randomDuelBanRecord = await dataManager.getRandomDuelBan(player_ip)
+    if randomDuelBanRecord
+      if randomDuelBanRecord.count > 6 and moment().isBefore(randomDuelBanRecord.time)
+        return {"error": "${random_banned_part1}#{randomDuelBanRecord.reasons.join('${random_ban_reason_separator}')}${random_banned_part2}#{moment(randomDuelBanRecord.time).fromNow(true)}${random_banned_part3}"}
+      if randomDuelBanRecord.count > 3 and moment().isBefore(randomDuelBanRecord.time) and randomDuelBanRecord.getNeedTip() and type != 'T'
+        randomDuelBanRecord.setNeedTip(false)
+        await dataManager.updateRandomDuelBan(randomDuelBanRecord)
+        return {"error": "${random_deprecated_part1}#{randomDuelBanRecord.reasons.join('${random_ban_reason_separator}')}${random_deprecated_part2}#{moment(randomDuelBanRecord.time).fromNow(true)}${random_deprecated_part3}"}
+      else if randomDuelBanRecord.getNeedTip()
+        randomDuelBanRecord.setNeedTip(false)
+        await dataManager.updateRandomDuelBan(randomDuelBanRecord)
+        return {"error": "${random_warn_part1}#{randomDuelBanRecord.reasons.join('${random_ban_reason_separator}')}${random_warn_part2}"}
+      else if randomDuelBanRecord.count > 2
+        randomDuelBanRecord.setNeedTip(true)
+        await dataManager.updateRandomDuelBan(randomDuelBanRecord)
   max_player = if type == 'T' then 4 else 2
-  playerbanned = (bannedplayer and bannedplayer.count > 3 and moment() < bannedplayer.time)
+  playerbanned = (randomDuelBanRecord and randomDuelBanRecord.count > 3 and moment() < randomDuelBanRecord.time)
   result = _.find ROOM_all, (room)->
     return room and room.random_type != '' and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and !room.windbot and
     ((type == '' and
@@ -2013,7 +2001,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
           if match_permit and !match_permit.permit
             ygopro.stoc_die(client, '${invalid_password_unauthorized}')
             return
-          room = ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
+          room = await ROOM_find_or_create_by_name('M#' + info.pass.slice(8))
           if room
             for player in room.get_playing_player() when player and player.name == client.name
               ygopro.stoc_die(client, '${invalid_password_unauthorized}')
@@ -2211,7 +2199,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
         create_room_name = 'M#' + found.id
         if recover_match
           create_room_name = recover_match[0] + ',' + create_room_name
-        room = ROOM_find_or_create_by_name(create_room_name)
+        room = await ROOM_find_or_create_by_name(create_room_name)
         if room
           room.challonge_info = found
           # room.max_player = 2
@@ -2297,7 +2285,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       buffer = struct.buffer
 
     #log.info 'join_game',info.pass, client.name
-    room = ROOM_find_or_create_by_name(info.pass, client.ip)
+    room = await ROOM_find_or_create_by_name(info.pass, client.ip)
     if !room
       ygopro.stoc_die(client, "${server_full}")
     else if room.error
@@ -2741,7 +2729,7 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server, datas)->
       client.kick_count = if client.kick_count then client.kick_count+1 else 1
       if client.kick_count>=5 and room.random_type
         ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-        ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}")
+        await ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}")
         CLIENT_kick(client)
         return true
       ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_player}", ygopro.constants.COLORS.RED)
@@ -2856,7 +2844,7 @@ wait_room_start = (room, time)->
     else
       for player in room.players
         if player and player.is_host
-          ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}")
+          await ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}")
           ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
           CLIENT_kick(player)
   await return
@@ -3119,8 +3107,8 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     cancel = true
     if client.abuse_count>0
       ygopro.stoc_send_chat(client, "${banned_duel_tip}", ygopro.constants.COLORS.RED)
-      ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
-      ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}", 3)
+      await ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
+      await ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}", 3)
       CLIENT_send_replays(client, room)
       CLIENT_kick(client)
       return true
@@ -3174,7 +3162,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     ROOM_unwelcome(room, client, "${random_ban_reason_abuse}")
   if client.abuse_count>=5
     ygopro.stoc_send_chat_to_room(room, "#{client.name} ${chat_banned}", ygopro.constants.COLORS.RED)
-    ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
+    await ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
   if !cancel and settings.modules.display_watchers and client.is_post_watcher
     ygopro.stoc_send_chat_to_room(room, "#{client.name}: #{msg}", 9)
     return true
@@ -3484,8 +3472,6 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay unless room
-  if settings.modules.cloud_replay.enabled and room.random_type
-    Cloud_replay_ids.push room.cloud_replay_id
   if !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
@@ -3534,15 +3520,12 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
 
 if settings.modules.random_duel.enabled
   setInterval ()->
-    _async.each(ROOM_all, (room, done) ->
-      if !(room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING) and !room.recovered)
-        done()
-        return
+    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING) and !room.recovered
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
         room.last_active_time = moment()
-        ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
+        await ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
         room.scores[room.waiting_for_player.name_vpass] = -9
         #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name_vpass]
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
@@ -3551,18 +3534,12 @@ if settings.modules.random_duel.enabled
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
         ROOM_unwelcome(room, room.waiting_for_player, "${random_ban_reason_AFK}")
-      done()
-      return
-    )
     return
   , 1000
 
 if settings.modules.mycard.enabled
   setInterval ()->
-    _async.each(ROOM_all, (room, done) ->
-      if not (room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.arena and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING) and !room.recovered)
-        done()
-        return
+    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.arena and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING) and !room.recovered
       time_passed = Math.floor((moment() - room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
@@ -3574,15 +3551,10 @@ if settings.modules.mycard.enabled
         CLIENT_kick(room.waiting_for_player)
       else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
         ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
-      done()
-      return
-    )
+    return
     
     if true # settings.modules.arena_mode.punish_quit_before_match
-      _async.each(ROOM_all, (room, done) ->
-        if not (room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2)
-          done()
-          return
+      for room in ROOM_all when room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2
         player = room.get_playing_player()[0]
         if player and player.join_time and !player.arena_quit_free
           waited_time = moment() - player.join_time
@@ -3591,33 +3563,22 @@ if settings.modules.mycard.enabled
             player.arena_quit_free = true
           else if waited_time >= 5000 and waited_time < 6000
             ygopro.stoc_send_chat(player, "${arena_wait_hint}", ygopro.constants.COLORS.BABYBLUE)
-        done()
-        return
-      )
     return
   , 1000
 
 if settings.modules.heartbeat_detection.enabled
   setInterval ()->
-    _async.each ROOM_all, (room, done)->
-      if room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and (room.hostinfo.time_limit == 0 or room.duel_stage != ygopro.constants.DUEL_STAGE.DUELING) and !room.windbot
-        _async.each(room.get_playing_player(), (player, _done)->
-          if player and (room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING or player.selected_preduel)
-            CLIENT_heartbeat_register(player, true)
-          _done()
-        , done)
-      else
-        done()
+    for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and (room.hostinfo.time_limit == 0 or room.duel_stage != ygopro.constants.DUEL_STAGE.DUELING) and !room.windbot
+      for player in room.get_playing_player() when player and (room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING or player.selected_preduel)
+        CLIENT_heartbeat_register(player, true)
     return
   , settings.modules.heartbeat_detection.interval
 
 setInterval ()->
   current_time = moment()
-  _async.each ROOM_all, (room, done)->
-    if room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.hostinfo.auto_death and !room.auto_death_triggered and current_time - moment(room.start_time) > 60000 * room.hostinfo.auto_death
-      room.auto_death_triggered = true
-      room.start_death()
-    done()
+  for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.hostinfo.auto_death and !room.auto_death_triggered and current_time - moment(room.start_time) > 60000 * room.hostinfo.auto_death
+    room.auto_death_triggered = true
+    room.start_death()
 
 , 1000
 

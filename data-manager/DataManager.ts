@@ -5,6 +5,8 @@ import { Connection, ConnectionOptions, createConnection, Transaction } from "ty
 import { CloudReplay } from "./entities/CloudReplay";
 import { CloudReplayPlayer } from "./entities/CloudReplayPlayer";
 import { Ban } from "./entities/Ban";
+import {RandomDuelBan} from "./entities/RandomDuelBan";
+import _ from "underscore";
 
 
 export interface CloudReplayPlayerInfo {
@@ -133,5 +135,60 @@ export class DataManager {
 			this.log.warn(`Failed to update ban ${JSON.stringify(ban)}: ${e.toString()}`);
 			return null;
 		}
+	}
+
+	async getRandomDuelBan(ip: string) {
+		const repo = this.db.getRepository(RandomDuelBan);
+		try {
+			const ban = await repo.findOne(ip);
+			//console.log(ip, ban);
+			return ban;
+		} catch (e) {
+			this.log.warn(`Failed to fetch random duel ban ${ip}: ${e.toString()}`);
+			return null;
+		}
+	}
+
+	async updateRandomDuelBan(ban: RandomDuelBan) {
+		const repo = this.db.getRepository(RandomDuelBan);
+		try {
+			await repo.save(ban);
+		} catch (e) {
+			this.log.warn(`Failed to update random duel ban ${ban.ip}: ${e.toString()}`);
+		}
+	}
+
+	async randomDuelBanPlayer(ip: string, reason: string, countadd?: number){
+		const count = countadd || 1;
+		const repo = this.db.getRepository(RandomDuelBan);
+		try {
+			let ban = await repo.findOne(ip);
+			if(ban) {
+				ban.count += count;
+				const banTime = ban.count > 3 ? Math.pow(2, ban.count - 3) * 2 : 0;
+				const banDate = moment(ban.time);
+				if(moment().isAfter(banDate)) {
+					ban.time = moment().add(banTime, 'm').toDate();
+				} else {
+					ban.time = moment(banDate).add(banTime, 'm').toDate();
+				}
+				if(!_.contains(ban.reasons, reason)) {
+					ban.reasons.push(reason);
+				}
+				ban.needTip = 1;
+			} else {
+				ban = new RandomDuelBan();
+				ban.ip = ip;
+				ban.time = moment().toDate();
+				ban.count = count;
+				ban.reasons = [reason];
+				ban.needTip = 1;
+			}
+			return await repo.save(ban);
+		} catch (e) {
+			this.log.warn(`Failed to update random duel ban ${ip}: ${e.toString()}`);
+			return null;
+		}
+
 	}
 }
