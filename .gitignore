@@ -14,6 +14,7 @@ config.user.bak
 /windbot
 /decks
 /decks_save*
+/deck_log
 /replays
 /node_modules
 /ssl

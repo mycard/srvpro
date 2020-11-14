@@ -175,8 +175,8 @@
         };
       }
 
-      static fromFile(filePath) {
-        return Replay.fromBuffer(fs.readFileSync(filePath));
+      static async fromFile(filePath) {
+        return Replay.fromBuffer((await fs.promises.readFile(filePath)));
       }
 
       static fromBuffer(buffer) {

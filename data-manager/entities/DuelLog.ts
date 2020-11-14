@@ -44,7 +44,7 @@ export class DuelLog {
     getViewJSON(tournamentModeSettings: any) {
         const data = {
             id: this.id,
-            time: moment(this.time).format("YYYY-MM-DD HH-mm-ss"),
+            time: moment(this.time).format("YYYY-MM-DD HH:mm:ss"),
             name: this.name + (tournamentModeSettings.show_info ? " (Duel:" + this.duelCount + ")" : ""),
             roomid: this.roomId,
             cloud_replay_id: "R#" + this.cloudReplayId,
@@ -59,5 +59,6 @@ export class DuelLog {
                 }
             })
         }
+        return data;
     }
 }

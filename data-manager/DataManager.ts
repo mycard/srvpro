@@ -262,13 +262,21 @@ export class DataManager {
 		return allDuelLogs.map(duelLog => duelLog.replayFileName);
 	}
 	async clearDuelLog() {
-		const repo = this.db.getRepository(DuelLog);
-		try {
-			await repo.clear();
-		} catch (e) {
-			this.log.warn(`Failed to clear duel logs: ${e.toString()}`);
-			return [];
-		}
+		//await this.db.transaction(async (mdb) => {
+			const runner = this.db.createQueryRunner();
+			try {
+				await runner.connect();
+				await runner.startTransaction();
+				await runner.query("SET FOREIGN_KEY_CHECKS = 0; ");
+				await runner.clearTable("duel_log_player");
+				await runner.clearTable("duel_log");
+				await runner.query("SET FOREIGN_KEY_CHECKS = 1; ");
+				await runner.commitTransaction();
+			} catch (e) {
+				await runner.rollbackTransaction();
+				this.log.warn(`Failed to clear duel logs: ${e.toString()}`);
+			}
+		//});
 	}
 	async saveDuelLog(name: string, roomId: number, cloudReplayId: number, replayFilename: string, roomMode: number, duelCount: number, playerInfos: DuelLogPlayerInfo[]) {
 		const duelLog = new DuelLog();

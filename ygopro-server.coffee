@@ -107,13 +107,6 @@ try
     olddialogues.dialogues = oldconfig.dialogues
     fs.writeFileSync(olddialogues.file, JSON.stringify(olddialogues, null, 2))
     delete oldconfig.dialogues
-  if oldconfig.modules
-    if oldconfig.modules.tournament_mode and oldconfig.modules.tournament_mode.duel_log
-      oldduellog = {}
-      oldduellog.file = './config/duel_log.json'
-      oldduellog.duel_log = oldconfig.modules.tournament_mode.duel_log
-      fs.writeFileSync(oldduellog.file, JSON.stringify(oldduellog, null, 2))
-      delete oldconfig.oldduellog
   oldbadwords={}
   if oldconfig.ban
     if oldconfig.ban.badword_level0
@@ -139,15 +132,14 @@ try
 catch e
   log.info e unless e.code == 'ENOENT'
 
-setting_save = global.setting_save = (settings, callback) ->
-  if !callback
-    callback = (err) ->
-      if(err)
-        log.warn("setting save fail", err.toString())
-  fs.writeFile(settings.file, JSON.stringify(settings, null, 2), callback)
+setting_save = global.setting_save = (settings) ->
+  try
+    await fs.promises.writeFile(settings.file, JSON.stringify(settings, null, 2))
+  catch e
+    log.warn("setting save fail", e.toString())
   return
 
-setting_change = global.setting_change = (settings, path, val, callback) ->
+setting_change = global.setting_change = (settings, path, val) ->
   # path should be like "modules:welcome"
   log.info("setting changed", path, val) if _.isString(val)
   path=path.split(':')
@@ -160,7 +152,7 @@ setting_change = global.setting_change = (settings, path, val, callback) ->
       target=target[key]
     key = path.shift()
     target[key] = val
-  setting_save(settings, callback)
+  await setting_save(settings)
   return
 
 # 读取配置
@@ -263,11 +255,6 @@ catch
   badwords = global.badwords = default_data.badwords
   setting_save(badwords)
 try
-  duel_log = global.duel_log = loadJSON('./config/duel_log.json')
-catch
-  duel_log = global.duel_log = default_data.duel_log
-  setting_save(duel_log)
-try
   chat_color = global.chat_color = loadJSON('./config/chat_color.json')
 catch
   chat_color = global.chat_color = default_data.chat_color
@@ -333,10 +320,19 @@ if settings.modules.mysql.enabled
   dataManager = global.dataManager = new DataManager(settings.modules.mysql.db, log)
   dataManager.init().then(() -> log.info("Database ready."))
 else
+  log.warn("Some functions may be limited without MySQL .")
   if settings.modules.cloud_replay.enabled
     settings.modules.cloud_replay.enabled = false
     setting_save(settings)
     log.warn("Cloud replay cannot be enabled because no MySQL.")
+  if settings.modules.enable_recover.enabled
+    settings.modules.enable_recover.enabled = false
+    setting_save(settings)
+    log.warn("Recover mode cannot be enabled because no MySQL.")
+  if settings.modules.chat_color.enabled
+    settings.modules.chat_color.enabled = false
+    setting_save(settings)
+    log.warn("Chat color cannot be enabled because no MySQL.")
 
 if settings.modules.mycard.enabled
   pgClient = require('pg').Client
@@ -515,7 +511,7 @@ ROOM_kick = (name, callback)->
       done()
       return
     found = true
-    room.termiate()
+    room.terminate()
     done()
   , (err)->
     callback(null, found)
@@ -592,7 +588,12 @@ ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player
   else if memory_usage >= 90
     return null
   else
-    return new Room(name)
+    room = new Room(name)
+    if room.recover_duel_log_id
+      success = await room.initialize_recover()
+      if !success
+        return {"error": "${cloud_replay_no}"}
+    return room
 
 ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_ip)->
   if settings.modules.mysql.enabled
@@ -1190,14 +1191,7 @@ class Room
         @recovered = true
         @recovering = true
         @recover_from_turn = parseInt(param[4])
-        duel_log_id = parseInt(param[3])
-        @recover_duel_log = _.find(duel_log.duel_log, (duel) ->
-          return duel.id == duel_log_id and duel.roommode != 2 and duel.players[0].deck
-        )
-        if !@recover_duel_log || !fs.existsSync(settings.modules.tournament_mode.replay_path + @recover_duel_log.replay_filename)
-          @error = "${cloud_replay_no}"
-          return
-        @recover_replay = ReplayParser.fromFile(settings.modules.tournament_mode.replay_path + @recover_duel_log.replay_filename)
+        @recover_duel_log_id = parseInt(param[3])
         @recover_buffers = [[], [], [], []]
         @welcome = "${recover_hint}"
 
@@ -1208,12 +1202,16 @@ class Room
     if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) or (@hostinfo.mode == 1 and settings.modules.replay_delay)
       @hostinfo.replay_mode |= 0x2
 
+    if !@recovered
+      @spawn()
+
+  spawn: (firstSeed) ->
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, @hostinfo.duel_rule,
       (if @hostinfo.no_check_deck then 'T' else 'F'), (if @hostinfo.no_shuffle_deck then 'T' else 'F'),
       @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
 
-    if @recovered
-      param.push(@recover_replay.header.seed)
+    if firstSeed
+      param.push(firstSeed)
       seeds = getSeedTimet(2)
       param.push(seeds[i]) for i in [0...2]
     else
@@ -1361,6 +1359,23 @@ class Room
     #ROOM_all.splice(index, 1) unless index == -1
     roomlist.delete this if !@windbot and @established and settings.modules.http.websocket_roomlist
     return
+
+  initialize_recover: ->
+    @recover_duel_log = await dataManager.getDuelLogFromId(@recover_duel_log_id)
+    #console.log(@recover_duel_log, fs.existsSync(settings.modules.tournament_mode.replay_path + @recover_duel_log.replayFileName))
+    if !@recover_duel_log || !fs.existsSync(settings.modules.tournament_mode.replay_path + @recover_duel_log.replayFileName)
+      @terminate()
+      return false
+    try
+      @recover_replay = await ReplayParser.fromFile(settings.modules.tournament_mode.replay_path + @recover_duel_log.replayFileName)
+      @spawn(@recover_replay.header.seed)
+      return true
+    catch e
+      log.warn("LOAD RECOVER REPLAY FAIL", e.toString())
+      @terminate()
+      return false
+
+
 
   get_playing_player: ->
     playing_player = []
@@ -1553,19 +1568,22 @@ class Room
     ygopro.stoc_send_chat_to_room(this, "${death_cancel}", ygopro.constants.COLORS.BABYBLUE)
     return true
   
-  termiate: ->
+  terminate: ->
     if @duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
       @scores[@dueling_players[0].name_vpass] = 0
       @scores[@dueling_players[1].name_vpass] = 0
     @kicked = true
     @send_replays()
-    @process.kill()
+    if @process
+      try
+        @process.kill()
+      catch e
     @delete()
   
   finish_recover: (fail) ->
     if fail
       ygopro.stoc_send_chat_to_room(this, "${recover_fail}", ygopro.constants.COLORS.RED)
-      @termiate()
+      @terminate()
     else
       ygopro.stoc_send_chat_to_room(this, "${recover_success}", ygopro.constants.COLORS.BABYBLUE)
       @recovering = false
@@ -1861,26 +1879,14 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
 
   else if info.pass.toUpperCase()=="RC" and settings.modules.tournament_mode.enable_recover
     ygopro.stoc_send_chat(client,"${recover_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
-    available_logs = duel_log.duel_log.filter((duel) ->
-      return duel.id and duel.players[0].deck and duel.roommode != 2 and _.any(duel.players, (player) ->
-        return player.real_name == client.name_vpass
-      )
-    ).slice(0, 8)
-    _.each(available_logs, (duel) ->
-      player_names = duel.players[0].real_name.split("$")[0] + (if duel.players[2] then "+" + duel.players[2].real_name.split("$")[0] else "") +
-                    " VS " +
-                   (if duel.players[1] then duel.players[1].real_name.split("$")[0] else "AI") +
-                   (if duel.players[3] then "+" + duel.players[3].real_name.split("$")[0] else "")
-      ygopro.stoc_send_chat(client,"<#{duel.id}> #{player_names} #{duel.time}", ygopro.constants.COLORS.BABYBLUE)
-    )
-    # 强行等待异步执行完毕_(:з」∠)_
-    setTimeout (()->
-      ygopro.stoc_send client, 'ERROR_MSG',{
-        msg: 1
-        code: 9
-      }
-      CLIENT_kick(client)
-      return), 500
+    available_logs = await dataManager.getDuelLogFromRecoverSearch(client.name_vpass)
+    for duelLog in available_logs
+      ygopro.stoc_send_chat(client, duelLog.getViewString(), ygopro.constants.COLORS.BABYBLUE)
+    ygopro.stoc_send client, 'ERROR_MSG',{
+      msg: 1
+      code: 9
+    }
+    CLIENT_kick(client)
 
   else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.cloud_replay.enabled
     replay_id=info.pass.split("#")[1]
@@ -2128,6 +2134,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       if(err)
         ygopro.stoc_die(client, err)
         return
+
+
       create_room_with_action(data.get_user.original, data.get_user.decrypted, data.match_permit)
     )
 
@@ -3219,13 +3227,14 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
     room.last_active_time = moment()
   if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.recovering
     recover_player_data = _.find(room.recover_duel_log.players, (player) ->
-      return player.real_name == client.name_vpass and _.isEqual(buffer, Buffer.from(player.deckbuf, "base64"))
+      return player.realName == client.name_vpass and buffer.toString("base64") == player.startDeckBuffer
     )
     if recover_player_data
-      struct.set("mainc", recover_player_data.deck.main.length)
-      struct.set("sidec", recover_player_data.deck.side.length)
-      struct.set("deckbuf", recover_player_data.deck.main.concat(recover_player_data.deck.side))
-      if recover_player_data.is_first
+      recoveredDeck = recover_player_data.getCurrentDeck()
+      struct.set("mainc", recoveredDeck.main.length)
+      struct.set("sidec", recoveredDeck.side.length)
+      struct.set("deckbuf", recoveredDeck.main.concat(recoveredDeck.side))
+      if recover_player_data.isFirst
         room.determine_firstgo = client
     else
       struct.set("mainc", 1)
@@ -3475,10 +3484,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   if !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
-  if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe or settings.modules.tournament_mode.enable_recover
+  if settings.modules.mysql.enabled
     if client.pos == 0
-      dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
-      replay_filename=dueltime
+      replay_filename=moment().format("YYYY-MM-DD HH-mm-ss")
       if room.hostinfo.mode != 2
         for player,i in room.dueling_players
           replay_filename=replay_filename + (if i > 0 then " VS " else " ") + player.name
@@ -3486,32 +3494,28 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
         for player,i in room.dueling_players
           replay_filename=replay_filename + (if i > 0 then (if i == 2 then " VS " else " & ") else " ") + player.name
       replay_filename=replay_filename.replace(/[\/\\\?\*]/g, '_')+".yrp"
-      duellog = {
-        id: duel_log.duel_log.length + 1,
-        time: dueltime,
-        name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
-        roomid: room.process_pid.toString(),
-        cloud_replay_id: "R#"+room.cloud_replay_id,
-        replay_filename: replay_filename,
-        roommode: room.hostinfo.mode,
-        players: (for player in room.dueling_players
-          real_name: player.name_vpass,
-          deckbuf: player.start_deckbuf.toString("base64"),
+      playerInfos = room.dueling_players.map((player) ->
+        return {
+          name: player.name
+          pos: player.pos
+          realName: player.name_vpass
+          startDeckBuffer: player.start_deckbuf
           deck: {
             main: player.main,
             side: player.side
           }
-          pos: player.pos
-          is_first: player.is_first
-          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
+          isFirst: player.is_first
           winner: player.pos == room.winner
-        )
-      }
-      duel_log.duel_log.unshift duellog
-      setting_save(duel_log)
+          ip: player.ip
+          score: room.scores[player.name_vpass]
+          lp: if player.lp? then player.lp else room.hostinfo.start_lp
+          cardCount: if player.card_count? then player.card_count else room.hostinfo.start_hand
+        }
+      )
       fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
+      dataManager.saveDuelLog(room.name, room.process_pid.toString(), room.cloud_replay_id, replay_filename, room.hostinfo.mode, room.duel_count, playerInfos) # no synchronize here because too slow
     if settings.modules.cloud_replay.enabled and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
       ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
     await return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
@@ -3671,17 +3675,17 @@ if settings.modules.http
         )
 
 
-    else if u.pathname == '/api/duellog' and settings.modules.tournament_mode.enabled
+    else if u.pathname == '/api/duellog' and settings.modules.mysql.enabled
       if !await auth.auth(u.query.username, u.query.pass, "duel_log", "duel_log")
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
         return
       else
         response.writeHead(200)
-        duellog = JSON.stringify duel_log.duel_log, null, 2
+        duellog = JSON.stringify(await dataManager.getDuelLogJSON(settings.modules.tournament_mode), null, 2)
         response.end(addCallback(u.query.callback, duellog))
 
-    else if u.pathname == '/api/archive.zip' and settings.modules.tournament_mode.enabled
+    else if u.pathname == '/api/archive.zip' and settings.modules.mysql.enabled
       if !await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay_archive")
         response.writeHead(403)
         response.end("Invalid password.")
@@ -3691,9 +3695,9 @@ if settings.modules.http
           archive_name = moment().format('YYYY-MM-DD HH-mm-ss') + ".zip"
           archive_args = ["a", "-mx0", "-y", archive_name]
           check = false
-          for replay in duel_log.duel_log
+          for filename in await dataManager.getAllReplayFilenames()
             check = true
-            archive_args.push(replay.replay_filename)
+            archive_args.push(filename)
           if !check
             response.writeHead(403)
             response.end("Duel logs not found.")
@@ -3724,7 +3728,7 @@ if settings.modules.http
           response.writeHead(403)
           response.end("Failed reading replays. " + error)
 
-    else if u.pathname == '/api/clearlog' and settings.modules.tournament_mode.enabled
+    else if u.pathname == '/api/clearlog' and settings.modules.mysql.enabled
       if !await auth.auth(u.query.username, u.query.pass, "clear_duel_log", "clear_duel_log")
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
@@ -3732,15 +3736,14 @@ if settings.modules.http
       else
         response.writeHead(200)
         if settings.modules.tournament_mode.log_save_path
-          fs.writeFile(settings.modules.tournament_mode.log_save_path + 'duel_log.' + moment().format('YYYY-MM-DD HH-mm-ss') + '.json', JSON.stringify(duel_log, null, 2), (err) ->
+          fs.writeFile(settings.modules.tournament_mode.log_save_path + 'duel_log.' + moment().format('YYYY-MM-DD HH-mm-ss') + '.json', JSON.stringify(await dataManager.getDuelLogJSON(settings.modules.tournament_mode), null, 2), (err) ->
             if err
               log.warn 'DUEL LOG SAVE ERROR', err
           )
-        duel_log.duel_log = []
-        setting_save(duel_log)
+        await dataManager.clearDuelLog()
         response.end(addCallback(u.query.callback, "[{name:'Success'}]"))
 
-    else if _.startsWith(u.pathname, '/api/replay') and settings.modules.tournament_mode.enabled
+    else if _.startsWith(u.pathname, '/api/replay') and settings.modules.mysql.enabled
       if !await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay")
         response.writeHead(403)
         response.end("密码错误")
@@ -3791,7 +3794,7 @@ if settings.modules.http
           u.query.stop = false
         response.writeHead(200)
         try
-          await util.promisify(setting_change)(settings, 'modules:stop', u.query.stop)
+          await setting_change(settings, 'modules:stop', u.query.stop)
           response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
         catch err
           response.end(addCallback(u.query.callback, "['stop fail', '" + u.query.stop + "']"))
@@ -3802,7 +3805,7 @@ if settings.modules.http
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         try
-          await util.promisify(setting_change)(settings, 'modules:welcome', u.query.welcome)
+          await setting_change(settings, 'modules:welcome', u.query.welcome)
           response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
         catch err
           response.end(addCallback(u.query.callback, "['welcome fail', '" + u.query.welcome + "']"))
@@ -3952,6 +3955,13 @@ if settings.modules.http
       roomlist.init https_server, ROOM_all
     https_server.listen settings.modules.http.ssl.port
 
+mkdirList = [
+  "./plugins",
+  settings.modules.tournament_mode.deck_path,
+  settings.modules.tournament_mode.replay_path,
+  settings.modules.tournament_mode.log_save_path,
+  settings.modules.deck_log.local
+]
 if not fs.existsSync('./plugins')
   fs.mkdirSync('./plugins')
 

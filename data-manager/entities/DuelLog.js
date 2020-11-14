@@ -27,7 +27,7 @@ let DuelLog = class DuelLog {
     getViewJSON(tournamentModeSettings) {
         const data = {
             id: this.id,
-            time: moment_1.default(this.time).format("YYYY-MM-DD HH-mm-ss"),
+            time: moment_1.default(this.time).format("YYYY-MM-DD HH:mm:ss"),
             name: this.name + (tournamentModeSettings.show_info ? " (Duel:" + this.duelCount + ")" : ""),
             roomid: this.roomId,
             cloud_replay_id: "R#" + this.cloudReplayId,
@@ -42,6 +42,7 @@ let DuelLog = class DuelLog {
                 };
             })
         };
+        return data;
     }
 };
 __decorate([
