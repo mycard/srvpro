@@ -330,8 +330,13 @@ users_cache = {}
 
 if settings.modules.mysql.enabled
   DataManager = require('./data-manager/DataManager.js').DataManager
-  dataManager = new DataManager(settings.modules.mysql.db, log)
+  dataManager = global.dataManager = new DataManager(settings.modules.mysql.db, log)
   dataManager.init().then(() -> log.info("Database ready."))
+else
+  if settings.modules.cloud_replay.enabled
+    settings.modules.cloud_replay.enabled = false
+    setting_save(settings)
+    log.warn("Cloud replay cannot be enabled because no MySQL.")
 
 if settings.modules.mycard.enabled
   pgClient = require('pg').Client
@@ -484,27 +489,18 @@ ROOM_connected_ip = global.ROOM_connected_ip = {}
 ROOM_bad_ip = global.ROOM_bad_ip = {}
 
 # ban a user manually and permanently
-ban_user = global.ban_user = (name, callback) ->
-  settings.ban.banned_user.push(name)
-  setting_save(settings)
-  bad_ip = []
-  _async.each(ROOM_all, (room, done)-> 
-    if !(room and room.established)
-      done()
-      return
-    _async.each(["players", "watchers"], (player_type, _done)->
-      _async.each(room[player_type], (player, __done)->
-        if player and (player.name == name or bad_ip.indexOf(player.ip) != -1)
-          bad_ip.push(player.ip)
-          ROOM_bad_ip[bad_ip]=99
-          settings.ban.banned_ip.push(player.ip)
-          ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-          CLIENT_send_replays(player, room)
-          CLIENT_kick(player)
-        __done()
-      , _done)
-    , done)
-  , callback)
+ban_user = global.ban_user = (name) ->
+  bans = [dataManager.getBan(name, null)]
+  for room in ROOM_all when room and room.established
+    for playerType in ["players", "watchers"]
+      for player in room[playerType] when player.name == name or bans.find(ban => player.ip == ban.ip)
+        bans.push(dataManager.getBan(name, player.ip))
+        ROOM_bad_ip[player.ip]=99
+        ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
+        CLIENT_send_replays(player, room)
+        CLIENT_kick(player)
+  for ban in bans
+    await dataManager.banPlayer(ban)
   return
 
 # automatically ban user to use random duel
@@ -2254,13 +2250,15 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     log.warn("MULTI LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${too_much_connection}" + client.ip)
 
-  else if _.indexOf(settings.ban.banned_user, client.name) > -1 #账号被封
-    settings.ban.banned_ip.push(client.ip)
-    setting_save(settings)
+  else if settings.modules.mysql.enabled and await dataManager.checkBan("name", client.name) #账号被封
+    exactBan = await dataManager.checkBanWithNameAndIP(client.name, client.ip)
+    if !exactBan
+      exactBan = dataManager.getBan(client.name, client.ip)
+      await dataManager.banPlayer(exactBan)
     log.warn("BANNED USER LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${banned_user_login}")
 
-  else if _.indexOf(settings.ban.banned_ip, client.ip) > -1 #IP被封
+  else if settings.modules.mysql.enabled and await dataManager.checkBan("ip", client.ip) #IP被封
     log.warn("BANNED IP LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${banned_ip_login}")
 
@@ -3885,13 +3883,15 @@ if settings.modules.http
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        ban_user(u.query.ban, (err)->
+        try
+          await ban_user(u.query.ban)
+        catch e
+          log.warn("ban fail", e.toString())
           response.writeHead(200)
-          if(err)
-            response.end(addCallback(u.query.callback, "['ban fail', '" + u.query.ban + "']"))
-          else
-            response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"))
-        )
+          response.end(addCallback(u.query.callback, "['ban fail', '" + u.query.ban + "']"))
+          return
+        response.writeHead(200)
+        response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"))
 
       else if u.query.kick
         if !await auth.auth(u.query.username, u.query.pass, "kick_user", "kick_user")

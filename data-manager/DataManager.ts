@@ -2,8 +2,9 @@ import moment from "moment";
 import { Moment } from "moment";
 import bunyan from "bunyan";
 import { Connection, ConnectionOptions, createConnection, Transaction } from "typeorm";
-import { CloudReplay} from "./entities/CloudReplay";
+import { CloudReplay } from "./entities/CloudReplay";
 import { CloudReplayPlayer } from "./entities/CloudReplayPlayer";
+import { Ban } from "./entities/Ban";
 
 
 export interface CloudReplayPlayerInfo {
@@ -34,22 +35,22 @@ export class DataManager {
 	async getCloudReplaysFromKey(key: string) {
 		try {
 			const replays = await this.db.createQueryBuilder(CloudReplay, "replay")
-			.where("exists (select id from cloud_replay_player where cloud_replay_player.cloudReplayId = replay.id and cloud_replay_player.key = :key)", { key })
-			.orderBy("replay.date", "DESC")
-			.limit(10)
-			.leftJoinAndSelect("replay.players", "player")
-			.getMany();
+				.where("exists (select id from cloud_replay_player where cloud_replay_player.cloudReplayId = replay.id and cloud_replay_player.key = :key)", { key })
+				.orderBy("replay.date", "DESC")
+				.limit(10)
+				.leftJoinAndSelect("replay.players", "player")
+				.getMany();
 			return replays;
 		} catch (e) {
 			this.log.warn(`Failed to load replay of ${key}: ${e.toString()}`);
 			return [];
 		}
-		
+
 	}
 
 	async getCloudReplayFromId(id: number) {
 		try {
-			return await this.db.getRepository(CloudReplay).findOne(id, {relations: ["players"]});
+			return await this.db.getRepository(CloudReplay).findOne(id, { relations: ["players"] });
 		} catch (e) {
 			this.log.warn(`Failed to load replay R#${id}: ${e.toString()}`);
 			return null;
@@ -91,4 +92,46 @@ export class DataManager {
 		});
 	}
 
+	async checkBan(field: string, value: string) {
+		const banQuery: any = {};
+		banQuery[field] = value;
+		try {
+			return await this.db.getRepository(Ban).findOne(banQuery);
+		} catch (e) {
+			this.log.warn(`Failed to load ban ${field} ${value}: ${e.toString()}`);
+			return null;
+		}
+	}
+
+	async checkBanWithNameAndIP(name: string, ip: string) {
+		try {
+			return await this.db.getRepository(Ban).findOne({ name, ip });
+		} catch (e) {
+			this.log.warn(`Failed to load ban ${name} ${ip}: ${e.toString()}`);
+			return null;
+		}
+	}
+
+	getBan(name: string, ip: string) {
+		const ban = new Ban();
+		ban.ip = ip;
+		ban.name = name;
+		return ban;
+	}
+
+	async banPlayer(ban: Ban) {
+		try {
+			const repo = this.db.getRepository(Ban);
+			if (await repo.findOne({
+				ip: ban.ip,
+				name: ban.name
+			})) {
+				return;
+			}
+			return await repo.save(ban);
+		} catch (e) {
+			this.log.warn(`Failed to update ban ${JSON.stringify(ban)}: ${e.toString()}`);
+			return null;
+		}
+	}
 }

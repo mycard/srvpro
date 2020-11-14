@@ -426,10 +426,16 @@
 
   if (settings.modules.mysql.enabled) {
     DataManager = require('./data-manager/DataManager.js').DataManager;
-    dataManager = new DataManager(settings.modules.mysql.db, log);
+    dataManager = global.dataManager = new DataManager(settings.modules.mysql.db, log);
     dataManager.init().then(function() {
       return log.info("Database ready.");
     });
+  } else {
+    if (settings.modules.cloud_replay.enabled) {
+      settings.modules.cloud_replay.enabled = false;
+      setting_save(settings);
+      log.warn("Cloud replay cannot be enabled because no MySQL.");
+    }
   }
 
   if (settings.modules.mycard.enabled) {
@@ -633,30 +639,36 @@
   ROOM_bad_ip = global.ROOM_bad_ip = {};
 
   // ban a user manually and permanently
-  ban_user = global.ban_user = function(name, callback) {
-    var bad_ip;
-    settings.ban.banned_user.push(name);
-    setting_save(settings);
-    bad_ip = [];
-    _async.each(ROOM_all, function(room, done) {
-      if (!(room && room.established)) {
-        done();
-        return;
-      }
-      return _async.each(["players", "watchers"], function(player_type, _done) {
-        return _async.each(room[player_type], function(player, __done) {
-          if (player && (player.name === name || bad_ip.indexOf(player.ip) !== -1)) {
-            bad_ip.push(player.ip);
-            ROOM_bad_ip[bad_ip] = 99;
-            settings.ban.banned_ip.push(player.ip);
+  ban_user = global.ban_user = async function(name) {
+    var ban, bans, len3, len4, len5, len6, n, o, p, player, playerType, q, ref3, ref4, room;
+    bans = [dataManager.getBan(name, null)];
+    for (n = 0, len3 = ROOM_all.length; n < len3; n++) {
+      room = ROOM_all[n];
+      if (room && room.established) {
+        ref3 = ["players", "watchers"];
+        for (o = 0, len4 = ref3.length; o < len4; o++) {
+          playerType = ref3[o];
+          ref4 = room[playerType];
+          for (p = 0, len5 = ref4.length; p < len5; p++) {
+            player = ref4[p];
+            if (!(player.name === name || bans.find(ban(() => {
+              return player.ip === ban.ip;
+            })))) {
+              continue;
+            }
+            bans.push(dataManager.getBan(name, player.ip));
+            ROOM_bad_ip[player.ip] = 99;
             ygopro.stoc_send_chat_to_room(room, `${player.name} \${kicked_by_system}`, ygopro.constants.COLORS.RED);
             CLIENT_send_replays(player, room);
             CLIENT_kick(player);
           }
-          return __done();
-        }, _done);
-      }, done);
-    }, callback);
+        }
+      }
+    }
+    for (q = 0, len6 = bans.length; q < len6; q++) {
+      ban = bans[q];
+      await dataManager.banPlayer(ban);
+    }
   };
 
   // automatically ban user to use random duel
@@ -2313,7 +2325,6 @@
           ygopro.stoc_die(client, "${cloud_replay_no}");
           return;
         }
-        console.log(replay.players);
         buffer = replay.toBuffer();
         replay_buffer = null;
         try {
@@ -2506,7 +2517,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', true, async function(buffer, info, client, server, datas) {
-    var available_logs, check_buffer_indentity, create_room_with_action, index, len3, len4, len5, n, name, o, p, pre_room, recover_match, ref3, ref4, replay, replay_id, replays, room, struct;
+    var available_logs, check_buffer_indentity, create_room_with_action, exactBan, index, len3, len4, len5, n, name, o, p, pre_room, recover_match, ref3, ref4, replay, replay_id, replays, room, struct;
     //log.info info
     info.pass = info.pass.trim();
     client.pass = info.pass;
@@ -2975,12 +2986,15 @@
     } else if (ROOM_connected_ip[client.ip] > 5) {
       log.warn("MULTI LOGIN", client.name, client.ip);
       ygopro.stoc_die(client, "${too_much_connection}" + client.ip);
-    } else if (_.indexOf(settings.ban.banned_user, client.name) > -1) { //账号被封
-      settings.ban.banned_ip.push(client.ip);
-      setting_save(settings);
+    } else if (settings.modules.mysql.enabled && (await dataManager.checkBan("name", client.name))) { //账号被封
+      exactBan = (await dataManager.checkBanWithNameAndIP(client.name, client.ip));
+      if (!exactBan) {
+        exactBan = dataManager.getBan(client.name, client.ip);
+        await dataManager.banPlayer(exactBan);
+      }
       log.warn("BANNED USER LOGIN", client.name, client.ip);
       ygopro.stoc_die(client, "${banned_user_login}");
-    } else if (_.indexOf(settings.ban.banned_ip, client.ip) > -1) { //IP被封
+    } else if (settings.modules.mysql.enabled && (await dataManager.checkBan("ip", client.ip))) { //IP被封
       log.warn("BANNED IP LOGIN", client.name, client.ip);
       ygopro.stoc_die(client, "${banned_ip_login}");
     } else if (!settings.modules.tournament_mode.enabled && !settings.modules.challonge.enabled && _.any(badwords.level3, function(badword) {
@@ -5163,14 +5177,17 @@
             response.end(addCallback(u.query.callback, "['密码错误', 0]"));
             return;
           }
-          ban_user(u.query.ban, function(err) {
+          try {
+            await ban_user(u.query.ban);
+          } catch (error1) {
+            e = error1;
+            log.warn("ban fail", e.toString());
             response.writeHead(200);
-            if (err) {
-              return response.end(addCallback(u.query.callback, "['ban fail', '" + u.query.ban + "']"));
-            } else {
-              return response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"));
-            }
-          });
+            response.end(addCallback(u.query.callback, "['ban fail', '" + u.query.ban + "']"));
+            return;
+          }
+          response.writeHead(200);
+          response.end(addCallback(u.query.callback, "['ban ok', '" + u.query.ban + "']"));
         } else if (u.query.kick) {
           if (!(await auth.auth(u.query.username, u.query.pass, "kick_user", "kick_user"))) {
             response.writeHead(200);

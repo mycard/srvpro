@@ -8,6 +8,7 @@ const moment_1 = __importDefault(require("moment"));
 const typeorm_1 = require("typeorm");
 const CloudReplay_1 = require("./entities/CloudReplay");
 const CloudReplayPlayer_1 = require("./entities/CloudReplayPlayer");
+const Ban_1 = require("./entities/Ban");
 class DataManager {
     constructor(config, log) {
         this.config = config;
@@ -51,9 +52,8 @@ class DataManager {
         try {
             return await this.db.createQueryBuilder(CloudReplay_1.CloudReplay, "replay")
                 .orderBy("rand()")
-                .limit(4)
+                .limit(4) //there may be 4 players
                 .leftJoinAndSelect("replay.players", "player")
-                .printSql()
                 .getOne();
         }
         catch (e) {
@@ -82,6 +82,48 @@ class DataManager {
                 this.log.warn(`Failed to save replay R#${replay.id}: ${e.toString()}`);
             }
         });
+    }
+    async checkBan(field, value) {
+        const banQuery = {};
+        banQuery[field] = value;
+        try {
+            return await this.db.getRepository(Ban_1.Ban).findOne(banQuery);
+        }
+        catch (e) {
+            this.log.warn(`Failed to load ban ${field} ${value}: ${e.toString()}`);
+            return null;
+        }
+    }
+    async checkBanWithNameAndIP(name, ip) {
+        try {
+            return await this.db.getRepository(Ban_1.Ban).findOne({ name, ip });
+        }
+        catch (e) {
+            this.log.warn(`Failed to load ban ${name} ${ip}: ${e.toString()}`);
+            return null;
+        }
+    }
+    getBan(name, ip) {
+        const ban = new Ban_1.Ban();
+        ban.ip = ip;
+        ban.name = name;
+        return ban;
+    }
+    async banPlayer(ban) {
+        try {
+            const repo = this.db.getRepository(Ban_1.Ban);
+            if (await repo.findOne({
+                ip: ban.ip,
+                name: ban.name
+            })) {
+                return;
+            }
+            return await repo.save(ban);
+        }
+        catch (e) {
+            this.log.warn(`Failed to update ban ${JSON.stringify(ban)}: ${e.toString()}`);
+            return null;
+        }
     }
 }
 exports.DataManager = DataManager;

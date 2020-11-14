@@ -320,8 +320,6 @@
     }
   },
   "ban": {
-    "banned_user": [],
-    "banned_ip": [],
     "illegal_id": [
       "^Lv\\.-*\\d+\\s*(.*)",
       "^VIP\\.\\d+\\s*(.*)"
