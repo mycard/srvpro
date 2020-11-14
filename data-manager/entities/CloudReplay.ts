@@ -1,5 +1,5 @@
-import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
-import { CloudReplayPlayer } from "./CloudReplayPlayer";
+import {Column, Entity, OneToMany, PrimaryColumn} from "typeorm";
+import {CloudReplayPlayer} from "./CloudReplayPlayer";
 import _ from "underscore";
 import moment from "moment";
 

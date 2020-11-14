@@ -9,38 +9,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RandomDuelBan = void 0;
+exports.BasePlayer = void 0;
 const typeorm_1 = require("typeorm");
-let RandomDuelBan = class RandomDuelBan {
-    setNeedTip(need) {
-        this.needTip = need ? 1 : 0;
-    }
-    getNeedTip() {
-        return this.needTip > 0 ? true : false;
-    }
-};
+class BasePlayer {
+}
 __decorate([
-    typeorm_1.PrimaryColumn({ type: "varchar", length: 64 }),
+    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
+    __metadata("design:type", Number)
+], BasePlayer.prototype, "id", void 0);
+__decorate([
+    typeorm_1.Column({ type: "varchar", length: 20 }),
     __metadata("design:type", String)
-], RandomDuelBan.prototype, "ip", void 0);
+], BasePlayer.prototype, "name", void 0);
 __decorate([
-    typeorm_1.Column("datetime"),
-    __metadata("design:type", Date)
-], RandomDuelBan.prototype, "time", void 0);
-__decorate([
-    typeorm_1.Column("smallint"),
+    typeorm_1.Column({ type: "tinyint" }),
     __metadata("design:type", Number)
-], RandomDuelBan.prototype, "count", void 0);
-__decorate([
-    typeorm_1.Column({ type: "simple-array" }),
-    __metadata("design:type", Array)
-], RandomDuelBan.prototype, "reasons", void 0);
-__decorate([
-    typeorm_1.Column({ type: "tinyint", unsigned: true }),
-    __metadata("design:type", Number)
-], RandomDuelBan.prototype, "needTip", void 0);
-RandomDuelBan = __decorate([
-    typeorm_1.Entity()
-], RandomDuelBan);
-exports.RandomDuelBan = RandomDuelBan;
-//# sourceMappingURL=RandomDuelBan.js.map
+], BasePlayer.prototype, "pos", void 0);
+exports.BasePlayer = BasePlayer;
+//# sourceMappingURL=BasePlayer.js.map

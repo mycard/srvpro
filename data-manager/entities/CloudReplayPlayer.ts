@@ -1,21 +1,13 @@
-import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { CloudReplayPlayerInfo } from "../DataManager";
-import { CloudReplay } from "./CloudReplay";
+import {Column, Entity, Index, ManyToOne} from "typeorm";
+import {CloudReplayPlayerInfo} from "../DataManager";
+import {CloudReplay} from "./CloudReplay";
+import {BasePlayer} from "./BasePlayer";
 
 @Entity()
-export class CloudReplayPlayer {
-	@PrimaryGeneratedColumn({unsigned: true, type: "bigint"})
-	id: number;
-
+export class CloudReplayPlayer extends BasePlayer {
 	@Index()
 	@Column({ type: "varchar", length: 40 })
 	key: string;
-
-	@Column({ type: "varchar", length: 20 })
-	name: string;
-
-	@Column({ type: "tinyint" })
-	pos: number;
 
 	@ManyToOne(() => CloudReplay, replay => replay.players)
 	cloudReplay: CloudReplay;

@@ -1,19 +1,37 @@
 import moment from "moment";
 import { Moment } from "moment";
 import bunyan from "bunyan";
-import { Connection, ConnectionOptions, createConnection, Transaction } from "typeorm";
+import {Connection, ConnectionOptions, createConnection, Transaction} from "typeorm";
 import { CloudReplay } from "./entities/CloudReplay";
 import { CloudReplayPlayer } from "./entities/CloudReplayPlayer";
 import { Ban } from "./entities/Ban";
 import {RandomDuelBan} from "./entities/RandomDuelBan";
 import _ from "underscore";
+import {DuelLog} from "./entities/DuelLog";
+import {Deck} from "./DeckEncoder";
+import {DuelLogPlayer} from "./entities/DuelLogPlayer";
 
-
-export interface CloudReplayPlayerInfo {
+interface BasePlayerInfo {
 	name: string;
-	key: string;
 	pos: number
 }
+
+export interface CloudReplayPlayerInfo extends BasePlayerInfo {
+	key: string;
+}
+
+export interface DuelLogPlayerInfo extends BasePlayerInfo {
+	realName: string;
+	startDeckBuffer: Buffer;
+	deck: Deck;
+	isFirst: boolean;
+	winner: boolean;
+	ip: string;
+	score: number;
+	lp: number;
+	cardCount: number;
+}
+
 
 export class DataManager {
 	config: ConnectionOptions;
@@ -158,7 +176,7 @@ export class DataManager {
 		}
 	}
 
-	async randomDuelBanPlayer(ip: string, reason: string, countadd?: number){
+	async randomDuelBanPlayer(ip: string, reason: string, countadd?: number) {
 		const count = countadd || 1;
 		const repo = this.db.getRepository(RandomDuelBan);
 		try {
@@ -189,6 +207,90 @@ export class DataManager {
 			this.log.warn(`Failed to update random duel ban ${ip}: ${e.toString()}`);
 			return null;
 		}
+
+	}
+
+	async getAllDuelLogs() {
+		const repo = this.db.getRepository(DuelLog);
+		try {
+			const allDuelLogs = await repo.find({relations: ["players"]});
+			return allDuelLogs;
+		} catch (e) {
+			this.log.warn(`Failed to fetch duel logs: ${e.toString()}`);
+			return [];
+		}
+
+	}
+
+	async getDuelLogFromId(id: number) {
+		const repo = this.db.getRepository(DuelLog);
+		try {
+			const duelLog = await repo.findOne(id, {relations: ["players"]});
+			return duelLog;
+		} catch (e) {
+			this.log.warn(`Failed to fetch duel logs: ${e.toString()}`);
+			return null;
+		}
+
+	}
+
+	async getDuelLogFromRecoverSearch(realName: string) {
+		const repo = this.db.getRepository(DuelLog);
+		try {
+			const duelLogs = await repo.createQueryBuilder("duelLog")
+				.where("startDeckBuffer is not null and currentDeckBuffer is not null and roomMode != 2 and exists (select id from duel_log_player where duel_log_player.duelLogId = duelLog.id and duel_log_player.realName = :realName)", { realName })
+				.orderBy("duelLog.id", "DESC")
+				.limit(10)
+				.leftJoinAndSelect("duelLog.players", "player")
+				.getMany();
+			return duelLogs;
+		} catch (e) {
+			this.log.warn(`Failed to fetch duel logs: ${e.toString()}`);
+			return null;
+		}
+
+	}
+
+
+
+	async getDuelLogJSON(tournamentModeSettings: any) {
+		const allDuelLogs = await this.getAllDuelLogs();
+		return allDuelLogs.map(duelLog => duelLog.getViewJSON(tournamentModeSettings));
+	}
+	async getAllReplayFilenames() {
+		const allDuelLogs = await this.getAllDuelLogs();
+		return allDuelLogs.map(duelLog => duelLog.replayFileName);
+	}
+	async clearDuelLog() {
+		const repo = this.db.getRepository(DuelLog);
+		try {
+			await repo.clear();
+		} catch (e) {
+			this.log.warn(`Failed to clear duel logs: ${e.toString()}`);
+			return [];
+		}
+	}
+	async saveDuelLog(name: string, roomId: number, cloudReplayId: number, replayFilename: string, roomMode: number, duelCount: number, playerInfos: DuelLogPlayerInfo[]) {
+		const duelLog = new DuelLog();
+		duelLog.name = name;
+		duelLog.time = moment().toDate();
+		duelLog.roomId = roomId;
+		duelLog.cloudReplayId = cloudReplayId;
+		duelLog.replayFileName = replayFilename;
+		duelLog.roomMode = roomMode;
+		duelLog.duelCount = duelCount;
+		const players = playerInfos.map(p => DuelLogPlayer.fromDuelLogPlayerInfo(p));
+		await this.db.transaction(async (mdb) => {
+			try {
+				const savedDuelLog = await mdb.save(duelLog);
+				for (let player of players) {
+					player.duelLog = savedDuelLog;
+				}
+				await mdb.save(players);
+			} catch (e) {
+				this.log.warn(`Failed to save duel log ${name}: ${e.toString()}`);
+			}
+		});
 
 	}
 }

@@ -11,27 +11,24 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Ban = void 0;
 const typeorm_1 = require("typeorm");
-let Ban = /** @class */ (() => {
-    let Ban = class Ban {
-    };
-    __decorate([
-        typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
-        __metadata("design:type", Number)
-    ], Ban.prototype, "id", void 0);
-    __decorate([
-        typeorm_1.Index(),
-        typeorm_1.Column({ type: "varchar", length: 64, nullable: true }),
-        __metadata("design:type", String)
-    ], Ban.prototype, "ip", void 0);
-    __decorate([
-        typeorm_1.Index(),
-        typeorm_1.Column({ type: "varchar", length: 20, nullable: true }),
-        __metadata("design:type", String)
-    ], Ban.prototype, "name", void 0);
-    Ban = __decorate([
-        typeorm_1.Entity()
-    ], Ban);
-    return Ban;
-})();
+let Ban = class Ban {
+};
+__decorate([
+    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
+    __metadata("design:type", Number)
+], Ban.prototype, "id", void 0);
+__decorate([
+    typeorm_1.Index(),
+    typeorm_1.Column({ type: "varchar", length: 64, nullable: true }),
+    __metadata("design:type", String)
+], Ban.prototype, "ip", void 0);
+__decorate([
+    typeorm_1.Index(),
+    typeorm_1.Column({ type: "varchar", length: 20, nullable: true }),
+    __metadata("design:type", String)
+], Ban.prototype, "name", void 0);
+Ban = __decorate([
+    typeorm_1.Entity()
+], Ban);
 exports.Ban = Ban;
 //# sourceMappingURL=Ban.js.map

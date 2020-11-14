@@ -8,46 +8,32 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var CloudReplayPlayer_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CloudReplayPlayer = void 0;
 const typeorm_1 = require("typeorm");
 const CloudReplay_1 = require("./CloudReplay");
-let CloudReplayPlayer = /** @class */ (() => {
-    var CloudReplayPlayer_1;
-    let CloudReplayPlayer = CloudReplayPlayer_1 = class CloudReplayPlayer {
-        static fromPlayerInfo(info) {
-            const p = new CloudReplayPlayer_1();
-            p.key = info.key;
-            p.name = info.name;
-            p.pos = info.pos;
-            return p;
-        }
-    };
-    __decorate([
-        typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
-        __metadata("design:type", Number)
-    ], CloudReplayPlayer.prototype, "id", void 0);
-    __decorate([
-        typeorm_1.Index(),
-        typeorm_1.Column({ type: "varchar", length: 40 }),
-        __metadata("design:type", String)
-    ], CloudReplayPlayer.prototype, "key", void 0);
-    __decorate([
-        typeorm_1.Column({ type: "varchar", length: 20 }),
-        __metadata("design:type", String)
-    ], CloudReplayPlayer.prototype, "name", void 0);
-    __decorate([
-        typeorm_1.Column({ type: "tinyint" }),
-        __metadata("design:type", Number)
-    ], CloudReplayPlayer.prototype, "pos", void 0);
-    __decorate([
-        typeorm_1.ManyToOne(() => CloudReplay_1.CloudReplay, replay => replay.players),
-        __metadata("design:type", CloudReplay_1.CloudReplay)
-    ], CloudReplayPlayer.prototype, "cloudReplay", void 0);
-    CloudReplayPlayer = CloudReplayPlayer_1 = __decorate([
-        typeorm_1.Entity()
-    ], CloudReplayPlayer);
-    return CloudReplayPlayer;
-})();
+const BasePlayer_1 = require("./BasePlayer");
+let CloudReplayPlayer = CloudReplayPlayer_1 = class CloudReplayPlayer extends BasePlayer_1.BasePlayer {
+    static fromPlayerInfo(info) {
+        const p = new CloudReplayPlayer_1();
+        p.key = info.key;
+        p.name = info.name;
+        p.pos = info.pos;
+        return p;
+    }
+};
+__decorate([
+    typeorm_1.Index(),
+    typeorm_1.Column({ type: "varchar", length: 40 }),
+    __metadata("design:type", String)
+], CloudReplayPlayer.prototype, "key", void 0);
+__decorate([
+    typeorm_1.ManyToOne(() => CloudReplay_1.CloudReplay, replay => replay.players),
+    __metadata("design:type", CloudReplay_1.CloudReplay)
+], CloudReplayPlayer.prototype, "cloudReplay", void 0);
+CloudReplayPlayer = CloudReplayPlayer_1 = __decorate([
+    typeorm_1.Entity()
+], CloudReplayPlayer);
 exports.CloudReplayPlayer = CloudReplayPlayer;
 //# sourceMappingURL=CloudReplayPlayer.js.map
