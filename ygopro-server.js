@@ -641,6 +641,9 @@
   // ban a user manually and permanently
   ban_user = global.ban_user = async function(name) {
     var ban, bans, len3, len4, len5, len6, n, o, p, player, playerType, q, ref3, ref4, room;
+    if (!settings.modules.mysql.enabled) {
+      throw "MySQL is not enabled";
+    }
     bans = [dataManager.getBan(name, null)];
     for (n = 0, len3 = ROOM_all.length; n < len3; n++) {
       room = ROOM_all[n];

@@ -490,6 +490,8 @@ ROOM_bad_ip = global.ROOM_bad_ip = {}
 
 # ban a user manually and permanently
 ban_user = global.ban_user = (name) ->
+  if !settings.modules.mysql.enabled
+    throw "MySQL is not enabled"
   bans = [dataManager.getBan(name, null)]
   for room in ROOM_all when room and room.established
     for playerType in ["players", "watchers"]
