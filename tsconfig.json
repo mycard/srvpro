@@ -4,11 +4,15 @@
 		"target": "esnext",
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
 		"sourceMap": true
 	},
 	"compileOnSave": true,
 	"allowJs": true,
 	"include": [
-		"*.ts"
+		"*.ts",
+		"data-manager/*.ts",
+		"data-manager/entities/*.ts"
 	]
 }

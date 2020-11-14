@@ -82,13 +82,18 @@
       "ready_time": 20,
       "hang_timeout": 90
     },
+    "mysql": {
+      "enabled": false,
+      "db": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "username": "root",
+        "password": "localhost",
+        "database": "srvpro"
+      }
+    },
     "cloud_replay": {
       "enabled": false,
-      "redis": {
-        "host": "127.0.0.1",
-        "port": 6379
-      },
-      "never_expire": false,
       "enable_halfway_watch": true
     },
     "windbot": {
