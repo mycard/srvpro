@@ -4438,7 +4438,7 @@
     }
     if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && room.recovering) {
       recover_player_data = _.find(room.recover_duel_log.players, function(player) {
-        return player.realName === client.name_vpass && buffer.toString("base64") === player.startDeckBuffer;
+        return player.realName === client.name_vpass && _.isEqual(buffer, Buffer.from(player.startDeckBuffer, "base64"));
       });
       if (recover_player_data) {
         recoveredDeck = recover_player_data.getCurrentDeck();
