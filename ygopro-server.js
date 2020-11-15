@@ -593,6 +593,8 @@
     }
     if (settings.modules.tips.get) {
       load_tips();
+    }
+    if (settings.modules.tips.enabled) {
       setInterval(function() {
         var l, len1, room;
         for (l = 0, len1 = ROOM_all.length; l < len1; l++) {
@@ -5142,7 +5144,7 @@
             response.end(addCallback(u.query.callback, "['密码错误', 0]"));
             return;
           }
-          success = (await load_tips());
+          success = (await load_dialogues());
           response.writeHead(200);
           if (success) {
             response.end(addCallback(u.query.callback, "['dialogue ok', '" + settings.modules.tips.get + "']"));

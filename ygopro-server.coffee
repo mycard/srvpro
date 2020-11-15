@@ -468,6 +468,8 @@ init = () ->
 
   if settings.modules.tips.get
     load_tips()
+
+  if settings.modules.tips.enabled
     setInterval ()->
       for room in ROOM_all when room and room.established
         ygopro.stoc_send_random_tip_to_room(room) if room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING or room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
@@ -3853,7 +3855,7 @@ if true
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        success = await load_tips()
+        success = await load_dialogues()
         response.writeHead(200)
         if success
           response.end(addCallback(u.query.callback, "['dialogue ok', '" +  settings.modules.tips.get + "']"))
