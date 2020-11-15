@@ -174,6 +174,7 @@ settings = {}
 tips = null
 dialogues = null
 badwords = null
+chat_color = null
 lflists = global.lflists = []
 real_windbot_server_ip = null
 long_resolve_cards = []
@@ -182,6 +183,7 @@ athleticChecker = null
 users_cache = {}
 geoip = null
 dataManager = null
+windbots = []
 disconnect_list = {} # {old_client, old_server, room_id, timeout, deckbuf}
 
 challonge = null
@@ -336,7 +338,7 @@ init = () ->
   await loadLFList('ygopro/lflist.conf')
 
   if settings.modules.windbot.enabled
-    windbots = global.windbots = await loadJSONAsync(settings.modules.windbot.botlist).windbots
+    windbots = global.windbots = (await loadJSONAsync(settings.modules.windbot.botlist)).windbots
     real_windbot_server_ip = global.real_windbot_server_ip = settings.modules.windbot.server_ip
     if !settings.modules.windbot.server_ip.includes("127.0.0.1")
       dns = require('dns')
@@ -486,18 +488,19 @@ init = () ->
       scores_by_win = _.sortBy(scores_by_lose, (score)-> return score[1].win).reverse() # 然后胜场由低到高，再逆转，就是先排胜场再排败场
       scores = _.first(scores_by_win, 10)
       #log.info scores
-      request.post { url : settings.modules.random_duel.post_match_scores , form : {
-        accesskey: settings.modules.random_duel.post_match_accesskey,
-        rank: JSON.stringify(scores)
-      }}, (error, response, body)=>
-        if error
-          log.warn 'RANDOM SCORE POST ERROR', error
-        else
-          if response.statusCode != 204 and response.statusCode != 200
-            log.warn 'RANDOM SCORE POST FAIL', response.statusCode, response.statusMessage, body
-          #else
-          #  log.info 'RANDOM SCORE POST OK', response.statusCode, response.statusMessage
-        return
+
+      try
+        await axios.post(settings.modules.random_duel.post_match_scores, {
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          data: qs.stringify({
+            accesskey: settings.modules.random_duel.post_match_accesskey,
+            rank: JSON.stringify(scores)
+            responseType: "json"
+          })
+        })
+      catch e
+        log.warn 'RANDOM SCORE POST ERROR', e.toString()
+
       return
     , 60000)
 
@@ -534,7 +537,6 @@ init = () ->
           CLIENT_kick(room.waiting_for_player)
         else if time_passed >= (settings.modules.random_duel.hang_timeout - 20) and not (time_passed % 10)
           ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${afk_warn_part1}#{settings.modules.random_duel.hang_timeout - time_passed}${afk_warn_part2}", ygopro.constants.COLORS.RED)
-      return
       
       if true # settings.modules.arena_mode.punish_quit_before_match
         for room in ROOM_all when room and room.arena and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.get_playing_player().length < 2
@@ -604,6 +606,8 @@ init = () ->
     plugin_path = process.cwd() + "/plugins/" + plugin_filename
     require(plugin_path)
     log.info("Plugin loaded:", plugin_filename)
+
+  return
 
 # 获取可用内存
 memory_usage = global.memory_usage = 0
