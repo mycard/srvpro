@@ -174,7 +174,6 @@ settings = {}
 tips = null
 dialogues = null
 badwords = null
-chat_color = null
 lflists = global.lflists = []
 real_windbot_server_ip = null
 long_resolve_cards = []
@@ -303,6 +302,24 @@ init = () ->
   #finish
   if imported
     await setting_save(settings)
+  if settings.modules.mysql.enabled
+    DataManager = require('./data-manager/DataManager.js').DataManager
+    dataManager = global.dataManager = new DataManager(settings.modules.mysql.db, log)
+    await dataManager.init()
+  else
+    log.warn("Some functions may be limited without MySQL .")
+    if settings.modules.cloud_replay.enabled
+      settings.modules.cloud_replay.enabled = false
+      await setting_save(settings)
+      log.warn("Cloud replay cannot be enabled because no MySQL.")
+    if settings.modules.enable_recover.enabled
+      settings.modules.enable_recover.enabled = false
+      await setting_save(settings)
+      log.warn("Recover mode cannot be enabled because no MySQL.")
+    if settings.modules.chat_color.enabled
+      settings.modules.chat_color.enabled = false
+      await setting_save(settings)
+      log.warn("Chat color cannot be enabled because no MySQL.")
   # 读取数据
   default_data = await loadJSONAsync('./data/default_data.json')
   try
@@ -320,12 +337,14 @@ init = () ->
   catch
     badwords = global.badwords = default_data.badwords
     await setting_save(badwords)
-  if settings.modules.chat_color.enabled
+  if settings.modules.chat_color.enabled and await checkFileExists('./config/chat_color.json')
     try
-      chat_color = global.chat_color = await loadJSONAsync('./config/chat_color.json')
+      chat_color = await loadJSONAsync('./config/chat_color.json')
+      if chat_color
+        await dataManager.migrateChatColors(chat_color.save_list);
+        await fs.promises.unlink('./config/chat_color.json')
+        log.info("Chat color migrated.")
     catch
-      chat_color = global.chat_color = default_data.chat_color
-      await setting_save(chat_color)
   try
     cppversion = parseInt(await fs.promises.readFile('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
     await setting_change(settings, "version", cppversion)
@@ -357,24 +376,6 @@ init = () ->
     roomlist = global.roomlist = require './roomlist.js'
   if settings.modules.i18n.auto_pick
     geoip = require('geoip-country-lite')
-  if settings.modules.mysql.enabled
-    DataManager = require('./data-manager/DataManager.js').DataManager
-    dataManager = global.dataManager = new DataManager(settings.modules.mysql.db, log)
-    await dataManager.init()
-  else
-    log.warn("Some functions may be limited without MySQL .")
-    if settings.modules.cloud_replay.enabled
-      settings.modules.cloud_replay.enabled = false
-      await setting_save(settings)
-      log.warn("Cloud replay cannot be enabled because no MySQL.")
-    if settings.modules.enable_recover.enabled
-      settings.modules.enable_recover.enabled = false
-      await setting_save(settings)
-      log.warn("Recover mode cannot be enabled because no MySQL.")
-    if settings.modules.chat_color.enabled
-      settings.modules.chat_color.enabled = false
-      await setting_save(settings)
-      log.warn("Chat color cannot be enabled because no MySQL.")
 
   if settings.modules.mycard.enabled
     pgClient = require('pg').Client
@@ -3163,19 +3164,18 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
             for cname,cvalue of ygopro.constants.COLORS when cvalue > 10
               ygopro.stoc_send_chat(client, cname, cvalue)
           else if cmsg.toLowerCase() == "default"
-            chat_color.save_list[cip] = false
-            setting_save(chat_color)
+            await dataManager.setUserChatColor(cip, null)
             ygopro.stoc_send_chat(client, "${set_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
           else
             ccolor = cmsg.toUpperCase()
             if ygopro.constants.COLORS[ccolor] and ygopro.constants.COLORS[ccolor] > 10 and ygopro.constants.COLORS[ccolor] < 20
-              chat_color.save_list[cip] = ccolor
-              setting_save(chat_color)
+              await dataManager.setUserChatColor(cip, ccolor)
               ygopro.stoc_send_chat(client, "${set_chat_color_part1}" + ccolor + "${set_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
             else
               ygopro.stoc_send_chat(client, "${color_not_found_part1}" + ccolor + "${color_not_found_part2}", ygopro.constants.COLORS.RED)
         else
-          if color = chat_color.save_list[cip]
+          color = await dataManager.getUserChatColor(cip)
+          if color
             ygopro.stoc_send_chat(client, "${get_chat_color_part1}" + color + "${get_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
           else
             ygopro.stoc_send_chat(client, "${get_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
@@ -3470,7 +3470,7 @@ ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server, datas)->
   for player in room.players when player and player.pos == pid
     tplayer = player
   return unless tplayer
-  tcolor = chat_color.save_list[CLIENT_get_authorize_key(tplayer)]
+  tcolor = await dataManager.getUserChatColor(CLIENT_get_authorize_key(tplayer));
   if tcolor
     ygopro.stoc_send client, 'CHAT', {
         player: ygopro.constants.COLORS[tcolor]

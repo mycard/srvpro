@@ -13,6 +13,7 @@ const RandomDuelBan_1 = require("./entities/RandomDuelBan");
 const underscore_1 = __importDefault(require("underscore"));
 const DuelLog_1 = require("./entities/DuelLog");
 const DuelLogPlayer_1 = require("./entities/DuelLogPlayer");
+const User_1 = require("./entities/User");
 class DataManager {
     constructor(config, log) {
         this.config = config;
@@ -269,6 +270,71 @@ class DataManager {
             }
             catch (e) {
                 this.log.warn(`Failed to save duel log ${name}: ${e.toString()}`);
+            }
+        });
+    }
+    async getUser(key) {
+        const repo = this.db.getRepository(User_1.User);
+        try {
+            const user = await repo.findOne(key);
+            return user;
+        }
+        catch (e) {
+            this.log.warn(`Failed to fetch user: ${e.toString()}`);
+            return null;
+        }
+    }
+    async getOrCreateUser(key) {
+        const user = await this.getUser(key);
+        if (user) {
+            return user;
+        }
+        const newUser = new User_1.User();
+        newUser.key = key;
+        return await this.saveUser(newUser);
+    }
+    async saveUser(user) {
+        const repo = this.db.getRepository(User_1.User);
+        try {
+            return await repo.save(user);
+        }
+        catch (e) {
+            this.log.warn(`Failed to save user: ${e.toString()}`);
+            return null;
+        }
+    }
+    async getUserChatColor(key) {
+        const user = await this.getUser(key);
+        return user ? user.chatColor : null;
+    }
+    async setUserChatColor(key, color) {
+        let user = await this.getUser(key);
+        if (!user) {
+            user = new User_1.User();
+            user.key = key;
+        }
+        user.chatColor = color;
+        return await this.saveUser(user);
+    }
+    async migrateChatColors(data) {
+        await this.db.transaction(async (mdb) => {
+            try {
+                const users = [];
+                for (let key in data) {
+                    const chatColor = data[key];
+                    let user = await mdb.findOne(User_1.User, key);
+                    if (!user) {
+                        user = new User_1.User();
+                        user.key = key;
+                    }
+                    user.chatColor = chatColor;
+                    users.push(user);
+                }
+                await mdb.save(users);
+            }
+            catch (e) {
+                this.log.warn(`Failed to migrate chat color data: ${e.toString()}`);
+                return null;
             }
         });
     }

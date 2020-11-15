@@ -10,6 +10,7 @@ import _ from "underscore";
 import {DuelLog} from "./entities/DuelLog";
 import {Deck} from "./DeckEncoder";
 import {DuelLogPlayer} from "./entities/DuelLogPlayer";
+import {User} from "./entities/User";
 
 interface BasePlayerInfo {
 	name: string;
@@ -297,6 +298,70 @@ export class DataManager {
 				await mdb.save(players);
 			} catch (e) {
 				this.log.warn(`Failed to save duel log ${name}: ${e.toString()}`);
+			}
+		});
+
+	}
+	async getUser(key: string) {
+		const repo = this.db.getRepository(User);
+		try {
+			const user = await repo.findOne(key);
+			return user;
+		} catch (e) {
+			this.log.warn(`Failed to fetch user: ${e.toString()}`);
+			return null;
+		}
+	}
+	async getOrCreateUser(key: string) {
+		const user = await this.getUser(key);
+		if(user) {
+			return user;
+		}
+		const newUser = new User();
+		newUser.key = key;
+		return await this.saveUser(newUser);
+	}
+	async saveUser(user: User) {
+		const repo = this.db.getRepository(User);
+		try {
+			return await repo.save(user);
+		} catch (e) {
+			this.log.warn(`Failed to save user: ${e.toString()}`);
+			return null;
+		}
+	}
+	async getUserChatColor(key: string) {
+		const user = await this.getUser(key);
+		return user ? user.chatColor : null;
+	}
+	async setUserChatColor(key: string, color: string) {
+		let user = await this.getUser(key);
+		if(!user) {
+			user = new User();
+			user.key = key;
+		}
+		user.chatColor = color;
+		return await this.saveUser(user);
+	}
+
+	async migrateChatColors(data: any) {
+		await this.db.transaction(async (mdb) => {
+			try {
+				const users: User[] = [];
+				for(let key in data) {
+					const chatColor: string = data[key];
+					let user = await mdb.findOne(User, key);
+					if(!user) {
+						user = new User();
+						user.key = key;
+					}
+					user.chatColor = chatColor;
+					users.push(user);
+				}
+				await mdb.save(users);
+			} catch (e) {
+				this.log.warn(`Failed to migrate chat color data: ${e.toString()}`);
+				return null;
 			}
 		});
 

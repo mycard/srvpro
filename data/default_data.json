@@ -24,14 +24,6 @@
       ]
     }
   },
-  "duel_log": {
-    "file": "./config/duel_log.json",
-    "duel_log": []
-  },
-  "chat_color": {
-    "file": "./config/chat_color.json",
-    "save_list": {}
-  },
   "users": {
     "file": "./config/admin_user.json",
     "permission_examples": {
