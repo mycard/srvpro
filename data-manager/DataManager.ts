@@ -96,8 +96,18 @@ export class DataManager {
 
 	async getRandomCloudReplay() {
 		try {
+			const [minQuery, maxQuery] = await Promise.all(["min", "max"].map(minOrMax => this.db.createQueryBuilder()
+				.select(`${minOrMax}(id)`, "value")
+				.from(CloudReplay, "replay")
+				.getRawOne()
+			));
+			if(!minQuery || maxQuery) {
+				return null;
+			}
+			const targetId = Math.floor((maxQuery.value - minQuery.value) * Math.random()) + minQuery.value;
 			return await this.db.createQueryBuilder(CloudReplay, "replay")
-				.orderBy("rand()")
+				.where("replay.id >= :targetId", {targetId})
+				.orderBy("replay.id", "ASC")
 				.limit(4) //there may be 4 players
 				.leftJoinAndSelect("replay.players", "player")
 				.getOne();
@@ -353,11 +363,7 @@ export class DataManager {
 		return user ? user.chatColor : null;
 	}
 	async setUserChatColor(key: string, color: string) {
-		let user = await this.getUser(key);
-		if(!user) {
-			user = new User();
-			user.key = key;
-		}
+		let user = await this.getOrCreateUser(key);
 		user.chatColor = color;
 		return await this.saveUser(user);
 	}
