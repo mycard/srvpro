@@ -2,7 +2,6 @@ import {Column, Entity, Index, OneToMany, PrimaryGeneratedColumn} from "typeorm"
 import {DuelLogPlayer} from "./DuelLogPlayer";
 import moment from "moment";
 import _ from "underscore";
-import {DuelLogPlayerInfo} from "../DataManager";
 
 @Entity()
 export class DuelLog {

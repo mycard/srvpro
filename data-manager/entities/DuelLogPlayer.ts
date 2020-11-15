@@ -1,8 +1,7 @@
 import {Column, Entity, Index, ManyToOne} from "typeorm";
 import {BasePlayer} from "./BasePlayer";
 import {DuelLog} from "./DuelLog";
-import {Deck} from "../DeckEncoder";
-import {decodeDeck, encodeDeck} from "../DeckEncoder";
+import {Deck, decodeDeck, encodeDeck} from "../DeckEncoder";
 import {DuelLogPlayerInfo} from "../DataManager";
 
 @Entity()

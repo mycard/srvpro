@@ -1,10 +1,9 @@
 import moment from "moment";
-import { Moment } from "moment";
 import bunyan from "bunyan";
-import {Connection, ConnectionOptions, createConnection, Transaction} from "typeorm";
-import { CloudReplay } from "./entities/CloudReplay";
-import { CloudReplayPlayer } from "./entities/CloudReplayPlayer";
-import { Ban } from "./entities/Ban";
+import {Connection, ConnectionOptions, createConnection} from "typeorm";
+import {CloudReplay} from "./entities/CloudReplay";
+import {CloudReplayPlayer} from "./entities/CloudReplayPlayer";
+import {Ban} from "./entities/Ban";
 import {RandomDuelBan} from "./entities/RandomDuelBan";
 import _ from "underscore";
 import {DuelLog} from "./entities/DuelLog";
