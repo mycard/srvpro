@@ -34,7 +34,7 @@
     "sqlite3": "latest",
     "typeorm": "^0.2.29",
     "typescript": "^4.0.5",
-    "underscore": "^1.10.2",
+    "underscore": "^1.11.0",
     "underscore.string": "latest",
     "ws": "^1.1.1"
   },

@@ -1309,7 +1309,7 @@
       CLIENT_reconnect_unregister(client);
       return false;
     }
-    if (deckbuf && !_.isEqual(deckbuf, disconnect_info.deckbuf)) {
+    if (deckbuf && deckbuf.compare(disconnect_info.deckbuf) !== 0) {
       return false;
     }
     return true;
@@ -1323,7 +1323,7 @@
         ref = room.get_playing_player();
         for (l = 0, len1 = ref.length; l < len1; l++) {
           player = ref[l];
-          if (!player.closed && player.name === client.name && (settings.modules.challonge.enabled || player.pass === client.pass) && (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || player.ip === client.ip || (client.vpass && client.vpass === player.vpass)) && (!deckbuf || _.isEqual(player.start_deckbuf, deckbuf))) {
+          if (!player.closed && player.name === client.name && (settings.modules.challonge.enabled || player.pass === client.pass) && (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || player.ip === client.ip || (client.vpass && client.vpass === player.vpass)) && (!deckbuf || deckbuf.compare(player.start_deckbuf) === 0)) {
             return player;
           }
         }
@@ -4438,7 +4438,7 @@
     }
     if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && room.recovering) {
       recover_player_data = _.find(room.recover_duel_log.players, function(player) {
-        return player.realName === client.name_vpass && _.isEqual(buffer, Buffer.from(player.startDeckBuffer, "base64"));
+        return player.realName === client.name_vpass && buffer.compare(Buffer.from(player.startDeckBuffer, "base64")) === 0;
       });
       if (recover_player_data) {
         recoveredDeck = recover_player_data.getCurrentDeck();
