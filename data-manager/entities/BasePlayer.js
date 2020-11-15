@@ -11,22 +11,19 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BasePlayer = void 0;
 const typeorm_1 = require("typeorm");
-let BasePlayer = /** @class */ (() => {
-    class BasePlayer {
-    }
-    __decorate([
-        typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
-        __metadata("design:type", Number)
-    ], BasePlayer.prototype, "id", void 0);
-    __decorate([
-        typeorm_1.Column({ type: "varchar", length: 20 }),
-        __metadata("design:type", String)
-    ], BasePlayer.prototype, "name", void 0);
-    __decorate([
-        typeorm_1.Column({ type: "tinyint" }),
-        __metadata("design:type", Number)
-    ], BasePlayer.prototype, "pos", void 0);
-    return BasePlayer;
-})();
+class BasePlayer {
+}
+__decorate([
+    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
+    __metadata("design:type", Number)
+], BasePlayer.prototype, "id", void 0);
+__decorate([
+    typeorm_1.Column({ type: "varchar", length: 20 }),
+    __metadata("design:type", String)
+], BasePlayer.prototype, "name", void 0);
+__decorate([
+    typeorm_1.Column({ type: "tinyint" }),
+    __metadata("design:type", Number)
+], BasePlayer.prototype, "pos", void 0);
 exports.BasePlayer = BasePlayer;
 //# sourceMappingURL=BasePlayer.js.map

@@ -8,96 +8,93 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var DuelLogPlayer_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DuelLogPlayer = void 0;
 const typeorm_1 = require("typeorm");
 const BasePlayer_1 = require("./BasePlayer");
 const DuelLog_1 = require("./DuelLog");
 const DeckEncoder_1 = require("../DeckEncoder");
-let DuelLogPlayer = /** @class */ (() => {
-    var DuelLogPlayer_1;
-    let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.BasePlayer {
-        setStartDeck(deck) {
-            if (deck === null) {
-                this.startDeckBuffer = null;
-                return;
-            }
-            this.startDeckBuffer = DeckEncoder_1.encodeDeck(deck).toString("base64");
+let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.BasePlayer {
+    setStartDeck(deck) {
+        if (deck === null) {
+            this.startDeckBuffer = null;
+            return;
         }
-        getStartDeck() {
-            return DeckEncoder_1.decodeDeck(Buffer.from(this.startDeckBuffer, "base64"));
+        this.startDeckBuffer = DeckEncoder_1.encodeDeck(deck).toString("base64");
+    }
+    getStartDeck() {
+        return DeckEncoder_1.decodeDeck(Buffer.from(this.startDeckBuffer, "base64"));
+    }
+    setCurrentDeck(deck) {
+        if (deck === null) {
+            this.currentDeckBuffer = null;
+            return;
         }
-        setCurrentDeck(deck) {
-            if (deck === null) {
-                this.currentDeckBuffer = null;
-                return;
-            }
-            this.currentDeckBuffer = DeckEncoder_1.encodeDeck(deck).toString("base64");
-        }
-        getCurrentDeck() {
-            return DeckEncoder_1.decodeDeck(Buffer.from(this.currentDeckBuffer, "base64"));
-        }
-        static fromDuelLogPlayerInfo(info) {
-            const p = new DuelLogPlayer_1();
-            p.name = info.name;
-            p.pos = info.pos;
-            p.realName = info.realName;
-            p.lp = info.lp;
-            p.ip = info.ip;
-            p.score = info.score;
-            p.cardCount = info.cardCount;
-            p.isFirst = info.isFirst ? 1 : 0;
-            p.winner = info.winner ? 1 : 0;
-            p.startDeckBuffer = info.startDeckBuffer.toString("base64");
-            p.setCurrentDeck(info.deck);
-            return p;
-        }
-    };
-    __decorate([
-        typeorm_1.Index(),
-        typeorm_1.Column({ type: "varchar", length: 20 }),
-        __metadata("design:type", String)
-    ], DuelLogPlayer.prototype, "realName", void 0);
-    __decorate([
-        typeorm_1.Column({ type: "varchar", length: 64, nullable: true }),
-        __metadata("design:type", String)
-    ], DuelLogPlayer.prototype, "ip", void 0);
-    __decorate([
-        typeorm_1.Column("tinyint", { unsigned: true }),
-        __metadata("design:type", Number)
-    ], DuelLogPlayer.prototype, "isFirst", void 0);
-    __decorate([
-        typeorm_1.Column("tinyint"),
-        __metadata("design:type", Number)
-    ], DuelLogPlayer.prototype, "score", void 0);
-    __decorate([
-        typeorm_1.Column("int", { nullable: true }),
-        __metadata("design:type", Number)
-    ], DuelLogPlayer.prototype, "lp", void 0);
-    __decorate([
-        typeorm_1.Column("smallint", { nullable: true }),
-        __metadata("design:type", Number)
-    ], DuelLogPlayer.prototype, "cardCount", void 0);
-    __decorate([
-        typeorm_1.Column("text", { nullable: true }),
-        __metadata("design:type", String)
-    ], DuelLogPlayer.prototype, "startDeckBuffer", void 0);
-    __decorate([
-        typeorm_1.Column("text", { nullable: true }),
-        __metadata("design:type", String)
-    ], DuelLogPlayer.prototype, "currentDeckBuffer", void 0);
-    __decorate([
-        typeorm_1.Column("tinyint"),
-        __metadata("design:type", Number)
-    ], DuelLogPlayer.prototype, "winner", void 0);
-    __decorate([
-        typeorm_1.ManyToOne(() => DuelLog_1.DuelLog, duelLog => duelLog.players),
-        __metadata("design:type", DuelLog_1.DuelLog)
-    ], DuelLogPlayer.prototype, "duelLog", void 0);
-    DuelLogPlayer = DuelLogPlayer_1 = __decorate([
-        typeorm_1.Entity()
-    ], DuelLogPlayer);
-    return DuelLogPlayer;
-})();
+        this.currentDeckBuffer = DeckEncoder_1.encodeDeck(deck).toString("base64");
+    }
+    getCurrentDeck() {
+        return DeckEncoder_1.decodeDeck(Buffer.from(this.currentDeckBuffer, "base64"));
+    }
+    static fromDuelLogPlayerInfo(info) {
+        const p = new DuelLogPlayer_1();
+        p.name = info.name;
+        p.pos = info.pos;
+        p.realName = info.realName;
+        p.lp = info.lp;
+        p.ip = info.ip;
+        p.score = info.score;
+        p.cardCount = info.cardCount;
+        p.isFirst = info.isFirst ? 1 : 0;
+        p.winner = info.winner ? 1 : 0;
+        p.startDeckBuffer = info.startDeckBuffer.toString("base64");
+        p.setCurrentDeck(info.deck);
+        return p;
+    }
+};
+__decorate([
+    typeorm_1.Index(),
+    typeorm_1.Column({ type: "varchar", length: 20 }),
+    __metadata("design:type", String)
+], DuelLogPlayer.prototype, "realName", void 0);
+__decorate([
+    typeorm_1.Column({ type: "varchar", length: 64, nullable: true }),
+    __metadata("design:type", String)
+], DuelLogPlayer.prototype, "ip", void 0);
+__decorate([
+    typeorm_1.Column("tinyint", { unsigned: true }),
+    __metadata("design:type", Number)
+], DuelLogPlayer.prototype, "isFirst", void 0);
+__decorate([
+    typeorm_1.Column("tinyint"),
+    __metadata("design:type", Number)
+], DuelLogPlayer.prototype, "score", void 0);
+__decorate([
+    typeorm_1.Column("int", { nullable: true }),
+    __metadata("design:type", Number)
+], DuelLogPlayer.prototype, "lp", void 0);
+__decorate([
+    typeorm_1.Column("smallint", { nullable: true }),
+    __metadata("design:type", Number)
+], DuelLogPlayer.prototype, "cardCount", void 0);
+__decorate([
+    typeorm_1.Column("text", { nullable: true }),
+    __metadata("design:type", String)
+], DuelLogPlayer.prototype, "startDeckBuffer", void 0);
+__decorate([
+    typeorm_1.Column("text", { nullable: true }),
+    __metadata("design:type", String)
+], DuelLogPlayer.prototype, "currentDeckBuffer", void 0);
+__decorate([
+    typeorm_1.Column("tinyint"),
+    __metadata("design:type", Number)
+], DuelLogPlayer.prototype, "winner", void 0);
+__decorate([
+    typeorm_1.ManyToOne(() => DuelLog_1.DuelLog, duelLog => duelLog.players),
+    __metadata("design:type", DuelLog_1.DuelLog)
+], DuelLogPlayer.prototype, "duelLog", void 0);
+DuelLogPlayer = DuelLogPlayer_1 = __decorate([
+    typeorm_1.Entity()
+], DuelLogPlayer);
 exports.DuelLogPlayer = DuelLogPlayer;
 //# sourceMappingURL=DuelLogPlayer.js.map

@@ -11,21 +11,18 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const typeorm_1 = require("typeorm");
-let User = /** @class */ (() => {
-    let User = class User {
-    };
-    __decorate([
-        typeorm_1.PrimaryColumn({ type: "varchar", length: 128 }),
-        __metadata("design:type", String)
-    ], User.prototype, "key", void 0);
-    __decorate([
-        typeorm_1.Column("varchar", { length: 16, nullable: true }),
-        __metadata("design:type", String)
-    ], User.prototype, "chatColor", void 0);
-    User = __decorate([
-        typeorm_1.Entity()
-    ], User);
-    return User;
-})();
+let User = class User {
+};
+__decorate([
+    typeorm_1.PrimaryColumn({ type: "varchar", length: 128 }),
+    __metadata("design:type", String)
+], User.prototype, "key", void 0);
+__decorate([
+    typeorm_1.Column("varchar", { length: 16, nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "chatColor", void 0);
+User = __decorate([
+    typeorm_1.Entity()
+], User);
 exports.User = User;
 //# sourceMappingURL=User.js.map
