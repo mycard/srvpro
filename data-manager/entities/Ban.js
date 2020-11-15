@@ -28,7 +28,8 @@ __decorate([
     __metadata("design:type", String)
 ], Ban.prototype, "name", void 0);
 Ban = __decorate([
-    typeorm_1.Entity()
+    typeorm_1.Entity(),
+    typeorm_1.Unique(["ip", "name"])
 ], Ban);
 exports.Ban = Ban;
 //# sourceMappingURL=Ban.js.map

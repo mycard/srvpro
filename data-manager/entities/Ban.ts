@@ -1,6 +1,7 @@
-import {Column, Entity, Index, PrimaryGeneratedColumn} from "typeorm";
+import {Column, Entity, Index, PrimaryGeneratedColumn, Unique} from "typeorm";
 
 @Entity()
+@Unique(["ip", "name"])
 export class Ban {
 	@PrimaryGeneratedColumn({ unsigned: true, type: "bigint" })
 	id: number;
