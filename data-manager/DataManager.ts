@@ -1,6 +1,6 @@
 import moment from "moment";
 import bunyan from "bunyan";
-import {Connection, ConnectionOptions, createConnection} from "typeorm";
+import {Connection, ConnectionOptions, createConnection, EntityManager} from "typeorm";
 import {CloudReplay} from "./entities/CloudReplay";
 import {CloudReplayPlayer} from "./entities/CloudReplayPlayer";
 import {Ban} from "./entities/Ban";
@@ -42,6 +42,23 @@ export class DataManager {
 		this.config = config;
 		this.ready = false;
 		this.log = log;
+	}
+	private async transaction(fun: (mdb: EntityManager) => Promise<boolean>) {
+		const runner = await this.db.createQueryRunner();
+		await runner.connect();
+		await runner.startTransaction();
+		let result = false;
+		try {
+			result = await fun(runner.manager);
+		} catch(e) {
+			result = false;
+			this.log.warn(`Failed running transaction: ${e.toString()}`)
+		}
+		if(result) {
+			await runner.commitTransaction();
+		} else {
+			await runner.rollbackTransaction();
+		}
 	}
 	async init() {
 		this.db = await createConnection({
@@ -99,15 +116,17 @@ export class DataManager {
 			const player = CloudReplayPlayer.fromPlayerInfo(p);
 			return player;
 		});
-		await this.db.transaction(async (mdb) => {
+		await this.transaction(async (mdb) => {
 			try {
 				const nreplay = await mdb.save(replay);
 				for (let player of players) {
 					player.cloudReplay = nreplay;
 				}
 				await mdb.save(players);
+				return true;
 			} catch (e) {
 				this.log.warn(`Failed to save replay R#${replay.id}: ${e.toString()}`);
+				return false;
 			}
 		});
 	}
@@ -262,21 +281,19 @@ export class DataManager {
 		return allDuelLogs.map(duelLog => duelLog.replayFileName);
 	}
 	async clearDuelLog() {
-		//await this.db.transaction(async (mdb) => {
-			const runner = this.db.createQueryRunner();
-			try {
-				await runner.connect();
-				await runner.startTransaction();
-				await runner.query("SET FOREIGN_KEY_CHECKS = 0; ");
-				await runner.clearTable("duel_log_player");
-				await runner.clearTable("duel_log");
-				await runner.query("SET FOREIGN_KEY_CHECKS = 1; ");
-				await runner.commitTransaction();
-			} catch (e) {
-				await runner.rollbackTransaction();
-				this.log.warn(`Failed to clear duel logs: ${e.toString()}`);
-			}
-		//});
+		const runner = this.db.createQueryRunner();
+		try {
+			await runner.connect();
+			await runner.startTransaction();
+			await runner.query("SET FOREIGN_KEY_CHECKS = 0; ");
+			await runner.clearTable("duel_log_player");
+			await runner.clearTable("duel_log");
+			await runner.query("SET FOREIGN_KEY_CHECKS = 1; ");
+			await runner.commitTransaction();
+		} catch (e) {
+			await runner.rollbackTransaction();
+			this.log.warn(`Failed to clear duel logs: ${e.toString()}`);
+		}
 	}
 	async saveDuelLog(name: string, roomId: number, cloudReplayId: number, replayFilename: string, roomMode: number, duelCount: number, playerInfos: DuelLogPlayerInfo[]) {
 		const duelLog = new DuelLog();
@@ -288,15 +305,17 @@ export class DataManager {
 		duelLog.roomMode = roomMode;
 		duelLog.duelCount = duelCount;
 		const players = playerInfos.map(p => DuelLogPlayer.fromDuelLogPlayerInfo(p));
-		await this.db.transaction(async (mdb) => {
+		await this.transaction(async (mdb) => {
 			try {
 				const savedDuelLog = await mdb.save(duelLog);
 				for (let player of players) {
 					player.duelLog = savedDuelLog;
 				}
 				await mdb.save(players);
+				return true;
 			} catch (e) {
 				this.log.warn(`Failed to save duel log ${name}: ${e.toString()}`);
+				return false;
 			}
 		});
 
@@ -344,7 +363,7 @@ export class DataManager {
 	}
 
 	async migrateChatColors(data: any) {
-		await this.db.transaction(async (mdb) => {
+		await this.transaction(async (mdb) => {
 			try {
 				const users: User[] = [];
 				for(let key in data) {
@@ -358,9 +377,10 @@ export class DataManager {
 					users.push(user);
 				}
 				await mdb.save(users);
+				return true;
 			} catch (e) {
 				this.log.warn(`Failed to migrate chat color data: ${e.toString()}`);
-				return null;
+				return false;
 			}
 		});
 
