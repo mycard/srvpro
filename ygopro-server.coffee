@@ -3778,15 +3778,13 @@ if true
           response.writeHead(404)
           response.end("bad filename")
           return
-        fs.readFile(settings.modules.tournament_mode.replay_path + filename, (error, buffer)->
-          if error
-            response.writeHead(404)
-            response.end("未找到文件 " + filename)
-          else
-            response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
-            response.end(buffer)
-          return
-        )
+        try 
+          buffer = await fs.promises.readFile(settings.modules.tournament_mode.replay_path + filename)
+          response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
+          response.end(buffer)
+        catch e
+          response.writeHead(404)
+          response.end("未找到文件 " + filename)
 
     else if u.pathname == '/api/message'
       #if !pass_validated
