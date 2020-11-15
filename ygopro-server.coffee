@@ -613,7 +613,7 @@ init = () ->
 # 获取可用内存
 memory_usage = global.memory_usage = 0
 get_memory_usage = global.get_memory_usage = ()->
-  percentUsed = os.freemem() * os.totalmem() * 100
+  percentUsed = os.freemem() / os.totalmem() * 100
   memory_usage = global.memory_usage = percentUsed
   return
 get_memory_usage()
