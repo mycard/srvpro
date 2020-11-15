@@ -4901,7 +4901,7 @@
       return callback + "( " + text + " );";
     };
     httpRequestListener = async function(request, response) {
-      var archive_args, archive_name, archive_process, check, death_room_found, duellog, e, err, error, filename, getpath, j, len, parseQueryString, pass_validated, ref, roomsjson, success, u;
+      var archive_args, archive_name, archive_process, buffer, check, death_room_found, duellog, e, err, error, filename, getpath, j, len, parseQueryString, pass_validated, ref, roomsjson, success, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       //pass_validated = u.query.pass == settings.modules.http.password
@@ -5056,18 +5056,18 @@
             response.end("bad filename");
             return;
           }
-          fs.readFile(settings.modules.tournament_mode.replay_path + filename, function(error, buffer) {
-            if (error) {
-              response.writeHead(404);
-              response.end("未找到文件 " + filename);
-            } else {
-              response.writeHead(200, {
-                "Content-Type": "application/octet-stream",
-                "Content-Disposition": "attachment"
-              });
-              response.end(buffer);
-            }
-          });
+          try {
+            buffer = (await fs.promises.readFile(settings.modules.tournament_mode.replay_path + filename));
+            response.writeHead(200, {
+              "Content-Type": "application/octet-stream",
+              "Content-Disposition": "attachment"
+            });
+            response.end(buffer);
+          } catch (error1) {
+            e = error1;
+            response.writeHead(404);
+            response.end("未找到文件 " + filename);
+          }
         }
       } else if (u.pathname === '/api/message') {
         //if !pass_validated
