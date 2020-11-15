@@ -78,10 +78,11 @@ class DataManager {
                 .select(`${minOrMax}(id)`, "value")
                 .from(CloudReplay_1.CloudReplay, "replay")
                 .getRawOne()));
-            if (!minQuery || maxQuery) {
+            if (!minQuery || !maxQuery) {
                 return null;
             }
-            const targetId = Math.floor((maxQuery.value - minQuery.value) * Math.random()) + minQuery.value;
+            const [minId, maxId] = [minQuery, maxQuery].map(query => parseInt(query.value));
+            const targetId = Math.floor((maxId - minId) * Math.random()) + minId;
             return await this.db.createQueryBuilder(CloudReplay_1.CloudReplay, "replay")
                 .where("replay.id >= :targetId", { targetId })
                 .orderBy("replay.id", "ASC")

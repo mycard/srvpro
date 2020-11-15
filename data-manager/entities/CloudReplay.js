@@ -17,43 +17,46 @@ const typeorm_1 = require("typeorm");
 const CloudReplayPlayer_1 = require("./CloudReplayPlayer");
 const underscore_1 = __importDefault(require("underscore"));
 const moment_1 = __importDefault(require("moment"));
-let CloudReplay = class CloudReplay {
-    fromBuffer(buffer) {
-        this.data = buffer.toString("base64");
-    }
-    toBuffer() {
-        return Buffer.from(this.data, "base64");
-    }
-    getDateString() {
-        return moment_1.default(this.date).format('YYYY-MM-DD HH:mm:ss');
-    }
-    getPlayerNamesString() {
-        const playerInfos = underscore_1.default.clone(this.players);
-        playerInfos.sort((p1, p2) => p1.pos - p2.pos);
-        return playerInfos[0].name + (playerInfos[2] ? "+" + playerInfos[2].name : "") + " VS " + (playerInfos[1] ? playerInfos[1].name : "AI") + (playerInfos[3] ? "+" + playerInfos[3].name : "");
-    }
-    getDisplayString() {
-        return `R#${this.id} ${this.getPlayerNamesString()} ${this.getDateString()}`;
-    }
-};
-__decorate([
-    typeorm_1.PrimaryColumn({ unsigned: true, type: "bigint" }),
-    __metadata("design:type", Number)
-], CloudReplay.prototype, "id", void 0);
-__decorate([
-    typeorm_1.Column({ type: "text" }),
-    __metadata("design:type", String)
-], CloudReplay.prototype, "data", void 0);
-__decorate([
-    typeorm_1.Column({ type: "datetime" }),
-    __metadata("design:type", Date)
-], CloudReplay.prototype, "date", void 0);
-__decorate([
-    typeorm_1.OneToMany(() => CloudReplayPlayer_1.CloudReplayPlayer, player => player.cloudReplay),
-    __metadata("design:type", Array)
-], CloudReplay.prototype, "players", void 0);
-CloudReplay = __decorate([
-    typeorm_1.Entity()
-], CloudReplay);
+let CloudReplay = /** @class */ (() => {
+    let CloudReplay = class CloudReplay {
+        fromBuffer(buffer) {
+            this.data = buffer.toString("base64");
+        }
+        toBuffer() {
+            return Buffer.from(this.data, "base64");
+        }
+        getDateString() {
+            return moment_1.default(this.date).format('YYYY-MM-DD HH:mm:ss');
+        }
+        getPlayerNamesString() {
+            const playerInfos = underscore_1.default.clone(this.players);
+            playerInfos.sort((p1, p2) => p1.pos - p2.pos);
+            return playerInfos[0].name + (playerInfos[2] ? "+" + playerInfos[2].name : "") + " VS " + (playerInfos[1] ? playerInfos[1].name : "AI") + (playerInfos[3] ? "+" + playerInfos[3].name : "");
+        }
+        getDisplayString() {
+            return `R#${this.id} ${this.getPlayerNamesString()} ${this.getDateString()}`;
+        }
+    };
+    __decorate([
+        typeorm_1.PrimaryColumn({ unsigned: true, type: "bigint" }),
+        __metadata("design:type", Number)
+    ], CloudReplay.prototype, "id", void 0);
+    __decorate([
+        typeorm_1.Column({ type: "text" }),
+        __metadata("design:type", String)
+    ], CloudReplay.prototype, "data", void 0);
+    __decorate([
+        typeorm_1.Column({ type: "datetime" }),
+        __metadata("design:type", Date)
+    ], CloudReplay.prototype, "date", void 0);
+    __decorate([
+        typeorm_1.OneToMany(() => CloudReplayPlayer_1.CloudReplayPlayer, player => player.cloudReplay),
+        __metadata("design:type", Array)
+    ], CloudReplay.prototype, "players", void 0);
+    CloudReplay = __decorate([
+        typeorm_1.Entity()
+    ], CloudReplay);
+    return CloudReplay;
+})();
 exports.CloudReplay = CloudReplay;
 //# sourceMappingURL=CloudReplay.js.map
