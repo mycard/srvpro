@@ -20,6 +20,25 @@ class DataManager {
         this.ready = false;
         this.log = log;
     }
+    async transaction(fun) {
+        const runner = await this.db.createQueryRunner();
+        await runner.connect();
+        await runner.startTransaction();
+        let result = false;
+        try {
+            result = await fun(runner.manager);
+        }
+        catch (e) {
+            result = false;
+            this.log.warn(`Failed running transaction: ${e.toString()}`);
+        }
+        if (result) {
+            await runner.commitTransaction();
+        }
+        else {
+            await runner.rollbackTransaction();
+        }
+    }
     async init() {
         this.db = await typeorm_1.createConnection({
             type: "mysql",
@@ -75,16 +94,18 @@ class DataManager {
             const player = CloudReplayPlayer_1.CloudReplayPlayer.fromPlayerInfo(p);
             return player;
         });
-        await this.db.transaction(async (mdb) => {
+        await this.transaction(async (mdb) => {
             try {
                 const nreplay = await mdb.save(replay);
                 for (let player of players) {
                     player.cloudReplay = nreplay;
                 }
                 await mdb.save(players);
+                return true;
             }
             catch (e) {
                 this.log.warn(`Failed to save replay R#${replay.id}: ${e.toString()}`);
+                return false;
             }
         });
     }
@@ -233,7 +254,6 @@ class DataManager {
         return allDuelLogs.map(duelLog => duelLog.replayFileName);
     }
     async clearDuelLog() {
-        //await this.db.transaction(async (mdb) => {
         const runner = this.db.createQueryRunner();
         try {
             await runner.connect();
@@ -248,7 +268,6 @@ class DataManager {
             await runner.rollbackTransaction();
             this.log.warn(`Failed to clear duel logs: ${e.toString()}`);
         }
-        //});
     }
     async saveDuelLog(name, roomId, cloudReplayId, replayFilename, roomMode, duelCount, playerInfos) {
         const duelLog = new DuelLog_1.DuelLog();
@@ -260,16 +279,18 @@ class DataManager {
         duelLog.roomMode = roomMode;
         duelLog.duelCount = duelCount;
         const players = playerInfos.map(p => DuelLogPlayer_1.DuelLogPlayer.fromDuelLogPlayerInfo(p));
-        await this.db.transaction(async (mdb) => {
+        await this.transaction(async (mdb) => {
             try {
                 const savedDuelLog = await mdb.save(duelLog);
                 for (let player of players) {
                     player.duelLog = savedDuelLog;
                 }
                 await mdb.save(players);
+                return true;
             }
             catch (e) {
                 this.log.warn(`Failed to save duel log ${name}: ${e.toString()}`);
+                return false;
             }
         });
     }
@@ -317,7 +338,7 @@ class DataManager {
         return await this.saveUser(user);
     }
     async migrateChatColors(data) {
-        await this.db.transaction(async (mdb) => {
+        await this.transaction(async (mdb) => {
             try {
                 const users = [];
                 for (let key in data) {
@@ -331,10 +352,11 @@ class DataManager {
                     users.push(user);
                 }
                 await mdb.save(users);
+                return true;
             }
             catch (e) {
                 this.log.warn(`Failed to migrate chat color data: ${e.toString()}`);
-                return null;
+                return false;
             }
         });
     }

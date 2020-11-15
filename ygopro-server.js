@@ -443,7 +443,7 @@
         chat_color = (await loadJSONAsync('./config/chat_color.json'));
         if (chat_color) {
           await dataManager.migrateChatColors(chat_color.save_list);
-          await fs.promises.unlink('./config/chat_color.json');
+          await fs.promises.rename('./config/chat_color.json', './config/chat_color.json.bak');
           log.info("Chat color migrated.");
         }
       } catch (error1) {
