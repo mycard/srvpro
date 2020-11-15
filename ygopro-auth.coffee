@@ -59,7 +59,7 @@ add_log = (message) ->
   text = mt.format('YYYY-MM-DD HH:mm:ss') + " --> " + message + "\n"
   res = false
   try
-    await util.promisify(fs.appendFile)("./logs/"+mt.format('YYYY-MM-DD')+".log", text)
+    await fs.promises.appendFile("./logs/"+mt.format('YYYY-MM-DD')+".log", text)
     res = true
   catch
     res = false
@@ -69,7 +69,7 @@ add_log = (message) ->
 default_data = loadJSON('./data/default_data.json')
 setting_save = (settings) ->
   try
-    await util.promisify(fs.writeFile)(settings.file, JSON.stringify(settings, null, 2))
+    await fs.promises.writeFile(settings.file, JSON.stringify(settings, null, 2))
   catch e
     add_log("save fail");
   return
