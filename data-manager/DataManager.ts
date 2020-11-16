@@ -44,9 +44,6 @@ export class DataManager {
 		this.ready = false;
 		this.log = log;
 	}
-	async finalize() {
-		await this.db.close();
-	}
 	private async transaction(fun: (mdb: EntityManager) => Promise<boolean>) {
 		const runner = await this.db.createQueryRunner();
 		await runner.connect();
