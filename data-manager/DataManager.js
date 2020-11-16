@@ -39,6 +39,7 @@ class DataManager {
         else {
             await runner.rollbackTransaction();
         }
+        await runner.release();
     }
     async init() {
         this.db = await typeorm_1.createConnection({
@@ -279,6 +280,7 @@ class DataManager {
             await runner.rollbackTransaction();
             this.log.warn(`Failed to clear duel logs: ${e.toString()}`);
         }
+        await runner.release();
     }
     async saveDuelLog(name, roomId, cloudReplayId, replayFilename, roomMode, duelCount, playerInfos) {
         const duelLog = new DuelLog_1.DuelLog();
