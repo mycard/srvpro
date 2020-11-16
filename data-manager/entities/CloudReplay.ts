@@ -5,7 +5,7 @@ import moment from "moment";
 
 @Entity({
 	orderBy: {
-		id: "DESC"
+		date: "DESC"
 	}
 })
 export class CloudReplay {

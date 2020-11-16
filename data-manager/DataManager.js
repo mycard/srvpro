@@ -54,7 +54,7 @@ class DataManager {
         try {
             const replays = await this.db.createQueryBuilder(CloudReplay_1.CloudReplay, "replay")
                 .where("exists (select id from cloud_replay_player where cloud_replay_player.cloudReplayId = replay.id and cloud_replay_player.key = :key)", { key })
-                .orderBy("replay.id", "DESC")
+                .orderBy("replay.date", "DESC")
                 .limit(10)
                 .leftJoinAndSelect("replay.players", "player")
                 .getMany();

@@ -56,7 +56,7 @@ __decorate([
 CloudReplay = __decorate([
     typeorm_1.Entity({
         orderBy: {
-            id: "DESC"
+            date: "DESC"
         }
     })
 ], CloudReplay);
