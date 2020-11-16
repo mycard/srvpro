@@ -25,7 +25,7 @@ let CloudReplayPlayer = CloudReplayPlayer_1 = class CloudReplayPlayer extends Ba
 };
 __decorate([
     typeorm_1.Index(),
-    typeorm_1.Column({ type: "varchar", length: 40 }),
+    typeorm_1.Column({ type: "varchar", length: 128 }),
     __metadata("design:type", String)
 ], CloudReplayPlayer.prototype, "key", void 0);
 __decorate([

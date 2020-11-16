@@ -6,7 +6,7 @@ import {BasePlayer} from "./BasePlayer";
 @Entity()
 export class CloudReplayPlayer extends BasePlayer {
 	@Index()
-	@Column({ type: "varchar", length: 40 })
+	@Column({ type: "varchar", length: 128 })
 	key: string;
 
 	@ManyToOne(() => CloudReplay, replay => replay.players)
