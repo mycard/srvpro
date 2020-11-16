@@ -95,10 +95,16 @@
   };
 
   createDirectoryIfNotExists = async(path) => {
-    if (!(await checkFileExists(path))) {
-      return (await fs.promises.mkdir(path, {
-        recursive: true
-      }));
+    var e;
+    try {
+      if (path && !(await checkFileExists(path))) {
+        return (await fs.promises.mkdir(path, {
+          recursive: true
+        }));
+      }
+    } catch (error1) {
+      e = error1;
+      return log.warn(`Failed to create directory ${path}: ${e.toString()}`);
     }
   };
 

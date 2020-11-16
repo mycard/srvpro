@@ -100,8 +100,11 @@ checkFileExists = (path) =>
     return false
 
 createDirectoryIfNotExists = (path) =>
-  if !await checkFileExists(path)
-    await fs.promises.mkdir(path, {recursive: true})
+  try
+    if path and !await checkFileExists(path)
+      await fs.promises.mkdir(path, {recursive: true})
+  catch e
+    log.warn("Failed to create directory #{path}: #{e.toString()}")
 
 setting_save = global.setting_save = (settings) ->
   try
