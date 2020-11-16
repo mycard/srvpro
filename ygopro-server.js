@@ -423,6 +423,11 @@
         await setting_save(settings);
         log.warn("Chat color cannot be enabled because no MySQL.");
       }
+      if (settings.modules.random_duel.record_match_scores) {
+        settings.modules.random_duel.record_match_scores = false;
+        await setting_save(settings);
+        log.warn("Cannot record random match scores because no MySQL.");
+      }
     }
     // 读取数据
     default_data = (await loadJSONAsync('./data/default_data.json'));
@@ -622,7 +627,7 @@
     if (settings.modules.dialogues.get) {
       load_dialogues();
     }
-    if (settings.modules.random_duel.post_match_scores) {
+    if (settings.modules.random_duel.post_match_scores && settings.modules.mysql.enabled) {
       setInterval(async function() {
         var scores;
         scores = (await dataManager.getRandomScoreTop10());
