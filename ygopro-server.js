@@ -5231,4 +5231,11 @@
 
   init();
 
+  process.on('SIGINT', async function() {
+    if (this.dataManager) {
+      await this.dataManager.finialize();
+      return process.exit(0);
+    }
+  });
+
 }).call(this);

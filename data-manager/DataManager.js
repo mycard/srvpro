@@ -21,6 +21,9 @@ class DataManager {
         this.ready = false;
         this.log = log;
     }
+    async finalize() {
+        await this.db.close();
+    }
     async transaction(fun) {
         const runner = await this.db.createQueryRunner();
         await runner.connect();
