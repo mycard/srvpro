@@ -268,10 +268,10 @@
 
   }).call(this);
 
-  loadLFList = function(path) {
+  loadLFList = async function(path) {
     var date, j, len, list, ref, results;
     try {
-      ref = fs.promises.readFile(path, 'utf8').match(/!.*/g);
+      ref = ((await fs.promises.readFile(path, 'utf8'))).match(/!.*/g);
       results = [];
       for (j = 0, len = ref.length; j < len; j++) {
         list = ref[j];
