@@ -4807,7 +4807,7 @@
             return log.warn("SAVE REPLAY ERROR", replay_filename, err);
           }
         });
-        dataManager.saveDuelLog(room.name, room.process_pid.toString(), room.cloud_replay_id, replay_filename, room.hostinfo.mode, room.duel_count, playerInfos); // no synchronize here because too slow
+        dataManager.saveDuelLog(room.name, room.process_pid, room.cloud_replay_id, replay_filename, room.hostinfo.mode, room.duel_count, playerInfos); // no synchronize here because too slow
       }
       if (settings.modules.cloud_replay.enabled && settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
         ygopro.stoc_send_chat(client, `\${cloud_replay_delay_part1}R#${room.cloud_replay_id}\${cloud_replay_delay_part2}`, ygopro.constants.COLORS.BABYBLUE);
