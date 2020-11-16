@@ -1,9 +1,13 @@
-import {Column, Entity, OneToMany, PrimaryColumn} from "typeorm";
+import {Column, Entity, Index, OneToMany, PrimaryColumn} from "typeorm";
 import {CloudReplayPlayer} from "./CloudReplayPlayer";
 import _ from "underscore";
 import moment from "moment";
 
-@Entity()
+@Entity({
+	orderBy: {
+		id: "DESC"
+	}
+})
 export class CloudReplay {
 	@PrimaryColumn({ unsigned: true, type: "bigint" })
 	id: number;
@@ -19,6 +23,7 @@ export class CloudReplay {
 		return Buffer.from(this.data, "base64");
 	}
 
+	@Index()
 	@Column({ type: "datetime" })
 	date: Date;
 

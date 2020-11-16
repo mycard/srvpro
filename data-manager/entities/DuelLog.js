@@ -50,6 +50,7 @@ __decorate([
     __metadata("design:type", Number)
 ], DuelLog.prototype, "id", void 0);
 __decorate([
+    typeorm_1.Index(),
     typeorm_1.Column("datetime"),
     __metadata("design:type", Date)
 ], DuelLog.prototype, "time", void 0);
@@ -83,7 +84,11 @@ __decorate([
     __metadata("design:type", Array)
 ], DuelLog.prototype, "players", void 0);
 DuelLog = __decorate([
-    typeorm_1.Entity()
+    typeorm_1.Entity({
+        orderBy: {
+            id: "DESC"
+        }
+    })
 ], DuelLog);
 exports.DuelLog = DuelLog;
 //# sourceMappingURL=DuelLog.js.map

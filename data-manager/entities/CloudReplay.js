@@ -45,6 +45,7 @@ __decorate([
     __metadata("design:type", String)
 ], CloudReplay.prototype, "data", void 0);
 __decorate([
+    typeorm_1.Index(),
     typeorm_1.Column({ type: "datetime" }),
     __metadata("design:type", Date)
 ], CloudReplay.prototype, "date", void 0);
@@ -53,7 +54,11 @@ __decorate([
     __metadata("design:type", Array)
 ], CloudReplay.prototype, "players", void 0);
 CloudReplay = __decorate([
-    typeorm_1.Entity()
+    typeorm_1.Entity({
+        orderBy: {
+            id: "DESC"
+        }
+    })
 ], CloudReplay);
 exports.CloudReplay = CloudReplay;
 //# sourceMappingURL=CloudReplay.js.map

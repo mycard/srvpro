@@ -3,11 +3,16 @@ import {DuelLogPlayer} from "./DuelLogPlayer";
 import moment from "moment";
 import _ from "underscore";
 
-@Entity()
+@Entity({
+    orderBy: {
+        id: "DESC"
+    }
+})
 export class DuelLog {
     @PrimaryGeneratedColumn({unsigned: true, type: "bigint"})
     id: number;
 
+    @Index()
     @Column("datetime")
     time: Date;
 
