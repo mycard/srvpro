@@ -22,7 +22,7 @@ class DataManager {
         this.log = log;
     }
     async transaction(fun) {
-        const runner = await this.db.createQueryRunner();
+        const runner = this.db.createQueryRunner();
         await runner.connect();
         await runner.startTransaction();
         let result = false;
