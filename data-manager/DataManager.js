@@ -14,6 +14,7 @@ const underscore_1 = __importDefault(require("underscore"));
 const DuelLog_1 = require("./entities/DuelLog");
 const DuelLogPlayer_1 = require("./entities/DuelLogPlayer");
 const User_1 = require("./entities/User");
+const RandomDuelScore_1 = require("./entities/RandomDuelScore");
 class DataManager {
     constructor(config, log) {
         this.config = config;
@@ -365,6 +366,79 @@ class DataManager {
                 return false;
             }
         });
+    }
+    async getRandomDuelScore(name) {
+        const repo = this.db.getRepository(RandomDuelScore_1.RandomDuelScore);
+        try {
+            const score = await repo.findOne(name);
+            return score;
+        }
+        catch (e) {
+            this.log.warn(`Failed to fetch random duel score ${name}: ${e.toString()}`);
+            return null;
+        }
+    }
+    async saveRandomDuelScore(score) {
+        const repo = this.db.getRepository(RandomDuelScore_1.RandomDuelScore);
+        try {
+            return await repo.save(score);
+        }
+        catch (e) {
+            this.log.warn(`Failed to save random duel score: ${e.toString()}`);
+            return null;
+        }
+    }
+    async getOrCreateRandomDuelScore(name) {
+        const score = await this.getRandomDuelScore(name);
+        if (score) {
+            return score;
+        }
+        const newScore = new RandomDuelScore_1.RandomDuelScore();
+        newScore.name = name;
+        return await this.saveRandomDuelScore(newScore);
+    }
+    async getRandomDuelScoreDisplay(name) {
+        const score = await this.getRandomDuelScore(name);
+        if (!score) {
+            return `${name.split("$")[0]} \${random_score_blank}`;
+        }
+        return score.getScoreText();
+    }
+    async randomDuelPlayerWin(name) {
+        const score = await this.getOrCreateRandomDuelScore(name);
+        score.win();
+        await this.saveRandomDuelScore(score);
+    }
+    async randomDuelPlayerLose(name) {
+        const score = await this.getOrCreateRandomDuelScore(name);
+        score.lose();
+        await this.saveRandomDuelScore(score);
+    }
+    async randomDuelPlayerFlee(name) {
+        const score = await this.getOrCreateRandomDuelScore(name);
+        score.flee();
+        await this.saveRandomDuelScore(score);
+    }
+    async getRandomScoreTop10() {
+        try {
+            const scores = await this.db.getRepository(RandomDuelScore_1.RandomDuelScore)
+                .createQueryBuilder("score")
+                .orderBy("score.win", "DESC")
+                .addOrderBy("score.lose", "ASC")
+                .addOrderBy("score.flee", "ASC")
+                .limit(10)
+                .getMany();
+            return scores.map(score => [score.getDisplayName(), {
+                    win: score.winCount,
+                    lose: score.loseCount,
+                    flee: score.fleeCount,
+                    combo: score.winCombo
+                }]);
+        }
+        catch (e) {
+            this.log.warn(`Failed to fetch random duel score ${name}: ${e.toString()}`);
+            return [];
+        }
     }
 }
 exports.DataManager = DataManager;

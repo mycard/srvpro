@@ -487,11 +487,7 @@ init = () ->
 
   if settings.modules.random_duel.post_match_scores
     setInterval(()->
-      scores_pair = _.pairs ROOM_players_scores
-      scores_by_lose = _.sortBy(scores_pair, (score)-> return score[1].lose).reverse() # 败场由高到低
-      scores_by_win = _.sortBy(scores_by_lose, (score)-> return score[1].win).reverse() # 然后胜场由低到高，再逆转，就是先排胜场再排败场
-      scores = _.first(scores_by_win, 10)
-      #log.info scores
+      scores = await dataManager.getRandomScoreTop10()
 
       try
         await axios.post(settings.modules.random_duel.post_match_scores, {
@@ -624,7 +620,6 @@ setInterval(get_memory_usage, 3000)
 
 ROOM_all = global.ROOM_all = []
 ROOM_players_oppentlist = global.ROOM_players_oppentlist = {}
-ROOM_players_scores = global.ROOM_players_scores = {}
 ROOM_connected_ip = global.ROOM_connected_ip = {}
 ROOM_bad_ip = global.ROOM_bad_ip = {}
 
@@ -667,40 +662,27 @@ ROOM_kick = (name, callback)->
 
 
 ROOM_player_win = global.ROOM_player_win = (name)->
-  if !ROOM_players_scores[name]
-    ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
-  ROOM_players_scores[name].win = ROOM_players_scores[name].win + 1
-  ROOM_players_scores[name].combo = ROOM_players_scores[name].combo + 1
+  if !settings.modules.mysql.enabled
+    return
+  await dataManager.randomDuelPlayerWin(name)
   return
 
 ROOM_player_lose = global.ROOM_player_lose = (name)->
-  if !ROOM_players_scores[name]
-    ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
-  ROOM_players_scores[name].lose = ROOM_players_scores[name].lose + 1
-  ROOM_players_scores[name].combo = 0
+  if !settings.modules.mysql.enabled
+    return
+  await dataManager.randomDuelPlayerLose(name)
   return
 
 ROOM_player_flee = global.ROOM_player_flee = (name)->
-  if !ROOM_players_scores[name]
-    ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
-  ROOM_players_scores[name].flee = ROOM_players_scores[name].flee + 1
-  ROOM_players_scores[name].combo = 0
+  if !settings.modules.mysql.enabled
+    return
+  await dataManager.randomDuelPlayerFlee(name)
   return
 
 ROOM_player_get_score = global.ROOM_player_get_score = (player)->
-  name = player.name_vpass
-  score = ROOM_players_scores[name] 
-  if !score
-    return "#{player.name} ${random_score_blank}"
-  total = score.win + score.lose
-  if score.win < 2 and total < 3
-    return "#{player.name} ${random_score_not_enough}"
-  if score.combo >= 2
-    return "${random_score_part1}#{player.name} ${random_score_part2} #{Math.ceil(score.win/total*100)}${random_score_part3} #{Math.ceil(score.flee/total*100)}${random_score_part4_combo}#{score.combo}${random_score_part5_combo}"
-    #return player.name + " 的今日战绩：胜率" + Math.ceil(score.win/total*100) + "%，逃跑率" + Math.ceil(score.flee/total*100) + "%，" + score.combo + "连胜中！"
-  else
-    return "${random_score_part1}#{player.name} ${random_score_part2} #{Math.ceil(score.win/total*100)}${random_score_part3} #{Math.ceil(score.flee/total*100)}${random_score_part4}"
-  return
+  if !settings.modules.mysql.enabled
+    return ""
+  return await dataManager.getRandomDuelScoreDisplay(player.name_vpass)
 
 ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player_ip)->
   uname=name.toUpperCase()
@@ -2462,9 +2444,9 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         #client.score_shown = true
       return
   if settings.modules.random_duel.record_match_scores and room.random_type == 'M'
-    ygopro.stoc_send_chat_to_room(room, ROOM_player_get_score(client), ygopro.constants.COLORS.GREEN)
+    ygopro.stoc_send_chat_to_room(room, await ROOM_player_get_score(client), ygopro.constants.COLORS.GREEN)
     for player in room.players when player.pos != 7 and player != client
-      ygopro.stoc_send_chat(client, ROOM_player_get_score(player), ygopro.constants.COLORS.GREEN)
+      ygopro.stoc_send_chat(client, await ROOM_player_get_score(player), ygopro.constants.COLORS.GREEN)
   if !room.recorder
     room.recorder = recorder = net.connect room.port, ->
       ygopro.ctos_send recorder, 'PLAYER_INFO', {

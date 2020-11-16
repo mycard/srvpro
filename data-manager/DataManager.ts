@@ -10,6 +10,7 @@ import {DuelLog} from "./entities/DuelLog";
 import {Deck} from "./DeckEncoder";
 import {DuelLogPlayer} from "./entities/DuelLogPlayer";
 import {User} from "./entities/User";
+import {RandomDuelScore} from "./entities/RandomDuelScore";
 
 interface BasePlayerInfo {
 	name: string;
@@ -391,5 +392,76 @@ export class DataManager {
 			}
 		});
 
+	}
+
+	async getRandomDuelScore(name: string) {
+		const repo = this.db.getRepository(RandomDuelScore);
+		try {
+			const score = await repo.findOne(name);
+			return score;
+		} catch (e) {
+			this.log.warn(`Failed to fetch random duel score ${name}: ${e.toString()}`);
+			return null;
+		}
+	}
+	async saveRandomDuelScore(score: RandomDuelScore) {
+		const repo = this.db.getRepository(RandomDuelScore);
+		try {
+			return await repo.save(score);
+		} catch (e) {
+			this.log.warn(`Failed to save random duel score: ${e.toString()}`);
+			return null;
+		}
+	}
+	async getOrCreateRandomDuelScore(name: string) {
+		const score = await this.getRandomDuelScore(name);
+		if(score) {
+			return score;
+		}
+		const newScore = new RandomDuelScore();
+		newScore.name = name;
+		return await this.saveRandomDuelScore(newScore);
+	}
+	async getRandomDuelScoreDisplay(name: string) {
+		const score = await this.getRandomDuelScore(name);
+		if(!score) {
+			return `${name.split("$")[0]} \${random_score_blank}`;
+		}
+		return score.getScoreText();
+	}
+	async randomDuelPlayerWin(name: string) {
+		const score = await this.getOrCreateRandomDuelScore(name);
+		score.win();
+		await this.saveRandomDuelScore(score);
+	}
+	async randomDuelPlayerLose(name: string) {
+		const score = await this.getOrCreateRandomDuelScore(name);
+		score.lose();
+		await this.saveRandomDuelScore(score);
+	}
+	async randomDuelPlayerFlee(name: string) {
+		const score = await this.getOrCreateRandomDuelScore(name);
+		score.flee();
+		await this.saveRandomDuelScore(score);
+	}
+	async getRandomScoreTop10() {
+		try {
+			const scores = await this.db.getRepository(RandomDuelScore)
+				.createQueryBuilder("score")
+				.orderBy("score.win", "DESC")
+				.addOrderBy("score.lose", "ASC")
+				.addOrderBy("score.flee", "ASC")
+				.limit(10)
+				.getMany();
+			return scores.map(score => [score.getDisplayName(), {
+				win: score.winCount,
+				lose: score.loseCount,
+				flee: score.fleeCount,
+				combo: score.winCombo
+			}]);
+		} catch (e) {
+			this.log.warn(`Failed to fetch random duel score ${name}: ${e.toString()}`);
+			return [];
+		}
 	}
 }
