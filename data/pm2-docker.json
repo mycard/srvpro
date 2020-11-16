@@ -11,11 +11,6 @@
 			"cwd": "/ygopro-server/windbot/",
 			"args": "ServerMode=true ServerPort=2399",
 			"interpreter": "mono"
-		},
-		{
-			"name": "redis-server",
-			"script": "/usr/bin/redis-server",
-			"cwd": "/redis"
 		}
 	]
 }

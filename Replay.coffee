@@ -117,7 +117,7 @@ class Replay
     @header == null ? false : @header.isTag
 
   @fromFile: (filePath) ->
-    Replay.fromBuffer fs.readFileSync filePath
+    Replay.fromBuffer await fs.promises.readFile filePath
 
   @fromBuffer: (buffer) ->
     reader = new ReplayReader buffer

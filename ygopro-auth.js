@@ -73,7 +73,7 @@
     text = mt.format('YYYY-MM-DD HH:mm:ss') + " --> " + message + "\n";
     res = false;
     try {
-      await util.promisify(fs.appendFile)("./logs/" + mt.format('YYYY-MM-DD') + ".log", text);
+      await fs.promises.appendFile("./logs/" + mt.format('YYYY-MM-DD') + ".log", text);
       res = true;
     } catch (error) {
       res = false;
@@ -86,7 +86,7 @@
   setting_save = async function(settings) {
     var e;
     try {
-      await util.promisify(fs.writeFile)(settings.file, JSON.stringify(settings, null, 2));
+      await fs.promises.writeFile(settings.file, JSON.stringify(settings, null, 2));
     } catch (error) {
       e = error;
       add_log("save fail");
