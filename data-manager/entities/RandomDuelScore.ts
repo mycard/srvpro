@@ -43,13 +43,13 @@ export class RandomDuelScore {
         const displayName = this.getDisplayName();
         const total = this.winCount + this.loseCount;
         if (this.winCount < 2 && total < 3) {
-            return `${displayName} \${random_this_not_enough}`;
+            return `${displayName} \${random_score_not_enough}`;
         }
         if (this.winCombo >= 2) {
-            return `\${random_this_part1}${displayName} \${random_this_part2} ${Math.ceil(this.winCount / total * 100)}\${random_this_part3} ${Math.ceil(this.fleeCount / total * 100)}\${random_this_part4_combo}${this.winCombo}\${random_this_part5_combo}`;
+            return `\${random_score_part1}${displayName} \${random_score_part2} ${Math.ceil(this.winCount / total * 100)}\${random_score_part3} ${Math.ceil(this.fleeCount / total * 100)}\${random_score_part4_combo}${this.winCombo}\${random_score_part5_combo}`;
         } else {
             //return displayName + " 的今日战绩：胜率" + Math.ceil(this.winCount/total*100) + "%，逃跑率" + Math.ceil(this.fleeCount/total*100) + "%，" + this.winCombo + "连胜中！"
-            return `\${random_this_part1}${displayName} \${random_this_part2} ${Math.ceil(this.winCount / total * 100)}\${random_this_part3} ${Math.ceil(this.fleeCount / total * 100)}\${random_this_part4}`;
+            return `\${random_score_part1}${displayName} \${random_score_part2} ${Math.ceil(this.winCount / total * 100)}\${random_score_part3} ${Math.ceil(this.fleeCount / total * 100)}\${random_score_part4}`;
         }
     }
 }
