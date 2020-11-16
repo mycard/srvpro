@@ -11,7 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BasePlayer = void 0;
 const typeorm_1 = require("typeorm");
-class BasePlayer {
+const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
+class BasePlayer extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
 }
 __decorate([
     typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),

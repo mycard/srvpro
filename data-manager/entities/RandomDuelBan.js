@@ -11,7 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RandomDuelBan = void 0;
 const typeorm_1 = require("typeorm");
-let RandomDuelBan = class RandomDuelBan {
+const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
+let RandomDuelBan = class RandomDuelBan extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
     setNeedTip(need) {
         this.needTip = need ? 1 : 0;
     }

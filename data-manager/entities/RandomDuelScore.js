@@ -11,7 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RandomDuelScore = void 0;
 const typeorm_1 = require("typeorm");
-let RandomDuelScore = class RandomDuelScore {
+const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
+let RandomDuelScore = class RandomDuelScore extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
     getDisplayName() {
         return this.name.split("$")[0];
     }

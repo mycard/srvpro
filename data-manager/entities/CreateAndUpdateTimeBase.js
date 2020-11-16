@@ -9,28 +9,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Ban = void 0;
+exports.CreateAndUpdateTimeBase = void 0;
 const typeorm_1 = require("typeorm");
-const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
-let Ban = class Ban extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
-};
+class CreateAndUpdateTimeBase {
+}
 __decorate([
-    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
-    __metadata("design:type", Number)
-], Ban.prototype, "id", void 0);
+    typeorm_1.CreateDateColumn(),
+    __metadata("design:type", Date)
+], CreateAndUpdateTimeBase.prototype, "createTime", void 0);
 __decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column({ type: "varchar", length: 64, nullable: true }),
-    __metadata("design:type", String)
-], Ban.prototype, "ip", void 0);
-__decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column({ type: "varchar", length: 20, nullable: true }),
-    __metadata("design:type", String)
-], Ban.prototype, "name", void 0);
-Ban = __decorate([
-    typeorm_1.Entity(),
-    typeorm_1.Unique(["ip", "name"])
-], Ban);
-exports.Ban = Ban;
-//# sourceMappingURL=Ban.js.map
+    typeorm_1.UpdateDateColumn(),
+    __metadata("design:type", Date)
+], CreateAndUpdateTimeBase.prototype, "updateTime", void 0);
+exports.CreateAndUpdateTimeBase = CreateAndUpdateTimeBase;
+//# sourceMappingURL=CreateAndUpdateTimeBase.js.map

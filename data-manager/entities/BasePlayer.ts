@@ -1,6 +1,7 @@
 import {Column, PrimaryGeneratedColumn} from "typeorm";
+import {CreateAndUpdateTimeBase} from "./CreateAndUpdateTimeBase";
 
-export abstract class BasePlayer {
+export abstract class BasePlayer extends CreateAndUpdateTimeBase {
     @PrimaryGeneratedColumn({unsigned: true, type: "bigint"})
     id: number;
 

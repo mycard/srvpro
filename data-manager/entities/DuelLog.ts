@@ -2,13 +2,14 @@ import {Column, Entity, Index, OneToMany, PrimaryGeneratedColumn} from "typeorm"
 import {DuelLogPlayer} from "./DuelLogPlayer";
 import moment from "moment";
 import _ from "underscore";
+import {CreateAndUpdateTimeBase} from "./CreateAndUpdateTimeBase";
 
 @Entity({
     orderBy: {
         id: "DESC"
     }
 })
-export class DuelLog {
+export class DuelLog extends CreateAndUpdateTimeBase {
     @PrimaryGeneratedColumn({unsigned: true, type: "bigint"})
     id: number;
 

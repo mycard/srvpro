@@ -17,7 +17,8 @@ const typeorm_1 = require("typeorm");
 const DuelLogPlayer_1 = require("./DuelLogPlayer");
 const moment_1 = __importDefault(require("moment"));
 const underscore_1 = __importDefault(require("underscore"));
-let DuelLog = class DuelLog {
+const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
+let DuelLog = class DuelLog extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
     getViewString() {
         const viewPlayers = underscore_1.default.clone(this.players);
         viewPlayers.sort((p1, p2) => p1.pos - p2.pos);

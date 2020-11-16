@@ -17,7 +17,8 @@ const typeorm_1 = require("typeorm");
 const CloudReplayPlayer_1 = require("./CloudReplayPlayer");
 const underscore_1 = __importDefault(require("underscore"));
 const moment_1 = __importDefault(require("moment"));
-let CloudReplay = class CloudReplay {
+const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
+let CloudReplay = class CloudReplay extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
     fromBuffer(buffer) {
         this.data = buffer.toString("base64");
     }

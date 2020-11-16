@@ -1,8 +1,9 @@
 import {Column, Entity, Index, PrimaryGeneratedColumn, Unique} from "typeorm";
+import {CreateAndUpdateTimeBase} from "./CreateAndUpdateTimeBase";
 
 @Entity()
 @Unique(["ip", "name"])
-export class Ban {
+export class Ban extends CreateAndUpdateTimeBase {
 	@PrimaryGeneratedColumn({ unsigned: true, type: "bigint" })
 	id: number;
 

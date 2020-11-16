@@ -1,7 +1,8 @@
 import {Column, Entity, Index, PrimaryColumn} from "typeorm";
+import {CreateAndUpdateTimeBase} from "./CreateAndUpdateTimeBase";
 
 @Entity()
-export class RandomDuelScore {
+export class RandomDuelScore extends CreateAndUpdateTimeBase {
     @PrimaryColumn({type: "varchar", length: 20})
     name: string;
 

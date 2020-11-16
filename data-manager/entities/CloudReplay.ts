@@ -2,13 +2,14 @@ import {Column, Entity, Index, OneToMany, PrimaryColumn} from "typeorm";
 import {CloudReplayPlayer} from "./CloudReplayPlayer";
 import _ from "underscore";
 import moment from "moment";
+import {CreateAndUpdateTimeBase} from "./CreateAndUpdateTimeBase";
 
 @Entity({
 	orderBy: {
 		date: "DESC"
 	}
 })
-export class CloudReplay {
+export class CloudReplay extends CreateAndUpdateTimeBase {
 	@PrimaryColumn({ unsigned: true, type: "bigint" })
 	id: number;
 
