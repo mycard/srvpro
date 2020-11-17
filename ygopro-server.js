@@ -2563,7 +2563,7 @@
     var banMCRequest, e, geo, lang, name, name_full, struct, vpass;
     // checkmate use username$password, but here don't
     // so remove the password
-    name_full = info.name.split("$");
+    name_full = info.name.replace(/\\/g, "").split("$");
     name = name_full[0];
     vpass = name_full[1];
     if (vpass && !vpass.length) {
@@ -4867,18 +4867,23 @@
   if (true) {
     getDuelLogQueryFromQs = function(qdata) {
       var ret;
-      ret = {};
-      if (qdata.roomname) {
-        ret.roomName = decodeURIComponent(qdata.roomname);
-      }
-      if (qdata.duelcount) {
-        ret.roomName = parseInt(decodeURIComponent(qdata.duelcount));
-      }
-      if (qdata.playername) {
-        ret.playerName = decodeURIComponent(qdata.playername);
-      }
-      if (qdata.score) {
-        ret.playerScore = parseInt(decodeURIComponent(qdata.score));
+      try {
+        ret = {};
+        if (qdata.roomname) {
+          ret.roomName = decodeURIComponent(qdata.roomname).trim();
+        }
+        if (qdata.duelcount) {
+          ret.duelCount = parseInt(decodeURIComponent(qdata.duelcount));
+        }
+        if (qdata.playername) {
+          ret.playerName = decodeURIComponent(qdata.playername).trim();
+        }
+        if (qdata.score) {
+          ret.playerScore = parseInt(decodeURIComponent(qdata.score));
+        }
+        return ret;
+      } catch (error1) {
+        return {};
       }
     };
     addCallback = function(callback, text) {

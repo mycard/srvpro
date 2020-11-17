@@ -1908,7 +1908,7 @@ deck_name_match = global.deck_name_match = (deck_name, player_name) ->
 ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
   # checkmate use username$password, but here don't
   # so remove the password
-  name_full =info.name.split("$")
+  name_full =info.name.replace(/\\/g, "").split("$")
   name = name_full[0]
   vpass = name_full[1]
   if vpass and !vpass.length
@@ -3644,16 +3644,19 @@ global.rebooted = false
 if true
 
   getDuelLogQueryFromQs = (qdata) ->
-    ret = {}
-    if(qdata.roomname)
-      ret.roomName = decodeURIComponent(qdata.roomname)
-    if(qdata.duelcount)
-      ret.roomName = parseInt(decodeURIComponent(qdata.duelcount))
-    if(qdata.playername)
-      ret.playerName = decodeURIComponent(qdata.playername)
-    if(qdata.score)
-      ret.playerScore = parseInt(decodeURIComponent(qdata.score))
-    return
+    try
+      ret = {}
+      if(qdata.roomname)
+        ret.roomName = decodeURIComponent(qdata.roomname).trim()
+      if(qdata.duelcount)
+        ret.duelCount = parseInt(decodeURIComponent(qdata.duelcount))
+      if(qdata.playername)
+        ret.playerName = decodeURIComponent(qdata.playername).trim()
+      if(qdata.score)
+        ret.playerScore = parseInt(decodeURIComponent(qdata.score))
+      return ret
+    catch
+      return {}
 
   addCallback = (callback, text)->
     if not callback then return text

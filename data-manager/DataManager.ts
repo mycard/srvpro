@@ -256,7 +256,12 @@ export class DataManager {
 
 	}
 
+	private getEscapedString(text: string) {
+		return text.replace(/\\/g, "").replace(/_/g, "\\_").replace(/%/g, "\\%") + "%";
+	}
+
 	async getDuelLogFromCondition(data: DuelLogQuery) {
+		//console.log(data);
 		if(!data) {
 			return this.getAllDuelLogs();
 		}
@@ -266,7 +271,7 @@ export class DataManager {
 			const queryBuilder = repo.createQueryBuilder("duelLog")
 				.where("1");
 			if(roomName != null && roomName.length) {
-				const escapedRoomName = roomName.replace(/[%_]/g, "") + "%";
+				const escapedRoomName = this.getEscapedString(roomName);
 				queryBuilder.andWhere("duelLog.name like :escapedRoomName", { escapedRoomName });
 			}
 			if(duelCount != null && !isNaN(duelCount)) {
@@ -276,9 +281,9 @@ export class DataManager {
 				let innerQuery = "select id from duel_log_player where duel_log_player.duelLogId = duelLog.id";
 				const innerQueryParams: any = {};
 				if(playerName != null && playerName.length) {
-					const escapedPlayerName = playerName.replace(/[%_]/g, "") + "%";
-					innerQuery += " and duel_log_player.escapedPlayerName like :escapedPlayerName";
-					innerQueryParams.playerRealName = escapedPlayerName;
+					const escapedPlayerName = this.getEscapedString(playerName);
+					innerQuery += " and duel_log_player.realName like :escapedPlayerName";
+					innerQueryParams.escapedPlayerName = escapedPlayerName;
 				}
 				if(playerScore != null && !isNaN(playerScore)) {
 					innerQuery += " and duel_log_player.score = :playerScore";
@@ -286,9 +291,10 @@ export class DataManager {
 				}
 				queryBuilder.andWhere(`exists (${innerQuery})`, innerQueryParams);
 			}
-			const duelLogs = queryBuilder.orderBy("duelLog.id", "DESC")
-				.leftJoinAndSelect("duelLog.players", "player")
-				.getMany();
+			queryBuilder.orderBy("duelLog.id", "DESC")
+				.leftJoinAndSelect("duelLog.players", "player");
+			// console.log(queryBuilder.getSql());
+			const duelLogs = await queryBuilder.getMany();
 			return duelLogs;
 		} catch (e) {
 			this.log.warn(`Failed to fetch duel logs: ${e.toString()}`);
