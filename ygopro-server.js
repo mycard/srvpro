@@ -4893,7 +4893,7 @@
       return callback + "( " + text + " );";
     };
     httpRequestListener = async function(request, response) {
-      var archive_args, archive_name, archive_process, buffer, check, death_room_found, duellog, e, err, error, filename, getpath, j, len, parseQueryString, pass_validated, ref, roomsjson, success, u;
+      var archiveStream, buffer, death_room_found, duellog, e, err, error, filename, getpath, parseQueryString, pass_validated, roomsjson, success, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       //pass_validated = u.query.pass == settings.modules.http.password
@@ -4966,48 +4966,27 @@
           return;
         } else {
           try {
-            archive_name = moment().format('YYYY-MM-DD HH-mm-ss') + ".zip";
-            archive_args = ["a", "-mx0", "-y", archive_name];
-            check = false;
-            ref = (await dataManager.getReplayFilenamesFromCondition(getDuelLogQueryFromQs(u.query)));
-            for (j = 0, len = ref.length; j < len; j++) {
-              filename = ref[j];
-              check = true;
-              archive_args.push(filename);
-            }
-            if (!check) {
+            archiveStream = (await dataManager.getReplayArchiveStreamFromCondition(settings.modules.tournament_mode.replay_path, getDuelLogQueryFromQs(u.query)));
+            if (!archiveStream) {
               response.writeHead(403);
-              response.end("Duel logs not found.");
+              response.end("Replay not found.");
               return;
             }
-            archive_process = spawn(settings.modules.tournament_mode.replay_archive_tool, archive_args, {
-              cwd: settings.modules.tournament_mode.replay_path
+            response.writeHead(200, {
+              "Content-Type": "application/octet-stream",
+              "Content-Disposition": "attachment"
             });
-            archive_process.on('error', (err) => {
-              response.writeHead(403);
-              response.end("Failed packing replays. " + err);
+            archiveStream.on("data", function(data) {
+              return response.write(data);
             });
-            archive_process.on('exit', (code) => {
-              return fs.readFile(settings.modules.tournament_mode.replay_path + archive_name, function(error, buffer) {
-                if (error) {
-                  response.writeHead(403);
-                  response.end("Failed sending replays. " + error);
-                } else {
-                  response.writeHead(200, {
-                    "Content-Type": "application/octet-stream",
-                    "Content-Disposition": "attachment"
-                  });
-                  response.end(buffer);
-                }
-              });
+            archiveStream.on("end", function() {
+              return response.end();
             });
-            archive_process.stdout.setEncoding('utf8');
-            archive_process.stdout.on('data', (data) => {
-              return log.info("archive process: " + data);
+            archiveStream.on("close", function() {
+              return log.warn("Archive closed");
             });
-            archive_process.stderr.setEncoding('utf8');
-            archive_process.stderr.on('data', (data) => {
-              return log.warn("archive error: " + data);
+            archiveStream.on("error", function(error) {
+              return log.warn(`Archive error: ${error}`);
             });
           } catch (error1) {
             error = error1;

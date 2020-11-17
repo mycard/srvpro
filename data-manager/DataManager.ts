@@ -11,6 +11,8 @@ import {Deck} from "./DeckEncoder";
 import {DuelLogPlayer} from "./entities/DuelLogPlayer";
 import {User} from "./entities/User";
 import {RandomDuelScore} from "./entities/RandomDuelScore";
+import JSZip from "jszip";
+import * as fs from "fs";
 
 interface BasePlayerInfo {
 	name: string;
@@ -348,6 +350,34 @@ export class DataManager {
 	async getReplayFilenamesFromCondition(data: DuelLogQuery) {
 		const allDuelLogs = await this.getDuelLogFromCondition(data);
 		return allDuelLogs.map(duelLog => duelLog.replayFileName);
+	}
+	async getReplayArchiveStreamFromCondition(rootPath: string, data: DuelLogQuery) {
+		const filenames = await this.getReplayFilenamesFromCondition(data);
+		if(!filenames.length) {
+			return null;
+		}
+		try {
+			const zip = new JSZip();
+			for(let fileName of filenames) {
+				const filePath = `${rootPath}${fileName}`;
+				try {
+					await fs.promises.access(filePath);
+					zip.file(fileName, fs.promises.readFile(filePath));
+				} catch(e) {
+					this.log.warn(`Errored archiving ${filePath}: ${e.toString()}`)
+					continue;
+				}
+			}
+			return zip.generateNodeStream({
+				compression: "DEFLATE",
+				compressionOptions: {
+					level: 9
+				}
+			});
+		} catch(e2) {
+			this.log.warn(`Errored creating archive: ${e2.toString()}`)
+			return null;
+		}
 	}
 	async clearDuelLog() {
 		const runner = this.db.createQueryRunner();

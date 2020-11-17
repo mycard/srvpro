@@ -1,4 +1,23 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -15,6 +34,8 @@ const DuelLog_1 = require("./entities/DuelLog");
 const DuelLogPlayer_1 = require("./entities/DuelLogPlayer");
 const User_1 = require("./entities/User");
 const RandomDuelScore_1 = require("./entities/RandomDuelScore");
+const jszip_1 = __importDefault(require("jszip"));
+const fs = __importStar(require("fs"));
 class DataManager {
     constructor(config, log) {
         this.config = config;
@@ -317,6 +338,36 @@ class DataManager {
     async getReplayFilenamesFromCondition(data) {
         const allDuelLogs = await this.getDuelLogFromCondition(data);
         return allDuelLogs.map(duelLog => duelLog.replayFileName);
+    }
+    async getReplayArchiveStreamFromCondition(rootPath, data) {
+        const filenames = await this.getReplayFilenamesFromCondition(data);
+        if (!filenames.length) {
+            return null;
+        }
+        try {
+            const zip = new jszip_1.default();
+            for (let fileName of filenames) {
+                const filePath = `${rootPath}${fileName}`;
+                try {
+                    await fs.promises.access(filePath);
+                    zip.file(fileName, fs.promises.readFile(filePath));
+                }
+                catch (e) {
+                    this.log.warn(`Errored archiving ${filePath}: ${e.toString()}`);
+                    continue;
+                }
+            }
+            return zip.generateNodeStream({
+                compression: "DEFLATE",
+                compressionOptions: {
+                    level: 9
+                }
+            });
+        }
+        catch (e2) {
+            this.log.warn(`Errored creating archive: ${e2.toString()}`);
+            return null;
+        }
     }
     async clearDuelLog() {
         const runner = this.db.createQueryRunner();

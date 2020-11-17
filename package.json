@@ -22,6 +22,7 @@
     "deepmerge": "latest",
     "formidable": "latest",
     "geoip-country-lite": "latest",
+    "jszip": "^3.5.0",
     "load-json-file": "latest",
     "lzma": "^2.3.2",
     "moment": "^2.29.1",
