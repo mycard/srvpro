@@ -94,11 +94,11 @@
     }
   };
 
-  createDirectoryIfNotExists = async(path) => {
+  createDirectoryIfNotExists = async(dirPath) => {
     var e;
     try {
-      if (path && !(await checkFileExists(path))) {
-        return (await fs.promises.mkdir(path, {
+      if (dirPath && !(await checkFileExists(dirPath))) {
+        return (await fs.promises.mkdir(dirPath, {
           recursive: true
         }));
       }
@@ -297,7 +297,7 @@
   };
 
   init = async function() {
-    var AthleticChecker, DataManager, challonge_module_name, challonge_type, chat_color, config, cppversion, defaultConfig, default_data, dns, e, http_server, https, https_server, imported, j, l, len, len1, len2, m, mkdirList, options, pgClient, pg_client, pg_query, plugin_filename, plugin_list, plugin_path, postData, ref;
+    var AthleticChecker, DataManager, challonge_module_name, challonge_type, chat_color, config, cppversion, defaultConfig, default_data, dirPath, dns, e, http_server, https, https_server, imported, j, l, len, len1, len2, m, mkdirList, options, pgClient, pg_client, pg_query, plugin_filename, plugin_list, plugin_path, postData, ref;
     await createDirectoryIfNotExists("./config");
     await importOldConfig();
     defaultConfig = (await loadJSONAsync('./data/default_config.json'));
@@ -770,8 +770,8 @@
     }
     mkdirList = ["./plugins", settings.modules.tournament_mode.deck_path, settings.modules.tournament_mode.replay_path, settings.modules.tournament_mode.log_save_path, settings.modules.deck_log.local];
     for (l = 0, len1 = mkdirList.length; l < len1; l++) {
-      path = mkdirList[l];
-      await createDirectoryIfNotExists(path);
+      dirPath = mkdirList[l];
+      await createDirectoryIfNotExists(dirPath);
     }
     plugin_list = (await fs.promises.readdir("./plugins"));
     for (m = 0, len2 = plugin_list.length; m < len2; m++) {

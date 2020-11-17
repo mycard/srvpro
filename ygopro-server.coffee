@@ -99,10 +99,10 @@ checkFileExists = (path) =>
   catch e
     return false
 
-createDirectoryIfNotExists = (path) =>
+createDirectoryIfNotExists = (dirPath) =>
   try
-    if path and !await checkFileExists(path)
-      await fs.promises.mkdir(path, {recursive: true})
+    if dirPath and !await checkFileExists(dirPath)
+      await fs.promises.mkdir(dirPath, {recursive: true})
   catch e
     log.warn("Failed to create directory #{path}: #{e.toString()}")
 
@@ -603,8 +603,8 @@ init = () ->
     settings.modules.deck_log.local
   ]
   
-  for path in mkdirList
-    await createDirectoryIfNotExists(path)
+  for dirPath in mkdirList
+    await createDirectoryIfNotExists(dirPath)
 
   plugin_list = await fs.promises.readdir("./plugins")
   for plugin_filename in plugin_list
