@@ -44,7 +44,7 @@
             <input type="text" class="form-control" id="roomname" value="" placeholder="房名">
         </div>
         <div class="col-lg-1">
-            <input type="text" class="form-control" id="duelcount" value="" placeholder="决斗局数">
+            <input type="text" class="form-control" id="duelcount" value="" placeholder="单局数">
         </div>
         <div class="col-lg-3">
             <input type="text" class="form-control" id="playername" value="" placeholder="玩家名">
@@ -114,7 +114,7 @@ function get_value(name) {
     return encodeURIComponent($(name).val());
 }
 
-function getPossibleTextValue(fieldName, realQueryKey) {
+function getPossibleTextValue(fieldName, queryKey) {
     const fullFieldName = `#${fieldName}`;
     const realQueryKey = queryKey || fieldName;
     return (get_value(fullFieldName) ? `&${realQueryKey}=${get_value(fullFieldName)}` : "");
