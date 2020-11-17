@@ -315,8 +315,8 @@ init = () ->
       settings.modules.cloud_replay.enabled = false
       await setting_save(settings)
       log.warn("Cloud replay cannot be enabled because no MySQL.")
-    if settings.modules.enable_recover.enabled
-      settings.modules.enable_recover.enabled = false
+    if settings.modules.tournament_mode.enable_recover.enabled
+      settings.modules.tournament_mode.enable_recover.enabled = false
       await setting_save(settings)
       log.warn("Recover mode cannot be enabled because no MySQL.")
     if settings.modules.chat_color.enabled
