@@ -33,6 +33,8 @@ export interface DuelLogPlayerInfo extends BasePlayerInfo {
 	cardCount: number;
 }
 
+export interface DuelLogQuery {roomName: string, duelCount: number, playerName: string, playerScore: number}
+
 
 export class DataManager {
 	config: ConnectionOptions;
@@ -254,6 +256,46 @@ export class DataManager {
 
 	}
 
+	async getDuelLogFromCondition(data: DuelLogQuery) {
+		if(!data) {
+			return this.getAllDuelLogs();
+		}
+		const {roomName, duelCount, playerName, playerScore} = data;
+		const repo = this.db.getRepository(DuelLog);
+		try {
+			const queryBuilder = repo.createQueryBuilder("duelLog")
+				.where("1");
+			if(roomName != null && roomName.length) {
+				const escapedRoomName = roomName.replace(/[%_]/g, "") + "%";
+				queryBuilder.andWhere("duelLog.name like :escapedRoomName", { escapedRoomName });
+			}
+			if(duelCount != null && !isNaN(duelCount)) {
+				queryBuilder.andWhere("duelLog.duelCount = :duelCount", { duelCount });
+			}
+			if(playerName != null && playerName.length || playerScore != null && !isNaN(playerScore)) {
+				let innerQuery = "select id from duel_log_player where duel_log_player.duelLogId = duelLog.id";
+				const innerQueryParams: any = {};
+				if(playerName != null && playerName.length) {
+					const escapedPlayerName = playerName.replace(/[%_]/g, "") + "%";
+					innerQuery += " and duel_log_player.escapedPlayerName like :escapedPlayerName";
+					innerQueryParams.playerRealName = escapedPlayerName;
+				}
+				if(playerScore != null && !isNaN(playerScore)) {
+					innerQuery += " and duel_log_player.score = :playerScore";
+					innerQueryParams.playerScore = playerScore;
+				}
+				queryBuilder.andWhere(`exists (${innerQuery})`, innerQueryParams);
+			}
+			const duelLogs = queryBuilder.orderBy("duelLog.id", "DESC")
+				.leftJoinAndSelect("duelLog.players", "player")
+				.getMany();
+			return duelLogs;
+		} catch (e) {
+			this.log.warn(`Failed to fetch duel logs: ${e.toString()}`);
+			return [];
+		}
+	}
+
 	async getDuelLogFromId(id: number) {
 		const repo = this.db.getRepository(DuelLog);
 		try {
@@ -289,8 +331,16 @@ export class DataManager {
 		const allDuelLogs = await this.getAllDuelLogs();
 		return allDuelLogs.map(duelLog => duelLog.getViewJSON(tournamentModeSettings));
 	}
+	async getDuelLogJSONFromCondition(tournamentModeSettings: any, data: DuelLogQuery) {
+		const allDuelLogs = await this.getDuelLogFromCondition(data);
+		return allDuelLogs.map(duelLog => duelLog.getViewJSON(tournamentModeSettings));
+	}
 	async getAllReplayFilenames() {
 		const allDuelLogs = await this.getAllDuelLogs();
+		return allDuelLogs.map(duelLog => duelLog.replayFileName);
+	}
+	async getReplayFilenamesFromCondition(data: DuelLogQuery) {
+		const allDuelLogs = await this.getDuelLogFromCondition(data);
 		return allDuelLogs.map(duelLog => duelLog.replayFileName);
 	}
 	async clearDuelLog() {

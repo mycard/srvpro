@@ -33,6 +33,7 @@ export class DuelLog extends CreateAndUpdateTimeBase {
     @Column("tinyint", {unsigned: true})
     roomMode: number;
 
+    @Index()
     @Column("tinyint", {unsigned: true})
     duelCount: number;
 

@@ -16,6 +16,7 @@ export class DuelLogPlayer extends BasePlayer {
     @Column("tinyint", {unsigned: true})
     isFirst: number;
 
+    @Index()
     @Column("tinyint")
     score: number;
 

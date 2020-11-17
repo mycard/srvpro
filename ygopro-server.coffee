@@ -3643,6 +3643,18 @@ global.rebooted = false
 #http
 if true
 
+  getDuelLogQueryFromQs = (qdata) ->
+    ret = {}
+    if(qdata.roomname)
+      ret.roomName = decodeURIComponent(qdata.roomname)
+    if(qdata.duelcount)
+      ret.roomName = parseInt(decodeURIComponent(qdata.duelcount))
+    if(qdata.playername)
+      ret.playerName = decodeURIComponent(qdata.playername)
+    if(qdata.score)
+      ret.playerScore = parseInt(decodeURIComponent(qdata.score))
+    return
+
   addCallback = (callback, text)->
     if not callback then return text
     return callback + "( " + text + " );"
@@ -3696,7 +3708,7 @@ if true
         return
       else
         response.writeHead(200)
-        duellog = JSON.stringify(await dataManager.getDuelLogJSON(settings.modules.tournament_mode), null, 2)
+        duellog = JSON.stringify(await dataManager.getDuelLogJSONFromCondition(settings.modules.tournament_mode, getDuelLogQueryFromQs(u.query)), null, 2)
         response.end(addCallback(u.query.callback, duellog))
 
     else if u.pathname == '/api/archive.zip' and settings.modules.mysql.enabled
@@ -3709,7 +3721,7 @@ if true
           archive_name = moment().format('YYYY-MM-DD HH-mm-ss') + ".zip"
           archive_args = ["a", "-mx0", "-y", archive_name]
           check = false
-          for filename in await dataManager.getAllReplayFilenames()
+          for filename in await dataManager.getReplayFilenamesFromCondition(getDuelLogQueryFromQs(u.query))
             check = true
             archive_args.push(filename)
           if !check

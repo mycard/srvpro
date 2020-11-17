@@ -66,6 +66,7 @@ __decorate([
     __metadata("design:type", Number)
 ], DuelLogPlayer.prototype, "isFirst", void 0);
 __decorate([
+    typeorm_1.Index(),
     typeorm_1.Column("tinyint"),
     __metadata("design:type", Number)
 ], DuelLogPlayer.prototype, "score", void 0);

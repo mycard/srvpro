@@ -77,6 +77,7 @@ __decorate([
     __metadata("design:type", Number)
 ], DuelLog.prototype, "roomMode", void 0);
 __decorate([
+    typeorm_1.Index(),
     typeorm_1.Column("tinyint", { unsigned: true }),
     __metadata("design:type", Number)
 ], DuelLog.prototype, "duelCount", void 0);
