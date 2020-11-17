@@ -34,11 +34,23 @@
 </div>
 <div class="container">
     <div class="row buttons">
-        <div class="col-lg-12">
+        <div class="col-lg-4">
             <button class="btn btn-default" id="open_button">刷新</button>
             <button class="btn btn-default" id="empty_button">清空记录</button>
             <button class="btn btn-default" id="pack_button">打包下载录像</button>
             共有<span id="num">0</span>场决斗
+        </div>
+        <div class="col-lg-3">
+            <input type="text" class="form-control" id="roomname" value="" placeholder="房名">
+        </div>
+        <div class="col-lg-1">
+            <input type="text" class="form-control" id="duelcount" value="" placeholder="决斗局数">
+        </div>
+        <div class="col-lg-3">
+            <input type="text" class="form-control" id="playername" value="" placeholder="玩家名">
+        </div>
+        <div class="col-lg-1">
+            <input type="text" class="form-control" id="score" value="" placeholder="分数">
         </div>
     </div>
 </div>
@@ -74,7 +86,11 @@ $(function(){
     $("#ip").val(params["ip"]);
     $("#port").val(params["port"]);
     $("#password").val(params["password"]);
-	$("#username").val(params["username"]);
+    $("#username").val(params["username"]);
+    $("#roomname").val(params["roomname"]);
+    $("#duelcount").val(params["duelcount"]);
+    $("#playername").val(params["playername"]);
+	$("#score").val(params["score"]);
 });
 
 function parseQueryString() {
@@ -98,22 +114,28 @@ function get_value(name) {
     return encodeURIComponent($(name).val());
 }
 
+function getPossibleTextValue(fieldName, realQueryKey) {
+    const fullFieldName = `#${fieldName}`;
+    const realQueryKey = queryKey || fieldName;
+    return (get_value(fullFieldName) ? `&${realQueryKey}=${get_value(fullFieldName)}` : "");
+}
+
 function loadreplays() {
-    var url=get_http() + "/api/duellog?callback=?"+ (get_value("#username") ? "&username="+get_value("#username") : "") +(get_value("#password") ? "&pass="+get_value("#password") : "");
+    var url=get_http() + "/api/duellog?callback=?"+ getPossibleTextValue("username") + getPossibleTextValue("password", "pass") + getPossibleTextValue("roomname") + getPossibleTextValue("duelcount") + getPossibleTextValue("playername") + getPossibleTextValue("score");
     $.getJSON(url, listreplay);
     $("#open_button").removeClass("btn-success");
 }
 
 function clearreplays() {
     if (confirm("确实要清空记录吗？")) {
-        var url=get_http() + "/api/clearlog?callback=?"+ (get_value("#username") ? "&username="+get_value("#username") : "") +(get_value("#password") ? "&pass="+get_value("#password") : "");
+        var url=get_http() + "/api/clearlog?callback=?"+ getPossibleTextValue("username") + getPossibleTextValue("password", "pass");
         $.getJSON(url, clearreplays_success);
         $("#empty_button").removeClass("btn-success");
     }
 }
 
 function packreplays() {
-    window.open(get_http() + "/api/archive.zip?username="+get_value("#username")+"&pass="+get_value("#password"));
+    window.open(get_http() + "/api/archive.zip?placeholder=1"+ getPossibleTextValue("username") + getPossibleTextValue("password", "pass") + getPossibleTextValue("roomname") + getPossibleTextValue("duelcount") + getPossibleTextValue("playername")) + getPossibleTextValue("score");
 }
 
 function clearreplays_success() {
