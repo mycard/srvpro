@@ -30,6 +30,7 @@
     "pg": "^6.4.2",
     "q": "^1.5.1",
     "querystring": "^0.2.0",
+    "reflect-metadata": "^0.1.13",
     "request": "latest",
     "sqlite3": "latest",
     "typeorm": "^0.2.29",

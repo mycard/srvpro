@@ -413,8 +413,8 @@
         await setting_save(settings);
         log.warn("Cloud replay cannot be enabled because no MySQL.");
       }
-      if (settings.modules.tournament_mode.enable_recover.enabled) {
-        settings.modules.tournament_mode.enable_recover.enabled = false;
+      if (settings.modules.tournament_mode.enable_recover) {
+        settings.modules.tournament_mode.enable_recover = false;
         await setting_save(settings);
         log.warn("Recover mode cannot be enabled because no MySQL.");
       }
