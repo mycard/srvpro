@@ -9,11 +9,6 @@
 			"name": "ygopro-tournament",
 			"script": "/ygopro-server/ygopro-tournament.js",
 			"cwd": "/ygopro-server"
-		},
-		{
-			"name": "redis-server",
-			"script": "/usr/bin/redis-server",
-			"cwd": "/redis"
 		}
 	]
 }
