@@ -635,7 +635,7 @@ ban_user = global.ban_user = (name) ->
   bans = [dataManager.getBan(name, null)]
   for room in ROOM_all when room and room.established
     for playerType in ["players", "watchers"]
-      for player in room[playerType] when player.name == name or bans.find(ban => player.ip == ban.ip)
+      for player in room[playerType] when player.name == name or bans.find((ban) => player.ip == ban.ip)
         bans.push(dataManager.getBan(name, player.ip))
         ROOM_bad_ip[player.ip]=99
         ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)

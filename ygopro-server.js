@@ -819,9 +819,9 @@
           ref1 = room[playerType];
           for (m = 0, len2 = ref1.length; m < len2; m++) {
             player = ref1[m];
-            if (!(player.name === name || bans.find(ban(() => {
+            if (!(player.name === name || bans.find((ban) => {
               return player.ip === ban.ip;
-            })))) {
+            }))) {
               continue;
             }
             bans.push(dataManager.getBan(name, player.ip));
