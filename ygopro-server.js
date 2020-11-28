@@ -2804,8 +2804,8 @@
               }
               room.private = true;
               room.arena = settings.modules.arena_mode.mode;
+              room.max_player = 2;
               if (room.arena === "athletic") {
-                room.max_player = 2;
                 room.welcome = "${athletic_arena_tip}";
               }
             }

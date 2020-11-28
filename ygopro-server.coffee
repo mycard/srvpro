@@ -2117,8 +2117,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
               return
             room.private = true
             room.arena = settings.modules.arena_mode.mode
+            room.max_player = 2
             if room.arena == "athletic"
-              room.max_player = 2
               room.welcome = "${athletic_arena_tip}"
         when 5
           title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
