@@ -411,9 +411,7 @@ init = () ->
         arena: settings.modules.arena_mode.mode
       })
       try
-        await axios.post(settings.modules.arena_mode.init_post.url + "?" + postData, {
-          responseType: "json"
-        })
+        await axios.post(settings.modules.arena_mode.init_post.url + "?" + postData)
       catch e
         log.warn 'ARENA INIT POST ERROR', e
 
@@ -495,14 +493,10 @@ init = () ->
       scores = await dataManager.getRandomScoreTop10()
 
       try
-        await axios.post(settings.modules.random_duel.post_match_scores, {
-          headers: { 'content-type': 'application/x-www-form-urlencoded' },
-          responseType: "json",
-          data: qs.stringify({
-            accesskey: settings.modules.random_duel.post_match_accesskey,
-            rank: JSON.stringify(scores)
-          })
-        })
+        await axios.post(settings.modules.random_duel.post_match_scores, qs.stringify({
+          accesskey: settings.modules.random_duel.post_match_accesskey,
+          rank: JSON.stringify(scores)
+        }))
       catch e
         log.warn 'RANDOM SCORE POST ERROR', e.toString()
 
