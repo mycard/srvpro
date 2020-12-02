@@ -636,10 +636,10 @@
             headers: {
               'content-type': 'application/x-www-form-urlencoded'
             },
+            responseType: "json",
             data: qs.stringify({
               accesskey: settings.modules.random_duel.post_match_accesskey,
-              rank: JSON.stringify(scores),
-              responseType: "json"
+              rank: JSON.stringify(scores)
             })
           });
         } catch (error1) {
