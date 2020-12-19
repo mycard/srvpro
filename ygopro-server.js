@@ -633,9 +633,7 @@
           await axios.post(settings.modules.random_duel.post_match_scores, qs.stringify({
             accesskey: settings.modules.random_duel.post_match_accesskey,
             rank: JSON.stringify(scores)
-          }), {
-            responseType: "json"
-          });
+          }));
         } catch (error1) {
           e = error1;
           log.warn('RANDOM SCORE POST ERROR', e.toString());
@@ -2671,6 +2669,17 @@
       CLIENT_kick(client);
     } else if (!info.pass.length && !settings.modules.random_duel.enabled && !settings.modules.windbot.enabled && !settings.modules.challonge.enabled) {
       ygopro.stoc_die(client, "${blank_room_name}");
+    } else if (settings.modules.mysql.enabled && (await dataManager.checkBan("name", client.name))) { //账号被封
+      exactBan = (await dataManager.checkBanWithNameAndIP(client.name, client.ip));
+      if (!exactBan) {
+        exactBan = dataManager.getBan(client.name, client.ip);
+        await dataManager.banPlayer(exactBan);
+      }
+      log.warn("BANNED USER LOGIN", client.name, client.ip);
+      ygopro.stoc_die(client, "${banned_user_login}");
+    } else if (settings.modules.mysql.enabled && (await dataManager.checkBan("ip", client.ip))) { //IP被封
+      log.warn("BANNED IP LOGIN", client.name, client.ip);
+      ygopro.stoc_die(client, "${banned_ip_login}");
     } else if (info.pass.length && settings.modules.mycard.enabled && info.pass.slice(0, 3) !== 'AI#') {
       ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE);
       if (info.pass.length <= 8) {
@@ -3081,17 +3090,6 @@
     } else if (ROOM_connected_ip[client.ip] > 5) {
       log.warn("MULTI LOGIN", client.name, client.ip);
       ygopro.stoc_die(client, "${too_much_connection}" + client.ip);
-    } else if (settings.modules.mysql.enabled && (await dataManager.checkBan("name", client.name))) { //账号被封
-      exactBan = (await dataManager.checkBanWithNameAndIP(client.name, client.ip));
-      if (!exactBan) {
-        exactBan = dataManager.getBan(client.name, client.ip);
-        await dataManager.banPlayer(exactBan);
-      }
-      log.warn("BANNED USER LOGIN", client.name, client.ip);
-      ygopro.stoc_die(client, "${banned_user_login}");
-    } else if (settings.modules.mysql.enabled && (await dataManager.checkBan("ip", client.ip))) { //IP被封
-      log.warn("BANNED IP LOGIN", client.name, client.ip);
-      ygopro.stoc_die(client, "${banned_ip_login}");
     } else if (!settings.modules.tournament_mode.enabled && !settings.modules.challonge.enabled && _.any(badwords.level3, function(badword) {
       var regexp;
       regexp = new RegExp(badword, 'i');

@@ -2005,6 +2005,19 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
   else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled and !settings.modules.challonge.enabled
     ygopro.stoc_die(client, "${blank_room_name}")
 
+
+  else if settings.modules.mysql.enabled and await dataManager.checkBan("name", client.name) #账号被封
+    exactBan = await dataManager.checkBanWithNameAndIP(client.name, client.ip)
+    if !exactBan
+      exactBan = dataManager.getBan(client.name, client.ip)
+      await dataManager.banPlayer(exactBan)
+    log.warn("BANNED USER LOGIN", client.name, client.ip)
+    ygopro.stoc_die(client, "${banned_user_login}")
+
+  else if settings.modules.mysql.enabled and await dataManager.checkBan("ip", client.ip) #IP被封
+    log.warn("BANNED IP LOGIN", client.name, client.ip)
+    ygopro.stoc_die(client, "${banned_ip_login}")
+
   else if info.pass.length and settings.modules.mycard.enabled and info.pass[0...3] != 'AI#'
     ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
     if info.pass.length <= 8
@@ -2344,18 +2357,6 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
   else if ROOM_connected_ip[client.ip] > 5
     log.warn("MULTI LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${too_much_connection}" + client.ip)
-
-  else if settings.modules.mysql.enabled and await dataManager.checkBan("name", client.name) #账号被封
-    exactBan = await dataManager.checkBanWithNameAndIP(client.name, client.ip)
-    if !exactBan
-      exactBan = dataManager.getBan(client.name, client.ip)
-      await dataManager.banPlayer(exactBan)
-    log.warn("BANNED USER LOGIN", client.name, client.ip)
-    ygopro.stoc_die(client, "${banned_user_login}")
-
-  else if settings.modules.mysql.enabled and await dataManager.checkBan("ip", client.ip) #IP被封
-    log.warn("BANNED IP LOGIN", client.name, client.ip)
-    ygopro.stoc_die(client, "${banned_ip_login}")
 
   else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and _.any(badwords.level3, (badword) ->
     regexp = new RegExp(badword, 'i')
