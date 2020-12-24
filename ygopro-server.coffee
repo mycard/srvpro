@@ -22,6 +22,7 @@ axios = require 'axios'
 qs = require "querystring"
 zlib = require 'zlib'
 axios = require 'axios'
+osu = require 'node-os-utils'
 
 bunyan = require 'bunyan'
 log = global.log = bunyan.createLogger name: "mycard"
@@ -611,7 +612,9 @@ init = () ->
 # 获取可用内存
 memory_usage = global.memory_usage = 0
 get_memory_usage = global.get_memory_usage = ()->
-  percentUsed = (1 - os.freemem() / os.totalmem()) * 100
+  memoryInfo = await osu.mem.info()
+  percentUsed = 100 - memoryInfo.freeMemPercentage
+  # console.log(percentUsed)
   memory_usage = global.memory_usage = percentUsed
   return
 get_memory_usage()
