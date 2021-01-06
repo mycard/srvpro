@@ -15,7 +15,7 @@
     "@types/node": "^14.0.13",
     "@types/underscore": "^1.10.24",
     "async": "^3.2.0",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "bunyan": "^1.8.14",
     "challonge": "latest",
     "coffeescript": "^2.5.1",
