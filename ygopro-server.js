@@ -783,7 +783,7 @@
     var memoryInfo, percentUsed;
     memoryInfo = (await osu.mem.info());
     percentUsed = 100 - memoryInfo.freeMemPercentage;
-    console.log(percentUsed);
+    // console.log(percentUsed)
     memory_usage = global.memory_usage = percentUsed;
   };
 
@@ -4421,52 +4421,54 @@
         struct.set("deckbuf", [4392470, 4392470]);
         ygopro.stoc_send_chat(client, "${deck_incorrect_reconnect}", ygopro.constants.COLORS.RED);
       }
-    } else if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && room.hostinfo.mode === 1 && settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.deck_check && fs.readdirSync(settings.modules.tournament_mode.deck_path).length) {
-      struct.set("mainc", 1);
-      struct.set("sidec", 1);
-      struct.set("deckbuf", [4392470, 4392470]);
-      buffer = struct.buffer;
-      found_deck = false;
-      decks = fs.readdirSync(settings.modules.tournament_mode.deck_path);
-      for (j = 0, len = decks.length; j < len; j++) {
-        deck = decks[j];
-        if (deck_name_match(deck, client.name)) {
-          found_deck = deck;
-        }
-      }
-      if (found_deck) {
-        deck_text = fs.readFileSync(settings.modules.tournament_mode.deck_path + found_deck, {
-          encoding: "ASCII"
-        });
-        deck_array = deck_text.split("\n");
-        deck_main = [];
-        deck_side = [];
-        current_deck = deck_main;
-        for (l = 0, len1 = deck_array.length; l < len1; l++) {
-          line = deck_array[l];
-          if (line.indexOf("!side") >= 0) {
-            current_deck = deck_side;
-          }
-          card = parseInt(line);
-          if (!isNaN(card)) {
-            current_deck.push(card);
+    } else if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN && settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.deck_check && fs.readdirSync(settings.modules.tournament_mode.deck_path).length) {
+      decks = (await fs.promises.readdir(settings.modules.tournament_mode.deck_path));
+      if (decks.length) {
+        struct.set("mainc", 1);
+        struct.set("sidec", 1);
+        struct.set("deckbuf", [4392470, 4392470]);
+        buffer = struct.buffer;
+        found_deck = false;
+        for (j = 0, len = decks.length; j < len; j++) {
+          deck = decks[j];
+          if (deck_name_match(deck, client.name)) {
+            found_deck = deck;
           }
         }
-        if (_.isEqual(buff_main, deck_main) && _.isEqual(buff_side, deck_side)) {
-          deckbuf = deck_main.concat(deck_side);
-          struct.set("mainc", deck_main.length);
-          struct.set("sidec", deck_side.length);
-          struct.set("deckbuf", deckbuf);
-          buffer = struct.buffer;
-          //log.info("deck ok: " + client.name)
-          ygopro.stoc_send_chat(client, `\${deck_correct_part1} ${found_deck} \${deck_correct_part2}`, ygopro.constants.COLORS.BABYBLUE);
+        if (found_deck) {
+          deck_text = (await fs.promises.readFile(settings.modules.tournament_mode.deck_path + found_deck, {
+            encoding: "ASCII"
+          }));
+          deck_array = deck_text.split("\n");
+          deck_main = [];
+          deck_side = [];
+          current_deck = deck_main;
+          for (l = 0, len1 = deck_array.length; l < len1; l++) {
+            line = deck_array[l];
+            if (line.indexOf("!side") >= 0) {
+              current_deck = deck_side;
+            }
+            card = parseInt(line);
+            if (!isNaN(card)) {
+              current_deck.push(card);
+            }
+          }
+          if (_.isEqual(buff_main, deck_main) && _.isEqual(buff_side, deck_side)) {
+            deckbuf = deck_main.concat(deck_side);
+            struct.set("mainc", deck_main.length);
+            struct.set("sidec", deck_side.length);
+            struct.set("deckbuf", deckbuf);
+            buffer = struct.buffer;
+            //log.info("deck ok: " + client.name)
+            ygopro.stoc_send_chat(client, `\${deck_correct_part1} ${found_deck} \${deck_correct_part2}`, ygopro.constants.COLORS.BABYBLUE);
+          } else {
+            //log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
+            ygopro.stoc_send_chat(client, `\${deck_incorrect_part1} ${found_deck} \${deck_incorrect_part2}`, ygopro.constants.COLORS.RED);
+          }
         } else {
-          //log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
-          ygopro.stoc_send_chat(client, `\${deck_incorrect_part1} ${found_deck} \${deck_incorrect_part2}`, ygopro.constants.COLORS.RED);
+          //log.info("player deck not found: " + client.name)
+          ygopro.stoc_send_chat(client, `${client.name}\${deck_not_found}`, ygopro.constants.COLORS.RED);
         }
-      } else {
-        //log.info("player deck not found: " + client.name)
-        ygopro.stoc_send_chat(client, `${client.name}\${deck_not_found}`, ygopro.constants.COLORS.RED);
       }
     }
     return false;
@@ -5182,7 +5184,7 @@
             return;
           }
           death_room_found = false;
-          _async.each(rooms, function(room, done) {
+          _async.each(ROOM_all, function(room, done) {
             if (!(room && (u.query.deathcancel === "all" || u.query.deathcancel === room.process_pid.toString() || u.query.deathcancel === room.name))) {
               done();
               return;
