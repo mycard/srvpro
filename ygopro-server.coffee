@@ -1600,7 +1600,7 @@ class Room
         else
           for player in @players when player.pos != 7
             @scores[player.name_vpass] = -5
-          if @players.length == 2 and !client.arena_quit_free
+          if @players.length == 2 and @arena == 'athletic' and !client.arena_quit_free
             @scores[client.name_vpass] = -9
         @arena_score_handled = true
       index = _.indexOf(@players, client)

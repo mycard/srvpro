@@ -2138,7 +2138,7 @@
                 this.scores[player.name_vpass] = -5;
               }
             }
-            if (this.players.length === 2 && !client.arena_quit_free) {
+            if (this.players.length === 2 && this.arena === 'athletic' && !client.arena_quit_free) {
               this.scores[client.name_vpass] = -9;
             }
           }
