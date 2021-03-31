@@ -1712,7 +1712,7 @@
     }
 
     spawn(firstSeed) {
-      var i, j, l, param, seeds;
+      var e, i, j, l, param, seeds;
       param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, this.hostinfo.duel_rule, (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode];
       if (firstSeed) {
         param.push(firstSeed);
@@ -1732,6 +1732,7 @@
         });
         this.process_pid = this.process.pid;
         this.process.on('error', (err) => {
+          log.warn('CREATE ROOM ERROR', err);
           _.each(this.players, function(player) {
             return ygopro.stoc_die(player, "${create_room_failed}");
           });
@@ -1781,6 +1782,8 @@
           }
         });
       } catch (error1) {
+        e = error1;
+        log.warn('CREATE ROOM FAIL', e);
         return this.error = "${create_room_failed}";
       }
     }
