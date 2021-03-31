@@ -3457,7 +3457,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   if !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
-  if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
+  if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe or room.has_ygopro_error
     if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
       replay_filename=dueltime
@@ -3468,20 +3468,21 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
         for player,i in room.dueling_players
           replay_filename=replay_filename + (if i > 0 then (if i == 2 then " VS " else " & ") else " ") + player.name
       replay_filename=replay_filename.replace(/[\/\\\?\*]/g, '_')+".yrp"
-      duellog = {
-        time: dueltime,
-        name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
-        roomid: room.process_pid.toString(),
-        cloud_replay_id: "R#"+room.cloud_replay_id,
-        replay_filename: replay_filename,
-        roommode: room.hostinfo.mode,
-        players: (for player in room.dueling_players
-          name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
-          winner: player.pos == room.winner
-        )
-      }
-      duel_log.duel_log.unshift duellog
-      setting_save(duel_log)
+      if settings.modules.tournament_mode.enabled
+        duellog = {
+          time: dueltime,
+          name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
+          roomid: room.process_pid.toString(),
+          cloud_replay_id: "R#"+room.cloud_replay_id,
+          replay_filename: replay_filename,
+          roommode: room.hostinfo.mode,
+          players: (for player in room.dueling_players
+            name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
+            winner: player.pos == room.winner
+          )
+        }
+        duel_log.duel_log.unshift duellog
+        setting_save(duel_log)
       fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )

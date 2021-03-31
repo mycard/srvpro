@@ -4623,7 +4623,7 @@
       // console.log("Replay saved: ", room.duel_count - 1, client.pos)
       room.replays[room.duel_count - 1] = buffer;
     }
-    if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe) {
+    if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe || room.has_ygopro_error) {
       if (client.pos === 0) {
         dueltime = moment().format('YYYY-MM-DD HH-mm-ss');
         replay_filename = dueltime;
@@ -4641,29 +4641,31 @@
           }
         }
         replay_filename = replay_filename.replace(/[\/\\\?\*]/g, '_') + ".yrp";
-        duellog = {
-          time: dueltime,
-          name: room.name + (settings.modules.tournament_mode.show_info ? " (Duel:" + room.duel_count + ")" : ""),
-          roomid: room.process_pid.toString(),
-          cloud_replay_id: "R#" + room.cloud_replay_id,
-          replay_filename: replay_filename,
-          roommode: room.hostinfo.mode,
-          players: (function() {
-            var len4, o, ref4, results;
-            ref4 = room.dueling_players;
-            results = [];
-            for (o = 0, len4 = ref4.length; o < len4; o++) {
-              player = ref4[o];
-              results.push({
-                name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name_vpass] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + (room.hostinfo.mode !== 2 ? " Cards:" + (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : "") + ")" : ""),
-                winner: player.pos === room.winner
-              });
-            }
-            return results;
-          })()
-        };
-        duel_log.duel_log.unshift(duellog);
-        setting_save(duel_log);
+        if (settings.modules.tournament_mode.enabled) {
+          duellog = {
+            time: dueltime,
+            name: room.name + (settings.modules.tournament_mode.show_info ? " (Duel:" + room.duel_count + ")" : ""),
+            roomid: room.process_pid.toString(),
+            cloud_replay_id: "R#" + room.cloud_replay_id,
+            replay_filename: replay_filename,
+            roommode: room.hostinfo.mode,
+            players: (function() {
+              var len4, o, ref4, results;
+              ref4 = room.dueling_players;
+              results = [];
+              for (o = 0, len4 = ref4.length; o < len4; o++) {
+                player = ref4[o];
+                results.push({
+                  name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name_vpass] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + (room.hostinfo.mode !== 2 ? " Cards:" + (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : "") + ")" : ""),
+                  winner: player.pos === room.winner
+                });
+              }
+              return results;
+            })()
+          };
+          duel_log.duel_log.unshift(duellog);
+          setting_save(duel_log);
+        }
         fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, function(err) {
           if (err) {
             return log.warn("SAVE REPLAY ERROR", replay_filename, err);
