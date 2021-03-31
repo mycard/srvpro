@@ -1573,6 +1573,7 @@
         });
         this.process_pid = this.process.pid;
         this.process.on('error', (err) => {
+          log.warn('CREATE ROOM ERROR', err);
           _.each(this.players, function(player) {
             return ygopro.stoc_die(player, "${create_room_failed}");
           });
@@ -1622,6 +1623,8 @@
           }
         });
       } catch (error1) {
+        e = error1;
+        log.warn('CREATE ROOM FAIL', e);
         this.error = "${create_room_failed}";
       }
     }
