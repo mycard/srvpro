@@ -1712,6 +1712,42 @@ class Room
         ygopro.stoc_send_chat_to_room(room, "#{player.name}${using_athletic_deck}", ygopro.constants.COLORS.BABYBLUE)
     ))
     await return
+  
+  join_post_watch: (client) ->
+    if @duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
+      if settings.modules.cloud_replay.enable_halfway_watch and !@hostinfo.no_watch
+        client.setTimeout(300000) #连接后超时5分钟
+        client.rid = _.indexOf(ROOM_all, this)
+        client.is_post_watcher = true
+        ygopro.stoc_send_chat_to_room(this, "#{client.name} ${watch_join}")
+        @watchers.push client
+        ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
+        for buffer in @watcher_buffers
+          client.write buffer
+        return true
+      else
+        ygopro.stoc_die(client, "${watch_denied}")
+        return false
+    else
+      return false
+
+  join_player: (client) ->
+    if @error
+      ygopro.stoc_die(client, @error)
+      return false
+    if @duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
+      return @join_post_watch(client)
+    if @hostinfo.no_watch and @players.length >= (if @hostinfo.mode == 2 then 4 else 2)
+      ygopro.stoc_die(client, "${watch_denied_room}")
+      return true
+    if @challonge_info
+      for player in @get_playing_player() when player and player != client and player.challonge_info.id == client.challonge_info.id
+        ygopro.stoc_die(client, "${challonge_player_already_in}")
+        return false
+    client.setTimeout(300000) #连接后超时5分钟
+    client.rid = _.indexOf(ROOM_all, this)
+    @connect(client)
+    return true
 
 # 网络连接
 netRequestHandler = (client) ->
@@ -2144,27 +2180,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
 
       if !room
         ygopro.stoc_die(client, "${server_full}")
-      else if room.error
-        ygopro.stoc_die(client, room.error)
-      else if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
-        if settings.modules.cloud_replay.enable_halfway_watch and !room.hostinfo.no_watch
-          client.setTimeout(300000) #连接后超时5分钟
-          client.rid = _.indexOf(ROOM_all, room)
-          client.is_post_watcher = true
-          ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
-          room.watchers.push client
-          ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
-          for buffer in room.watcher_buffers
-            client.write buffer
-        else
-          ygopro.stoc_die(client, "${watch_denied}")
-      else if room.hostinfo.no_watch and room.players.length >= (if room.hostinfo.mode == 2 then 4 else 2)
-        ygopro.stoc_die(client, "${watch_denied_room}")
-      else
-        #client.room = room
-        client.setTimeout(300000) #连接后超时5分钟
-        client.rid = _.indexOf(ROOM_all, room)
-        room.connect(client)
+      else 
+        room.join_player(client)
       return
 
     _async.auto({
@@ -2264,15 +2281,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       buffer = struct.buffer
     pre_room = ROOM_find_by_name(info.pass)
     if pre_room and pre_room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.cloud_replay.enable_halfway_watch and !pre_room.hostinfo.no_watch
-      room = pre_room
-      client.setTimeout(300000) #连接后超时5分钟
-      client.rid = _.indexOf(ROOM_all, room)
-      client.is_post_watcher = true
-      ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
-      room.watchers.push client
-      ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
-      for buffer in room.watcher_buffers
-        client.write buffer
+      pre_room.join_post_watch(client)
+      return
     else
       ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
       client.setTimeout(300000) #连接后超时5分钟
@@ -2329,30 +2339,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
           room.welcome = "${challonge_match_created}"
         if !room
           ygopro.stoc_die(client, "${server_full}")
-        else if room.error
-          ygopro.stoc_die(client, room.error)
-        else if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
-          if settings.modules.cloud_replay.enable_halfway_watch and !room.hostinfo.no_watch
-            #client.setTimeout(300000) #连接后超时5分钟
-            client.rid = _.indexOf(ROOM_all, room)
-            client.is_post_watcher = true
-            ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
-            room.watchers.push client
-            ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
-            for buffer in room.watcher_buffers
-              client.write buffer
-          else
-            ygopro.stoc_die(client, "${watch_denied}")
-        else if room.hostinfo.no_watch and room.players.length >= (if room.hostinfo.mode == 2 then 4 else 2)
-          ygopro.stoc_die(client, "${watch_denied_room}")
         else
-          for player in room.get_playing_player() when player and player != client and player.challonge_info.id == client.challonge_info.id
-            ygopro.stoc_die(client, "${challonge_player_already_in}")
-            return
-          #client.room = room
-          #client.setTimeout(300000) #连接后超时5分钟
-          client.rid = _.indexOf(ROOM_all, room)
-          room.connect(client)
+          room.join_player(client)
         return
       )
 
@@ -2399,26 +2387,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     room = await ROOM_find_or_create_by_name(info.pass, client.ip)
     if !room
       ygopro.stoc_die(client, "${server_full}")
-    else if room.error
-      ygopro.stoc_die(client, room.error)
-    else if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
-      if settings.modules.cloud_replay.enable_halfway_watch and !room.hostinfo.no_watch
-        client.setTimeout(300000) #连接后超时5分钟
-        client.rid = _.indexOf(ROOM_all, room)
-        client.is_post_watcher = true
-        ygopro.stoc_send_chat_to_room(room, "#{client.name} ${watch_join}")
-        room.watchers.push client
-        ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
-        for buffer in room.watcher_buffers
-          client.write buffer
-      else
-        ygopro.stoc_die(client, "${watch_denied}")
-    else if room.hostinfo.no_watch and room.players.length >= (if room.hostinfo.mode == 2 then 4 else 2)
-      ygopro.stoc_die(client, "${watch_denied_room}")
     else
-      client.setTimeout(300000) #连接后超时5分钟
-      client.rid = _.indexOf(ROOM_all, room)
-      room.connect(client)
+      room.join_player(client)
   await return
 
 ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
