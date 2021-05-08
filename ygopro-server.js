@@ -2972,7 +2972,7 @@
               }
             } else {
               log.warn("READ USER FAIL", client.name, error, body);
-              done("${create_room_failed}");
+              done("${load_user_info_fail}");
               return;
             }
             if (!check_buffer_indentity(buffer)) {
