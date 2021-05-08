@@ -2245,8 +2245,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
             if check_buffer_indentity(decrypted_buffer)
               buffer = decrypted_buffer
           else
-            log.warn("READ USER FAIL", error, body)
-            done("${create_room_failed}")
+            log.warn("READ USER FAIL", client.name, error, body)
+            done("${load_user_info_fail}")
             return
 
           # buffer != decrypted_buffer  ==> auth failed

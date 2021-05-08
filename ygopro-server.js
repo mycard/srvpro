@@ -2971,7 +2971,7 @@
                 buffer = decrypted_buffer;
               }
             } else {
-              log.warn("READ USER FAIL", error, body);
+              log.warn("READ USER FAIL", client.name, error, body);
               done("${create_room_failed}");
               return;
             }
