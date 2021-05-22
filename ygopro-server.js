@@ -2889,6 +2889,8 @@
         }
         if (!room) {
           ygopro.stoc_die(client, "${server_full}");
+        } else if (room.error) {
+          ygopro.stoc_die(client, room.error);
         } else {
           room.join_player(client);
         }
@@ -3077,6 +3079,8 @@
           }
           if (!room) {
             ygopro.stoc_die(client, "${server_full}");
+          } else if (room.error) {
+            ygopro.stoc_die(client, room.error);
           } else {
             room.join_player(client);
           }
@@ -3122,6 +3126,8 @@
       room = (await ROOM_find_or_create_by_name(info.pass, client.ip));
       if (!room) {
         ygopro.stoc_die(client, "${server_full}");
+      } else if (room.error) {
+        ygopro.stoc_die(client, room.error);
       } else {
         room.join_player(client);
       }
