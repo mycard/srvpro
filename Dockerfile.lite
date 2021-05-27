@@ -3,7 +3,7 @@ FROM node:14-buster-slim
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libsqlite3-dev libevent-dev p7zip-full python3 liblua5.3-dev && \
+    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libsqlite3-dev libevent-dev p7zip-full python3 liblua5.3-dev python && \
     rm -rf /var/lib/apt/lists/*
 
 # srvpro
