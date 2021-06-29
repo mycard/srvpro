@@ -2392,7 +2392,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat_to_room(room, ROOM_player_get_score(client), ygopro.constants.COLORS.GREEN)
     for player in room.players when player.pos != 7 and player != client
       ygopro.stoc_send_chat(client, ROOM_player_get_score(player), ygopro.constants.COLORS.GREEN)
-  if !room.recorder
+  if !room.recorder and settings.modules.cloud_replay.enabled
     room.recorder = recorder = net.connect room.port, ->
       ygopro.ctos_send recorder, 'PLAYER_INFO', {
         name: "Marshtomp"
@@ -2414,7 +2414,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       return
 
   if settings.modules.cloud_replay.enable_halfway_watch and !room.watcher and !room.hostinfo.no_watch
-    room.watcher = watcher = if settings.modules.test_mode.watch_public_hand then room.recorder else net.connect room.port, ->
+    room.watcher = watcher = if settings.modules.test_mode.watch_public_hand and room.recorder then room.recorder else net.connect room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
         name: "the Big Brother"
       }

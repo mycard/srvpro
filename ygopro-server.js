@@ -3121,7 +3121,7 @@
         }
       }
     }
-    if (!room.recorder) {
+    if (!room.recorder && settings.modules.cloud_replay.enabled) {
       room.recorder = recorder = net.connect(room.port, function() {
         ygopro.ctos_send(recorder, 'PLAYER_INFO', {
           name: "Marshtomp"
@@ -3142,7 +3142,7 @@
       recorder.on('error', function(error) {});
     }
     if (settings.modules.cloud_replay.enable_halfway_watch && !room.watcher && !room.hostinfo.no_watch) {
-      room.watcher = watcher = settings.modules.test_mode.watch_public_hand ? room.recorder : net.connect(room.port, function() {
+      room.watcher = watcher = settings.modules.test_mode.watch_public_hand && room.recorder ? room.recorder : net.connect(room.port, function() {
         ygopro.ctos_send(watcher, 'PLAYER_INFO', {
           name: "the Big Brother"
         });
