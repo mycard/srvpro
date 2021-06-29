@@ -54,7 +54,6 @@ import_datas = global.import_datas = [
   "name_vpass",
   "is_first",
   "lp",
-  "card_count",
   "is_host",
   "pos",
   "surrend_confirm",
@@ -2503,7 +2502,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
-    client.card_count = 0 if room.hostinfo.mode != 2
     room.duel_stage = ygopro.constants.DUEL_STAGE.DUELING
     if client.pos == 0
       room.turn = 0
@@ -2638,25 +2636,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK)
-
-  #track card count
-  #todo: track card count in tag mode
-  if ygopro.constants.MSG[msg] == 'MOVE' and room.hostinfo.mode != 2
-    pos = buffer.readUInt8(5)
-    pos = 1 - pos unless client.is_first
-    loc = buffer.readUInt8(6)
-    client.card_count-- if (loc & 0xe) and pos == 0
-    pos = buffer.readUInt8(9)
-    pos = 1 - pos unless client.is_first
-    loc = buffer.readUInt8(10)
-    client.card_count++ if (loc & 0xe) and pos == 0
-
-  if ygopro.constants.MSG[msg] == 'DRAW' and room.hostinfo.mode != 2
-    pos = buffer.readUInt8(1)
-    pos = 1 - pos unless client.is_first
-    if pos == 0
-      count = buffer.readInt8(2)
-      client.card_count += count
 
   # check panel confirming cards in heartbeat
   if settings.modules.heartbeat_detection.enabled and ygopro.constants.MSG[msg] == 'CONFIRM_CARDS'
@@ -3477,7 +3456,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
           replay_filename: replay_filename,
           roommode: room.hostinfo.mode,
           players: (for player in room.dueling_players
-            name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
+            name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
             winner: player.pos == room.winner
           )
         }
@@ -3656,8 +3635,7 @@ if settings.modules.http
               ip: if settings.modules.http.show_ip and pass_validated and !player.is_local then player.ip.slice(7) else null,
               status: if settings.modules.http.show_info and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and player.pos != 7 then (
                 score: room.scores[player.name_vpass],
-                lp: if player.lp? then player.lp else room.hostinfo.start_lp,
-                cards: if room.hostinfo.mode != 2 then (if player.card_count? then player.card_count else room.hostinfo.start_hand) else null
+                lp: if player.lp? then player.lp else room.hostinfo.start_lp
               ) else null,
               pos: player.pos
             ), "pos"),

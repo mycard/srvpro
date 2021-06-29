@@ -62,7 +62,7 @@
     }
   });
 
-  import_datas = global.import_datas = ["abuse_count", "ban_mc", "vpass", "rag", "rid", "is_post_watcher", "retry_count", "name", "pass", "name_vpass", "is_first", "lp", "card_count", "is_host", "pos", "surrend_confirm", "kick_count", "deck_saved", "main", "side", "side_interval", "side_tcount", "selected_preduel", "last_game_msg", "last_game_msg_title", "last_hint_msg", "start_deckbuf", "challonge_info", "ready_trap", "join_time", "arena_quit_free", "replays_sent"];
+  import_datas = global.import_datas = ["abuse_count", "ban_mc", "vpass", "rag", "rid", "is_post_watcher", "retry_count", "name", "pass", "name_vpass", "is_first", "lp", "is_host", "pos", "surrend_confirm", "kick_count", "deck_saved", "main", "side", "side_interval", "side_tcount", "selected_preduel", "last_game_msg", "last_game_msg_title", "last_hint_msg", "start_deckbuf", "challonge_info", "ready_trap", "join_time", "arena_quit_free", "replays_sent"];
 
   merge = require('deepmerge');
 
@@ -3251,9 +3251,6 @@
       playertype = buffer.readUInt8(1);
       client.is_first = !(playertype & 0xf);
       client.lp = room.hostinfo.start_lp;
-      if (room.hostinfo.mode !== 2) {
-        client.card_count = 0;
-      }
       room.duel_stage = ygopro.constants.DUEL_STAGE.DUELING;
       if (client.pos === 0) {
         room.turn = 0;
@@ -3435,36 +3432,6 @@
       }
       if ((0 < (ref4 = room.dueling_players[pos].lp) && ref4 <= 100)) {
         ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK);
-      }
-    }
-    //track card count
-    //todo: track card count in tag mode
-    if (ygopro.constants.MSG[msg] === 'MOVE' && room.hostinfo.mode !== 2) {
-      pos = buffer.readUInt8(5);
-      if (!client.is_first) {
-        pos = 1 - pos;
-      }
-      loc = buffer.readUInt8(6);
-      if ((loc & 0xe) && pos === 0) {
-        client.card_count--;
-      }
-      pos = buffer.readUInt8(9);
-      if (!client.is_first) {
-        pos = 1 - pos;
-      }
-      loc = buffer.readUInt8(10);
-      if ((loc & 0xe) && pos === 0) {
-        client.card_count++;
-      }
-    }
-    if (ygopro.constants.MSG[msg] === 'DRAW' && room.hostinfo.mode !== 2) {
-      pos = buffer.readUInt8(1);
-      if (!client.is_first) {
-        pos = 1 - pos;
-      }
-      if (pos === 0) {
-        count = buffer.readInt8(2);
-        client.card_count += count;
       }
     }
     // check panel confirming cards in heartbeat
@@ -4656,7 +4623,7 @@
               for (o = 0, len4 = ref4.length; o < len4; o++) {
                 player = ref4[o];
                 results.push({
-                  name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name_vpass] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + (room.hostinfo.mode !== 2 ? " Cards:" + (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : "") + ")" : ""),
+                  name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name_vpass] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + ")" : ""),
                   winner: player.pos === room.winner
                 });
               }
@@ -4877,8 +4844,7 @@
                       ip: settings.modules.http.show_ip && pass_validated && !player.is_local ? player.ip.slice(7) : null,
                       status: settings.modules.http.show_info && room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN && player.pos !== 7 ? {
                         score: room.scores[player.name_vpass],
-                        lp: player.lp != null ? player.lp : room.hostinfo.start_lp,
-                        cards: room.hostinfo.mode !== 2 ? (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : null
+                        lp: player.lp != null ? player.lp : room.hostinfo.start_lp
                       } : null,
                       pos: player.pos
                     });
