@@ -1,4 +1,17 @@
 # Dockerfile for SRVPro
+FROM debian:buster as premake-builder
+
+RUN apt update && \
+    env DEBIAN_FRONTEND=noninteractive apt install -y wget build-essential p7zip-full && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+WORKDIR /usr/src
+RUN wget -O premake.zip https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-src.zip && \
+    7z x -y premake.zip && \
+    mv premake-5.0.0-alpha14 premake && \
+    cd premake/build/gmake.unix && \
+    make -j$(nproc)
+
 FROM node:14-buster-slim
 
 RUN npm install -g pm2
@@ -6,20 +19,21 @@ RUN npm install -g pm2
 # apt
 RUN apt update && \
     env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libevent-dev libsqlite3-dev mono-complete p7zip-full python3 liblua5.3-dev python && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # srvpro
 COPY . /ygopro-server
 WORKDIR /ygopro-server
 RUN npm ci && \
-    mkdir config decks replays logs /redis
+    mkdir config decks replays logs
+
+COPY --from=premake-builder /usr/src/premake/bin/release/premake5 /usr/bin/premake5
 
 # ygopro
 RUN git clone --branch=server --recursive --depth=1 https://github.com/moecube/ygopro && \
     cd ygopro && \
     git submodule foreach git checkout master && \
-    wget -O - https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-linux.tar.gz | tar zfx - && \
-    ./premake5 gmake && \
+    premake5 gmake && \
     cd build && \
     make config=release -j$(nproc) && \
     cd .. && \
