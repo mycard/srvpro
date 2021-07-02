@@ -228,6 +228,7 @@ loadLFList = (path) ->
   catch
 
 init = () ->
+  log.info('Reading config.')
   await createDirectoryIfNotExists("./config")
   await importOldConfig()
   defaultConfig = await loadJSONAsync('./data/default_config.json')
@@ -248,6 +249,7 @@ init = () ->
     imported = true
   #import the old passwords to new admin user system
   if settings.modules.http.password
+    log.info('Migrating http user.')
     await auth.add_user("olduser", settings.modules.http.password, true, {
       "get_rooms": true,
       "shout": true,
@@ -260,6 +262,7 @@ init = () ->
     delete settings.modules.http.password
     imported = true
   if settings.modules.tournament_mode.password
+    log.info('Migrating tournament user.')
     await auth.add_user("tournament", settings.modules.tournament_mode.password, true, {
       "duel_log": true,
       "download_replay": true,
@@ -270,12 +273,14 @@ init = () ->
     delete settings.modules.tournament_mode.password
     imported = true
   if settings.modules.pre_util.password
+    log.info('Migrating pre-dash user.')
     await auth.add_user("pre", settings.modules.pre_util.password, true, {
       "pre_dashboard": true
     })
     delete settings.modules.pre_util.password
     imported = true
   if settings.modules.update_util.password
+    log.info('Migrating update-dash user.')
     await auth.add_user("update", settings.modules.update_util.password, true, {
       "update_dashboard": true
     })
@@ -305,10 +310,12 @@ init = () ->
     imported = true
   #finish
   if imported
+    log.info('Saving migrated settings.')
     await setting_save(settings)
   if settings.modules.mysql.enabled
     DataManager = require('./data-manager/DataManager.js').DataManager
     dataManager = global.dataManager = new DataManager(settings.modules.mysql.db, log)
+    log.info('Connecting to database.')
     await dataManager.init()
   else
     log.warn("Some functions may be limited without MySQL .")
@@ -330,6 +337,7 @@ init = () ->
       log.warn("Cannot record random match scores because no MySQL.")
 
   # 读取数据
+  log.info('Loading data.')
   default_data = await loadJSONAsync('./data/default_data.json')
   try
     tips = global.tips = await loadJSONAsync('./config/tips.json')
@@ -350,11 +358,13 @@ init = () ->
     try
       chat_color = await loadJSONAsync('./config/chat_color.json')
       if chat_color
+        log.info("Migrating chat color.")
         await dataManager.migrateChatColors(chat_color.save_list);
         await fs.promises.rename('./config/chat_color.json', './config/chat_color.json.bak')
         log.info("Chat color migrated.")
     catch
   try
+    log.info("Reading YGOPro version.")
     cppversion = parseInt((await fs.promises.readFile('ygopro/gframe/game.cpp', 'utf8')).match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
     await setting_change(settings, "version", cppversion)
     log.info "ygopro version 0x"+settings.version.toString(16), "(from source code)"
@@ -362,10 +372,12 @@ init = () ->
   #settings.version = settings.version_default
     log.info "ygopro version 0x"+settings.version.toString(16), "(from config)"
   # load the lflist of current date
+  log.info("Reading banlists.")
   await loadLFList('ygopro/expansions/lflist.conf')
   await loadLFList('ygopro/lflist.conf')
 
   if settings.modules.windbot.enabled
+    log.info("Reading bot list.")
     windbots = global.windbots = (await loadJSONAsync(settings.modules.windbot.botlist)).windbots
     real_windbot_server_ip = global.real_windbot_server_ip = settings.modules.windbot.server_ip
     if !settings.modules.windbot.server_ip.includes("127.0.0.1")
@@ -412,6 +424,7 @@ init = () ->
         arena: settings.modules.arena_mode.mode
       })
       try
+        log.info("Sending arena init post.")
         await axios.post(settings.modules.arena_mode.init_post.url + "?" + postData)
       catch e
         log.warn 'ARENA INIT POST ERROR', e
@@ -570,6 +583,7 @@ init = () ->
 
   , 1000
 
+  log.info("Starting server.")
   net.createServer(netRequestHandler).listen settings.port, ->
     log.info "server started", settings.port
     return
@@ -1422,7 +1436,7 @@ class Room
         if error
           log.warn 'SCORE POST ERROR', error
         else
-          if response.statusCode != 204 and response.statusCode != 200
+          if response.statusCode >= 300
             log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
           #else
           #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
@@ -3031,7 +3045,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
         if error
           log.warn 'DECK POST ERROR', error
         else
-          if response.statusCode != 200
+          if response.statusCode > 300
             log.warn 'DECK POST FAIL', response.statusCode, client.name, body
           #else
             #log.info 'DECK POST OK', response.statusCode, client.name, body
@@ -3063,7 +3077,7 @@ report_to_big_brother = global.report_to_big_brother = (roomname, sender, ip, le
     if error
       log.warn 'BIG BROTHER ERROR', error
     else
-      if response.statusCode != 200
+      if response.statusCode >= 300
         log.warn 'BIG BROTHER FAIL', response.statusCode, roomname, body
       #else
         #log.info 'BIG BROTHER OK', response.statusCode, roomname, body
