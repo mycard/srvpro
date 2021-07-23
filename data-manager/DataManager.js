@@ -513,16 +513,25 @@ class DataManager {
     }
     async randomDuelPlayerWin(name) {
         const score = await this.getOrCreateRandomDuelScore(name);
+        if (!score) {
+            return;
+        }
         score.win();
         await this.saveRandomDuelScore(score);
     }
     async randomDuelPlayerLose(name) {
         const score = await this.getOrCreateRandomDuelScore(name);
+        if (!score) {
+            return;
+        }
         score.lose();
         await this.saveRandomDuelScore(score);
     }
     async randomDuelPlayerFlee(name) {
         const score = await this.getOrCreateRandomDuelScore(name);
+        if (!score) {
+            return;
+        }
         score.flee();
         await this.saveRandomDuelScore(score);
     }

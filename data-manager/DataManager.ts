@@ -520,16 +520,25 @@ export class DataManager {
 	}
 	async randomDuelPlayerWin(name: string) {
 		const score = await this.getOrCreateRandomDuelScore(name);
+		if (!score) {
+			return;
+		}
 		score.win();
 		await this.saveRandomDuelScore(score);
 	}
 	async randomDuelPlayerLose(name: string) {
 		const score = await this.getOrCreateRandomDuelScore(name);
+		if (!score) {
+			return;
+		}
 		score.lose();
 		await this.saveRandomDuelScore(score);
 	}
 	async randomDuelPlayerFlee(name: string) {
 		const score = await this.getOrCreateRandomDuelScore(name);
+		if (!score) {
+			return;
+		}
 		score.flee();
 		await this.saveRandomDuelScore(score);
 	}
