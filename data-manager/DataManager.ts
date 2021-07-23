@@ -274,8 +274,8 @@ export class DataManager {
 			const queryBuilder = repo.createQueryBuilder("duelLog")
 				.where("1");
 			if(roomName != null && roomName.length) {
-				const escapedRoomName = this.getEscapedString(roomName);
-				queryBuilder.andWhere("duelLog.name = :escapedRoomName", { escapedRoomName });
+				//const escapedRoomName = this.getEscapedString(roomName);
+				queryBuilder.andWhere("duelLog.name = :roomName", { roomName });
 			}
 			if(duelCount != null && !isNaN(duelCount)) {
 				queryBuilder.andWhere("duelLog.duelCount = :duelCount", { duelCount });
@@ -284,9 +284,9 @@ export class DataManager {
 				let innerQuery = "select id from duel_log_player where duel_log_player.duelLogId = duelLog.id";
 				const innerQueryParams: any = {};
 				if(playerName != null && playerName.length) {
-					const escapedPlayerName = this.getEscapedString(playerName);
-					innerQuery += " and duel_log_player.realName = :escapedPlayerName";
-					innerQueryParams.escapedPlayerName = escapedPlayerName;
+					//const escapedPlayerName = this.getEscapedString(playerName);
+					innerQuery += " and duel_log_player.realName = :playerName";
+					innerQueryParams.playerName = playerName;
 				}
 				if(playerScore != null && !isNaN(playerScore)) {
 					innerQuery += " and duel_log_player.score = :playerScore";
