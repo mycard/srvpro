@@ -1628,6 +1628,9 @@
         if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/)) {
           this.hostinfo.rule = 2;
         }
+        if (rule.match(/(^|，|,)(CN|CCG|CHINESE)(，|,|$)/)) {
+          this.hostinfo.rule = 4;
+        }
         if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/))) {
           start_lp = parseInt(param[2]);
           if (start_lp <= 0) {
