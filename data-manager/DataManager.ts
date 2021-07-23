@@ -275,7 +275,7 @@ export class DataManager {
 				.where("1");
 			if(roomName != null && roomName.length) {
 				const escapedRoomName = this.getEscapedString(roomName);
-				queryBuilder.andWhere("duelLog.name like :escapedRoomName", { escapedRoomName });
+				queryBuilder.andWhere("duelLog.name = :escapedRoomName", { escapedRoomName });
 			}
 			if(duelCount != null && !isNaN(duelCount)) {
 				queryBuilder.andWhere("duelLog.duelCount = :duelCount", { duelCount });
@@ -285,7 +285,7 @@ export class DataManager {
 				const innerQueryParams: any = {};
 				if(playerName != null && playerName.length) {
 					const escapedPlayerName = this.getEscapedString(playerName);
-					innerQuery += " and duel_log_player.realName like :escapedPlayerName";
+					innerQuery += " and duel_log_player.realName = :escapedPlayerName";
 					innerQueryParams.escapedPlayerName = escapedPlayerName;
 				}
 				if(playerScore != null && !isNaN(playerScore)) {
