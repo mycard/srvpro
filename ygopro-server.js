@@ -1630,6 +1630,7 @@
         }
         if (rule.match(/(^|，|,)(CN|CCG|CHINESE)(，|,|$)/)) {
           this.hostinfo.rule = 4;
+          this.hostinfo.lflist = -1;
         }
         if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/))) {
           start_lp = parseInt(param[2]);

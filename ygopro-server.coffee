@@ -1251,6 +1251,7 @@ class Room
 
       if (rule.match /(^|，|,)(CN|CCG|CHINESE)(，|,|$)/)
         @hostinfo.rule = 4
+        @hostinfo.lflist = -1
 
       if (param = rule.match /(^|，|,)LP(\d+)(，|,|$)/)
         start_lp = parseInt(param[2])
