@@ -43,7 +43,6 @@ moment.updateLocale('zh-cn', {
 
 import_datas = global.import_datas = [
   "abuse_count",
-  "ban_mc",
   "vpass",
   "rag",
   "rid",
@@ -869,9 +868,6 @@ CLIENT_kick_reconnect = global.CLIENT_kick_reconnect = (client, deckbuf) ->
 if settings.modules.reconnect.enabled
   disconnect_list = {} # {old_client, old_server, room_id, timeout, deckbuf}
 
-CLIENT_is_banned_by_mc = global.CLIENT_is_banned_by_mc = (client) ->
-  return client.ban_mc and client.ban_mc.banned and moment().isBefore(client.ban_mc.until)
-
 CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
   return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
   client.replays_sent = true
@@ -1408,7 +1404,7 @@ net.createServer (client) ->
   client.on 'data', (ctos_buffer) ->
     if client.is_post_watcher
       room=ROOM_all[client.rid]
-      room.watcher.write ctos_buffer if room and !CLIENT_is_banned_by_mc(client)
+      room.watcher.write ctos_buffer if room
     else
       #ctos_buffer = Buffer.alloc(0)
       ctos_message_length = 0
@@ -2380,9 +2376,9 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     cancel = true
   if !(room and (room.random_type or room.arena))
     return cancel
-  if client.abuse_count>=5 or CLIENT_is_banned_by_mc(client)
+  if client.abuse_count>=5
     log.warn "BANNED CHAT", client.name, client.ip, msg
-    ygopro.stoc_send_chat(client, "${banned_chat_tip}" + (if client.ban_mc and client.ban_mc.message then (": " + client.ban_mc.message) else ""), ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, "${banned_chat_tip}", ygopro.constants.COLORS.RED)
     return true
   oldmsg = msg
   if (_.any(badwordR.level3, (regexp) ->
