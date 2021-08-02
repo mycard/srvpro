@@ -62,7 +62,7 @@
     }
   });
 
-  import_datas = global.import_datas = ["abuse_count", "vpass", "rag", "rid", "is_post_watcher", "retry_count", "name", "pass", "name_vpass", "is_first", "lp", "is_host", "pos", "surrend_confirm", "kick_count", "deck_saved", "main", "side", "side_interval", "side_tcount", "selected_preduel", "last_game_msg", "last_game_msg_title", "last_hint_msg", "start_deckbuf", "ready_trap", "join_time", "arena_quit_free", "replays_sent"];
+  import_datas = global.import_datas = ["abuse_count", "vpass", "rag", "rid", "is_post_watcher", "retry_count", "name", "pass", "name_vpass", "is_first", "lp", "is_host", "pos", "surrend_confirm", "kick_count", "deck_saved", "main", "side", "side_interval", "side_tcount", "selected_preduel", "last_game_msg", "last_game_msg_title", "last_hint_msg", "start_deckbuf", "ready_trap", "arena_quit_free", "replays_sent"];
 
   merge = require('deepmerge');
 
@@ -1649,7 +1649,6 @@
     connect(client) {
       var host_player;
       this.players.push(client);
-      client.join_time = moment();
       if (this.random_type) {
         client.abuse_count = 0;
         host_player = this.get_host();
@@ -2441,38 +2440,7 @@
       return;
     }
     msg = buffer.readInt8(0);
-    if (settings.modules.retry_handle.enabled) {
-      if (ygopro.constants.MSG[msg] === 'RETRY') {
-        if (client.retry_count == null) {
-          client.retry_count = 0;
-        }
-        client.retry_count++;
-        log.warn("MSG_RETRY detected", client.name, client.ip, msg, client.retry_count);
-        if (settings.modules.retry_handle.max_retry_count && client.retry_count >= settings.modules.retry_handle.max_retry_count) {
-          ygopro.stoc_send_chat_to_room(room, client.name + "${retry_too_much_room_part1}" + settings.modules.retry_handle.max_retry_count + "${retry_too_much_room_part2}", ygopro.constants.COLORS.BABYBLUE);
-          ygopro.stoc_send_chat(client, "${retry_too_much_part1}" + settings.modules.retry_handle.max_retry_count + "${retry_too_much_part2}", ygopro.constants.COLORS.RED);
-          CLIENT_send_replays(client, room);
-          CLIENT_kick(client);
-          return true;
-        }
-        if (client.last_game_msg) {
-          if (settings.modules.retry_handle.max_retry_count) {
-            ygopro.stoc_send_chat(client, "${retry_part1}" + client.retry_count + "${retry_part2}" + settings.modules.retry_handle.max_retry_count + "${retry_part3}", ygopro.constants.COLORS.RED);
-          } else {
-            ygopro.stoc_send_chat(client, "${retry_not_counted}", ygopro.constants.COLORS.BABYBLUE);
-          }
-          if (client.last_hint_msg) {
-            ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
-          }
-          ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
-          return true;
-        }
-      } else {
-        client.last_game_msg = buffer;
-        client.last_game_msg_title = ygopro.constants.MSG[msg];
-      }
-    // log.info(client.name, client.last_game_msg_title)
-    } else if (ygopro.constants.MSG[msg] !== 'RETRY') {
+    if (ygopro.constants.MSG[msg] !== 'RETRY') {
       client.last_game_msg = buffer;
       client.last_game_msg_title = ygopro.constants.MSG[msg];
     }
@@ -2495,10 +2463,6 @@
       }
       if (client.is_first && (room.hostinfo.mode !== 2 || client.pos === 0 || client.pos === 2)) {
         room.first_list.push(client.name_vpass);
-      }
-      if (settings.modules.retry_handle.enabled) {
-        client.retry_count = 0;
-        client.last_game_msg = null;
       }
     }
     //ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
