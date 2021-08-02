@@ -68,7 +68,6 @@ import_datas = global.import_datas = [
   "last_hint_msg",
   "start_deckbuf",
   "ready_trap",
-  "arena_quit_free",
   "replays_sent"
 ]
 
@@ -826,7 +825,7 @@ CLIENT_reconnect = global.CLIENT_reconnect = (client) ->
   SERVER_kick(current_old_server)
   client.established = true
   client.pre_establish_buffers = []
-  if room.random_type or room.arena
+  if room.random_type
     room.last_active_time = moment()
   CLIENT_import_data(client, dinfo.old_client, room)
   CLIENT_send_reconnect_info(client, client.server, room)
@@ -855,7 +854,7 @@ CLIENT_kick_reconnect = global.CLIENT_kick_reconnect = (client, deckbuf) ->
   SERVER_kick(current_old_server)
   client.established = true
   client.pre_establish_buffers = []
-  if room.random_type or room.arena
+  if room.random_type
     room.last_active_time = moment()
   CLIENT_import_data(client, player, room)
   CLIENT_send_reconnect_info(client, client.server, room)
@@ -1086,43 +1085,6 @@ class Room
           #log.info score_array[0].name
           ROOM_player_win(score_array[0].name_vpass)
           ROOM_player_lose(score_array[0].name_vpass)
-    if settings.modules.arena_mode.enabled and @arena
-      #log.info 'SCORE', score_array, @start_time
-      end_time = moment().format()
-      if !@start_time
-        @start_time = end_time
-      if score_array.length != 2
-        if !score_array[0]
-          score_array[0] = { name: null, score: -5, deck: null }
-        if !score_array[1]
-          score_array[1] = { name: null, score: -5, deck: null }
-        score_array[0].score = -5
-        score_array[1].score = -5
-      formatted_replays = []
-      for repbuf in @replays when repbuf
-        formatted_replays.push(repbuf.toString("base64"))
-      request.post { url : settings.modules.arena_mode.post_score , form : {
-        accesskey: settings.modules.arena_mode.accesskey,
-        usernameA: score_array[0].name,
-        usernameB: score_array[1].name,
-        userscoreA: score_array[0].score,
-        userscoreB: score_array[1].score,
-        userdeckA: score_array[0].deck,
-        userdeckB: score_array[1].deck,
-        first: JSON.stringify(@first_list),
-        replays: JSON.stringify(formatted_replays),
-        start: @start_time,
-        end: end_time,
-        arena: @arena
-      }}, (error, response, body)=>
-        if error
-          log.warn 'SCORE POST ERROR', error
-        else
-          if response.statusCode != 204 and response.statusCode != 200
-            log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
-          #else
-          #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
-        return
 
     if @player_datas.length and settings.modules.cloud_replay.enabled
       replay_id = @cloud_replay_id
@@ -1246,17 +1208,6 @@ class Room
       SERVER_kick(client.server)
     else
       #log.info(client.name, @duel_stage != ygopro.constants.DUEL_STAGE.BEGIN, @disconnector, @random_type, @players.length)
-      if @arena and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and @disconnector != 'server' and !@arena_score_handled
-        if settings.modules.arena_mode.punish_quit_before_match and @players.length == 2 and !client.arena_quit_free
-          for player in @players when player.pos != 7
-            @scores[player.name_vpass] = 0
-          @scores[client.name_vpass] = -9
-        else
-          for player in @players when player.pos != 7
-            @scores[player.name_vpass] = -5
-          if @players.length == 2
-            @scores[client.name_vpass] = -9
-        @arena_score_handled = true
       index = _.indexOf(@players, client)
       @players.splice(index, 1) unless index == -1
       if @duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and @disconnector != 'server' and client.pos < 4
@@ -1266,7 +1217,7 @@ class Room
           ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
           if settings.modules.random_duel.record_match_scores and @random_type == 'M'
             ROOM_player_flee(client.name_vpass)
-      if @players.length and !(@windbot and client.is_host) and !(@arena and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and client.pos <= 3)
+      if @players.length and !(@windbot and client.is_host)
         left_name = (if settings.modules.hide_name and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN then "********" else client.name)
         ygopro.stoc_send_chat_to_room this, "#{left_name} ${left_game}" + if error then ": #{error}" else ''
         #client.room = null
@@ -1766,21 +1717,6 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
   if room.welcome2
     ygopro.stoc_send_chat(client, room.welcome2, ygopro.constants.COLORS.PINK)
-  if settings.modules.arena_mode.enabled and !client.is_local #and not client.score_shown
-    request
-      url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
-      json: true
-    , (error, response, body)->
-      if error
-        log.warn 'LOAD SCORE ERROR', client.name, error
-      else if !body or _.isString body
-        log.warn 'LOAD SCORE FAIL', client.name, response.statusCode, response.statusMessage, body
-      else
-        #log.info 'LOAD SCORE', client.name, body
-        rank_txt = if body.arena_rank>0 then "${rank_arena}" + body.arena_rank else "${rank_blank}"
-        ygopro.stoc_send_chat(client, "#{client.name}${exp_value_part1}#{body.exp}${exp_value_part2}${exp_value_part3}#{Math.round(body.pt)}#{rank_txt}${exp_value_part4}", ygopro.constants.COLORS.BABYBLUE)
-        #client.score_shown = true
-      return
   if settings.modules.random_duel.record_match_scores and room.random_type == 'M'
     ygopro.stoc_send_chat_to_room(room, ROOM_player_get_score(client), ygopro.constants.COLORS.GREEN)
     for player in room.players when player.pos != 7 and player != client
@@ -1973,12 +1909,6 @@ ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server, datas)-
   if room.hostinfo.no_watch
     ygopro.stoc_send_chat(client, "${watch_denied_room}", ygopro.constants.COLORS.RED)
     return true
-  if !room.arena or client.is_local
-    return false
-  for player in room.players
-    if player == client
-      ygopro.stoc_send_chat(client, "${cannot_to_observer}", ygopro.constants.COLORS.BABYBLUE)
-      return true
   return false
 
 ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server, datas)->
@@ -1986,10 +1916,6 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server, datas)->
   return unless room
   for player in room.players
     if player and player.pos == info.pos and player != client
-      if room.arena == "athletic"
-        ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-        CLIENT_kick(client)
-        return true
       client.kick_count = if client.kick_count then client.kick_count+1 else 1
       if client.kick_count>=5 and room.random_type
         ygopro.stoc_send_chat_to_room(room, "#{client.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
@@ -2027,44 +1953,15 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server, dat
   pos = info.status >> 4
   is_ready = (info.status & 0xf) == 9
   if pos < room.max_player
-    if room.arena
-      room.ready_player_count = 0
-      for player in room.players
-        if player.pos == pos
-          player.is_ready = is_ready
-      p1 = room.players[0]
-      p2 = room.players[1]
-      if !p1 or !p2
-        if room.waiting_for_player_interval
-          clearInterval room.waiting_for_player_interval
-          room.waiting_for_player_interval = null
-        return
-      room.waiting_for_player2 = room.waiting_for_player
-      room.waiting_for_player = null
-      if p1.is_ready and p2.is_ready
-        room.waiting_for_player = if p1.is_host then p1 else p2
-      if !p1.is_ready and p2.is_ready
-        room.waiting_for_player = p1
-      if !p2.is_ready and p1.is_ready
-        room.waiting_for_player = p2
-      if room.waiting_for_player != room.waiting_for_player2
-        room.waiting_for_player2 = room.waiting_for_player
-        room.waiting_for_player_time = settings.modules.arena_mode.ready_time
-        room.waiting_for_player_interval = setInterval (()-> wait_room_start_arena(ROOM_all[client.rid]);return), 1000
-      else if !room.waiting_for_player and room.waiting_for_player_interval
-        clearInterval room.waiting_for_player_interval
-        room.waiting_for_player_interval = null
-        room.waiting_for_player_time = settings.modules.arena_mode.ready_time
-    else
-      room.ready_player_count_without_host = 0
-      for player in room.players
-        if player.pos == pos
-          player.is_ready = is_ready
-        unless player.is_host
-          room.ready_player_count_without_host += player.is_ready
-      if room.ready_player_count_without_host >= room.max_player - 1
-        #log.info "all ready"
-        setTimeout (()-> wait_room_start(ROOM_all[client.rid], settings.modules.random_duel.ready_time);return), 1000
+    room.ready_player_count_without_host = 0
+    for player in room.players
+      if player.pos == pos
+        player.is_ready = is_ready
+      unless player.is_host
+        room.ready_player_count_without_host += player.is_ready
+    if room.ready_player_count_without_host >= room.max_player - 1
+      #log.info "all ready"
+      setTimeout (()-> wait_room_start(ROOM_all[client.rid], settings.modules.random_duel.ready_time);return), 1000
   return
 
 ygopro.ctos_follow 'REQUEST_FIELD', true, (buffer, info, client, server, datas)->
@@ -2107,22 +2004,6 @@ wait_room_start = (room, time)->
           ROOM_ban_player(player.name, player.ip, "${random_ban_reason_zombie}")
           ygopro.stoc_send_chat_to_room(room, "#{player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
           CLIENT_kick(player)
-  return
-
-wait_room_start_arena = (room)->
-  if room and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.waiting_for_player
-    room.waiting_for_player_time = room.waiting_for_player_time - 1
-    if room.waiting_for_player_time > 0
-      unless room.waiting_for_player_time % 5
-        for player in room.players when player
-          display_name = (if settings.modules.hide_name and player != room.waiting_for_player then "********" else room.waiting_for_player.name)
-          ygopro.stoc_send_chat(player, "#{if room.waiting_for_player_time <= 9 then ' ' else ''}#{room.waiting_for_player_time}${kick_count_down_arena_part1} #{display_name} ${kick_count_down_arena_part2}", if room.waiting_for_player_time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
-    else
-      ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
-      CLIENT_kick(room.waiting_for_player)
-      if room.waiting_for_player_interval
-        clearInterval room.waiting_for_player_interval
-        room.waiting_for_player_interval = null
   return
 
 #tip
@@ -2266,7 +2147,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   return unless room
   msg = _.trim(info.msg)
   cancel = _.startsWith(msg, "/")
-  room.last_active_time = moment() unless cancel or not (room.random_type or room.arena) or room.duel_stage == ygopro.constants.DUEL_STAGE.FINGER or room.duel_stage == ygopro.constants.DUEL_STAGE.FIRSTGO or room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING
+  room.last_active_time = moment() unless cancel or not room.random_type or room.duel_stage == ygopro.constants.DUEL_STAGE.FINGER or room.duel_stage == ygopro.constants.DUEL_STAGE.FIRSTGO or room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING
   cmd = msg.split(' ')
   switch cmd[0]
     when '/投降', '/surrender'
@@ -2294,7 +2175,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
       ygopro.stoc_send_random_tip(client) if settings.modules.tips.enabled
 
     when '/ai'
-      if settings.modules.windbot.enabled and client.is_host and !room.arena and room.random_type != 'M'
+      if settings.modules.windbot.enabled and client.is_host and room.random_type != 'M'
         cmd.shift()
         if name = cmd.join(' ')
           windbot = _.sample _.filter windbots, (w)->
@@ -2345,7 +2226,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     client.abuse_count=client.abuse_count+2 if client.abuse_count
     ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
-  if !(room and (room.random_type or room.arena))
+  if !(room and room.random_type)
     return cancel
   if client.abuse_count>=5
     log.warn "BANNED CHAT", client.name, client.ip, msg
@@ -2446,7 +2327,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
   client.side = buff_side
   if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
     client.start_deckbuf = Buffer.from(buffer)
-  if room.random_type or room.arena
+  if room.random_type
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
     room.last_active_time = moment()
@@ -2491,7 +2372,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return unless room and (room.random_type or room.arena)
+  return unless room and room.random_type
   room.last_active_time = moment()
   return
 
@@ -2523,7 +2404,7 @@ ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room
   client.selected_preduel = true
-  return unless room.random_type or room.arena
+  return unless room.random_type
   if client.pos == 0
     room.waiting_for_player = room.waiting_for_player2
   room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
@@ -2534,7 +2415,7 @@ ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
   return unless room
   client.selected_preduel = true
   # room.selecting_tp = false
-  return unless room.random_type or room.arena
+  return unless room.random_type
   room.last_active_time = moment()
   return
 
@@ -2570,7 +2451,7 @@ ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server, datas)->
   client.selected_preduel = false
   if client.pos == 0
     room.duel_stage = ygopro.constants.DUEL_STAGE.FINGER
-  return unless room.random_type or room.arena
+  return unless room.random_type
   if client.pos == 0
     room.waiting_for_player = client
   else
@@ -2584,7 +2465,7 @@ ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server, datas)->
   client.selected_preduel = false
   room.duel_stage = ygopro.constants.DUEL_STAGE.FIRSTGO
   room.selecting_tp = client
-  if room.random_type or room.arena
+  if room.random_type
     room.waiting_for_player = client
     room.last_active_time = moment()
   return
@@ -2614,7 +2495,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
         ygopro.stoc_send_chat(client, "${side_remain_part1}#{client.side_tcount}${side_remain_part2}", ygopro.constants.COLORS.BABYBLUE)
     , 60000
     client.side_interval = sinterval
-  if room.random_type or room.arena
+  if room.random_type
     if client.pos == 0
       room.waiting_for_player = client
     else
