@@ -314,7 +314,6 @@ if settings.modules.windbot.enabled
 
 # 组件
 ygopro = global.ygopro = require './ygopro.js'
-roomlist = global.roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
 
 if settings.modules.i18n.auto_pick
   geoip = require('geoip-country-lite')
@@ -1089,7 +1088,6 @@ class Room
       @process.stdout.setEncoding('utf8')
       @process.stdout.once 'data', (data)=>
         @established = true
-        roomlist.create(this) if !@windbot and settings.modules.http.websocket_roomlist
         @port = parseInt data
         _.each @players, (player)=>
           player.server.connect @port, '127.0.0.1', ->
@@ -1222,7 +1220,6 @@ class Room
       ROOM_clear_disconnect(index)
     ROOM_all[index] = null unless index == -1
     #ROOM_all.splice(index, 1) unless index == -1
-    roomlist.delete this if !@windbot and @established and settings.modules.http.websocket_roomlist
     return
 
   get_playing_player: ->
@@ -1246,11 +1243,6 @@ class Room
     for player in @get_playing_player() when player.closed
       found++
     return found
-
-  get_old_hostinfo: () -> # Just for supporting websocket roomlist in old MyCard client....
-    ret = _.clone(@hostinfo)
-    ret.enable_priority = (@hostinfo.duel_rule != 5)
-    return ret
 
   send_replays: () ->
     return false unless settings.modules.replay_delay and @replays.length and @hostinfo.mode == 1
@@ -1288,7 +1280,6 @@ class Room
         ROOM_players_oppentlist[client.ip] = null
 
     if @established
-      roomlist.update(this) if !@windbot and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.http.websocket_roomlist
       client.server.connect @port, '127.0.0.1', ->
         client.server.write buffer for buffer in client.pre_establish_buffers
         client.established = true
@@ -1330,7 +1321,6 @@ class Room
       if @players.length and !(@windbot and client.is_host) and !(@arena and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and client.pos <= 3)
         left_name = (if settings.modules.hide_name and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN then "********" else client.name)
         ygopro.stoc_send_chat_to_room this, "#{left_name} ${left_game}" + if error then ": #{error}" else ''
-        roomlist.update(this) if !@windbot and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.http.websocket_roomlist
         #client.room = null
       else
         @send_replays()
@@ -2497,7 +2487,6 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
     room.duel_stage = ygopro.constants.DUEL_STAGE.FINGER
     room.start_time = moment().format()
     room.turn = 0
-    roomlist.start room if !room.windbot and settings.modules.http.websocket_roomlist
     #room.duels = []
     room.dueling_players = []
     for player in room.players when player.pos != 7
@@ -3380,8 +3369,6 @@ if settings.modules.http
       cert: fs.readFileSync(settings.modules.http.ssl.cert)
       key: fs.readFileSync(settings.modules.http.ssl.key)
     https_server = https.createServer(options, requestListener)
-    if settings.modules.http.websocket_roomlist and roomlist
-      roomlist.init https_server, ROOM_all
     https_server.listen settings.modules.http.ssl.port
 
 if not fs.existsSync('./plugins')
