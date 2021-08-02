@@ -317,10 +317,6 @@ if settings.modules.windbot.enabled
         real_windbot_server_ip = global.real_windbot_server_ip = addr
     )
 
-
-if settings.modules.heartbeat_detection.enabled
-  long_resolve_cards = global.long_resolve_cards = loadJSON('./data/long_resolve_cards.json')
-
 # 组件
 ygopro = global.ygopro = require './ygopro.js'
 roomlist = global.roomlist = require './roomlist.js' if settings.modules.http.websocket_roomlist
@@ -925,37 +921,6 @@ CLIENT_kick_reconnect = global.CLIENT_kick_reconnect = (client, deckbuf) ->
 if settings.modules.reconnect.enabled
   disconnect_list = {} # {old_client, old_server, room_id, timeout, deckbuf}
 
-CLIENT_heartbeat_unregister = global.CLIENT_heartbeat_unregister = (client) ->
-  if !settings.modules.heartbeat_detection.enabled or !client.heartbeat_timeout
-    return false
-  clearTimeout(client.heartbeat_timeout)
-  delete client.heartbeat_timeout
-  #log.info(2, client.name)
-  return true
-
-CLIENT_heartbeat_register = global.CLIENT_heartbeat_register = (client, send) ->
-  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.waiting_for_last or client.pos > 3 or client.heartbeat_protected
-    return false
-  if client.heartbeat_timeout
-    CLIENT_heartbeat_unregister(client)
-  client.heartbeat_responsed = false
-  if send
-    ygopro.stoc_send(client, "TIME_LIMIT", {
-      player: 0,
-      left_time: 0
-    })
-    ygopro.stoc_send(client, "TIME_LIMIT", {
-      player: 1,
-      left_time: 0
-    })
-  client.heartbeat_timeout = setTimeout(() ->
-    CLIENT_heartbeat_unregister(client)
-    client.destroy() unless client.closed or client.heartbeat_responsed
-    return
-  , settings.modules.heartbeat_detection.wait_time)
-  #log.info(1, client.name)
-  return true
-
 CLIENT_is_banned_by_mc = global.CLIENT_is_banned_by_mc = (client) ->
   return client.ban_mc and client.ban_mc.banned and moment().isBefore(client.ban_mc.until)
 
@@ -1466,8 +1431,6 @@ net.createServer (client) ->
     #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
     unless client.closed
       client.closed = true
-      if settings.modules.heartbeat_detection.enabled
-        CLIENT_heartbeat_unregister(client)
       if room
         if !CLIENT_reconnect_register(client, client.rid)
           room.disconnect(client)
@@ -2377,11 +2340,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     room.winner = pos
     room.turn = 0
     room.duel_stage = ygopro.constants.DUEL_STAGE.END
-    if settings.modules.heartbeat_detection.enabled
-      for player in room.players
-        player.heartbeat_protected = false
-      delete room.long_resolve_card
-      delete room.long_resolve_chain
     if room and !room.finished and room.dueling_players[pos]
       room.winner_name = room.dueling_players[pos].name_vpass
       #log.info room.dueling_players, pos
@@ -2432,61 +2390,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK)
-
-  # check panel confirming cards in heartbeat
-  if settings.modules.heartbeat_detection.enabled and ygopro.constants.MSG[msg] == 'CONFIRM_CARDS'
-    check = false
-    count = buffer.readInt8(2)
-    max_loop = 3 + (count - 1) * 7
-    deck_found = 0
-    limbo_found = 0 # support custom cards which may be in location 0 in KoishiPro or EdoPro
-    for i in [3..max_loop] by 7
-      loc = buffer.readInt8(i + 5)
-      if (loc & 0x41) > 0
-        deck_found++
-      else if loc == 0
-        limbo_found++
-      if (deck_found > 0 and count > 1) or limbo_found > 0
-        check = true
-        break
-    if check
-      #console.log("Confirming cards:" + client.name)
-      client.heartbeat_protected = true
-
-  # chain detection
-  if settings.modules.heartbeat_detection.enabled and client.pos == 0
-    if ygopro.constants.MSG[msg] == 'CHAINING'
-      card = buffer.readUInt32LE(1)
-      found = false
-      for id in long_resolve_cards when id == card
-        found = true
-        break
-      if found
-        room.long_resolve_card = card
-        # console.log(0,card)
-      else
-        delete room.long_resolve_card
-    else if ygopro.constants.MSG[msg] == 'CHAINED' and room.long_resolve_card
-      chain = buffer.readInt8(1)
-      if !room.long_resolve_chain
-        room.long_resolve_chain = []
-      room.long_resolve_chain[chain] = true
-      # console.log(1,chain)
-      delete room.long_resolve_card
-    else if ygopro.constants.MSG[msg] == 'CHAIN_SOLVING' and room.long_resolve_chain
-      chain = buffer.readInt8(1)
-      # console.log(2,chain)
-      if room.long_resolve_chain[chain]
-        for player in room.get_playing_player()
-          player.heartbeat_protected = true
-    else if (ygopro.constants.MSG[msg] == 'CHAIN_NEGATED' or ygopro.constants.MSG[msg] == 'CHAIN_DISABLED') and room.long_resolve_chain
-      chain = buffer.readInt8(1)
-      # console.log(3,chain)
-      delete room.long_resolve_chain[chain]
-    else if ygopro.constants.MSG[msg] == 'CHAIN_END'
-      # console.log(4,chain)
-      delete room.long_resolve_card
-      delete room.long_resolve_chain
 
   #登场台词
   if settings.modules.dialogues.enabled
@@ -3058,31 +2961,6 @@ ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server, datas)->
       return true
     else
       client.time_confirm_required = true
-  return unless settings.modules.heartbeat_detection.enabled and room.duel_stage == ygopro.constants.DUEL_STAGE.DUELING and !room.windbot
-  check = false
-  if room.hostinfo.mode != 2
-    check = (client.is_first and info.player == 0) or (!client.is_first and info.player == 1)
-  else
-    cur_players = []
-    switch room.turn % 4
-      when 1
-        cur_players[0] = 0
-        cur_players[1] = 3
-      when 2
-        cur_players[0] = 0
-        cur_players[1] = 2
-      when 3
-        cur_players[0] = 1
-        cur_players[1] = 2
-      when 0
-        cur_players[0] = 1
-        cur_players[1] = 3
-    if !room.dueling_players[0].is_first
-      cur_players[0] = cur_players[0] + 2
-      cur_players[1] = cur_players[1] - 2
-    check = client.pos == cur_players[info.player]
-  if check
-    CLIENT_heartbeat_register(client, false)
   return false
 
 ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server, datas)->
@@ -3096,10 +2974,6 @@ ygopro.ctos_follow 'TIME_CONFIRM', false, (buffer, info, client, server, datas)-
           ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
         ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
     client.time_confirm_required = false
-  if settings.modules.heartbeat_detection.enabled
-    client.heartbeat_protected = false
-    client.heartbeat_responsed = true
-    CLIENT_heartbeat_unregister(client)
   return
 
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
@@ -3312,20 +3186,6 @@ if settings.modules.mycard.enabled
       )
     return
   , 1000
-
-if settings.modules.heartbeat_detection.enabled
-  setInterval ()->
-    _async.each ROOM_all, (room, done)->
-      if room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and (room.hostinfo.time_limit == 0 or room.duel_stage != ygopro.constants.DUEL_STAGE.DUELING) and !room.windbot
-        _async.each(room.get_playing_player(), (player, _done)->
-          if player and (room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING or player.selected_preduel)
-            CLIENT_heartbeat_register(player, true)
-          _done()
-        , done)
-      else
-        done()
-    return
-  , settings.modules.heartbeat_detection.interval
 
 setInterval ()->
   current_time = moment()
