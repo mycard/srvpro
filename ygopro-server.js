@@ -1283,7 +1283,7 @@
     // 客户端到服务端(ctos)协议分析
     client.pre_establish_buffers = new Array();
     client.on('data', function(ctos_buffer) {
-      var b, bad_ip_count, buffer, cancel, ctos_event, ctos_message_length, ctos_proto, datas, info, l, len2, len3, len4, len5, looplimit, m, n, o, ref2, ref3, result, room, struct;
+      var b, bad_ip_count, buffer, cancel, ctos_message_length, ctos_proto, datas, info, l, len2, len3, looplimit, m, result, room, struct;
       if (client.is_post_watcher) {
         room = ROOM_all[client.rid];
         if (room) {
@@ -1320,42 +1320,14 @@
               b = ctos_buffer.slice(3, ctos_message_length - 1 + 3);
               info = null;
               struct = ygopro.structs[ygopro.proto_structs.CTOS[ygopro.constants.CTOS[ctos_proto]]];
-              if (struct && !cancel) {
+              if (struct) {
                 struct._setBuff(b);
                 info = _.clone(struct.fields);
               }
-              if (ygopro.ctos_follows_before[ctos_proto] && !cancel) {
-                ref2 = ygopro.ctos_follows_before[ctos_proto];
-                for (l = 0, len2 = ref2.length; l < len2; l++) {
-                  ctos_event = ref2[l];
-                  result = ctos_event.callback(b, info, client, client.server, datas);
-                  if (result && ctos_event.synchronous) {
-                    cancel = true;
-                  }
-                }
-              }
-              if (struct && !cancel) {
-                struct._setBuff(b);
-                info = _.clone(struct.fields);
-              }
-              if (ygopro.ctos_follows[ctos_proto] && !cancel) {
+              if (ygopro.ctos_follows[ctos_proto]) {
                 result = ygopro.ctos_follows[ctos_proto].callback(b, info, client, client.server, datas);
                 if (result && ygopro.ctos_follows[ctos_proto].synchronous) {
                   cancel = true;
-                }
-              }
-              if (struct && !cancel) {
-                struct._setBuff(b);
-                info = _.clone(struct.fields);
-              }
-              if (ygopro.ctos_follows_after[ctos_proto] && !cancel) {
-                ref3 = ygopro.ctos_follows_after[ctos_proto];
-                for (m = 0, len3 = ref3.length; m < len3; m++) {
-                  ctos_event = ref3[m];
-                  result = ctos_event.callback(b, info, client, client.server, datas);
-                  if (result && ctos_event.synchronous) {
-                    cancel = true;
-                  }
                 }
               }
               if (!cancel) {
@@ -1389,13 +1361,13 @@
           return;
         }
         if (client.established) {
-          for (n = 0, len4 = datas.length; n < len4; n++) {
-            buffer = datas[n];
+          for (l = 0, len2 = datas.length; l < len2; l++) {
+            buffer = datas[l];
             client.server.write(buffer);
           }
         } else {
-          for (o = 0, len5 = datas.length; o < len5; o++) {
-            buffer = datas[o];
+          for (m = 0, len3 = datas.length; m < len3; m++) {
+            buffer = datas[m];
             client.pre_establish_buffers.push(buffer);
           }
         }
@@ -1403,7 +1375,7 @@
     });
     // 服务端到客户端(stoc)
     server.on('data', function(stoc_buffer) {
-      var b, buffer, cancel, datas, info, l, len2, len3, len4, looplimit, m, n, ref2, ref3, result, stoc_event, stoc_message_length, stoc_proto, struct;
+      var b, buffer, cancel, datas, info, l, len2, looplimit, result, stoc_message_length, stoc_proto, struct;
       //stoc_buffer = Buffer.alloc(0)
       stoc_message_length = 0;
       stoc_proto = 0;
@@ -1437,42 +1409,14 @@
             b = stoc_buffer.slice(3, stoc_message_length - 1 + 3);
             info = null;
             struct = ygopro.structs[ygopro.proto_structs.STOC[ygopro.constants.STOC[stoc_proto]]];
-            if (struct && !cancel) {
+            if (struct) {
               struct._setBuff(b);
               info = _.clone(struct.fields);
             }
-            if (ygopro.stoc_follows_before[stoc_proto] && !cancel) {
-              ref2 = ygopro.stoc_follows_before[stoc_proto];
-              for (l = 0, len2 = ref2.length; l < len2; l++) {
-                stoc_event = ref2[l];
-                result = stoc_event.callback(b, info, server.client, server, datas);
-                if (result && stoc_event.synchronous) {
-                  cancel = true;
-                }
-              }
-            }
-            if (struct && !cancel) {
-              struct._setBuff(b);
-              info = _.clone(struct.fields);
-            }
-            if (ygopro.stoc_follows[stoc_proto] && !cancel) {
+            if (ygopro.stoc_follows[stoc_proto]) {
               result = ygopro.stoc_follows[stoc_proto].callback(b, info, server.client, server, datas);
               if (result && ygopro.stoc_follows[stoc_proto].synchronous) {
                 cancel = true;
-              }
-            }
-            if (struct && !cancel) {
-              struct._setBuff(b);
-              info = _.clone(struct.fields);
-            }
-            if (ygopro.stoc_follows_after[stoc_proto] && !cancel) {
-              ref3 = ygopro.stoc_follows_after[stoc_proto];
-              for (m = 0, len3 = ref3.length; m < len3; m++) {
-                stoc_event = ref3[m];
-                result = stoc_event.callback(b, info, server.client, server, datas);
-                if (result && stoc_event.synchronous) {
-                  cancel = true;
-                }
               }
             }
             if (!cancel) {
@@ -1495,8 +1439,8 @@
         }
       }
       if (server.client && !server.client.closed) {
-        for (n = 0, len4 = datas.length; n < len4; n++) {
-          buffer = datas[n];
+        for (l = 0, len2 = datas.length; l < len2; l++) {
+          buffer = datas[l];
           server.client.write(buffer);
         }
       }

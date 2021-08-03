@@ -62,15 +62,7 @@
   //消息跟踪函数 需要重构, 另暂时只支持异步, 同步没做.
   this.stoc_follows = {};
 
-  this.stoc_follows_before = {};
-
-  this.stoc_follows_after = {};
-
   this.ctos_follows = {};
-
-  this.ctos_follows_before = {};
-
-  this.ctos_follows_after = {};
 
   this.replace_proto = function(proto, tp) {
     var changed_proto, key, ref, value;
@@ -101,30 +93,6 @@
     };
   };
 
-  this.stoc_follow_before = function(proto, synchronous, callback) {
-    var changed_proto;
-    changed_proto = this.replace_proto(proto, "STOC");
-    if (!this.stoc_follows_before[changed_proto]) {
-      this.stoc_follows_before[changed_proto] = [];
-    }
-    this.stoc_follows_before[changed_proto].push({
-      callback: callback,
-      synchronous: synchronous
-    });
-  };
-
-  this.stoc_follow_after = function(proto, synchronous, callback) {
-    var changed_proto;
-    changed_proto = this.replace_proto(proto, "STOC");
-    if (!this.stoc_follows_after[changed_proto]) {
-      this.stoc_follows_after[changed_proto] = [];
-    }
-    this.stoc_follows_after[changed_proto].push({
-      callback: callback,
-      synchronous: synchronous
-    });
-  };
-
   this.ctos_follow = function(proto, synchronous, callback) {
     var changed_proto;
     changed_proto = this.replace_proto(proto, "CTOS");
@@ -132,30 +100,6 @@
       callback: callback,
       synchronous: synchronous
     };
-  };
-
-  this.ctos_follow_before = function(proto, synchronous, callback) {
-    var changed_proto;
-    changed_proto = this.replace_proto(proto, "CTOS");
-    if (!this.ctos_follows_before[changed_proto]) {
-      this.ctos_follows_before[changed_proto] = [];
-    }
-    this.ctos_follows_before[changed_proto].push({
-      callback: callback,
-      synchronous: synchronous
-    });
-  };
-
-  this.ctos_follow_after = function(proto, synchronous, callback) {
-    var changed_proto;
-    changed_proto = this.replace_proto(proto, "CTOS");
-    if (!this.ctos_follows_after[changed_proto]) {
-      this.ctos_follows_after[changed_proto] = [];
-    }
-    this.ctos_follows_after[changed_proto].push({
-      callback: callback,
-      synchronous: synchronous
-    });
   };
 
   //消息发送函数,至少要把俩合起来....
