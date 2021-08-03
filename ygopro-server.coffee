@@ -195,11 +195,6 @@ try
 catch
   duel_log = global.duel_log = default_data.duel_log
   setting_save(duel_log)
-try
-  chat_color = global.chat_color = loadJSON('./config/chat_color.json')
-catch
-  chat_color = global.chat_color = default_data.chat_color
-  setting_save(chat_color)
 
 badwordR={}
 badwordR.level0=[]
@@ -1275,8 +1270,6 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
   #欢迎信息
   room=ROOM_all[client.rid]
   return unless room
-  if !room.join_game_buffer
-    room.join_game_buffer = buffer
   if settings.modules.welcome
     ygopro.stoc_send_chat(client, settings.modules.welcome, ygopro.constants.COLORS.GREEN)
   if room.welcome
@@ -1694,8 +1687,6 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
       ygopro.stoc_send_chat(client, "${chat_order_roomname}")
       ygopro.stoc_send_chat(client, "${chat_order_windbot}") if settings.modules.windbot.enabled
       ygopro.stoc_send_chat(client, "${chat_order_tip}") if settings.modules.tips.enabled
-      ygopro.stoc_send_chat(client, "${chat_order_chatcolor_1}") if settings.modules.chat_color.enabled
-      ygopro.stoc_send_chat(client, "${chat_order_chatcolor_2}") if settings.modules.chat_color.enabled
 
     when '/tip'
       ygopro.stoc_send_random_tip(client) if settings.modules.tips.enabled
@@ -1718,32 +1709,6 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
 
     when '/roomname'
       ygopro.stoc_send_chat(client, "${room_name} " + room.name, ygopro.constants.COLORS.BABYBLUE) if room
-
-    when '/color'
-      if settings.modules.chat_color.enabled
-        cip = CLIENT_get_authorize_key(client)
-        if cmsg = cmd[1]
-          if cmsg.toLowerCase() == "help"
-            ygopro.stoc_send_chat(client, "${show_color_list}", ygopro.constants.COLORS.BABYBLUE)
-            for cname,cvalue of ygopro.constants.COLORS when cvalue > 10
-              ygopro.stoc_send_chat(client, cname, cvalue)
-          else if cmsg.toLowerCase() == "default"
-            chat_color.save_list[cip] = false
-            setting_save(chat_color)
-            ygopro.stoc_send_chat(client, "${set_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
-          else
-            ccolor = cmsg.toUpperCase()
-            if ygopro.constants.COLORS[ccolor] and ygopro.constants.COLORS[ccolor] > 10 and ygopro.constants.COLORS[ccolor] < 20
-              chat_color.save_list[cip] = ccolor
-              setting_save(chat_color)
-              ygopro.stoc_send_chat(client, "${set_chat_color_part1}" + ccolor + "${set_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
-            else
-              ygopro.stoc_send_chat(client, "${color_not_found_part1}" + ccolor + "${color_not_found_part2}", ygopro.constants.COLORS.RED)
-        else
-          if color = chat_color.save_list[cip]
-            ygopro.stoc_send_chat(client, "${get_chat_color_part1}" + color + "${get_chat_color_part2}", ygopro.constants.COLORS.BABYBLUE)
-          else
-            ygopro.stoc_send_chat(client, "${get_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
 
     #when '/test'
     #  ygopro.stoc_send_hint_card_to_room(room, 2333365)
@@ -1864,32 +1829,6 @@ ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
   # room.selecting_tp = false
   return unless room.random_type
   room.last_active_time = moment()
-  return
-
-ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server, datas)->
-  room=ROOM_all[client.rid]
-  pid = info.player
-  return unless room and pid < 4 and settings.modules.chat_color.enabled and (!settings.modules.hide_name or room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN)
-  if room.duel_stage == ygopro.constants.DUEL_STAGE.DUELING and !room.dueling_players[0].is_first
-    if room.hostinfo.mode == 2
-      pid = {
-        0: 2,
-        1: 3,
-        2: 0,
-        3: 1
-      }[pid]
-    else
-      pid = 1 - pid
-  for player in room.players when player and player.pos == pid
-    tplayer = player
-  return unless tplayer
-  tcolor = chat_color.save_list[CLIENT_get_authorize_key(tplayer)]
-  if tcolor
-    ygopro.stoc_send client, 'CHAT', {
-        player: ygopro.constants.COLORS[tcolor]
-        msg: tplayer.name + ": " + info.msg
-      }
-    return true
   return
 
 ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server, datas)->
