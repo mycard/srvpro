@@ -528,14 +528,6 @@ SERVER_kick = (server) ->
   server.destroy()
   return true
 
-CLIENT_get_authorize_key = (client) ->
-  if client.vpass
-    return client.name_vpass
-  else if client.is_local
-    return client.name
-  else
-    return client.ip + ":" + client.name
-
 CLIENT_send_replays = (client, room) ->
   return false unless settings.modules.replay_delay and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
   client.replays_sent = true
@@ -558,14 +550,9 @@ SOCKET_flush_data = (sk, datas) ->
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
-    #@alive = true
     @players = []
-    @player_datas = []
-    @status = 'starting'
-    #@started = false
     @established = false
     @watcher_buffers = []
-    @recorder_buffers = []
     @watchers = []
     @random_type = ''
     @welcome = ''
@@ -754,14 +741,11 @@ class Room
           ROOM_player_lose(score_array[0].name_vpass)
 
     @watcher_buffers = []
-    @recorder_buffers = []
     @players = []
     @watcher.destroy() if @watcher
-    @recorder.destroy() if @recorder
     @deleted = true
     index = _.indexOf(ROOM_all, this)
     ROOM_all[index] = null unless index == -1
-    #ROOM_all.splice(index, 1) unless index == -1
     return
 
   get_playing_player: ->
@@ -1265,7 +1249,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       ygopro.stoc_send_chat(client, ROOM_player_get_score(player), ygopro.constants.COLORS.GREEN)
 
   if settings.modules.cloud_replay.enable_halfway_watch and !room.watcher and !room.hostinfo.no_watch
-    room.watcher = watcher = if settings.modules.test_mode.watch_public_hand and room.recorder then room.recorder else net.connect room.port, ->
+    room.watcher = watcher = net.connect room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
         name: "the Big Brother"
       }
@@ -1314,14 +1298,15 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room
   msg = buffer.readInt8(0)
+  msg_name = ygopro.constants.MSG[msg]
 
   if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg <= 144) #SELECT和ANNOUNCE开头的消息
     room.waiting_for_player = client
     room.last_active_time = moment()
-  #log.info("#{ygopro.constants.MSG[msg]}等待#{room.waiting_for_player.name}")
+  #log.info("#{msg_name}等待#{room.waiting_for_player.name}")
 
-  #log.info 'MSG', ygopro.constants.MSG[msg]
-  if ygopro.constants.MSG[msg] == 'START'
+  #log.info 'MSG', msg_name
+  if msg_name == 'START'
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
@@ -1334,19 +1319,14 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
 
-  if ygopro.constants.MSG[msg] == 'HINT'
-    hint_type = buffer.readUInt8(1)
-    if hint_type == 3
-      client.last_hint_msg = buffer
-
-  if ygopro.constants.MSG[msg] == 'NEW_TURN'
+  if msg_name == 'NEW_TURN'
     if client.pos == 0
       room.turn++
     if client.surrend_confirm
       client.surrend_confirm = false
       ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
 
-  if ygopro.constants.MSG[msg] == 'WIN' and client.pos == 0
+  if msg_name == 'WIN' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first or pos == 2 or room.duel_stage != ygopro.constants.DUEL_STAGE.DUELING
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
@@ -1364,11 +1344,11 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
         room.match_kill = false
         room.scores[room.winner_name] = 99
 
-  if ygopro.constants.MSG[msg] == 'MATCH_KILL' and client.pos == 0
+  if msg_name == 'MATCH_KILL' and client.pos == 0
     room.match_kill = true
 
   #lp跟踪
-  if ygopro.constants.MSG[msg] == 'DAMAGE' and client.pos == 0
+  if msg_name == 'DAMAGE' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
@@ -1378,21 +1358,21 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
 
-  if ygopro.constants.MSG[msg] == 'RECOVER' and client.pos == 0
+  if msg_name == 'RECOVER' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp += val
 
-  if ygopro.constants.MSG[msg] == 'LPUPDATE' and client.pos == 0
+  if msg_name == 'LPUPDATE' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp = val
 
-  if ygopro.constants.MSG[msg] == 'PAY_LPCOST' and client.pos == 0
+  if msg_name == 'PAY_LPCOST' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
@@ -1404,18 +1384,18 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   #登场台词
   if settings.modules.dialogues.enabled
-    if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING' or ygopro.constants.MSG[msg] == 'CHAINING'
+    if msg_name == 'SUMMONING' or msg_name == 'SPSUMMONING' or msg_name == 'CHAINING'
       card = buffer.readUInt32LE(1)
       trigger_location = buffer.readUInt8(6)
-      if dialogues.dialogues[card] and (ygopro.constants.MSG[msg] != 'CHAINING' or (trigger_location & 0x8) and client.ready_trap)
+      if dialogues.dialogues[card] and (msg_name != 'CHAINING' or (trigger_location & 0x8) and client.ready_trap)
         for line in _.lines dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]
           ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK)
-    if ygopro.constants.MSG[msg] == 'POS_CHANGE'
+    if msg_name == 'POS_CHANGE'
       loc = buffer.readUInt8(6)
       ppos = buffer.readUInt8(8)
       cpos = buffer.readUInt8(9)
       client.ready_trap = !!(loc & 0x8) and !!(ppos & 0xa) and !!(cpos & 0x5)
-    else if ygopro.constants.MSG[msg] != 'UPDATE_CARD' and ygopro.constants.MSG[msg] != 'WAITING'
+    else if msg_name != 'UPDATE_CARD' and msg_name != 'WAITING'
       client.ready_trap = false
   return false
 
@@ -1445,9 +1425,6 @@ ygopro.ctos_follow 'HS_KICK', true, (buffer, info, client, server, datas)->
 ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server, datas)->
   selftype = info.type & 0xf
   is_host = ((info.type >> 4) & 0xf) != 0
-  # if room and room.hostinfo.no_watch and selftype == 7
-  #   ygopro.stoc_die(client, "${watch_denied_room}")
-  #   return true
   client.is_host = is_host
   client.pos = selftype
   #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
@@ -1550,17 +1527,14 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
     room.duel_stage = ygopro.constants.DUEL_STAGE.FINGER
     room.start_time = moment().format()
     room.turn = 0
-    #room.duels = []
     room.dueling_players = []
     for player in room.players when player.pos != 7
       room.dueling_players[player.pos] = player
       room.scores[player.name_vpass] = 0
-      room.player_datas.push key: CLIENT_get_authorize_key(player), name: player.name
       if room.random_type == 'T'
         # 双打房不记录匹配过
         ROOM_players_oppentlist[player.ip] = null
   else if room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING and client.pos < 4 # side deck verified
-    client.selected_preduel = true
     if client.side_tcount
       clearInterval client.side_interval
       client.side_interval = null
@@ -1795,9 +1769,7 @@ ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server, datas)->
 
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return unless room
-  client.selected_preduel = true
-  return unless room.random_type
+  return unless room and room.random_type
   if client.pos == 0
     room.waiting_for_player = room.waiting_for_player2
   room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
@@ -1805,17 +1777,13 @@ ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
 
 ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return unless room
-  client.selected_preduel = true
-  # room.selecting_tp = false
-  return unless room.random_type
+  return unless room and room.random_type
   room.last_active_time = moment()
   return
 
 ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room
-  client.selected_preduel = false
   if client.pos == 0
     room.duel_stage = ygopro.constants.DUEL_STAGE.FINGER
   return unless room.random_type
@@ -1829,12 +1797,10 @@ ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server, datas)->
 ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room
-  client.selected_preduel = false
   room.duel_stage = ygopro.constants.DUEL_STAGE.FIRSTGO
-  room.selecting_tp = client
-  if room.random_type
-    room.waiting_for_player = client
-    room.last_active_time = moment()
+  return unless room.random_type
+  room.waiting_for_player = client
+  room.last_active_time = moment()
   return
 
 ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
@@ -1842,7 +1808,6 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
   return unless room
   if client.pos == 0
     room.duel_stage = ygopro.constants.DUEL_STAGE.SIDING
-  client.selected_preduel = false
   if settings.modules.side_timeout
     client.side_tcount = settings.modules.side_timeout
     ygopro.stoc_send_chat(client, "${side_timeout_part1}#{settings.modules.side_timeout}${side_timeout_part2}", ygopro.constants.COLORS.BABYBLUE)
