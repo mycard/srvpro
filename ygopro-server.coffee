@@ -206,6 +206,16 @@ _.each(badwords.level2, (badword) ->
 _.each(badwords.level3, (badword) ->
   badwordR.level3.push new RegExp(badword, "i"))
 
+moment_now = moment()
+moment_now_string = moment_now.format()
+moment_long_ago_string = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
+setInterval ()->
+  moment_now = moment()
+  moment_now_string = moment_now.format()
+  moment_long_ago_string = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's').format()
+  return
+, 500
+
 try
   cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
   setting_change(settings, "version", cppversion)
@@ -309,7 +319,7 @@ ROOM_ban_player = (name, ip, reason, countadd = 1)->
   if bannedplayer
     bannedplayer.count = bannedplayer.count + countadd
     bantime = if bannedplayer.count > 3 then Math.pow(2, bannedplayer.count - 3) * 2 else 0
-    bannedplayer.time = if moment() < bannedplayer.time then moment(bannedplayer.time).add(bantime, 'm') else moment().add(bantime, 'm')
+    bannedplayer.time = if moment_now < bannedplayer.time then moment(bannedplayer.time).add(bantime, 'm') else moment().add(bantime, 'm')
     bannedplayer.reasons.push(reason) if not _.find bannedplayer.reasons, (bannedreason)->
       bannedreason == reason
     bannedplayer.need_tip = true
@@ -416,9 +426,9 @@ ROOM_find_or_create_random = (type, player_ip)->
   bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
     return player_ip == bannedplayer.ip
   if bannedplayer
-    if bannedplayer.count > 6 and moment() < bannedplayer.time
+    if bannedplayer.count > 6 and moment_now < bannedplayer.time
       return {"error": "${random_banned_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_banned_part2}#{moment(bannedplayer.time).fromNow(true)}${random_banned_part3}"}
-    if bannedplayer.count > 3 and moment() < bannedplayer.time and bannedplayer.need_tip and type != 'T'
+    if bannedplayer.count > 3 and moment_now < bannedplayer.time and bannedplayer.need_tip and type != 'T'
       bannedplayer.need_tip = false
       return {"error": "${random_deprecated_part1}#{bannedplayer.reasons.join('${random_ban_reason_separator}')}${random_deprecated_part2}#{moment(bannedplayer.time).fromNow(true)}${random_deprecated_part3}"}
     else if bannedplayer.need_tip
@@ -427,7 +437,7 @@ ROOM_find_or_create_random = (type, player_ip)->
     else if bannedplayer.count > 2
       bannedplayer.need_tip = true
   max_player = if type == 'T' then 4 else 2
-  playerbanned = (bannedplayer and bannedplayer.count > 3 and moment() < bannedplayer.time)
+  playerbanned = (bannedplayer and bannedplayer.count > 3 and moment_now < bannedplayer.time)
   result = _.find ROOM_all, (room)->
     return room and room.random_type != '' and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and !room.windbot and
     ((type == '' and
@@ -1269,7 +1279,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg <= 144) #SELECT和ANNOUNCE开头的消息
     room.waiting_for_player = client
-    room.last_active_time = moment()
+    room.last_active_time = moment_now_string
   #log.info("#{msg_name}等待#{room.waiting_for_player.name}")
 
   #log.info 'MSG', msg_name
@@ -1532,7 +1542,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
       deck_arena = deck_arena + 'custom'
     #log.info "DECK LOG START", client.name, room.arena
     if settings.modules.deck_log.local
-      deck_name = moment().format('YYYY-MM-DD HH-mm-ss') + ' ' + room.process_pid + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
+      deck_name = moment_now.format('YYYY-MM-DD HH-mm-ss') + ' ' + room.process_pid + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
         if err
           log.warn 'DECK SAVE ERROR', err
@@ -1590,7 +1600,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   return unless room
   msg = _.trim(info.msg)
   cancel = _.startsWith(msg, "/")
-  room.last_active_time = moment() unless cancel or not room.random_type or room.duel_stage == ygopro.constants.DUEL_STAGE.FINGER or room.duel_stage == ygopro.constants.DUEL_STAGE.FIRSTGO or room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING
+  room.last_active_time = moment_now_string unless cancel or not room.random_type or room.duel_stage == ygopro.constants.DUEL_STAGE.FINGER or room.duel_stage == ygopro.constants.DUEL_STAGE.FIRSTGO or room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING
   cmd = msg.split(' ')
   switch cmd[0]
     when '/投降', '/surrender'
@@ -1725,13 +1735,13 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
   if room.random_type
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
-    room.last_active_time = moment()
+    room.last_active_time = moment_now_string
   return false
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and room.random_type
-  room.last_active_time = moment()
+  room.last_active_time = moment_now_string
   return
 
 ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
@@ -1739,13 +1749,13 @@ ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
   return unless room and room.random_type
   if client.pos == 0
     room.waiting_for_player = room.waiting_for_player2
-  room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
+  room.last_active_time = moment_long_ago_string
   return
 
 ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and room.random_type
-  room.last_active_time = moment()
+  room.last_active_time = moment_now_string
   return
 
 ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server, datas)->
@@ -1758,7 +1768,7 @@ ygopro.stoc_follow 'SELECT_HAND', false, (buffer, info, client, server, datas)->
     room.waiting_for_player = client
   else
     room.waiting_for_player2 = client
-  room.last_active_time = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's')
+  room.last_active_time = moment_long_ago_string
   return
 
 ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server, datas)->
@@ -1767,7 +1777,7 @@ ygopro.stoc_follow 'SELECT_TP', false, (buffer, info, client, server, datas)->
   room.duel_stage = ygopro.constants.DUEL_STAGE.FIRSTGO
   return unless room.random_type
   room.waiting_for_player = client
-  room.last_active_time = moment()
+  room.last_active_time = moment_now_string
   return
 
 ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
@@ -1799,7 +1809,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
       room.waiting_for_player = client
     else
       room.waiting_for_player2 = client
-    room.last_active_time = moment()
+    room.last_active_time = moment_now_string
   return
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
@@ -1810,7 +1820,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
     room.replays[room.duel_count - 1] = buffer
   if room.has_ygopro_error
     if client.pos == 0
-      dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
+      dueltime=moment_now.format('YYYY-MM-DD HH-mm-ss')
       replay_filename=dueltime
       if room.hostinfo.mode != 2
         for player,i in room.dueling_players
@@ -1830,10 +1840,10 @@ if settings.modules.random_duel.enabled
       if !(room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING))
         done()
         return
-      time_passed = Math.floor((moment() - room.last_active_time) / 1000)
+      time_passed = Math.floor(moment_now.diff(room.last_active_time) / 1000)
       #log.info time_passed
       if time_passed >= settings.modules.random_duel.hang_timeout
-        room.last_active_time = moment()
+        room.last_active_time = moment_now_string
         ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
         room.scores[room.waiting_for_player.name_vpass] = -9
         #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name_vpass]
