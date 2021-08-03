@@ -4,15 +4,13 @@ http = require 'http'
 url = require 'url'
 path = require 'path'
 fs = require 'fs'
-os = require 'os'
-crypto = require 'crypto'
 exec = require('child_process').exec
-execFile = require('child_process').execFile
 spawn = require('child_process').spawn
-spawnSync = require('child_process').spawnSync
-_async = require('async')
+util = require 'util'
 
 # 三方库
+_async = require('async')
+
 _ = global._ = require 'underscore'
 _.str = require 'underscore.string'
 _.mixin(_.str.exports())
@@ -44,8 +42,6 @@ moment.updateLocale('zh-cn', {
 merge = require 'deepmerge'
 
 loadJSON = require('load-json-file').sync
-
-util = require("util")
 
 #heapdump = require 'heapdump'
 
@@ -495,19 +491,6 @@ ROOM_find_by_name = global.ROOM_find_by_name = (name)->
   result = _.find ROOM_all, (room)->
     return room and room.name == name
   return result
-
-ROOM_find_by_title = global.ROOM_find_by_title = (title)->
-  result = _.find ROOM_all, (room)->
-    return room and room.title == title
-  return result
-
-ROOM_find_by_port = global.ROOM_find_by_port = (port)->
-  _.find ROOM_all, (room)->
-    return room and room.port == port
-
-ROOM_find_by_pid = global.ROOM_find_by_pid = (pid)->
-  _.find ROOM_all, (room)->
-    return room and room.process_pid == pid
 
 ROOM_validate = global.ROOM_validate = (name)->
   client_name_and_pass = name.split('$', 2)
@@ -1798,8 +1781,6 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
   buff_side = (info.deckbuf[i] for i in [info.mainc...info.mainc + info.sidec])
   client.main = buff_main
   client.side = buff_side
-  if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
-    client.start_deckbuf = Buffer.from(buffer)
   if room.random_type
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
@@ -2161,12 +2142,3 @@ if settings.modules.http
       key: fs.readFileSync(settings.modules.http.ssl.key)
     https_server = https.createServer(options, requestListener)
     https_server.listen settings.modules.http.ssl.port
-
-if not fs.existsSync('./plugins')
-  fs.mkdirSync('./plugins')
-
-plugin_list = fs.readdirSync("./plugins")
-for plugin_filename in plugin_list
-  plugin_path = process.cwd() + "/plugins/" + plugin_filename
-  require(plugin_path)
-  log.info("Plugin loaded:", plugin_filename)
