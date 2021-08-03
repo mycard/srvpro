@@ -11,16 +11,16 @@ util = require 'util'
 # 三方库
 _async = require('async')
 
-_ = global._ = require 'underscore'
+_ = require 'underscore'
 _.str = require 'underscore.string'
 _.mixin(_.str.exports())
 
 request = require 'request'
 
 bunyan = require 'bunyan'
-log = global.log = bunyan.createLogger name: "mycard"
+log = bunyan.createLogger name: "mycard"
 
-moment = global.moment = require 'moment'
+moment = require 'moment'
 moment.updateLocale('zh-cn', {
   relativeTime: {
     future: '%s内',
@@ -88,7 +88,7 @@ try
 catch e
   log.info e unless e.code == 'ENOENT'
 
-setting_save = global.setting_save = (settings, callback) ->
+setting_save = (settings, callback) ->
   if !callback
     callback = (err) ->
       if(err)
@@ -96,7 +96,7 @@ setting_save = global.setting_save = (settings, callback) ->
   fs.writeFile(settings.file, JSON.stringify(settings, null, 2), callback)
   return
 
-setting_change = global.setting_change = (settings, path, val, callback) ->
+setting_change = (settings, path, val, callback) ->
   # path should be like "modules:welcome"
   log.info("setting changed", path, val) if _.isString(val)
   path=path.split(':')
@@ -118,9 +118,9 @@ try
   config = loadJSON('./config/config.json')
 catch
   config = {}
-settings = global.settings = merge(default_config, config, { arrayMerge: (destination, source) -> source })
+settings = merge(default_config, config, { arrayMerge: (destination, source) -> source })
 
-auth = global.auth = require './ygopro-auth.js'
+auth = require './ygopro-auth.js'
 
 #import old configs
 imported = false
@@ -172,24 +172,24 @@ if imported
 # 读取数据
 default_data = loadJSON('./data/default_data.json')
 try
-  tips = global.tips = loadJSON('./config/tips.json')
+  tips = loadJSON('./config/tips.json')
 catch
-  tips = global.tips = default_data.tips
+  tips = default_data.tips
   setting_save(tips)
 try
-  dialogues = global.dialogues = loadJSON('./config/dialogues.json')
+  dialogues = loadJSON('./config/dialogues.json')
 catch
-  dialogues = global.dialogues = default_data.dialogues
+  dialogues = default_data.dialogues
   setting_save(dialogues)
 try
-  badwords = global.badwords = loadJSON('./config/badwords.json')
+  badwords = loadJSON('./config/badwords.json')
 catch
-  badwords = global.badwords = default_data.badwords
+  badwords = default_data.badwords
   setting_save(badwords)
 try
-  duel_log = global.duel_log = loadJSON('./config/duel_log.json')
+  duel_log = loadJSON('./config/duel_log.json')
 catch
-  duel_log = global.duel_log = default_data.duel_log
+  duel_log = default_data.duel_log
   setting_save(duel_log)
 
 badwordR={}
@@ -214,7 +214,7 @@ catch
   #settings.version = settings.version_default
   log.info "ygopro version 0x"+settings.version.toString(16), "(from config)"
 # load the lflist of current date
-lflists = global.lflists = []
+lflists = []
 # expansions/lflist
 try
   for list in fs.readFileSync('ygopro/expansions/lflist.conf', 'utf8').match(/!.*/g)
@@ -231,23 +231,23 @@ try
 catch
 
 if settings.modules.windbot.enabled
-  windbots = global.windbots = loadJSON(settings.modules.windbot.botlist).windbots
-  real_windbot_server_ip = global.real_windbot_server_ip = settings.modules.windbot.server_ip
+  windbots = loadJSON(settings.modules.windbot.botlist).windbots
+  real_windbot_server_ip = settings.modules.windbot.server_ip
   if !settings.modules.windbot.server_ip.includes("127.0.0.1")
     dns = require('dns')
     dns.lookup(settings.modules.windbot.server_ip,(err,addr) ->
       if(!err)
-        real_windbot_server_ip = global.real_windbot_server_ip = addr
+        real_windbot_server_ip = addr
     )
 
 # 组件
-ygopro = global.ygopro = require './ygopro.js'
+ygopro = require './ygopro.js'
 
 if settings.modules.i18n.auto_pick
   geoip = require('geoip-country-lite')
 
 # 获取可用内存
-memory_usage = global.memory_usage = 0
+memory_usage = 0
 get_memory_usage = get_memory_usage = ()->
   prc_free = exec("free")
   prc_free.stdout.on 'data', (data)->
@@ -264,21 +264,21 @@ get_memory_usage = get_memory_usage = ()->
       cached = parseInt(line[6], 10)
       actualFree = free + buffers + cached
     percentUsed = parseFloat(((1 - (actualFree / total)) * 100).toFixed(2))
-    memory_usage = global.memory_usage = percentUsed
+    memory_usage = percentUsed
     return
   return
 get_memory_usage()
 setInterval(get_memory_usage, 3000)
 
-ROOM_all = global.ROOM_all = []
-ROOM_players_oppentlist = global.ROOM_players_oppentlist = {}
-ROOM_players_banned = global.ROOM_players_banned = []
-ROOM_players_scores = global.ROOM_players_scores = {}
-ROOM_connected_ip = global.ROOM_connected_ip = {}
-ROOM_bad_ip = global.ROOM_bad_ip = {}
+ROOM_all = []
+ROOM_players_oppentlist = {}
+ROOM_players_banned = []
+ROOM_players_scores = {}
+ROOM_connected_ip = {}
+ROOM_bad_ip = {}
 
 # ban a user manually and permanently
-ban_user = global.ban_user = (name, callback) ->
+ban_user = (name, callback) ->
   settings.ban.banned_user.push(name)
   setting_save(settings)
   bad_ip = []
@@ -302,7 +302,7 @@ ban_user = global.ban_user = (name, callback) ->
   return
 
 # automatically ban user to use random duel
-ROOM_ban_player = global.ROOM_ban_player = (name, ip, reason, countadd = 1)->
+ROOM_ban_player = (name, ip, reason, countadd = 1)->
   return if settings.modules.test_mode.no_ban_player
   bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
     ip == bannedplayer.ip
@@ -341,28 +341,28 @@ ROOM_kick = (name, callback)->
   )
 
 
-ROOM_player_win = global.ROOM_player_win = (name)->
+ROOM_player_win = (name)->
   if !ROOM_players_scores[name]
     ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
   ROOM_players_scores[name].win = ROOM_players_scores[name].win + 1
   ROOM_players_scores[name].combo = ROOM_players_scores[name].combo + 1
   return
 
-ROOM_player_lose = global.ROOM_player_lose = (name)->
+ROOM_player_lose = (name)->
   if !ROOM_players_scores[name]
     ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
   ROOM_players_scores[name].lose = ROOM_players_scores[name].lose + 1
   ROOM_players_scores[name].combo = 0
   return
 
-ROOM_player_flee = global.ROOM_player_flee = (name)->
+ROOM_player_flee = (name)->
   if !ROOM_players_scores[name]
     ROOM_players_scores[name]={win:0, lose:0, flee:0, combo:0}
   ROOM_players_scores[name].flee = ROOM_players_scores[name].flee + 1
   ROOM_players_scores[name].combo = 0
   return
 
-ROOM_player_get_score = global.ROOM_player_get_score = (player)->
+ROOM_player_get_score = (player)->
   name = player.name_vpass
   score = ROOM_players_scores[name] 
   if !score
@@ -399,7 +399,7 @@ if settings.modules.random_duel.post_match_scores
     return
   , 60000)
 
-ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player_ip)->
+ROOM_find_or_create_by_name = (name, player_ip)->
   uname=name.toUpperCase()
   if settings.modules.windbot.enabled and (uname[0...2] == 'AI' or (!settings.modules.random_duel.enabled and uname == ''))
     return ROOM_find_or_create_ai(name)
@@ -412,7 +412,7 @@ ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player
   else
     return new Room(name)
 
-ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_ip)->
+ROOM_find_or_create_random = (type, player_ip)->
   bannedplayer = _.find ROOM_players_banned, (bannedplayer)->
     return player_ip == bannedplayer.ip
   if bannedplayer
@@ -457,7 +457,7 @@ ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_i
   if result.random_type=='T' then result.welcome2 = '${random_duel_enter_room_tag}'
   return result
 
-ROOM_find_or_create_ai = global.ROOM_find_or_create_ai = (name)->
+ROOM_find_or_create_ai = (name)->
   if name == ''
     name = 'AI'
   namea = name.split('#')
@@ -487,12 +487,12 @@ ROOM_find_or_create_ai = global.ROOM_find_or_create_ai = (name)->
   result.private = true
   return result
 
-ROOM_find_by_name = global.ROOM_find_by_name = (name)->
+ROOM_find_by_name = (name)->
   result = _.find ROOM_all, (room)->
     return room and room.name == name
   return result
 
-ROOM_validate = global.ROOM_validate = (name)->
+ROOM_validate = (name)->
   client_name_and_pass = name.split('$', 2)
   client_name = client_name_and_pass[0]
   client_pass = client_name_and_pass[1]
@@ -504,7 +504,7 @@ ROOM_validate = global.ROOM_validate = (name)->
     room_pass = room_name_and_pass[1]
     client_name == room_name and client_pass != room_pass
 
-ROOM_unwelcome = global.ROOM_unwelcome = (room, bad_player, reason)->
+ROOM_unwelcome = (room, bad_player, reason)->
   return unless room
   for player in room.players
     if player and player == bad_player
@@ -514,21 +514,21 @@ ROOM_unwelcome = global.ROOM_unwelcome = (room, bad_player, reason)->
       ygopro.stoc_send_chat(player, "${unwelcome_tip_part1}#{reason}${unwelcome_tip_part2}", ygopro.constants.COLORS.BABYBLUE)
   return
 
-CLIENT_kick = global.CLIENT_kick = (client) ->
+CLIENT_kick = (client) ->
   if !client
     return false
   client.system_kicked = true
   client.destroy()
   return true
 
-SERVER_kick = global.SERVER_kick = (server) ->
+SERVER_kick = (server) ->
   if !server
     return false
   server.system_kicked = true
   server.destroy()
   return true
 
-CLIENT_get_authorize_key = global.CLIENT_get_authorize_key = (client) ->
+CLIENT_get_authorize_key = (client) ->
   if client.vpass
     return client.name_vpass
   else if client.is_local
@@ -536,7 +536,7 @@ CLIENT_get_authorize_key = global.CLIENT_get_authorize_key = (client) ->
   else
     return client.ip + ":" + client.name
 
-CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
+CLIENT_send_replays = (client, room) ->
   return false unless settings.modules.replay_delay and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
   client.replays_sent = true
   i = 0
@@ -547,7 +547,7 @@ CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
       ygopro.stoc_send(client, "REPLAY", buffer)
   return true
 
-SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
+SOCKET_flush_data = (sk, datas) ->
   if !sk or sk.closed
     return false
   for buffer in datas
@@ -1290,7 +1290,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
   return
 
 # 登场台词
-load_dialogues = global.load_dialogues = (callback) ->
+load_dialogues = (callback) ->
   request
     url: settings.modules.dialogues.get
     json: true
@@ -1518,7 +1518,7 @@ ygopro.stoc_send_random_tip_to_room = (room)->
     ygopro.stoc_send_chat_to_room(room, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
   return
 
-load_tips = global.load_tips = (callback)->
+load_tips = (callback)->
   request
     url: settings.modules.tips.get
     json: true
@@ -1623,7 +1623,7 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server, datas)->
     return true
   return false
 
-report_to_big_brother = global.report_to_big_brother = (roomname, sender, ip, level, content, match) ->
+report_to_big_brother = (roomname, sender, ip, level, content, match) ->
   return unless settings.modules.big_brother.enabled
   request.post { url : settings.modules.big_brother.post , form : {
     accesskey: settings.modules.big_brother.accesskey,
@@ -1919,9 +1919,9 @@ if settings.modules.random_duel.enabled
 
 # spawn windbot
 windbot_looplimit = 0
-windbot_process = global.windbot_process = null
+windbot_process = null
 
-spawn_windbot = global.spawn_windbot = () ->
+spawn_windbot = () ->
   if /^win/.test(process.platform)
     windbot_bin = 'WindBot.exe'
     windbot_parameters = []
@@ -1933,13 +1933,13 @@ spawn_windbot = global.spawn_windbot = () ->
   windbot_process = spawn windbot_bin, windbot_parameters, {cwd: 'windbot'}
   windbot_process.on 'error', (err)->
     log.warn 'WindBot ERROR', err
-    if windbot_looplimit < 1000 and !global.rebooted
+    if windbot_looplimit < 1000 and !rebooted
       windbot_looplimit++
       spawn_windbot()
     return
   windbot_process.on 'exit', (code)->
     log.warn 'WindBot EXIT', code
-    if windbot_looplimit < 1000 and !global.rebooted
+    if windbot_looplimit < 1000 and !rebooted
       windbot_looplimit++
       spawn_windbot()
     return
@@ -1956,7 +1956,7 @@ spawn_windbot = global.spawn_windbot = () ->
 if settings.modules.windbot.enabled and settings.modules.windbot.spawn
   spawn_windbot()
 
-global.rebooted = false
+rebooted = false
 #http
 if settings.modules.http
 
@@ -2114,7 +2114,7 @@ if settings.modules.http
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         ROOM_kick("all", (err, found)->
-          global.rebooted = true
+          rebooted = true
           if windbot_process
             windbot_process.kill()
           response.writeHead(200)
