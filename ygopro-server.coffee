@@ -97,13 +97,6 @@ try
     olddialogues.dialogues = oldconfig.dialogues
     fs.writeFileSync(olddialogues.file, JSON.stringify(olddialogues, null, 2))
     delete oldconfig.dialogues
-  if oldconfig.modules
-    if oldconfig.modules.tournament_mode and oldconfig.modules.tournament_mode.duel_log
-      oldduellog = {}
-      oldduellog.file = './config/duel_log.json'
-      oldduellog.duel_log = oldconfig.modules.tournament_mode.duel_log
-      fs.writeFileSync(oldduellog.file, JSON.stringify(oldduellog, null, 2))
-      delete oldconfig.oldduellog
   oldbadwords={}
   if oldconfig.ban
     if oldconfig.ban.badword_level0
@@ -176,16 +169,6 @@ if settings.modules.http.password
         "kick_user": true
   })
   delete settings.modules.http.password
-  imported = true
-if settings.modules.tournament_mode.password
-  auth.add_user("tournament", settings.modules.tournament_mode.password, true, {
-        "duel_log": true,
-        "download_replay": true,
-        "clear_duel_log": true,
-        "deck_dashboard_read": true,
-        "deck_dashboard_write": true,
-  })
-  delete settings.modules.tournament_mode.password
   imported = true
 if settings.modules.pre_util.password
   auth.add_user("pre", settings.modules.pre_util.password, true, {
@@ -616,7 +599,7 @@ release_disconnect = global.release_disconnect = (dinfo, reconnected) ->
 CLIENT_get_authorize_key = global.CLIENT_get_authorize_key = (client) ->
   if client.vpass
     return client.name_vpass
-  else if settings.modules.tournament_mode.enabled or client.is_local
+  else if client.is_local
     return client.name
   else
     return client.ip + ":" + client.name
@@ -724,7 +707,7 @@ CLIENT_is_able_to_reconnect = global.CLIENT_is_able_to_reconnect = (client, deck
 
 CLIENT_get_kick_reconnect_target = global.CLIENT_get_kick_reconnect_target = (client, deckbuf) ->
   for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and !room.windbot
-    for player in room.get_playing_player() when !player.closed and player.name == client.name and player.pass == client.pass and (settings.modules.tournament_mode.enabled or player.ip == client.ip or (client.vpass and client.vpass == player.vpass)) and (!deckbuf or _.isEqual(player.start_deckbuf, deckbuf))
+    for player in room.get_playing_player() when !player.closed and player.name == client.name and player.pass == client.pass and (player.ip == client.ip or (client.vpass and client.vpass == player.vpass)) and (!deckbuf or _.isEqual(player.start_deckbuf, deckbuf))
       return player
   return null
 
@@ -852,7 +835,7 @@ if settings.modules.reconnect.enabled
   disconnect_list = {} # {old_client, old_server, room_id, timeout, deckbuf}
 
 CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
-  return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
+  return false unless settings.modules.replay_delay and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
   client.replays_sent = true
   i = 0
   for buffer in room.replays
@@ -995,9 +978,7 @@ class Room
 
     @hostinfo.replay_mode = 0 # 0x1: Save the replays in file. 0x2: Block the replays to observers.
 
-    if settings.modules.tournament_mode.enabled
-      @hostinfo.replay_mode |= 0x1
-    if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe) or (@hostinfo.mode == 1 and settings.modules.replay_delay)
+    if @hostinfo.mode == 1 and settings.modules.replay_delay
       @hostinfo.replay_mode |= 0x2
 
     param = [0, @hostinfo.lflist, @hostinfo.rule, @hostinfo.mode, @hostinfo.duel_rule,
@@ -1450,12 +1431,6 @@ net.createServer (client) ->
 if settings.modules.stop
   log.info "NOTE: server not open due to config, ", settings.modules.stop
 
-deck_name_match = global.deck_name_match = (deck_name, player_name) ->
-  if deck_name == player_name or deck_name == player_name + ".ydk" or deck_name == player_name + ".ydk.ydk"
-    return true
-  parsed_deck_name = deck_name.match(/^([^\+ \uff0b]+)[\+ \uff0b](.+?)(\.ydk){0,2}$/)
-  return parsed_deck_name and (player_name == parsed_deck_name[1] or player_name == parsed_deck_name[2])
-
 # 功能模块
 # return true to cancel a synchronous message
 
@@ -1539,19 +1514,19 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     log.warn("BANNED IP LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${banned_ip_login}")
 
-  else if !settings.modules.tournament_mode.enabled and _.any(badwordR.level3, (regexp) ->
+  else if _.any(badwordR.level3, (regexp) ->
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 3", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level3}")
 
-  else if !settings.modules.tournament_mode.enabled and _.any(badwordR.level2, (regexp) ->
+  else if _.any(badwordR.level2, (regexp) ->
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 2", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level2}")
 
-  else if !settings.modules.tournament_mode.enabled and _.any(badwordR.level1, (regexp) ->
+  else if _.any(badwordR.level1, (regexp) ->
     return name.match(regexp)
   , name = client.name)
     log.warn("BAD NAME LEVEL 1", client.name, client.ip)
@@ -2201,43 +2176,6 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
     room.last_active_time = moment()
-  else if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.hostinfo.mode == 1 and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.deck_check and fs.readdirSync(settings.modules.tournament_mode.deck_path).length
-    struct = ygopro.structs["deck"]
-    struct._setBuff(buffer)
-    struct.set("mainc", 1)
-    struct.set("sidec", 1)
-    struct.set("deckbuf", [4392470, 4392470])
-    buffer = struct.buffer
-    found_deck=false
-    decks=fs.readdirSync(settings.modules.tournament_mode.deck_path)
-    for deck in decks
-      if deck_name_match(deck, client.name)
-        found_deck=deck
-    if found_deck
-      deck_text=fs.readFileSync(settings.modules.tournament_mode.deck_path+found_deck,{encoding:"ASCII"})
-      deck_array=deck_text.split("\n")
-      deck_main=[]
-      deck_side=[]
-      current_deck=deck_main
-      for line in deck_array
-        if line.indexOf("!side")>=0
-          current_deck=deck_side
-        card=parseInt(line)
-        current_deck.push(card) unless isNaN(card)
-      if _.isEqual(buff_main, deck_main) and _.isEqual(buff_side, deck_side)
-        deckbuf=deck_main.concat(deck_side)
-        struct.set("mainc", deck_main.length)
-        struct.set("sidec", deck_side.length)
-        struct.set("deckbuf", deckbuf)
-        buffer = struct.buffer
-        #log.info("deck ok: " + client.name)
-        ygopro.stoc_send_chat(client, "${deck_correct_part1} #{found_deck} ${deck_correct_part2}", ygopro.constants.COLORS.BABYBLUE)
-      else
-        #log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
-        ygopro.stoc_send_chat(client, "${deck_incorrect_part1} #{found_deck} ${deck_incorrect_part2}", ygopro.constants.COLORS.RED)
-    else
-      #log.info("player deck not found: " + client.name)
-      ygopro.stoc_send_chat(client, "#{client.name}${deck_not_found}", ygopro.constants.COLORS.RED)
   return false
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server, datas)->
@@ -2375,11 +2313,11 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay unless room
+  return settings.modules.replay_delay unless room
   if !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
-  if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe or room.has_ygopro_error
+  if room.has_ygopro_error
     if client.pos == 0
       dueltime=moment().format('YYYY-MM-DD HH-mm-ss')
       replay_filename=dueltime
@@ -2390,26 +2328,10 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
         for player,i in room.dueling_players
           replay_filename=replay_filename + (if i > 0 then (if i == 2 then " VS " else " & ") else " ") + player.name
       replay_filename=replay_filename.replace(/[\/\\\?\*]/g, '_')+".yrp"
-      if settings.modules.tournament_mode.enabled
-        duellog = {
-          time: dueltime,
-          name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
-          roomid: room.process_pid.toString(),
-          replay_filename: replay_filename,
-          roommode: room.hostinfo.mode,
-          players: (for player in room.dueling_players
-            name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + ")") else ""),
-            winner: player.pos == room.winner
-          )
-        }
-        duel_log.duel_log.unshift duellog
-        setting_save(duel_log)
       fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
-    return settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
-  else
-    return settings.modules.replay_delay and room.hostinfo.mode == 1
+  return settings.modules.replay_delay and room.hostinfo.mode == 1
 
 if settings.modules.random_duel.enabled
   setInterval ()->
@@ -2521,101 +2443,6 @@ if settings.modules.http
         , ()->
           response.writeHead(200)
           response.end(addCallback(u.query.callback, JSON.stringify({rooms: roomsjson})))
-        )
-
-
-    else if u.pathname == '/api/duellog' and settings.modules.tournament_mode.enabled
-      if !await auth.auth(u.query.username, u.query.pass, "duel_log", "duel_log")
-        response.writeHead(200)
-        response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
-        return
-      else
-        response.writeHead(200)
-        duellog = JSON.stringify duel_log.duel_log, null, 2
-        response.end(addCallback(u.query.callback, duellog))
-
-    else if u.pathname == '/api/archive.zip' and settings.modules.tournament_mode.enabled
-      if !await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay_archive")
-        response.writeHead(403)
-        response.end("Invalid password.")
-        return
-      else
-        try
-          archive_name = moment().format('YYYY-MM-DD HH-mm-ss') + ".zip"
-          archive_args = ["a", "-mx0", "-y", archive_name]
-          check = false
-          for replay in duel_log.duel_log
-            check = true
-            archive_args.push(replay.replay_filename)
-          if !check
-            response.writeHead(403)
-            response.end("Duel logs not found.")
-            return
-          archive_process = spawn settings.modules.tournament_mode.replay_archive_tool, archive_args, {cwd: settings.modules.tournament_mode.replay_path}
-          archive_process.on 'error', (err)=>
-            response.writeHead(403)
-            response.end("Failed packing replays. " + err)
-            return
-          archive_process.on 'exit', (code)=>
-            fs.readFile(settings.modules.tournament_mode.replay_path + archive_name, (error, buffer)->
-              if error
-                response.writeHead(403)
-                response.end("Failed sending replays. " + error)
-                return
-              else
-                response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
-                response.end(buffer)
-                return
-            )
-          archive_process.stdout.setEncoding 'utf8'
-          archive_process.stdout.on 'data', (data)=>
-            log.info "archive process: " + data
-          archive_process.stderr.setEncoding 'utf8'
-          archive_process.stderr.on 'data', (data)=>
-            log.warn "archive error: " + data
-        catch error
-          response.writeHead(403)
-          response.end("Failed reading replays. " + error)
-
-    else if u.pathname == '/api/clearlog' and settings.modules.tournament_mode.enabled
-      if !await auth.auth(u.query.username, u.query.pass, "clear_duel_log", "clear_duel_log")
-        response.writeHead(200)
-        response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
-        return
-      else
-        response.writeHead(200)
-        if settings.modules.tournament_mode.log_save_path
-          fs.writeFile(settings.modules.tournament_mode.log_save_path + 'duel_log.' + moment().format('YYYY-MM-DD HH-mm-ss') + '.json', JSON.stringify(duel_log, null, 2), (err) ->
-            if err
-              log.warn 'DUEL LOG SAVE ERROR', err
-          )
-        duel_log.duel_log = []
-        setting_save(duel_log)
-        response.end(addCallback(u.query.callback, "[{name:'Success'}]"))
-
-    else if _.startsWith(u.pathname, '/api/replay') and settings.modules.tournament_mode.enabled
-      if !await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay")
-        response.writeHead(403)
-        response.end("密码错误")
-        return
-      else
-        getpath = null
-        filename = null
-        try
-          getpath=u.pathname.split("/")
-          filename=path.basename(decodeURIComponent(getpath.pop()))
-        catch
-          response.writeHead(404)
-          response.end("bad filename")
-          return
-        fs.readFile(settings.modules.tournament_mode.replay_path + filename, (error, buffer)->
-          if error
-            response.writeHead(404)
-            response.end("未找到文件 " + filename)
-          else
-            response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
-            response.end(buffer)
-          return
         )
 
     else if u.pathname == '/api/message'
