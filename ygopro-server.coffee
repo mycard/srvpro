@@ -165,11 +165,6 @@ auth = global.auth = require './ygopro-auth.js'
 
 #import old configs
 imported = false
-#import the old redis port
-if settings.modules.cloud_replay.redis_port
-  settings.modules.cloud_replay.redis.port = settings.modules.cloud_replay.redis_port
-  delete settings.modules.cloud_replay.redis_port
-  imported = true
 #import the old passwords to new admin user system
 if settings.modules.http.password
   auth.add_user("olduser", settings.modules.http.password, true, {
@@ -291,14 +286,6 @@ try
     lflists.push({date: moment(list.match(/!([\d\.]+)/)[1], 'YYYY.MM.DD').utcOffset("-08:00"), tcg: list.indexOf('TCG') != -1})
 catch
 
-if settings.modules.cloud_replay.enabled
-  redis = require 'redis'
-  zlib = require 'zlib'
-  redisdb = global.redisdb = redis.createClient(settings.modules.cloud_replay.redis)
-  redisdb.on 'error', (err)->
-    log.warn err
-    return
-
 if settings.modules.windbot.enabled
   windbots = global.windbots = loadJSON(settings.modules.windbot.botlist).windbots
   real_windbot_server_ip = global.real_windbot_server_ip = settings.modules.windbot.server_ip
@@ -338,8 +325,6 @@ get_memory_usage = get_memory_usage = ()->
   return
 get_memory_usage()
 setInterval(get_memory_usage, 3000)
-
-Cloud_replay_ids = global.Cloud_replay_ids = []
 
 ROOM_all = global.ROOM_all = []
 ROOM_players_oppentlist = global.ROOM_players_oppentlist = {}
@@ -896,7 +881,6 @@ class Room
     @established = false
     @watcher_buffers = []
     @recorder_buffers = []
-    @cloud_replay_id = Math.floor(Math.random()*100000000)
     @watchers = []
     @random_type = ''
     @welcome = ''
@@ -1086,40 +1070,6 @@ class Room
           ROOM_player_win(score_array[0].name_vpass)
           ROOM_player_lose(score_array[0].name_vpass)
 
-    if @player_datas.length and settings.modules.cloud_replay.enabled
-      replay_id = @cloud_replay_id
-      if @has_ygopro_error
-        log_rep_id = true
-      player_names=@player_datas[0].name + (if @player_datas[2] then "+" + @player_datas[2].name else "") +
-                    " VS " +
-                   (if @player_datas[1] then @player_datas[1].name else "AI") +
-                   (if @player_datas[3] then "+" + @player_datas[3].name else "")
-      player_ips=[]
-      _.each @player_datas, (player)->
-        player_ips.push(player.key)
-        return
-      recorder_buffer=Buffer.concat(@recorder_buffers)
-      zlib.deflate recorder_buffer, (err, replay_buffer) ->
-        replay_buffer=replay_buffer.toString('binary')
-        #log.info err, replay_buffer
-        date_time=moment().format('YYYY-MM-DD HH:mm:ss')
-        #replay_id=Math.floor(Math.random()*100000000)
-        redisdb.hmset("replay:"+replay_id,
-                      "replay_id", replay_id,
-                      "replay_buffer", replay_buffer,
-                      "player_names", player_names,
-                      "date_time", date_time)
-        if !log_rep_id and !settings.modules.cloud_replay.never_expire
-          redisdb.expire("replay:"+replay_id, 60*60*24)
-        recorded_ip=[]
-        _.each player_ips, (player_ip)->
-          return if _.contains(recorded_ip, player_ip)
-          recorded_ip.push player_ip
-          redisdb.lpush(player_ip+":replays", replay_id)
-          return
-        if log_rep_id
-          log.info "error replay: R#" + replay_id
-        return
     @watcher_buffers = []
     @recorder_buffers = []
     @players = []
@@ -1324,26 +1274,6 @@ net.createServer (client) ->
     log.info 'BAD IP', client.ip
     CLIENT_kick(client)
     return
-
-  if settings.modules.cloud_replay.enabled
-    client.open_cloud_replay= (err, replay)->
-      if err or !replay
-        ygopro.stoc_die(client, "${cloud_replay_no}")
-        return
-      redisdb.expire("replay:"+replay.replay_id, 60*60*48)
-      buffer=Buffer.from(replay.replay_buffer,'binary')
-      zlib.unzip buffer, (err, replay_buffer) ->
-        if err
-          log.info "cloud replay unzip error: " + err
-          ygopro.stoc_send_chat(client, "${cloud_replay_error}", ygopro.constants.COLORS.RED)
-          CLIENT_kick(client)
-          return
-        ygopro.stoc_send_chat(client, "${cloud_replay_playing} R##{replay.replay_id} #{replay.player_names} #{replay.date_time}", ygopro.constants.COLORS.BABYBLUE)
-        client.write replay_buffer, ()->
-          CLIENT_kick(client)
-          return
-        return
-      return
 
   # 需要重构
   # 客户端到服务端(ctos)协议分析
@@ -1581,46 +1511,6 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
   else if info.pass == "Marshtomp" or info.pass == "the Big Brother"
     ygopro.stoc_die(client, "${bad_user_name}")
 
-  else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled
-    ygopro.stoc_send_chat(client,"${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
-    redisdb.lrange CLIENT_get_authorize_key(client)+":replays", 0, 2, (err, result)->
-      _.each result, (replay_id,id)->
-        redisdb.hgetall "replay:"+replay_id, (err, replay)->
-          if err or !replay
-            log.info "cloud replay getall error: " + err if err
-            return
-          ygopro.stoc_send_chat(client,"<#{id-0+1}> R##{replay_id} #{replay.player_names} #{replay.date_time}", ygopro.constants.COLORS.BABYBLUE)
-          return
-        return
-      return
-    # 强行等待异步执行完毕_(:з」∠)_
-    setTimeout (()->
-      ygopro.stoc_send client, 'ERROR_MSG',{
-        msg: 1
-        code: 9
-      }
-      CLIENT_kick(client)
-      return), 500
-
-  else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.cloud_replay.enabled
-    replay_id=info.pass.split("#")[1]
-    if (replay_id>0 and replay_id<=9)
-      redisdb.lindex client.ip+":replays", replay_id-1, (err, replay_id)->
-        if err or !replay_id
-          log.info "cloud replay replayid error: " + err if err
-          ygopro.stoc_die(client, "${cloud_replay_no}")
-          return
-        redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
-        return
-    else if replay_id
-      redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
-    else
-      ygopro.stoc_die(client, "${cloud_replay_no}")
-
-  else if info.pass.toUpperCase()=="W" and settings.modules.cloud_replay.enabled
-    replay_id=Cloud_replay_ids[Math.floor(Math.random()*Cloud_replay_ids.length)]
-    redisdb.hgetall "replay:"+replay_id, client.open_cloud_replay
-
   else if info.version != settings.version # and (info.version < 9020 or settings.version != 4927) #强行兼容23333版
     ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED)
     ygopro.stoc_send client, 'ERROR_MSG', {
@@ -1721,26 +1611,6 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat_to_room(room, ROOM_player_get_score(client), ygopro.constants.COLORS.GREEN)
     for player in room.players when player.pos != 7 and player != client
       ygopro.stoc_send_chat(client, ROOM_player_get_score(player), ygopro.constants.COLORS.GREEN)
-  if !room.recorder and settings.modules.cloud_replay.enabled
-    room.recorder = recorder = net.connect room.port, ->
-      ygopro.ctos_send recorder, 'PLAYER_INFO', {
-        name: "Marshtomp"
-      }
-      ygopro.ctos_send recorder, 'JOIN_GAME', {
-        version: settings.version,
-        pass: "Marshtomp"
-      }
-      ygopro.ctos_send recorder, 'HS_TOOBSERVER'
-      return
-
-    recorder.on 'data', (data)->
-      room=ROOM_all[client.rid]
-      return unless room and settings.modules.cloud_replay.enabled
-      room.recorder_buffers.push data
-      return
-
-    recorder.on 'error', (error)->
-      return
 
   if settings.modules.cloud_replay.enable_halfway_watch and !room.watcher and !room.hostinfo.no_watch
     room.watcher = watcher = if settings.modules.test_mode.watch_public_hand and room.recorder then room.recorder else net.connect room.port, ->
@@ -2506,8 +2376,6 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay unless room
-  if settings.modules.cloud_replay.enabled and room.random_type
-    Cloud_replay_ids.push room.cloud_replay_id
   if !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
@@ -2527,7 +2395,6 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
           time: dueltime,
           name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
           roomid: room.process_pid.toString(),
-          cloud_replay_id: "R#"+room.cloud_replay_id,
           replay_filename: replay_filename,
           roommode: room.hostinfo.mode,
           players: (for player in room.dueling_players
@@ -2540,8 +2407,6 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
       fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
-    if settings.modules.cloud_replay.enabled
-      ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
     return settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
   else
     return settings.modules.replay_delay and room.hostinfo.mode == 1
