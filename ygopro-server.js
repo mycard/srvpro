@@ -272,29 +272,15 @@
 
   badwordR = {};
 
-  badwordR.level0 = [];
+  badwordR.level0 = new RegExp('(?:' + badwords.level0.join(')|(?:') + ')', 'i');
 
-  badwordR.level1 = [];
+  badwordR.level1 = new RegExp('(?:' + badwords.level1.join(')|(?:') + ')', 'i');
 
-  badwordR.level2 = [];
+  badwordR.level1g = new RegExp('(?:' + badwords.level1.join(')|(?:') + ')', 'ig');
 
-  badwordR.level3 = [];
+  badwordR.level2 = new RegExp('(?:' + badwords.level2.join(')|(?:') + ')', 'i');
 
-  _.each(badwords.level0, function(badword) {
-    return badwordR.level0.push(new RegExp(badword, "i"));
-  });
-
-  _.each(badwords.level1, function(badword) {
-    return badwordR.level1.push(new RegExp(badword, "ig"));
-  });
-
-  _.each(badwords.level2, function(badword) {
-    return badwordR.level2.push(new RegExp(badword, "i"));
-  });
-
-  _.each(badwords.level3, function(badword) {
-    return badwordR.level3.push(new RegExp(badword, "i"));
-  });
+  badwordR.level3 = new RegExp('(?:' + badwords.level3.join(')|(?:') + ')', 'i');
 
   moment_now = moment();
 
@@ -1516,7 +1502,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', false, function(buffer, info, client, server, datas) {
-    var l, len2, name, ref2, room;
+    var l, len2, ref2, room;
     //log.info info
     info.pass = info.pass.trim();
     client.pass = info.pass;
@@ -1546,19 +1532,13 @@
     } else if (_.indexOf(settings.ban.banned_ip, client.ip) > -1) { //IP被封
       log.warn("BANNED IP LOGIN", client.name, client.ip);
       ygopro.stoc_die(client, "${banned_ip_login}");
-    } else if (_.any(badwordR.level3, function(regexp) {
-      return name.match(regexp);
-    }, name = client.name)) {
+    } else if (badwordR.level3.test(client.name)) {
       log.warn("BAD NAME LEVEL 3", client.name, client.ip);
       ygopro.stoc_die(client, "${bad_name_level3}");
-    } else if (_.any(badwordR.level2, function(regexp) {
-      return name.match(regexp);
-    }, name = client.name)) {
+    } else if (badwordR.level2.test(client.name)) {
       log.warn("BAD NAME LEVEL 2", client.name, client.ip);
       ygopro.stoc_die(client, "${bad_name_level2}");
-    } else if (_.any(badwordR.level1, function(regexp) {
-      return name.match(regexp);
-    }, name = client.name)) {
+    } else if (badwordR.level1.test(client.name)) {
       log.warn("BAD NAME LEVEL 1", client.name, client.ip);
       ygopro.stoc_die(client, "${bad_name_level1}");
     } else if (info.pass.length && !ROOM_validate(info.pass)) {
@@ -2259,9 +2239,7 @@
       return true;
     }
     oldmsg = msg;
-    if (_.any(badwordR.level3, function(regexp) {
-      return msg.match(regexp);
-    }, msg)) {
+    if (badwordR.level3.test(msg)) {
       log.warn("BAD WORD LEVEL 3", client.name, client.ip, oldmsg, RegExp.$1);
       report_to_big_brother(room.name, client.name, client.ip, 3, oldmsg, RegExp.$1);
       cancel = true;
@@ -2289,19 +2267,14 @@
       client.abuse_count = client.abuse_count + 2;
       ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
       cancel = true;
-    } else if (_.any(badwordR.level2, function(regexp) {
-      return msg.match(regexp);
-    }, msg)) {
+    } else if (badwordR.level2.test(msg)) {
       log.warn("BAD WORD LEVEL 2", client.name, client.ip, oldmsg, RegExp.$1);
       report_to_big_brother(room.name, client.name, client.ip, 2, oldmsg, RegExp.$1);
       client.abuse_count = client.abuse_count + 3;
       ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED);
       cancel = true;
     } else {
-      _.each(badwordR.level1, function(regexp) {
-        //log.info msg
-        msg = msg.replace(regexp, "**");
-      }, msg);
+      msg = msg.replace(badwordR.level1g, '**');
       if (oldmsg !== msg) {
         log.warn("BAD WORD LEVEL 1", client.name, client.ip, oldmsg, RegExp.$1);
         report_to_big_brother(room.name, client.name, client.ip, 1, oldmsg, RegExp.$1);
@@ -2311,9 +2284,7 @@
         struct._setBuff(buffer);
         struct.set("msg", msg);
         buffer = struct.buffer;
-      } else if (_.any(badwordR.level0, function(regexp) {
-        return msg.match(regexp);
-      }, msg)) {
+      } else if (badwordR.level0.test(msg)) {
         log.info("BAD WORD LEVEL 0", client.name, client.ip, oldmsg, RegExp.$1);
         report_to_big_brother(room.name, client.name, client.ip, 0, oldmsg, RegExp.$1);
       }
