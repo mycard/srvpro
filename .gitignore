@@ -26,6 +26,7 @@ test*
 *.tmp
 *.bak
 *.log
+log.*
 
 *.map
 
