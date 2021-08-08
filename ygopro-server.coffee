@@ -253,6 +253,9 @@ if settings.modules.i18n.auto_pick
 memory_usage = 0
 get_memory_usage = get_memory_usage = ()->
   prc_free = exec("free")
+  if not prc_free
+    log.warn 'get free failed!'
+    return
   prc_free.stdout.on 'data', (data)->
     lines = data.toString().split(/\n/g)
     line = lines[0].split(/\s+/)

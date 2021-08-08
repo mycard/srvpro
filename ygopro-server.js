@@ -368,6 +368,10 @@
   get_memory_usage = get_memory_usage = function() {
     var prc_free;
     prc_free = exec("free");
+    if (!prc_free) {
+      log.warn('get free failed!');
+      return;
+    }
     prc_free.stdout.on('data', function(data) {
       var actualFree, buffers, cached, free, line, lines, new_free, percentUsed, total;
       lines = data.toString().split(/\n/g);
