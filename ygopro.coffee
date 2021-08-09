@@ -7,6 +7,15 @@ loadJSON = require('load-json-file').sync
 
 @i18ns = loadJSON './data/i18n.json'
 
+@i18nR = {}
+for lang, data of @i18ns
+  @i18nR[lang]={}
+  for key, text of data
+    @i18nR[lang][key]={
+      regex: new RegExp("\\$\\{"+key+"\\}",'g'),
+      text: text
+    }
+
 #常量/类型声明
 structs_declaration = loadJSON './data/structs.json'  #结构体声明
 typedefs = loadJSON './data/typedefs.json'            #类型声明
@@ -125,9 +134,8 @@ for name, declaration of structs_declaration
   for line in _.lines(msg)
     if player>=10
       line="[Server]: "+line
-    for o,r of @i18ns[client.lang]
-      re=new RegExp("\\$\\{"+o+"\\}",'g')
-      line=line.replace(re,r)
+    for o,r of @i18nR[client.lang]
+      line=line.replace(r.regex, r.text)
     @stoc_send client, 'CHAT', {
       player: player
       msg: line
