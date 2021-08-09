@@ -288,7 +288,7 @@ ban_user = (name, callback) ->
   settings.ban.banned_user.push(name)
   setting_save(settings)
   bad_ip = []
-  _async.each(ROOM_all, (room, done)-> 
+  _async.eachSeries(ROOM_all, (room, done)-> 
     if !(room and room.established)
       done()
       return
@@ -302,6 +302,7 @@ ban_user = (name, callback) ->
           CLIENT_send_replays(player, room)
           CLIENT_kick(player)
         __done()
+        return
       , _done)
     , done)
   , callback)
@@ -327,7 +328,7 @@ ROOM_ban_player = (name, ip, reason, countadd = 1)->
 
 ROOM_kick = (name, callback)->
   found = false
-  _async.each(ROOM_all, (room, done)->
+  _async.eachSeries(ROOM_all, (room, done)->
     if !(room and room.established and (name == "all" or name == room.process_pid.toString() or name == room.name))
       done()
       return
@@ -1815,8 +1816,8 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   return settings.modules.replay_delay and room.hostinfo.mode == 1
 
 if settings.modules.random_duel.enabled
-  setInterval ()->
-    _async.each(ROOM_all, (room, done) ->
+  check_room_timeout = ()->
+    _async.eachSeries(ROOM_all, (room, done) ->
       if !(room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING))
         done()
         return
@@ -1835,9 +1836,12 @@ if settings.modules.random_duel.enabled
         ROOM_unwelcome(room, room.waiting_for_player, "${random_ban_reason_AFK}")
       done()
       return
+    , ()->
+      setTimeout check_room_timeout, 1000
+      return
     )
     return
-  , 1000
+  setTimeout check_room_timeout, 1000
 
 # spawn windbot
 windbot_looplimit = 0
@@ -1899,7 +1903,7 @@ if settings.modules.http
         response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'))
       else
         roomsjson = [];
-        _async.each(ROOM_all, (room, done)->
+        _async.eachSeries(ROOM_all, (room, done)->
           if !(room and room.established)
             done()
             return
@@ -1921,6 +1925,7 @@ if settings.modules.http
             istart: if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " " + (if room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING then "Siding" else "Turn:" + (if room.turn? then room.turn else 0))) else 'start') else 'wait'
           })
           done()
+          return
         , ()->
           response.writeHead(200)
           response.end(addCallback(u.query.callback, JSON.stringify({rooms: roomsjson})))
@@ -1937,9 +1942,11 @@ if settings.modules.http
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        _async.each ROOM_all, (room)->
+        _async.eachSeries ROOM_all, (room, done)->
           if room and room.established
             ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
+          done()
+          return
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "['shout ok', '" + u.query.shout + "']"))
 
