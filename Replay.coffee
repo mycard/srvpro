@@ -124,7 +124,7 @@ class Replay
     header = Replay.readHeader reader
     restBuffer = reader.readAll()
     lzmaBuffer = Buffer.concat [header.getLzmaHeader(), restBuffer]
-    if !header.isCompressed
+    if header.isCompressed
       decompressed = restBuffer
     else
       decompressed = Buffer.from lzma.decompress lzmaBuffer
