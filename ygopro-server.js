@@ -1532,7 +1532,7 @@
     } else if (info.pass === "Marshtomp" || info.pass === "the Big Brother") {
       ygopro.stoc_die(client, "${bad_user_name}");
     } else if (info.version !== settings.version) { // and (info.version < 9020 or settings.version != 4927) #强行兼容23333版
-      ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, (info.version < settings.version ? settings.modules.update : settings.modules.wait_update), ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
         code: settings.version

@@ -19,7 +19,8 @@
   },
   "modules": {
     "welcome": "MyCard YGOPro Server",
-    "update": "请更新游戏版本",
+    "update": "请更新你的客户端版本",
+    "wait_update": "你的客户端版本高于服务器版本，请等待服务器更新",
     "stop": false,
     "full": "服务器已爆满",
     "max_rooms_count": 0,
