@@ -2054,7 +2054,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     await client.open_cloud_replay(replay)
 
   else if info.version != settings.version and !settings.alternative_versions.includes(info.version)
-    ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED)
+    ygopro.stoc_send_chat(client, (if info.version < settings.version then settings.modules.update else settings.modules.wait_update), ygopro.constants.COLORS.RED)
     ygopro.stoc_send client, 'ERROR_MSG', {
       msg: 4
       code: settings.version

@@ -2741,7 +2741,7 @@
       replay = (await dataManager.getRandomCloudReplay());
       await client.open_cloud_replay(replay);
     } else if (info.version !== settings.version && !settings.alternative_versions.includes(info.version)) {
-      ygopro.stoc_send_chat(client, settings.modules.update, ygopro.constants.COLORS.RED);
+      ygopro.stoc_send_chat(client, (info.version < settings.version ? settings.modules.update : settings.modules.wait_update), ygopro.constants.COLORS.RED);
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 4,
         code: settings.version
