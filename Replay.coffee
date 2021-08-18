@@ -122,9 +122,10 @@ class Replay
   @fromBuffer: (buffer) ->
     reader = new ReplayReader buffer
     header = Replay.readHeader reader
-    lzmaBuffer = Buffer.concat [header.getLzmaHeader(), reader.readAll()]
+    restBuffer = reader.readAll()
+    lzmaBuffer = Buffer.concat [header.getLzmaHeader(), restBuffer]
     if header.isCompressed
-      decompressed = lzmaBuffer
+      decompressed = restBuffer
     else
       decompressed = Buffer.from lzma.decompress lzmaBuffer
     reader = new ReplayReader decompressed
