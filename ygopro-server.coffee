@@ -3570,7 +3570,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   if !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
-  if settings.modules.mysql.enabled
+  if settings.modules.mysql.enabled or room.has_ygopro_error
     if client.pos == 0
       replay_filename=moment_now.format("YYYY-MM-DD HH-mm-ss")
       if room.hostinfo.mode != 2
@@ -3580,29 +3580,30 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
         for player,i in room.dueling_players
           replay_filename=replay_filename + (if i > 0 then (if i == 2 then " VS " else " & ") else " ") + player.name
       replay_filename=replay_filename.replace(/[\/\\\?\*]/g, '_')+".yrp"
-      playerInfos = room.dueling_players.map((player) ->
-        return {
-          name: player.name
-          pos: player.pos
-          realName: player.name_vpass
-          startDeckBuffer: player.start_deckbuf
-          deck: {
-            main: player.main,
-            side: player.side
-          }
-          isFirst: player.is_first
-          winner: player.pos == room.winner
-          ip: player.ip
-          score: room.scores[player.name_vpass]
-          lp: if player.lp? then player.lp else room.hostinfo.start_lp
-          cardCount: if player.card_count? then player.card_count else room.hostinfo.start_hand
-        }
-      )
       fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
-      dataManager.saveDuelLog(room.name, room.process_pid, room.cloud_replay_id, replay_filename, room.hostinfo.mode, room.duel_count, playerInfos) # no synchronize here because too slow
-    if settings.modules.cloud_replay.enabled and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
+      if settings.modules.mysql.enabled
+        playerInfos = room.dueling_players.map((player) ->
+          return {
+            name: player.name
+            pos: player.pos
+            realName: player.name_vpass
+            startDeckBuffer: player.start_deckbuf
+            deck: {
+              main: player.main,
+              side: player.side
+            }
+            isFirst: player.is_first
+            winner: player.pos == room.winner
+            ip: player.ip
+            score: room.scores[player.name_vpass]
+            lp: if player.lp? then player.lp else room.hostinfo.start_lp
+            cardCount: if player.card_count? then player.card_count else room.hostinfo.start_hand
+          }
+        )
+        dataManager.saveDuelLog(room.name, room.process_pid, room.cloud_replay_id, replay_filename, room.hostinfo.mode, room.duel_count, playerInfos) # no synchronize here because too slow
+    if settings.modules.mysql.enabled && settings.modules.cloud_replay.enabled and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
       ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
     await return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
   else
