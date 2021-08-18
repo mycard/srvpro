@@ -2500,12 +2500,13 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and !client.reconnecting
   msg = buffer.readInt8(0)
-  #console.log client.pos, "MSG", ygopro.constants.MSG[msg]
-  if ygopro.constants.MSG[msg] == 'RETRY' and room.recovering
+  msg_name = ygopro.constants.MSG[msg]
+  #console.log client.pos, "MSG", msg_name
+  if msg_name == 'RETRY' and room.recovering
     room.finish_recover(true)
     return true
   if settings.modules.retry_handle.enabled
-    if ygopro.constants.MSG[msg] == 'RETRY'
+    if msg_name == 'RETRY'
       if !client.retry_count?
         client.retry_count = 0
       client.retry_count++
@@ -2527,11 +2528,11 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
         return true
     else
       client.last_game_msg = buffer
-      client.last_game_msg_title = ygopro.constants.MSG[msg]
+      client.last_game_msg_title = msg_name
       # log.info(client.name, client.last_game_msg_title)
-  else if ygopro.constants.MSG[msg] != 'RETRY'
+  else if msg_name != 'RETRY'
     client.last_game_msg = buffer
-    client.last_game_msg_title = ygopro.constants.MSG[msg]
+    client.last_game_msg_title = msg_name
     # log.info(client.name, client.last_game_msg_title)
 
   if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg <= 144) #SELECT和ANNOUNCE开头的消息
@@ -2543,10 +2544,10 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     else
       room.waiting_for_player = client
       room.last_active_time = moment()
-  #log.info("#{ygopro.constants.MSG[msg]}等待#{room.waiting_for_player.name}")
+  #log.info("#{msg_name}等待#{room.waiting_for_player.name}")
 
-  #log.info 'MSG', ygopro.constants.MSG[msg]
-  if ygopro.constants.MSG[msg] == 'START'
+  #log.info 'MSG', msg_name
+  if msg_name == 'START'
     playertype = buffer.readUInt8(1)
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
@@ -2570,12 +2571,12 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
 
-  if ygopro.constants.MSG[msg] == 'HINT'
+  if msg_name == 'HINT'
     hint_type = buffer.readUInt8(1)
     if hint_type == 3
       client.last_hint_msg = buffer
 
-  if ygopro.constants.MSG[msg] == 'NEW_TURN'
+  if msg_name == 'NEW_TURN'
     if client.pos == 0
       room.turn++
       if room.recovering and room.recover_from_turn <= room.turn
@@ -2604,7 +2605,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       client.surrend_confirm = false
       ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
 
-  if ygopro.constants.MSG[msg] == 'NEW_PHASE'
+  if msg_name == 'NEW_PHASE'
     phase = buffer.readInt16LE(1)
     oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
     if client.pos == 0 and room.death == -2 and not (phase == 0x1 and room.turn < 2)
@@ -2624,7 +2625,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
         room.death = -1
         ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE)
 
-  if ygopro.constants.MSG[msg] == 'WIN' and client.pos == 0
+  if msg_name == 'WIN' and client.pos == 0
     if room.recovering
       room.finish_recover(true)
       return true
@@ -2655,11 +2656,11 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       else
         room.death = 5
 
-  if ygopro.constants.MSG[msg] == 'MATCH_KILL' and client.pos == 0
+  if msg_name == 'MATCH_KILL' and client.pos == 0
     room.match_kill = true
 
   #lp跟踪
-  if ygopro.constants.MSG[msg] == 'DAMAGE' and client.pos == 0
+  if msg_name == 'DAMAGE' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
@@ -2669,21 +2670,21 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     if 0 < room.dueling_players[pos].lp <= 100
       ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
 
-  if ygopro.constants.MSG[msg] == 'RECOVER' and client.pos == 0
+  if msg_name == 'RECOVER' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp += val
 
-  if ygopro.constants.MSG[msg] == 'LPUPDATE' and client.pos == 0
+  if msg_name == 'LPUPDATE' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
     room.dueling_players[pos].lp = val
 
-  if ygopro.constants.MSG[msg] == 'PAY_LPCOST' and client.pos == 0
+  if msg_name == 'PAY_LPCOST' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
@@ -2695,7 +2696,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   #track card count
   #todo: track card count in tag mode
-  if ygopro.constants.MSG[msg] == 'MOVE' and room.hostinfo.mode != 2
+  if msg_name == 'MOVE' and room.hostinfo.mode != 2
     pos = buffer.readUInt8(5)
     pos = 1 - pos unless client.is_first
     loc = buffer.readUInt8(6)
@@ -2705,7 +2706,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     loc = buffer.readUInt8(10)
     client.card_count++ if (loc & 0xe) and pos == 0
 
-  if ygopro.constants.MSG[msg] == 'DRAW' and room.hostinfo.mode != 2
+  if msg_name == 'DRAW' and room.hostinfo.mode != 2
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     if pos == 0
@@ -2713,7 +2714,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       client.card_count += count
 
   # check panel confirming cards in heartbeat
-  if settings.modules.heartbeat_detection.enabled and ygopro.constants.MSG[msg] == 'CONFIRM_CARDS'
+  if settings.modules.heartbeat_detection.enabled and msg_name == 'CONFIRM_CARDS'
     check = false
     count = buffer.readInt8(2)
     max_loop = 3 + (count - 1) * 7
@@ -2734,7 +2735,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   # chain detection
   if settings.modules.heartbeat_detection.enabled and client.pos == 0
-    if ygopro.constants.MSG[msg] == 'CHAINING'
+    if msg_name == 'CHAINING'
       card = buffer.readUInt32LE(1)
       found = false
       for id in long_resolve_cards when id == card
@@ -2745,46 +2746,46 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
         # console.log(0,card)
       else
         delete room.long_resolve_card
-    else if ygopro.constants.MSG[msg] == 'CHAINED' and room.long_resolve_card
+    else if msg_name == 'CHAINED' and room.long_resolve_card
       chain = buffer.readInt8(1)
       if !room.long_resolve_chain
         room.long_resolve_chain = []
       room.long_resolve_chain[chain] = true
       # console.log(1,chain)
       delete room.long_resolve_card
-    else if ygopro.constants.MSG[msg] == 'CHAIN_SOLVING' and room.long_resolve_chain
+    else if msg_name == 'CHAIN_SOLVING' and room.long_resolve_chain
       chain = buffer.readInt8(1)
       # console.log(2,chain)
       if room.long_resolve_chain[chain]
         for player in room.get_playing_player()
           player.heartbeat_protected = true
-    else if (ygopro.constants.MSG[msg] == 'CHAIN_NEGATED' or ygopro.constants.MSG[msg] == 'CHAIN_DISABLED') and room.long_resolve_chain
+    else if (msg_name == 'CHAIN_NEGATED' or msg_name == 'CHAIN_DISABLED') and room.long_resolve_chain
       chain = buffer.readInt8(1)
       # console.log(3,chain)
       delete room.long_resolve_chain[chain]
-    else if ygopro.constants.MSG[msg] == 'CHAIN_END'
+    else if msg_name == 'CHAIN_END'
       # console.log(4,chain)
       delete room.long_resolve_card
       delete room.long_resolve_chain
 
   #登场台词
   if settings.modules.dialogues.enabled and !room.recovering
-    if ygopro.constants.MSG[msg] == 'SUMMONING' or ygopro.constants.MSG[msg] == 'SPSUMMONING' or ygopro.constants.MSG[msg] == 'CHAINING'
+    if msg_name == 'SUMMONING' or msg_name == 'SPSUMMONING' or msg_name == 'CHAINING'
       card = buffer.readUInt32LE(1)
       trigger_location = buffer.readUInt8(6)
-      if dialogues.dialogues[card] and (ygopro.constants.MSG[msg] != 'CHAINING' or (trigger_location & 0x8) and client.ready_trap)
+      if dialogues.dialogues[card] and (msg_name != 'CHAINING' or (trigger_location & 0x8) and client.ready_trap)
         for line in _.lines dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]
           ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK)
-    if ygopro.constants.MSG[msg] == 'POS_CHANGE'
+    if msg_name == 'POS_CHANGE'
       loc = buffer.readUInt8(6)
       ppos = buffer.readUInt8(8)
       cpos = buffer.readUInt8(9)
       client.ready_trap = !!(loc & 0x8) and !!(ppos & 0xa) and !!(cpos & 0x5)
-    else if ygopro.constants.MSG[msg] != 'UPDATE_CARD' and ygopro.constants.MSG[msg] != 'WAITING'
+    else if msg_name != 'UPDATE_CARD' and msg_name != 'WAITING'
       client.ready_trap = false
 
   if room.recovering and client.pos < 4
-    if ygopro.constants.MSG[msg] != 'WAITING'
+    if msg_name != 'WAITING'
       room.recover_buffers[client.pos].push(buffer)
     return true
 
