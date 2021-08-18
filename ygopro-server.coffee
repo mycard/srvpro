@@ -664,13 +664,14 @@ ROOM_ban_player = global.ROOM_ban_player = (name, ip, reason, countadd = 1)->
 
 ROOM_kick = (name, callback)->
   found = false
-  _async.each(ROOM_all, (room, done)->
+  _async.eachSeries(ROOM_all, (room, done)->
     if !(room and room.established and (name == "all" or name == room.process_pid.toString() or name == room.name))
       done()
       return
     found = true
     room.terminate()
     done()
+    return
   , (err)->
     callback(null, found)
     return
@@ -3670,7 +3671,7 @@ if true
         response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'))
       else
         roomsjson = [];
-        _async.each(ROOM_all, (room, done)->
+        _async.eachSeries(ROOM_all, (room, done)->
           if !(room and room.established)
             done()
             return
@@ -3783,7 +3784,7 @@ if true
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        _async.each ROOM_all, (room)->
+        _async.eachSeries ROOM_all, (room)->
           if room and room.established
             ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
         response.writeHead(200)
@@ -3883,7 +3884,7 @@ if true
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         death_room_found = false
-        _async.each(ROOM_all, (room, done)->
+        _async.eachSeries(ROOM_all, (room, done)->
           if !(room and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name))
             done()
             return
@@ -3905,13 +3906,14 @@ if true
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         death_room_found = false
-        _async.each(ROOM_all, (room, done)->
+        _async.eachSeries(ROOM_all, (room, done)->
           if !(room and (u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString() or u.query.deathcancel == room.name))
             done()
             return
           if room.cancel_death()
             death_room_found = true
           done()
+          return
         , () ->
           response.writeHead(200)
           if death_room_found
