@@ -3267,19 +3267,20 @@
   };
 
   ygopro.stoc_follow('GAME_MSG', true, async function(buffer, info, client, server, datas) {
-    var card, chain, check, count, cpos, deck_found, found, hint_type, i, id, j, l, len, len1, len2, len3, limbo_found, line, loc, m, max_loop, msg, n, o, oppo_pos, phase, player, playertype, pos, ppos, reason, ref, ref1, ref2, ref3, ref4, ref5, room, trigger_location, val, win_pos;
+    var card, chain, check, count, cpos, deck_found, found, hint_type, i, id, j, l, len, len1, len2, len3, limbo_found, line, loc, m, max_loop, msg, msg_name, n, o, oppo_pos, phase, player, playertype, pos, ppos, reason, ref, ref1, ref2, ref3, ref4, ref5, room, trigger_location, val, win_pos;
     room = ROOM_all[client.rid];
     if (!(room && !client.reconnecting)) {
       return;
     }
     msg = buffer.readInt8(0);
-    //console.log client.pos, "MSG", ygopro.constants.MSG[msg]
-    if (ygopro.constants.MSG[msg] === 'RETRY' && room.recovering) {
+    msg_name = ygopro.constants.MSG[msg];
+    //console.log client.pos, "MSG", msg_name
+    if (msg_name === 'RETRY' && room.recovering) {
       room.finish_recover(true);
       return true;
     }
     if (settings.modules.retry_handle.enabled) {
-      if (ygopro.constants.MSG[msg] === 'RETRY') {
+      if (msg_name === 'RETRY') {
         if (client.retry_count == null) {
           client.retry_count = 0;
         }
@@ -3306,12 +3307,12 @@
         }
       } else {
         client.last_game_msg = buffer;
-        client.last_game_msg_title = ygopro.constants.MSG[msg];
+        client.last_game_msg_title = msg_name;
       }
     // log.info(client.name, client.last_game_msg_title)
-    } else if (ygopro.constants.MSG[msg] !== 'RETRY') {
+    } else if (msg_name !== 'RETRY') {
       client.last_game_msg = buffer;
-      client.last_game_msg_title = ygopro.constants.MSG[msg];
+      client.last_game_msg_title = msg_name;
     }
     // log.info(client.name, client.last_game_msg_title)
     if ((msg >= 10 && msg < 30) || msg === 132 || (msg >= 140 && msg <= 144)) { //SELECT和ANNOUNCE开头的消息
@@ -3326,10 +3327,10 @@
         room.last_active_time = moment_now_string;
       }
     }
-    //log.info("#{ygopro.constants.MSG[msg]}等待#{room.waiting_for_player.name}")
+    //log.info("#{msg_name}等待#{room.waiting_for_player.name}")
 
-    //log.info 'MSG', ygopro.constants.MSG[msg]
-    if (ygopro.constants.MSG[msg] === 'START') {
+    //log.info 'MSG', msg_name
+    if (msg_name === 'START') {
       playertype = buffer.readUInt8(1);
       client.is_first = !(playertype & 0xf);
       client.lp = room.hostinfo.start_lp;
@@ -3360,13 +3361,13 @@
       }
     }
     //ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
-    if (ygopro.constants.MSG[msg] === 'HINT') {
+    if (msg_name === 'HINT') {
       hint_type = buffer.readUInt8(1);
       if (hint_type === 3) {
         client.last_hint_msg = buffer;
       }
     }
-    if (ygopro.constants.MSG[msg] === 'NEW_TURN') {
+    if (msg_name === 'NEW_TURN') {
       if (client.pos === 0) {
         room.turn++;
         if (room.recovering && room.recover_from_turn <= room.turn) {
@@ -3402,7 +3403,7 @@
         ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE);
       }
     }
-    if (ygopro.constants.MSG[msg] === 'NEW_PHASE') {
+    if (msg_name === 'NEW_PHASE') {
       phase = buffer.readInt16LE(1);
       oppo_pos = room.hostinfo.mode === 2 ? 2 : 1;
       if (client.pos === 0 && room.death === -2 && !(phase === 0x1 && room.turn < 2)) {
@@ -3425,7 +3426,7 @@
         }
       }
     }
-    if (ygopro.constants.MSG[msg] === 'WIN' && client.pos === 0) {
+    if (msg_name === 'WIN' && client.pos === 0) {
       if (room.recovering) {
         room.finish_recover(true);
         return true;
@@ -3469,11 +3470,11 @@
         }
       }
     }
-    if (ygopro.constants.MSG[msg] === 'MATCH_KILL' && client.pos === 0) {
+    if (msg_name === 'MATCH_KILL' && client.pos === 0) {
       room.match_kill = true;
     }
     //lp跟踪
-    if (ygopro.constants.MSG[msg] === 'DAMAGE' && client.pos === 0) {
+    if (msg_name === 'DAMAGE' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -3490,7 +3491,7 @@
         ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK);
       }
     }
-    if (ygopro.constants.MSG[msg] === 'RECOVER' && client.pos === 0) {
+    if (msg_name === 'RECOVER' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -3501,7 +3502,7 @@
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp += val;
     }
-    if (ygopro.constants.MSG[msg] === 'LPUPDATE' && client.pos === 0) {
+    if (msg_name === 'LPUPDATE' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -3512,7 +3513,7 @@
       val = buffer.readInt32LE(2);
       room.dueling_players[pos].lp = val;
     }
-    if (ygopro.constants.MSG[msg] === 'PAY_LPCOST' && client.pos === 0) {
+    if (msg_name === 'PAY_LPCOST' && client.pos === 0) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -3531,7 +3532,7 @@
     }
     //track card count
     //todo: track card count in tag mode
-    if (ygopro.constants.MSG[msg] === 'MOVE' && room.hostinfo.mode !== 2) {
+    if (msg_name === 'MOVE' && room.hostinfo.mode !== 2) {
       pos = buffer.readUInt8(5);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -3549,7 +3550,7 @@
         client.card_count++;
       }
     }
-    if (ygopro.constants.MSG[msg] === 'DRAW' && room.hostinfo.mode !== 2) {
+    if (msg_name === 'DRAW' && room.hostinfo.mode !== 2) {
       pos = buffer.readUInt8(1);
       if (!client.is_first) {
         pos = 1 - pos;
@@ -3560,7 +3561,7 @@
       }
     }
     // check panel confirming cards in heartbeat
-    if (settings.modules.heartbeat_detection.enabled && ygopro.constants.MSG[msg] === 'CONFIRM_CARDS') {
+    if (settings.modules.heartbeat_detection.enabled && msg_name === 'CONFIRM_CARDS') {
       check = false;
       count = buffer.readInt8(2);
       max_loop = 3 + (count - 1) * 7;
@@ -3585,7 +3586,7 @@
     }
     // chain detection
     if (settings.modules.heartbeat_detection.enabled && client.pos === 0) {
-      if (ygopro.constants.MSG[msg] === 'CHAINING') {
+      if (msg_name === 'CHAINING') {
         card = buffer.readUInt32LE(1);
         found = false;
         for (m = 0, len1 = long_resolve_cards.length; m < len1; m++) {
@@ -3602,7 +3603,7 @@
           // console.log(0,card)
           delete room.long_resolve_card;
         }
-      } else if (ygopro.constants.MSG[msg] === 'CHAINED' && room.long_resolve_card) {
+      } else if (msg_name === 'CHAINED' && room.long_resolve_card) {
         chain = buffer.readInt8(1);
         if (!room.long_resolve_chain) {
           room.long_resolve_chain = [];
@@ -3610,7 +3611,7 @@
         room.long_resolve_chain[chain] = true;
         // console.log(1,chain)
         delete room.long_resolve_card;
-      } else if (ygopro.constants.MSG[msg] === 'CHAIN_SOLVING' && room.long_resolve_chain) {
+      } else if (msg_name === 'CHAIN_SOLVING' && room.long_resolve_chain) {
         chain = buffer.readInt8(1);
         // console.log(2,chain)
         if (room.long_resolve_chain[chain]) {
@@ -3620,11 +3621,11 @@
             player.heartbeat_protected = true;
           }
         }
-      } else if ((ygopro.constants.MSG[msg] === 'CHAIN_NEGATED' || ygopro.constants.MSG[msg] === 'CHAIN_DISABLED') && room.long_resolve_chain) {
+      } else if ((msg_name === 'CHAIN_NEGATED' || msg_name === 'CHAIN_DISABLED') && room.long_resolve_chain) {
         chain = buffer.readInt8(1);
         // console.log(3,chain)
         delete room.long_resolve_chain[chain];
-      } else if (ygopro.constants.MSG[msg] === 'CHAIN_END') {
+      } else if (msg_name === 'CHAIN_END') {
         // console.log(4,chain)
         delete room.long_resolve_card;
         delete room.long_resolve_chain;
@@ -3632,10 +3633,10 @@
     }
     //登场台词
     if (settings.modules.dialogues.enabled && !room.recovering) {
-      if (ygopro.constants.MSG[msg] === 'SUMMONING' || ygopro.constants.MSG[msg] === 'SPSUMMONING' || ygopro.constants.MSG[msg] === 'CHAINING') {
+      if (msg_name === 'SUMMONING' || msg_name === 'SPSUMMONING' || msg_name === 'CHAINING') {
         card = buffer.readUInt32LE(1);
         trigger_location = buffer.readUInt8(6);
-        if (dialogues.dialogues[card] && (ygopro.constants.MSG[msg] !== 'CHAINING' || (trigger_location & 0x8) && client.ready_trap)) {
+        if (dialogues.dialogues[card] && (msg_name !== 'CHAINING' || (trigger_location & 0x8) && client.ready_trap)) {
           ref5 = _.lines(dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]);
           for (o = 0, len3 = ref5.length; o < len3; o++) {
             line = ref5[o];
@@ -3643,17 +3644,17 @@
           }
         }
       }
-      if (ygopro.constants.MSG[msg] === 'POS_CHANGE') {
+      if (msg_name === 'POS_CHANGE') {
         loc = buffer.readUInt8(6);
         ppos = buffer.readUInt8(8);
         cpos = buffer.readUInt8(9);
         client.ready_trap = !!(loc & 0x8) && !!(ppos & 0xa) && !!(cpos & 0x5);
-      } else if (ygopro.constants.MSG[msg] !== 'UPDATE_CARD' && ygopro.constants.MSG[msg] !== 'WAITING') {
+      } else if (msg_name !== 'UPDATE_CARD' && msg_name !== 'WAITING') {
         client.ready_trap = false;
       }
     }
     if (room.recovering && client.pos < 4) {
-      if (ygopro.constants.MSG[msg] !== 'WAITING') {
+      if (msg_name !== 'WAITING') {
         room.recover_buffers[client.pos].push(buffer);
       }
       return true;
