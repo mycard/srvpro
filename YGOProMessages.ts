@@ -8,7 +8,7 @@ import net from "net";
 
 
 class Handler {
-	handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean>;
+	private handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean>;
 	synchronous: boolean;
 	constructor(handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean>, synchronous: boolean) {
 		this.handler = handler;
@@ -46,14 +46,32 @@ export interface HandleResult {
 	feedback: Feedback;
 }
 
+export interface Constants {
+	TYPES: Record<string, number>;
+	RACES: Record<string, number>;
+	ATTRIBUTES: Record<string, number>;
+	LINK_MARKERS: Record<string, number>;
+	DUEL_STAGE: Record<string, number>;
+	COLORS: Record<string, number>;
+	TIMING: Record<string, string>;
+	NETWORK: Record<string, string>;
+	NETPLAYER: Record<string, string>;
+	CTOS: Record<string, string>;
+	STOC: Record<string, string>;
+	PLAYERCHANGE: Record<string, string>;
+	ERRMSG: Record<string, string>;
+	MODE: Record<string, string>;
+	MSG: Record<string, string>;
+}
+
 export class YGOProMessagesHelper {
 
 	handlers: HandlerList;
 	structs: Map<string, Struct>;
-	structs_declaration: any;
-	typedefs: any;
-	proto_structs: any;
-	constants: any;
+	structs_declaration: Record<string, Struct>;
+	typedefs: Record<string, string>;
+	proto_structs: Record<'CTOS' | 'STOC', Record<string, string>>;
+	constants: Constants;
 	singleHandleLimit: number;
 
 	constructor(singleHandleLimit?: number) {
