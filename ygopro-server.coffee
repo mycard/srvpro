@@ -178,6 +178,7 @@ settings = {}
 tips = null
 dialogues = null
 badwords = null
+badwordR = null
 lflists = global.lflists = []
 real_windbot_server_ip = null
 long_resolve_cards = []
@@ -379,6 +380,13 @@ init = () ->
   log.info("Reading banlists.")
   await loadLFList('ygopro/expansions/lflist.conf')
   await loadLFList('ygopro/lflist.conf')
+
+  badwordR = global.badwordR = {}
+  badwordR.level0=new RegExp('(?:'+badwords.level0.join(')|(?:')+')','i');
+  badwordR.level1=new RegExp('(?:'+badwords.level1.join(')|(?:')+')','i');
+  badwordR.level1g=new RegExp('(?:'+badwords.level1.join(')|(?:')+')','ig');
+  badwordR.level2=new RegExp('(?:'+badwords.level2.join(')|(?:')+')','i');
+  badwordR.level3=new RegExp('(?:'+badwords.level3.join(')|(?:')+')','i');
 
   setInterval ()->
     moment_now = moment()
@@ -2151,24 +2159,15 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
           }
           options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room_title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
-          if _.any(badwords.level3, (badword) ->
-            regexp = new RegExp(badword, 'i')
-            return room_title.match(regexp)
-          , room_title)
+          if badwordR.level3.test(room_title)
             log.warn("BAD ROOM NAME LEVEL 3", room_title, client.name, client.ip)
             ygopro.stoc_die(client, "${bad_roomname_level3}")
             return
-          else if _.any(badwords.level2, (badword) ->
-            regexp = new RegExp(badword, 'i')
-            return room_title.match(regexp)
-          , room_title)
+          else if badwordR.level2.test(room_title)
             log.warn("BAD ROOM NAME LEVEL 2", room_title, client.name, client.ip)
             ygopro.stoc_die(client, "${bad_roomname_level2}")
             return
-          else if _.any(badwords.level1, (badword) ->
-            regexp = new RegExp(badword, 'i')
-            return room_title.match(regexp)
-          , room_title)
+          else if badwordR.level1.test(room_title)
             log.warn("BAD ROOM NAME LEVEL 1", room_title, client.name, client.ip)
             ygopro.stoc_die(client, "${bad_roomname_level1}")
             return
@@ -2383,24 +2382,15 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     log.warn("MULTI LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${too_much_connection}" + client.ip)
 
-  else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and _.any(badwords.level3, (badword) ->
-    regexp = new RegExp(badword, 'i')
-    return name.match(regexp)
-  , name = client.name)
+  else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and badwordR.level3.test(client.name)
     log.warn("BAD NAME LEVEL 3", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level3}")
 
-  else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and _.any(badwords.level2, (badword) ->
-    regexp = new RegExp(badword, 'i')
-    return name.match(regexp)
-  , name = client.name)
+  else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and badwordR.level2.test(client.name)
     log.warn("BAD NAME LEVEL 2", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level2}")
 
-  else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and _.any(badwords.level1, (badword) ->
-    regexp = new RegExp(badword, 'i')
-    return name.match(regexp)
-  , name = client.name)
+  else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and badwordR.level1.test(client.name)
     log.warn("BAD NAME LEVEL 1", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level1}")
 
@@ -3192,10 +3182,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat(client, "${banned_chat_tip}" + (if client.ban_mc and client.ban_mc.message then (": " + client.ban_mc.message) else ""), ygopro.constants.COLORS.RED)
     return true
   oldmsg = msg
-  if (_.any(badwords.level3, (badword) ->
-    regexp = new RegExp(badword, 'i')
-    return msg.match(regexp)
-  , msg))
+  if badwordR.level3.test(msg)
     log.warn "BAD WORD LEVEL 3", client.name, client.ip, oldmsg, RegExp.$1
     report_to_big_brother room.name, client.name, client.ip, 3, oldmsg, RegExp.$1
     cancel = true
@@ -3221,22 +3208,14 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     client.abuse_count=client.abuse_count+2
     ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
-  else if (_.any(badwords.level2, (badword) ->
-    regexp = new RegExp(badword, 'i')
-    return msg.match(regexp)
-  , msg))
+  else if badwordR.level2.test(msg)
     log.warn "BAD WORD LEVEL 2", client.name, client.ip, oldmsg, RegExp.$1
     report_to_big_brother room.name, client.name, client.ip, 2, oldmsg, RegExp.$1
     client.abuse_count=client.abuse_count+3
     ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED)
     cancel = true
   else
-    _.each(badwords.level1, (badword) ->
-      #log.info msg
-      regexp = new RegExp(badword, "ig")
-      msg = msg.replace(regexp, "**")
-      return
-    , msg)
+    msg = msg.replace(badwordR.level1g,'**')
     if oldmsg != msg
       log.warn "BAD WORD LEVEL 1", client.name, client.ip, oldmsg, RegExp.$1
       report_to_big_brother room.name, client.name, client.ip, 1, oldmsg, RegExp.$1
@@ -3246,10 +3225,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
       struct._setBuff(buffer)
       struct.set("msg", msg)
       buffer = struct.buffer
-    else if (_.any(badwords.level0, (badword) ->
-      regexp = new RegExp(badword, 'i')
-      return msg.match(regexp)
-    , msg))
+    else if badwordR.level0.test(msg)
       log.info "BAD WORD LEVEL 0", client.name, client.ip, oldmsg, RegExp.$1
       report_to_big_brother room.name, client.name, client.ip, 0, oldmsg, RegExp.$1
   if client.abuse_count>=2
