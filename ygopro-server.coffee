@@ -194,6 +194,8 @@ moment_now = global.moment_now = null
 moment_now_string = global.moment_now_string = null
 moment_long_ago_string = global.moment_long_ago_string = null
 
+rooms_count = 0
+
 challonge = null
 challonge_cache = {
   participants: null
@@ -394,6 +396,17 @@ init = () ->
     moment_long_ago_string = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's').format()
     return
   , 500
+  
+  if settings.modules.max_rooms_count
+    rooms_count=0
+    get_rooms_count = ()->
+      _rooms_count=0
+      for room in ROOM_all when room and room.established
+        _rooms_count++
+      rooms_count=_rooms_count
+      setTimeout get_rooms_count, 1000
+      return
+    setTimeout get_rooms_count, 1000
 
   if settings.modules.windbot.enabled
     log.info("Reading bot list.")
@@ -717,17 +730,6 @@ ROOM_player_get_score = global.ROOM_player_get_score = (player)->
   if !settings.modules.mysql.enabled
     return ""
   return await dataManager.getRandomDuelScoreDisplay(player.name_vpass)
-
-if settings.modules.max_rooms_count
-  rooms_count=0
-  get_rooms_count = ()->
-    _rooms_count=0
-    for room in ROOM_all when room and room.established
-      _rooms_count++
-    rooms_count=_rooms_count
-    setTimeout get_rooms_count, 1000
-    return
-  setTimeout get_rooms_count, 1000
 
 ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player_ip)->
   uname=name.toUpperCase()
