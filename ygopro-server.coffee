@@ -718,6 +718,17 @@ ROOM_player_get_score = global.ROOM_player_get_score = (player)->
     return ""
   return await dataManager.getRandomDuelScoreDisplay(player.name_vpass)
 
+if settings.modules.max_rooms_count
+  rooms_count=0
+  get_rooms_count = ()->
+    _rooms_count=0
+    for room in ROOM_all when room and room.established
+      _rooms_count++
+    rooms_count=_rooms_count
+    setTimeout get_rooms_count, 1000
+    return
+  setTimeout get_rooms_count, 1000
+
 ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player_ip)->
   uname=name.toUpperCase()
   if settings.modules.windbot.enabled and (uname[0...2] == 'AI' or (!settings.modules.random_duel.enabled and uname == ''))
@@ -726,7 +737,7 @@ ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player
     return await ROOM_find_or_create_random(uname, player_ip)
   if room = ROOM_find_by_name(name)
     return room
-  else if memory_usage >= 90
+  else if memory_usage >= 90 or (settings.modules.max_rooms_count and rooms_count >= settings.modules.max_rooms_count)
     return null
   else
     room = new Room(name)
@@ -768,7 +779,7 @@ ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_i
   if result
     result.welcome = '${random_duel_enter_room_waiting}'
     #log.info 'found room', player_name
-  else if memory_usage < 90
+  else if memory_usage < 90 and not (settings.modules.max_rooms_count and rooms_count >= settings.modules.max_rooms_count)
     type = if type then type else settings.modules.random_duel.default_type
     name = type + ',RANDOM#' + Math.floor(Math.random() * 100000)
     result = new Room(name)
@@ -2206,7 +2217,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
           return
 
       if !room
-        ygopro.stoc_die(client, "${server_full}")
+        ygopro.stoc_die(client, settings.modules.full)
       else if room.error
         ygopro.stoc_die(client, room.error)
       else 
@@ -2367,7 +2378,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
           # room.max_player = 2
           room.welcome = "${challonge_match_created}"
         if !room
-          ygopro.stoc_die(client, "${server_full}")
+          ygopro.stoc_die(client, settings.modules.full)
         else if room.error
           ygopro.stoc_die(client, room.error)
         else
@@ -2408,7 +2419,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     #log.info 'join_game',info.pass, client.name
     room = await ROOM_find_or_create_by_name(info.pass, client.ip)
     if !room
-      ygopro.stoc_die(client, "${server_full}")
+      ygopro.stoc_die(client, settings.modules.full)
     else if room.error
       ygopro.stoc_die(client, room.error)
     else
