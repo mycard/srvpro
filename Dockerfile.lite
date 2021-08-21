@@ -1,5 +1,5 @@
 # Dockerfile for SRVPro Lite
-FROM debian:buster as premake-builder
+FROM debian:bullseye as premake-builder
 
 RUN apt update && \
     env DEBIAN_FRONTEND=noninteractive apt install -y wget build-essential p7zip-full && \
@@ -12,12 +12,13 @@ RUN wget -O premake.zip https://github.com/premake/premake-core/releases/downloa
     cd premake/build/gmake.unix && \
     make -j$(nproc)
 
-FROM node:14-buster-slim
+FROM node:16-bullseye-slim
+LABEL Author="Nanahira <nanahira@momobako.com>"
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libsqlite3-dev libevent-dev p7zip-full python3 liblua5.3-dev python && \
-    rm -rf /var/lib/apt/lists/*
+    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libevent-dev libsqlite3-dev mono-complete p7zip-full python3 python-is-python3 liblua5.3-dev && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # srvpro
 COPY . /ygopro-server
@@ -27,7 +28,7 @@ RUN npm ci && \
 
 COPY --from=premake-builder /usr/src/premake/bin/release/premake5 /usr/bin/premake5
 
-RUN git clone --branch=server --recursive --depth=1 https://github.com/moecube/ygopro && \
+RUN git clone --branch=server --recursive --depth=1 https://code.mycard.moe/mycard/ygopro && \
     cd ygopro && \
     git submodule foreach git checkout master && \
     premake5 gmake && \
@@ -45,4 +46,4 @@ WORKDIR /ygopro-server
 EXPOSE 7911 7922 7933
 # VOLUME [ /ygopro-server/config, /ygopro-server/decks, /ygopro-server/replays ]
 
-CMD [ "node", "ygopro-server.js" ]
+CMD [ "npm", "start" ]

@@ -1,37 +1,101 @@
 stages:
   - build
+  - build2
+  - combine
   - deploy
 
 variables:
   GIT_DEPTH: "1"
-  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  CONTAINER_TEST_IMAGE_FULL: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-full
   CONTAINER_TEST_IMAGE_LITE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-lite
+  CONTAINER_TEST_IMAGE_X86_FULL: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-x86-full
+  CONTAINER_TEST_IMAGE_X86_LITE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-x86-lite
+  CONTAINER_TEST_IMAGE_ARM_FULL: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-arm-full
+  CONTAINER_TEST_IMAGE_ARM_LITE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-arm-lite
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+  CONTAINER_RELEASE_IMAGE_FULL: $CI_REGISTRY_IMAGE:full
   CONTAINER_RELEASE_IMAGE_LITE: $CI_REGISTRY_IMAGE:lite
 
-build:
+build_lite_x86:
   stage: build
   tags: 
     - docker
+  variables:
+    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_X86_LITE
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build --pull --no-cache -t $CONTAINER_TEST_IMAGE .
-    - docker push $CONTAINER_TEST_IMAGE
+    - docker build --pull --no-cache -f ./Dockerfile.lite -t $TARGET_IMAGE .
+    - docker push $TARGET_IMAGE
+    
+build_lite_arm:
+  stage: build
+  tags: 
+    - docker-arm
+  variables:
+    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_ARM_LITE
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build --pull --no-cache -f ./Dockerfile.lite -t $TARGET_IMAGE .
+    - docker push $TARGET_IMAGE
 
-build_lite:
-  stage: build
+
+build_full_x86:
+  stage: build2
   tags: 
     - docker
+  variables:
+    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_X86_LITE
+    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_X86_FULL
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build --pull --no-cache -f ./Dockerfile.lite -t $CONTAINER_TEST_IMAGE_LITE .
-    - docker push $CONTAINER_TEST_IMAGE_LITE
+    - docker build --build-arg BASE_IMAGE=$SOURCE_IMAGE --pull --no-cache -t $TARGET_IMAGE .
+    - docker push $TARGET_IMAGE
+
+build_full_arm:
+  stage: build2
+  tags: 
+    - docker-arm
+  variables:
+    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_ARM_LITE
+    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_ARM_FULL
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build --build-arg BASE_IMAGE=$SOURCE_IMAGE --pull --no-cache -t $TARGET_IMAGE .
+    - docker push $TARGET_IMAGE
+
+combine_lite:
+  stage: build2
+  tags:
+    - docker
+  variables:
+    SOURCE_IMAGE_1: $CONTAINER_TEST_IMAGE_X86_LITE
+    SOURCE_IMAGE_2: $CONTAINER_TEST_IMAGE_ARM_LITE
+    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_LITE
+  script:
+    - docker pull $SOURCE_IMAGE_1
+    - docker pull $SOURCE_IMAGE_2
+    - docker manifest create $TARGET_IMAGE --amend $SOURCE_IMAGE_1 --amend $SOURCE_IMAGE_2
+    - docker manifest push $TARGET_IMAGE
+
+combine_full:
+  stage: combine
+  tags:
+    - docker
+  variables:
+    SOURCE_IMAGE_1: $CONTAINER_TEST_IMAGE_X86_FULL
+    SOURCE_IMAGE_2: $CONTAINER_TEST_IMAGE_ARM_FULL
+    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_FULL
+  script:
+    - docker pull $SOURCE_IMAGE_1
+    - docker pull $SOURCE_IMAGE_2
+    - docker manifest create $TARGET_IMAGE --amend $SOURCE_IMAGE_1 --amend $SOURCE_IMAGE_2
+    - docker manifest push $TARGET_IMAGE
 
 upload_stuff_to_minio:
   stage: deploy
   tags:
     - linux
-  image: $CONTAINER_TEST_IMAGE
+  image: $CONTAINER_TEST_IMAGE_FULL
   script:
     - apt update ; apt -y install python3-pip
     - pip3 install -U -i https://mirrors.aliyun.com/pypi/simple/ awscli
@@ -42,35 +106,64 @@ upload_stuff_to_minio:
   only:
     - master
 
-deploy_latest:
-  stage: deploy
-  tags: 
-    - docker
-  script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull $CONTAINER_TEST_IMAGE
-    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
-    - docker push $CONTAINER_RELEASE_IMAGE
-    - docker pull $CONTAINER_TEST_IMAGE_LITE
-    - docker tag $CONTAINER_TEST_IMAGE_LITE $CONTAINER_RELEASE_IMAGE_LITE
-    - docker push $CONTAINER_RELEASE_IMAGE_LITE
-  only:
-    - master
-
-deploy_tag:
+deploy_latest_full:
   stage: deploy
   tags: 
     - docker
   variables:
-    CONTAINER_TAG_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
-    CONTAINER_TAG_IMAGE_LITE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-lite
+    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_FULL
+    TARGET_IMAGE: $CONTAINER_RELEASE_IMAGE_FULL
+    TARGET_IMAGE_2: $CONTAINER_RELEASE_IMAGE
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull $CONTAINER_TEST_IMAGE
-    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_TAG_IMAGE
-    - docker push $CONTAINER_TAG_IMAGE
-    - docker pull $CONTAINER_TEST_IMAGE_LITE
-    - docker tag $CONTAINER_TEST_IMAGE_LITE $CONTAINER_RELEASE_IMAGE_LITE
-    - docker push $CONTAINER_RELEASE_IMAGE_LITE
+    - docker pull $SOURCE_IMAGE
+    - docker tag $SOURCE_IMAGE $TARGET_IMAGE
+    - docker push $TARGET_IMAGE
+    - docker tag $SOURCE_IMAGE $TARGET_IMAGE_2
+    - docker push $TARGET_IMAGE_2
+  only:
+    - master
+
+deploy_latest_lite:
+  stage: deploy
+  tags: 
+    - docker
+  variables:
+    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_LITE
+    TARGET_IMAGE: $CONTAINER_RELEASE_IMAGE_LITE
+  script:
+    - docker pull $SOURCE_IMAGE
+    - docker tag $SOURCE_IMAGE $TARGET_IMAGE
+    - docker push $TARGET_IMAGE
+  only:
+    - master
+
+deploy_tag_full:
+  stage: deploy
+  tags: 
+    - docker
+  variables:
+    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_FULL
+    TARGET_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-full
+    TARGET_IMAGE_2: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+  script:
+    - docker pull $SOURCE_IMAGE
+    - docker tag $SOURCE_IMAGE $TARGET_IMAGE
+    - docker push $TARGET_IMAGE
+    - docker tag $SOURCE_IMAGE $TARGET_IMAGE_2
+    - docker push $TARGET_IMAGE_2
+  only:
+    - tags
+
+deploy_tag_lite:
+  stage: deploy
+  tags: 
+    - docker
+  variables:
+    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_LITE
+    TARGET_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-lite
+  script:
+    - docker pull $SOURCE_IMAGE
+    - docker tag $SOURCE_IMAGE $TARGET_IMAGE
+    - docker push $TARGET_IMAGE
   only:
     - tags
