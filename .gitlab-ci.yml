@@ -18,77 +18,71 @@ variables:
 
 build_lite_x86:
   stage: build
-  tags: 
+  tags:
     - docker
-  variables:
-    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_X86_LITE
   script:
+    - TARGET_IMAGE=$CONTAINER_TEST_IMAGE_X86_LITE
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build --pull --no-cache -f ./Dockerfile.lite -t $TARGET_IMAGE .
     - docker push $TARGET_IMAGE
-    
 build_lite_arm:
   stage: build
-  tags: 
+  tags:
     - docker-arm
-  variables:
-    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_ARM_LITE
   script:
+    - TARGET_IMAGE=$CONTAINER_TEST_IMAGE_ARM_LITE
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build --pull --no-cache -f ./Dockerfile.lite -t $TARGET_IMAGE .
     - docker push $TARGET_IMAGE
-
 
 build_full_x86:
   stage: build2
-  tags: 
+  tags:
     - docker
-  variables:
-    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_X86_LITE
-    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_X86_FULL
   script:
+    - TARGET_IMAGE=$CONTAINER_TEST_IMAGE_X86_FULL
+    - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_X86_LITE
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build --build-arg BASE_IMAGE=$SOURCE_IMAGE --pull --no-cache -t $TARGET_IMAGE .
+    - docker build --build-arg BASE_IMAGE=$SOURCE_IMAGE --pull --no-cache -t
+      $TARGET_IMAGE .
     - docker push $TARGET_IMAGE
-
 build_full_arm:
   stage: build2
-  tags: 
+  tags:
     - docker-arm
-  variables:
-    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_ARM_LITE
-    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_ARM_FULL
   script:
+    - TARGET_IMAGE=$CONTAINER_TEST_IMAGE_ARM_FULL
+    - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_ARM_LITE
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build --build-arg BASE_IMAGE=$SOURCE_IMAGE --pull --no-cache -t $TARGET_IMAGE .
+    - docker build --build-arg BASE_IMAGE=$SOURCE_IMAGE --pull --no-cache -t
+      $TARGET_IMAGE .
     - docker push $TARGET_IMAGE
-
 combine_lite:
   stage: build2
   tags:
     - docker
-  variables:
-    SOURCE_IMAGE_1: $CONTAINER_TEST_IMAGE_X86_LITE
-    SOURCE_IMAGE_2: $CONTAINER_TEST_IMAGE_ARM_LITE
-    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_LITE
   script:
+    - TARGET_IMAGE=$CONTAINER_TEST_IMAGE_LITE
+    - SOURCE_IMAGE_2=$CONTAINER_TEST_IMAGE_ARM_LITE
+    - SOURCE_IMAGE_1=$CONTAINER_TEST_IMAGE_X86_LITE
     - docker pull $SOURCE_IMAGE_1
     - docker pull $SOURCE_IMAGE_2
-    - docker manifest create $TARGET_IMAGE --amend $SOURCE_IMAGE_1 --amend $SOURCE_IMAGE_2
+    - docker manifest create $TARGET_IMAGE --amend $SOURCE_IMAGE_1 --amend
+      $SOURCE_IMAGE_2
     - docker manifest push $TARGET_IMAGE
 
 combine_full:
   stage: combine
   tags:
     - docker
-  variables:
-    SOURCE_IMAGE_1: $CONTAINER_TEST_IMAGE_X86_FULL
-    SOURCE_IMAGE_2: $CONTAINER_TEST_IMAGE_ARM_FULL
-    TARGET_IMAGE: $CONTAINER_TEST_IMAGE_FULL
   script:
+    - TARGET_IMAGE=$CONTAINER_TEST_IMAGE_FULL
+    - SOURCE_IMAGE_2=$CONTAINER_TEST_IMAGE_ARM_FULL
+    - SOURCE_IMAGE_1=$CONTAINER_TEST_IMAGE_X86_FULL
     - docker pull $SOURCE_IMAGE_1
     - docker pull $SOURCE_IMAGE_2
-    - docker manifest create $TARGET_IMAGE --amend $SOURCE_IMAGE_1 --amend $SOURCE_IMAGE_2
+    - docker manifest create $TARGET_IMAGE --amend $SOURCE_IMAGE_1 --amend
+      $SOURCE_IMAGE_2
     - docker manifest push $TARGET_IMAGE
 
 upload_stuff_to_minio:
@@ -102,19 +96,19 @@ upload_stuff_to_minio:
     - cd /ygopro-server
     - mkdir /dist
     - tar zcfv /dist/ygopro-server.tar.gz ./*
-    - aws s3 --endpoint=https://minio.mycard.moe:9000 cp /dist/ygopro-server.tar.gz s3://mycard/srvpro/ygopro-server.tar.gz 
+    - aws s3 --endpoint=https://minio.mycard.moe:9000 cp
+      /dist/ygopro-server.tar.gz s3://mycard/srvpro/ygopro-server.tar.gz
   only:
     - master
 
 deploy_latest_full:
   stage: deploy
-  tags: 
+  tags:
     - docker
-  variables:
-    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_FULL
-    TARGET_IMAGE: $CONTAINER_RELEASE_IMAGE_FULL
-    TARGET_IMAGE_2: $CONTAINER_RELEASE_IMAGE
   script:
+    - TARGET_IMAGE_2=$CONTAINER_RELEASE_IMAGE
+    - TARGET_IMAGE=$CONTAINER_RELEASE_IMAGE_FULL
+    - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_FULL
     - docker pull $SOURCE_IMAGE
     - docker tag $SOURCE_IMAGE $TARGET_IMAGE
     - docker push $TARGET_IMAGE
@@ -122,30 +116,26 @@ deploy_latest_full:
     - docker push $TARGET_IMAGE_2
   only:
     - master
-
 deploy_latest_lite:
   stage: deploy
-  tags: 
+  tags:
     - docker
-  variables:
-    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_LITE
-    TARGET_IMAGE: $CONTAINER_RELEASE_IMAGE_LITE
   script:
+    - TARGET_IMAGE=$CONTAINER_RELEASE_IMAGE_LITE
+    - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_LITE
     - docker pull $SOURCE_IMAGE
     - docker tag $SOURCE_IMAGE $TARGET_IMAGE
     - docker push $TARGET_IMAGE
   only:
     - master
-
 deploy_tag_full:
   stage: deploy
-  tags: 
+  tags:
     - docker
-  variables:
-    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_FULL
-    TARGET_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-full
-    TARGET_IMAGE_2: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
   script:
+    - TARGET_IMAGE_2=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - TARGET_IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-full
+    - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_FULL
     - docker pull $SOURCE_IMAGE
     - docker tag $SOURCE_IMAGE $TARGET_IMAGE
     - docker push $TARGET_IMAGE
@@ -153,15 +143,13 @@ deploy_tag_full:
     - docker push $TARGET_IMAGE_2
   only:
     - tags
-
 deploy_tag_lite:
   stage: deploy
-  tags: 
+  tags:
     - docker
-  variables:
-    SOURCE_IMAGE: $CONTAINER_TEST_IMAGE_LITE
-    TARGET_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-lite
   script:
+    - TARGET_IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-lite
+    - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_LITE
     - docker pull $SOURCE_IMAGE
     - docker tag $SOURCE_IMAGE $TARGET_IMAGE
     - docker push $TARGET_IMAGE
