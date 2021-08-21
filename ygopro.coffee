@@ -8,13 +8,16 @@ loadJSON = require('load-json-file').sync
 @i18ns = loadJSON './data/i18n.json'
 
 @i18nR = {}
-for lang, data of @i18ns
-  @i18nR[lang]={}
-  for key, text of data
-    @i18nR[lang][key]={
-      regex: new RegExp("\\$\\{"+key+"\\}",'g'),
-      text: text
-    }
+@reloadI18nR = () ->
+  for lang, data of @i18ns
+    @i18nR[lang]={}
+    for key, text of data
+      @i18nR[lang][key]={
+        regex: new RegExp("\\$\\{"+key+"\\}",'g'),
+        text: text
+      }
+
+reloadI18nR()
 
 YGOProMessagesHelper = require("./YGOProMessages.js").YGOProMessagesHelper # 为 SRVPro2 准备的库，这里拿这个库只用来测试，SRVPro1 对异步支持不是特别完善，因此不会有很多异步优化
 @helper = new YGOProMessagesHelper(9000)
