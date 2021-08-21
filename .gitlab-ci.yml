@@ -65,6 +65,7 @@ combine_lite:
     - TARGET_IMAGE=$CONTAINER_TEST_IMAGE_LITE
     - SOURCE_IMAGE_2=$CONTAINER_TEST_IMAGE_ARM_LITE
     - SOURCE_IMAGE_1=$CONTAINER_TEST_IMAGE_X86_LITE
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $SOURCE_IMAGE_1
     - docker pull $SOURCE_IMAGE_2
     - docker manifest create $TARGET_IMAGE --amend $SOURCE_IMAGE_1 --amend
@@ -79,6 +80,7 @@ combine_full:
     - TARGET_IMAGE=$CONTAINER_TEST_IMAGE_FULL
     - SOURCE_IMAGE_2=$CONTAINER_TEST_IMAGE_ARM_FULL
     - SOURCE_IMAGE_1=$CONTAINER_TEST_IMAGE_X86_FULL
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $SOURCE_IMAGE_1
     - docker pull $SOURCE_IMAGE_2
     - docker manifest create $TARGET_IMAGE --amend $SOURCE_IMAGE_1 --amend
@@ -109,6 +111,7 @@ deploy_latest_full:
     - TARGET_IMAGE_2=$CONTAINER_RELEASE_IMAGE
     - TARGET_IMAGE=$CONTAINER_RELEASE_IMAGE_FULL
     - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_FULL
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $SOURCE_IMAGE
     - docker tag $SOURCE_IMAGE $TARGET_IMAGE
     - docker push $TARGET_IMAGE
@@ -123,6 +126,7 @@ deploy_latest_lite:
   script:
     - TARGET_IMAGE=$CONTAINER_RELEASE_IMAGE_LITE
     - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_LITE
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $SOURCE_IMAGE
     - docker tag $SOURCE_IMAGE $TARGET_IMAGE
     - docker push $TARGET_IMAGE
@@ -136,6 +140,7 @@ deploy_tag_full:
     - TARGET_IMAGE_2=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
     - TARGET_IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-full
     - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_FULL
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $SOURCE_IMAGE
     - docker tag $SOURCE_IMAGE $TARGET_IMAGE
     - docker push $TARGET_IMAGE
@@ -150,6 +155,7 @@ deploy_tag_lite:
   script:
     - TARGET_IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-lite
     - SOURCE_IMAGE=$CONTAINER_TEST_IMAGE_LITE
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $SOURCE_IMAGE
     - docker tag $SOURCE_IMAGE $TARGET_IMAGE
     - docker push $TARGET_IMAGE
