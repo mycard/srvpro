@@ -2,7 +2,10 @@ ARG BASE_IMAGE=git-registry.mycard.moe/mycard/srvpro:lite
 FROM $BASE_IMAGE
 LABEL Author="Nanahira <nanahira@momobako.com>"
 
-RUN npm install -g pm2
+RUN apt update && \
+    apt -y install mono-complete && \
+    npm install -g pm2 && \
+    rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
 # windbot
 RUN git clone --depth=1 https://github.com/mycard/windbot /tmp/windbot && \

@@ -17,7 +17,7 @@ LABEL Author="Nanahira <nanahira@momobako.com>"
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libevent-dev libsqlite3-dev mono-complete p7zip-full python3 python-is-python3 liblua5.3-dev && \
+    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libevent-dev libsqlite3-dev p7zip-full python3 python-is-python3 liblua5.3-dev && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # srvpro
