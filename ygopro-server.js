@@ -2086,11 +2086,11 @@
       return challonge_duel_log;
     }
 
-    get_old_hostinfo() { // Just for supporting websocket roomlist in old MyCard client....
-      var ret;
-      ret = _.clone(this.hostinfo);
-      ret.enable_priority = this.hostinfo.duel_rule !== 5;
-      return ret;
+    get_roomlist_hostinfo() { // Just for supporting websocket roomlist in old MyCard client....
+      //ret = _.clone(@hostinfo)
+      //ret.enable_priority = (@hostinfo.duel_rule != 5)
+      //return ret
+      return this.hostinfo;
     }
 
     send_replays() {
