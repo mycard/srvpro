@@ -254,6 +254,9 @@ init = () ->
   if settings.modules.http.quick_death_rule == true
     settings.modules.http.quick_death_rule = 1
     imported = true
+  else if settings.modules.http.quick_death_rule == false
+    settings.modules.http.quick_death_rule = 2
+    imported = true
   #import the old passwords to new admin user system
   if settings.modules.http.password
     log.info('Migrating http user.')
@@ -2137,7 +2140,9 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     create_room_with_action = (buffer, decrypted_buffer, match_permit)->
       if client.closed
         return
-      action = buffer.readUInt8(1) >> 4
+      firstByte = buffer.readUInt8(1)
+      action = firstByte >> 4
+      opt0 = firstByte & 0xf
       if buffer != decrypted_buffer and action in [1, 2, 4]
         ygopro.stoc_die(client, '${invalid_password_unauthorized}')
         return
@@ -2160,17 +2165,18 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
           options = {
             lflist: settings.hostinfo.lflist
             time_limit: settings.hostinfo.time_limit
-            rule: (opt1 >> 5) & 3
-            mode: (opt1 >> 3) & 3
-            duel_rule: (if !!((opt1 >> 2) & 1) then 4 else 5)
+            rule: (opt1 >> 5) & 0x7 # 0 1 2 3 4
+            mode: (opt1 >> 3) & 0x3 # 0 1 2
+            duel_rule: opt0 >> 1 # 1 2 3 4 5
             no_check_deck: !!((opt1 >> 1) & 1)
             no_shuffle_deck: !!(opt1 & 1)
             start_lp: opt2
             start_hand: opt3 >> 4
             draw_count: opt3 & 0xF
             no_watch: settings.hostinfo.no_watch
-            auto_death: settings.hostinfo.auto_death
+            auto_death: !!(opt0 & 0x1) ? 40 : false
           }
+          #console.log(options)
           options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room_title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           if badwordR.level3.test(room_title)

@@ -336,6 +336,9 @@
     if (settings.modules.http.quick_death_rule === true) {
       settings.modules.http.quick_death_rule = 1;
       imported = true;
+    } else if (settings.modules.http.quick_death_rule === false) {
+      settings.modules.http.quick_death_rule = 2;
+      imported = true;
     }
     //import the old passwords to new admin user system
     if (settings.modules.http.password) {
@@ -2823,11 +2826,13 @@
         return (checksum & 0xFF) === 0;
       };
       create_room_with_action = async function(buffer, decrypted_buffer, match_permit) {
-        var action, len2, m, name, opt1, opt2, opt3, options, player, ref, room, room_title, title;
+        var action, firstByte, len2, m, name, opt0, opt1, opt2, opt3, options, player, ref, ref1, room, room_title, title;
         if (client.closed) {
           return;
         }
-        action = buffer.readUInt8(1) >> 4;
+        firstByte = buffer.readUInt8(1);
+        action = firstByte >> 4;
+        opt0 = firstByte & 0xf;
         if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
           ygopro.stoc_die(client, '${invalid_password_unauthorized}');
           return;
@@ -2851,17 +2856,20 @@
             options = {
               lflist: settings.hostinfo.lflist,
               time_limit: settings.hostinfo.time_limit,
-              rule: (opt1 >> 5) & 3,
-              mode: (opt1 >> 3) & 3,
-              duel_rule: (!!((opt1 >> 2) & 1) ? 4 : 5),
+              rule: (opt1 >> 5) & 0x7, // 0 1 2 3 4
+              mode: (opt1 >> 3) & 0x3, // 0 1 2
+              duel_rule: opt0 >> 1, // 1 2 3 4 5
               no_check_deck: !!((opt1 >> 1) & 1),
               no_shuffle_deck: !!(opt1 & 1),
               start_lp: opt2,
               start_hand: opt3 >> 4,
               draw_count: opt3 & 0xF,
               no_watch: settings.hostinfo.no_watch,
-              auto_death: settings.hostinfo.auto_death
+              auto_death: (ref = !!(opt0 & 0x1)) != null ? ref : {
+                40: false
+              }
             };
+            //console.log(options)
             options.lflist = _.findIndex(lflists, function(list) {
               return ((options.rule === 1) === list.tcg) && list.date.isBefore();
             });
@@ -2900,9 +2908,9 @@
             }
             room = (await ROOM_find_or_create_by_name('M#' + info.pass.slice(8)));
             if (room) {
-              ref = room.get_playing_player();
-              for (m = 0, len2 = ref.length; m < len2; m++) {
-                player = ref[m];
+              ref1 = room.get_playing_player();
+              for (m = 0, len2 = ref1.length; m < len2; m++) {
+                player = ref1[m];
                 if (!(player && player.name === client.name)) {
                   continue;
                 }
