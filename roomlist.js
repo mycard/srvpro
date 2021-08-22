@@ -14,7 +14,7 @@
     var client;
     return {
       id: room.name,
-      title: room.title,
+      title: room.title || room.name,
       user: {
         username: room.username
       },
