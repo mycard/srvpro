@@ -127,9 +127,9 @@
     },
     "mycard": {
       "enabled": false,
-      "auth_base_url": "https://ygobbs.com",
+      "auth_base_url": "https://sapi.moecube.com:444/accounts",
       "auth_database": "postgres://233@233.mycard.moe/233",
-      "ban_get": "https://api.mycard.moe/ygopro/big-brother/ban",
+      "ban_get": "https://sapi.moecube.com:444/ygopro/big-brother/ban",
       "auth_key": "233333"
     },
     "challonge": {
@@ -147,13 +147,13 @@
       "enabled": false,
       "accesskey": "233",
       "local": "./deck_log/",
-      "post": "https://api.mycard.moe/ygopro/analytics/deck/text",
+      "post": "https://sapi.moecube.com:444/ygopro/analytics/deck/text",
       "arena": "233"
     },
     "big_brother": {
       "enabled": false,
       "accesskey": "233",
-      "post": "https://api.mycard.moe/ygopro/big-brother"
+      "post": "https://sapi.moecube.com:444/ygopro/big-brother"
     },
     "arena_mode": {
       "enabled": false,
@@ -161,13 +161,13 @@
       "comment": "mode: athletic / entertain",
       "accesskey": "233",
       "ready_time": 30,
-      "check_permit": "https://api.mycard.moe/ygopro/match/permit",
+      "check_permit": "https://sapi.moecube.com:444/ygopro/match/permit",
       "post_score": false,
       "get_score": false,
       "punish_quit_before_match": false,
       "init_post": {
         "enabled": false,
-        "url": "https://api.mycard.moe/ygopro/match/clear",
+        "url": "https://sapi.moecube.com:444/ygopro/match/clear",
         "accesskey": "momobako"
       }
     },
@@ -187,8 +187,8 @@
     },
     "athletic_check": {
       "enabled": false,
-      "rankURL": "https://api.mycard.moe/ygopro/analytics/deck/type",
-      "identifierURL": "https://api.mycard.moe/ygopro/identifier/production",
+      "rankURL": "https://sapi.moecube.com:444/ygopro/analytics/deck/type",
+      "identifierURL": "https://sapi.moecube.com:444/ygopro/identifier/production",
       "athleticFetchParams": {
         "type": "week",
         "source": "mycard-athletic"
