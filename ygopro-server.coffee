@@ -2177,7 +2177,10 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
             auto_death: !!(opt0 & 0x1) ? 40 : false
           }
           #console.log(options)
-          options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
+          if(options.rule == 4) 
+            options.lflist = -1
+          else
+            options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room_title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           if badwordR.level3.test(room_title)
             log.warn("BAD ROOM NAME LEVEL 3", room_title, client.name, client.ip)
