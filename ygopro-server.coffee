@@ -2381,11 +2381,13 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
         #if found.winnerId
         #  ygopro.stoc_die(client, '${challonge_match_already_finished}')
         #  return
-        create_room_name = found.id
+        create_room_name = found.id.toString()
         if !settings.modules.challonge.no_match_mode
-          create_room_name = 'M#' + found.id
-        if recover_match
-          create_room_name = recover_match[0] + ',' + create_room_name
+          create_room_name = 'M#' + create_room_name 
+          if recover_match
+            create_room_name = recover_match[0] + ',' + create_room_name
+        else if recover_match
+          create_room_name = recover_match[0] + '#' + create_room_name
         room = await ROOM_find_or_create_by_name(create_room_name)
         if room
           room.challonge_info = found
