@@ -137,6 +137,7 @@
       "post_detailed_score": true,
       "post_score_midduel": true,
       "cache_ttl": 60000,
+      "no_match_mode": false,
       "options": {
         "apiKey": "123"
       },

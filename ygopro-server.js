@@ -3121,7 +3121,10 @@
           //if found.winnerId
           //  ygopro.stoc_die(client, '${challonge_match_already_finished}')
           //  return
-          create_room_name = 'M#' + found.id;
+          create_room_name = found.id;
+          if (!settings.modules.challonge.no_match_mode) {
+            create_room_name = 'M#' + found.id;
+          }
           if (recover_match) {
             create_room_name = recover_match[0] + ',' + create_room_name;
           }
