@@ -556,9 +556,9 @@ init = () ->
     setInterval ()->
       for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and room.random_type and room.last_active_time and room.waiting_for_player and room.get_disconnected_count() == 0 and (!settings.modules.side_timeout or room.duel_stage != ygopro.constants.DUEL_STAGE.SIDING) and !room.recovered
         time_passed = Math.floor(moment_now.diff(room.last_active_time) / 1000)
-        #log.info time_passed
+        #log.info time_passed, moment_now_string
         if time_passed >= settings.modules.random_duel.hang_timeout
-          room.last_active_time = moment_now_string
+          room.refreshLastActiveTime()
           await ROOM_ban_player(room.waiting_for_player.name, room.waiting_for_player.ip, "${random_ban_reason_AFK}")
           room.scores[room.waiting_for_player.name_vpass] = -9
           #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name_vpass]
@@ -577,7 +577,7 @@ init = () ->
         time_passed = Math.floor(moment_now.diff(room.last_active_time) / 1000)
         #log.info time_passed
         if time_passed >= settings.modules.random_duel.hang_timeout
-          room.last_active_time = moment_now_string
+          room.refreshLastActiveTime()
           ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)
           room.scores[room.waiting_for_player.name_vpass] = -9
           #log.info room.waiting_for_player.name, room.scores[room.waiting_for_player.name_vpass]
@@ -1100,7 +1100,7 @@ CLIENT_reconnect = global.CLIENT_reconnect = (client) ->
   client.established = true
   client.pre_establish_buffers = []
   if room.random_type or room.arena
-    room.last_active_time = moment_now_string
+    room.refreshLastActiveTime()
   CLIENT_import_data(client, dinfo.old_client, room)
   CLIENT_send_reconnect_info(client, client.server, room)
   #console.log("#{client.name} ${reconnect_to_game}")
@@ -1129,7 +1129,7 @@ CLIENT_kick_reconnect = global.CLIENT_kick_reconnect = (client, deckbuf) ->
   client.established = true
   client.pre_establish_buffers = []
   if room.random_type or room.arena
-    room.last_active_time = moment_now_string
+    room.refreshLastActiveTime()
   CLIENT_import_data(client, player, room)
   CLIENT_send_reconnect_info(client, client.server, room)
   #console.log("#{client.name} ${reconnect_to_game}")
@@ -1664,7 +1664,7 @@ class Room
         @finished = true
         if !@finished_by_death
           @scores[client.name_vpass] = -9
-          if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() == 0)
+          if @random_type and not client.flee_free and (!settings.modules.reconnect.enabled or @get_disconnected_count() == 0) and not client.kicked_by_system and not client.kicked_by_player
             ROOM_ban_player(client.name, client.ip, "${random_ban_reason_flee}")
             if settings.modules.random_duel.record_match_scores and @random_type == 'M'
               ROOM_player_flee(client.name_vpass)
@@ -1801,6 +1801,12 @@ class Room
     client.rid = _.indexOf(ROOM_all, this)
     @connect(client)
     return true
+
+  refreshLastActiveTime: (longAgo) ->
+    if longAgo
+      @last_active_time = moment_long_ago_string
+    else
+      @last_active_time = moment_now_string
 
 # 网络连接
 netRequestHandler = (client) ->
@@ -2570,7 +2576,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       return true
     else
       room.waiting_for_player = client
-      room.last_active_time = moment_now_string
+      room.refreshLastActiveTime()
       #log.info("#{msg_name}等待#{room.waiting_for_player.name}")
 
   #log.info 'MSG', msg_name
@@ -2952,6 +2958,7 @@ ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server, datas)->
 
 wait_room_start = (room, time)->
   if room and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.ready_player_count_without_host >= room.max_player - 1
+    #log.info('wait room start', time)
     time -= 1
     if time
       unless time % 5
@@ -3121,7 +3128,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   return unless room
   msg = _.trim(info.msg)
   cancel = _.startsWith(msg, "/")
-  room.last_active_time = moment_now_string unless cancel or not (room.random_type or room.arena) or room.duel_stage == ygopro.constants.DUEL_STAGE.FINGER or room.duel_stage == ygopro.constants.DUEL_STAGE.FIRSTGO or room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING
+  room.refreshLastActiveTime() unless cancel or not (room.random_type or room.arena) or room.duel_stage == ygopro.constants.DUEL_STAGE.FINGER or room.duel_stage == ygopro.constants.DUEL_STAGE.FIRSTGO or room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING
   cmd = msg.split(' ')
   switch cmd[0]
     when '/投降', '/surrender'
@@ -3313,7 +3320,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
   if room.random_type or room.arena
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
-    room.last_active_time = moment_now_string
+    room.refreshLastActiveTime()
   if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and room.recovering
     recover_player_data = _.find(room.recover_duel_log.players, (player) ->
       return player.realName == client.name_vpass and buffer.compare(Buffer.from(player.startDeckBuffer, "base64")) == 0
@@ -3371,7 +3378,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and (room.random_type or room.arena)
-  room.last_active_time = moment_now_string
+  room.refreshLastActiveTime()
   await return
 
 ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server, datas)->
@@ -3440,7 +3447,7 @@ ygopro.ctos_follow 'HAND_RESULT', false, (buffer, info, client, server, datas)->
   if room.random_type or room.arena
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2
-    room.last_active_time = moment_long_ago_string
+    room.refreshLastActiveTime(true)
   await return
 
 ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
@@ -3449,7 +3456,7 @@ ygopro.ctos_follow 'TP_RESULT', false, (buffer, info, client, server, datas)->
   client.selected_preduel = true
   # room.selecting_tp = false
   return unless room.random_type or room.arena
-  room.last_active_time = moment_now_string
+  room.refreshLastActiveTime()
   await return
 
 ygopro.stoc_follow 'CHAT', true, (buffer, info, client, server, datas)->
@@ -3488,7 +3495,7 @@ ygopro.stoc_follow 'SELECT_HAND', true, (buffer, info, client, server, datas)->
       room.waiting_for_player = client
     else
       room.waiting_for_player2 = client
-    room.last_active_time = moment_long_ago_string
+    room.refreshLastActiveTime(true)
   if room.determine_firstgo
     ygopro.ctos_send(server, "HAND_RESULT", {
       res: if client.pos == 0 then 2 else 1
@@ -3509,7 +3516,7 @@ ygopro.stoc_follow 'SELECT_TP', true, (buffer, info, client, server, datas)->
   room.duel_stage = ygopro.constants.DUEL_STAGE.FIRSTGO
   if room.random_type or room.arena
     room.waiting_for_player = client
-    room.last_active_time = moment_now_string
+    room.refreshLastActiveTime()
   if room.determine_firstgo
     ygopro.ctos_send(server, "TP_RESULT", {
       res: if room.determine_firstgo == client then 1 else 0
@@ -3565,7 +3572,7 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
       room.waiting_for_player = client
     else
       room.waiting_for_player2 = client
-    room.last_active_time = moment_now_string
+    room.refreshLastActiveTime()
   await return
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
