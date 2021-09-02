@@ -505,9 +505,9 @@
     badwordR.level2 = new RegExp('(?:' + badwords.level2.join(')|(?:') + ')', 'i');
     badwordR.level3 = new RegExp('(?:' + badwords.level3.join(')|(?:') + ')', 'i');
     setInterval(function() {
-      moment_now = moment();
-      moment_now_string = moment_now.format();
-      moment_long_ago_string = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's').format();
+      moment_now = global.moment_now = moment();
+      moment_now_string = global.moment_now_string = moment_now.format();
+      moment_long_ago_string = global.moment_long_ago_string = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's').format();
     }, 500);
     if (settings.modules.max_rooms_count) {
       rooms_count = 0;

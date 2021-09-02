@@ -394,9 +394,9 @@ init = () ->
   badwordR.level3=new RegExp('(?:'+badwords.level3.join(')|(?:')+')','i');
 
   setInterval ()->
-    moment_now = moment()
-    moment_now_string = moment_now.format()
-    moment_long_ago_string = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's').format()
+    moment_now = global.moment_now = moment()
+    moment_now_string = global.moment_now_string = moment_now.format()
+    moment_long_ago_string = global.moment_long_ago_string = moment().subtract(settings.modules.random_duel.hang_timeout - 19, 's').format()
     return
   , 500
   
