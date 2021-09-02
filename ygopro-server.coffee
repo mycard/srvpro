@@ -597,7 +597,7 @@ class Room
       @hostinfo.mode = 2
       @hostinfo.start_lp = 16000
     else if name[0...3] == 'AI#'
-      @hostinfo.rule = 2
+      @hostinfo.rule = 5
       @hostinfo.lflist = -1
       @hostinfo.time_limit = 999
 
@@ -629,8 +629,11 @@ class Room
         @hostinfo.rule = 0
         @hostinfo.lflist = 0
 
-      if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/)
+      if (rule.match /(^|，|,)(SC|CCG)(，|,|$)/)
         @hostinfo.rule = 2
+
+      if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/)
+        @hostinfo.rule = 5
 
       if (param = rule.match /(^|，|,)LP(\d+)(，|,|$)/)
         start_lp = parseInt(param[2])
@@ -664,7 +667,7 @@ class Room
         @hostinfo.lflist = -1
 
       if (rule.match /(^|，|,)(NOUNIQUE|NU)(，|,|$)/)
-        @hostinfo.rule = 3
+        @hostinfo.rule = 4
 
       if (rule.match /(^|，|,)(NOCHECK|NC)(，|,|$)/)
         @hostinfo.no_check_deck = true

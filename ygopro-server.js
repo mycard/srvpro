@@ -846,7 +846,7 @@
         this.hostinfo.mode = 2;
         this.hostinfo.start_lp = 16000;
       } else if (name.slice(0, 3) === 'AI#') {
-        this.hostinfo.rule = 2;
+        this.hostinfo.rule = 5;
         this.hostinfo.lflist = -1;
         this.hostinfo.time_limit = 999;
       } else if ((param = name.match(/^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i))) {
@@ -877,8 +877,11 @@
           this.hostinfo.rule = 0;
           this.hostinfo.lflist = 0;
         }
-        if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/)) {
+        if (rule.match(/(^|，|,)(SC|CCG)(，|,|$)/)) {
           this.hostinfo.rule = 2;
+        }
+        if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/)) {
+          this.hostinfo.rule = 5;
         }
         if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/))) {
           start_lp = parseInt(param[2]);
@@ -928,7 +931,7 @@
           this.hostinfo.lflist = -1;
         }
         if (rule.match(/(^|，|,)(NOUNIQUE|NU)(，|,|$)/)) {
-          this.hostinfo.rule = 3;
+          this.hostinfo.rule = 4;
         }
         if (rule.match(/(^|，|,)(NOCHECK|NC)(，|,|$)/)) {
           this.hostinfo.no_check_deck = true;
