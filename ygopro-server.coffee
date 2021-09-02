@@ -631,6 +631,7 @@ class Room
 
       if (rule.match /(^|，|,)(SC|CCG)(，|,|$)/)
         @hostinfo.rule = 2
+        @hostinfo.lflist = -1
 
       if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/)
         @hostinfo.rule = 5
