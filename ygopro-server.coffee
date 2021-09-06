@@ -1321,6 +1321,9 @@ class Room
       if (rule.match /(^|，|,)(NOUNIQUE|NU)(，|,|$)/)
         @hostinfo.rule = 4
 
+      if (rule.match /(^|，|,)(CUSTOM|DIY)(，|,|$)/)
+        @hostinfo.rule = 3
+
       if (rule.match /(^|，|,)(NOCHECK|NC)(，|,|$)/)
         @hostinfo.no_check_deck = true
 
