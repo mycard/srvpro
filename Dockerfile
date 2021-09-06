@@ -8,7 +8,7 @@ RUN apt update && \
     rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
 # windbot
-RUN git clone --depth=1 https://github.com/mycard/windbot /tmp/windbot && \
+RUN git clone --depth=1 https://code.mycard.moe/mycard/windbot /tmp/windbot && \
     cd /tmp/windbot && \
     xbuild /property:Configuration=Release /property:TargetFrameworkVersion="v4.5" && \
     mv /tmp/windbot/bin/Release /ygopro-server/windbot && \
