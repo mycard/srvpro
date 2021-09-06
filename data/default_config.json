@@ -7,7 +7,7 @@
     "lflist": 0,
     "rule": 0,
     "mode": 0,
-    "comment": "rule: 0=OCGONLY, 1=TCGONLY, 2=OT; mode: 0=SINGLE, 1=MATCH, 2=TAG",
+    "comment": "rule: 0=OCG-ONLY, 1=TCG-ONLY, 2=SC-ONLY, 3=CUSTOM-ONLY, 4=NO-UNIQUE, 5=ALL; mode: 0=SINGLE, 1=MATCH, 2=TAG",
     "duel_rule": 5,
     "no_check_deck": false,
     "no_shuffle_deck": false,

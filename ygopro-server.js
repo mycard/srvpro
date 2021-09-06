@@ -1633,7 +1633,7 @@
         this.hostinfo.mode = 2;
         this.hostinfo.start_lp = 16000;
       } else if (name.slice(0, 3) === 'AI#') {
-        this.hostinfo.rule = 2;
+        this.hostinfo.rule = 5;
         this.hostinfo.lflist = -1;
         this.hostinfo.time_limit = 999;
       } else if ((param = name.match(/^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i))) {
@@ -1665,10 +1665,10 @@
           this.hostinfo.lflist = 0;
         }
         if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/)) {
-          this.hostinfo.rule = 2;
+          this.hostinfo.rule = 5;
         }
-        if (rule.match(/(^|，|,)(CN|CCG|CHINESE)(，|,|$)/)) {
-          this.hostinfo.rule = 4;
+        if (rule.match(/(^|，|,)(SC|CN|CCG|CHINESE)(，|,|$)/)) {
+          this.hostinfo.rule = 2;
           this.hostinfo.lflist = -1;
         }
         if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/))) {
@@ -1719,7 +1719,7 @@
           this.hostinfo.lflist = -1;
         }
         if (rule.match(/(^|，|,)(NOUNIQUE|NU)(，|,|$)/)) {
-          this.hostinfo.rule = 3;
+          this.hostinfo.rule = 4;
         }
         if (rule.match(/(^|，|,)(NOCHECK|NC)(，|,|$)/)) {
           this.hostinfo.no_check_deck = true;
@@ -2864,7 +2864,7 @@
             options = {
               lflist: settings.hostinfo.lflist,
               time_limit: settings.hostinfo.time_limit,
-              rule: (opt1 >> 5) & 0x7, // 0 1 2 3 4
+              rule: (opt1 >> 5) & 0x7, // 0 1 2 3 4 5
               mode: (opt1 >> 3) & 0x3, // 0 1 2
               duel_rule: (opt0 >> 1) || 5, // 1 2 3 4 5
               no_check_deck: !!((opt1 >> 1) & 1),
@@ -2878,7 +2878,7 @@
               }
             };
             //console.log(options)
-            if (options.rule === 4) {
+            if (options.rule === 3) {
               options.lflist = -1;
             } else {
               options.lflist = _.findIndex(lflists, function(list) {

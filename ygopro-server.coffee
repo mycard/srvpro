@@ -1248,7 +1248,7 @@ class Room
       @hostinfo.mode = 2
       @hostinfo.start_lp = 16000
     else if name[0...3] == 'AI#'
-      @hostinfo.rule = 2
+      @hostinfo.rule = 5
       @hostinfo.lflist = -1
       @hostinfo.time_limit = 999
 
@@ -1281,10 +1281,10 @@ class Room
         @hostinfo.lflist = 0
 
       if (rule.match /(^|，|,)(OT|TCG)(，|,|$)/)
-        @hostinfo.rule = 2
+        @hostinfo.rule = 5
 
-      if (rule.match /(^|，|,)(CN|CCG|CHINESE)(，|,|$)/)
-        @hostinfo.rule = 4
+      if (rule.match /(^|，|,)(SC|CN|CCG|CHINESE)(，|,|$)/)
+        @hostinfo.rule = 2
         @hostinfo.lflist = -1
 
       if (param = rule.match /(^|，|,)LP(\d+)(，|,|$)/)
@@ -1319,7 +1319,7 @@ class Room
         @hostinfo.lflist = -1
 
       if (rule.match /(^|，|,)(NOUNIQUE|NU)(，|,|$)/)
-        @hostinfo.rule = 3
+        @hostinfo.rule = 4
 
       if (rule.match /(^|，|,)(NOCHECK|NC)(，|,|$)/)
         @hostinfo.no_check_deck = true
@@ -2171,7 +2171,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
           options = {
             lflist: settings.hostinfo.lflist
             time_limit: settings.hostinfo.time_limit
-            rule: (opt1 >> 5) & 0x7 # 0 1 2 3 4
+            rule: (opt1 >> 5) & 0x7 # 0 1 2 3 4 5
             mode: (opt1 >> 3) & 0x3 # 0 1 2
             duel_rule: (opt0 >> 1) || 5 # 1 2 3 4 5
             no_check_deck: !!((opt1 >> 1) & 1)
@@ -2183,7 +2183,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
             auto_death: !!(opt0 & 0x1) ? 40 : false
           }
           #console.log(options)
-          if(options.rule == 4) 
+          if(options.rule == 3)
             options.lflist = -1
           else
             options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
