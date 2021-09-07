@@ -2682,7 +2682,7 @@
   // 功能模块
   // return true to cancel a synchronous message
   ygopro.ctos_follow('PLAYER_INFO', true, async function(buffer, info, client, server, datas) {
-    var banMCRequest, e, geo, lang, name, name_full, struct, vpass;
+    var geo, lang, name, name_full, struct, vpass;
     // checkmate use username$password, but here don't
     // so remove the password
     name_full = info.name.replace(/\\/g, "").split("$");
@@ -2702,24 +2702,6 @@
       return false;
     }, name)) {
       client.rag = true;
-    }
-    if (settings.modules.mycard.enabled && settings.modules.mycard.ban_get && !client.is_local) {
-      try {
-        banMCRequest = (await axios.get(settings.modules.mycard.ban_get, {
-          paramsSerializer: qs.stringify,
-          params: {
-            user: name
-          }
-        }));
-        if (typeof banMCRequest.data === "object") {
-          client.ban_mc = banMCRequest.data;
-        } else {
-          log.warn("ban get bad json", banMCRequest.data);
-        }
-      } catch (error1) {
-        e = error1;
-        log.warn('ban get error', e.toString());
-      }
     }
     struct = ygopro.structs.get("CTOS_PlayerInfo");
     struct._setBuff(buffer);
@@ -2748,7 +2730,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', true, async function(buffer, info, client, server, datas) {
-    var available_logs, check_buffer_indentity, create_room_with_action, duelLog, exactBan, index, j, l, len, len1, pre_room, recover_match, replay, replay_id, replays, room, struct;
+    var available_logs, banMCRequest, check_buffer_indentity, create_room_with_action, duelLog, e, exactBan, index, j, l, len, len1, pre_room, recover_match, replay, replay_id, replays, room, struct;
     //log.info info
     info.pass = info.pass.trim();
     client.pass = info.pass;
@@ -2827,6 +2809,24 @@
       if (buffer.length !== 6) {
         ygopro.stoc_die(client, '${invalid_password_payload}');
         return;
+      }
+      if (settings.modules.mycard.enabled && settings.modules.mycard.ban_get && !client.is_local) {
+        try {
+          banMCRequest = (await axios.get(settings.modules.mycard.ban_get, {
+            paramsSerializer: qs.stringify,
+            params: {
+              user: name
+            }
+          }));
+          if (typeof banMCRequest.data === "object") {
+            client.ban_mc = banMCRequest.data;
+          } else {
+            log.warn("ban get bad json", banMCRequest.data);
+          }
+        } catch (error1) {
+          e = error1;
+          log.warn('ban get error', e.toString());
+        }
       }
       check_buffer_indentity = function(buf) {
         var checksum, i, m, ref;

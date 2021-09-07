@@ -2019,18 +2019,6 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
     return false
   , name))
     client.rag = true
-  if settings.modules.mycard.enabled and settings.modules.mycard.ban_get and !client.is_local
-    try
-      banMCRequest = await axios.get settings.modules.mycard.ban_get, 
-        paramsSerializer: qs.stringify
-        params:
-          user: name
-      if typeof(banMCRequest.data) == "object"
-        client.ban_mc = banMCRequest.data
-      else
-        log.warn "ban get bad json", banMCRequest.data
-    catch e
-      log.warn 'ban get error', e.toString()
   struct = ygopro.structs.get("CTOS_PlayerInfo")
   struct._setBuff(buffer)
   struct.set("name", name)
@@ -2139,6 +2127,19 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     if buffer.length != 6
       ygopro.stoc_die(client, '${invalid_password_payload}')
       return
+    
+    if settings.modules.mycard.enabled and settings.modules.mycard.ban_get and !client.is_local
+      try
+        banMCRequest = await axios.get settings.modules.mycard.ban_get, 
+          paramsSerializer: qs.stringify
+          params:
+            user: name
+        if typeof(banMCRequest.data) == "object"
+          client.ban_mc = banMCRequest.data
+        else
+          log.warn "ban get bad json", banMCRequest.data
+      catch e
+        log.warn 'ban get error', e.toString()
 
     check_buffer_indentity = (buf)->
       checksum = 0
