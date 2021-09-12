@@ -85,6 +85,7 @@
     "kick_count_down_arena_part2": " will be evicted for not getting ready or starting the game.",
     "chat_order_main": "Mycard YGOPro Server function list",
     "chat_order_help": "/help show this list",
+    "chat_order_refresh": "/refresh refresh field when stuck",
     "chat_order_roomname": "/roomname show room name",
     "chat_order_windbot": "/ai to add an AI, /ai name to add selected AI ",
     "chat_order_tip": "/tip show a tip",
@@ -170,6 +171,8 @@
     "auto_death_part2": " minutes.",
     "athletic_arena_tip": "During an athletic match, a game quit behavior is regarded as a surrender.",
     "windbot_disable_random_room": "By adding the AI, this random game won't get any new player unless they enter the room name:",
+    "refresh_success": "Refresh field succeeded.",
+    "refresh_failed": "Refresh field failed.",
     "using_athletic_deck": " is using a competitive deck."
   },
   "es-es": {
@@ -404,6 +407,7 @@
     "kick_count_down_arena_part2": "若不准备或开始游戏将视为投降",
     "chat_order_main": "Mycard YGOPro Server 指令帮助",
     "chat_order_help": "/help 显示这个帮助信息",
+    "chat_order_refresh": "/refresh 刷新场面信息，卡顿时用",
     "chat_order_roomname": "/roomname 显示当前房间的名字",
     "chat_order_windbot": "/ai 添加一个AI，/ai 角色名 可指定添加的角色",
     "chat_order_tip": "/tip 显示一条提示",
@@ -489,6 +493,8 @@
     "auto_death_part2": "分钟后，将自动进入加时赛。",
     "athletic_arena_tip": "在竞技匹配中，比赛开始前退出游戏也会视为投降。",
     "windbot_disable_random_room": "因为添加了AI，本随机对战房间将只能通过房间名加入：",
+    "refresh_success": "刷新场面成功。",
+    "refresh_fail": "刷新场面失败。",
     "using_athletic_deck": " 正在使用竞技卡组。"
   },
  "ko-kr": {

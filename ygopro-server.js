@@ -4174,6 +4174,7 @@
       case '/help':
         ygopro.stoc_send_chat(client, "${chat_order_main}");
         ygopro.stoc_send_chat(client, "${chat_order_help}");
+        ygopro.stoc_send_chat(client, "${chat_order_refresh}");
         if (!settings.modules.mycard.enabled) {
           ygopro.stoc_send_chat(client, "${chat_order_roomname}");
         }
@@ -4220,6 +4221,17 @@
       case '/roomname':
         if (room) {
           ygopro.stoc_send_chat(client, "${room_name} " + room.name, ygopro.constants.COLORS.BABYBLUE);
+        }
+        break;
+      case '/refresh':
+        if (room.duel_stage === ygopro.constants.DUEL_STAGE.DUELING && client.last_game_msg && client.last_game_msg_title !== 'WAITING') {
+          if (client.last_hint_msg) {
+            ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg);
+          }
+          ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg);
+          ygopro.stoc_send_chat(client, '${refresh_success}', ygopro.constants.COLORS.BABYBLUE);
+        } else {
+          ygopro.stoc_send_chat(client, '${refresh_fail}', ygopro.constants.COLORS.RED);
         }
         break;
       case '/color':

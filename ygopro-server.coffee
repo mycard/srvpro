@@ -3150,6 +3150,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     when '/help'
       ygopro.stoc_send_chat(client, "${chat_order_main}")
       ygopro.stoc_send_chat(client, "${chat_order_help}")
+      ygopro.stoc_send_chat(client, "${chat_order_refresh}")
       ygopro.stoc_send_chat(client, "${chat_order_roomname}") if !settings.modules.mycard.enabled
       ygopro.stoc_send_chat(client, "${chat_order_windbot}") if settings.modules.windbot.enabled
       ygopro.stoc_send_chat(client, "${chat_order_tip}") if settings.modules.tips.enabled
@@ -3177,6 +3178,15 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
 
     when '/roomname'
       ygopro.stoc_send_chat(client, "${room_name} " + room.name, ygopro.constants.COLORS.BABYBLUE) if room
+    
+    when '/refresh'
+      if room.duel_stage == ygopro.constants.DUEL_STAGE.DUELING and client.last_game_msg and client.last_game_msg_title != 'WAITING'
+        if client.last_hint_msg
+          ygopro.stoc_send(client, 'GAME_MSG', client.last_hint_msg)
+        ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
+        ygopro.stoc_send_chat(client, '${refresh_success}', ygopro.constants.COLORS.BABYBLUE)
+      else
+        ygopro.stoc_send_chat(client, '${refresh_fail}', ygopro.constants.COLORS.RED)
 
     when '/color'
       if settings.modules.chat_color.enabled
