@@ -2881,7 +2881,7 @@
               }
             };
             //console.log(options)
-            if (options.rule === 3) {
+            if (options.rule === 2) {
               options.lflist = -1;
             } else {
               options.lflist = _.findIndex(lflists, function(list) {

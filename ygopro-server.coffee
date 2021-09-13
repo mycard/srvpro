@@ -2187,7 +2187,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
             auto_death: !!(opt0 & 0x1) ? 40 : false
           }
           #console.log(options)
-          if(options.rule == 3)
+          if(options.rule == 2)
             options.lflist = -1
           else
             options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
