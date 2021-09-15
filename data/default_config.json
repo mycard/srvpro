@@ -64,7 +64,9 @@
     },
     "tips": {
       "enabled": true,
-      "get": false
+      "get": false,
+      "interval": 30000,
+      "interval_ingame": 120000
     },
     "dialogues": {
       "enabled": true,

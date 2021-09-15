@@ -528,11 +528,18 @@ init = () ->
     load_tips()
 
   if settings.modules.tips.enabled
-    setInterval ()->
-      for room in ROOM_all when room and room.established
-        ygopro.stoc_send_random_tip_to_room(room) if room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING or room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
-      return
-    , 30000
+    if settings.modules.tips.interval
+      setInterval ()->
+        for room in ROOM_all when room and room.established and room.duel_stage != ygopro.constants.END
+          ygopro.stoc_send_random_tip_to_room(room) if room.duel_stage != ygopro.constants.DUEL_STAGE.DUELING
+        return
+      , settings.modules.tips.interval
+    if settings.modules.tips.interval_ingame
+      setInterval ()->
+        for room in ROOM_all when room and room.established and room.duel_stage != ygopro.constants.END
+          ygopro.stoc_send_random_tip_to_room(room) if room.duel_stage == ygopro.constants.DUEL_STAGE.DUELING
+        return
+      , settings.modules.tips.interval_ingame
   
   if settings.modules.dialogues.get
     load_dialogues()

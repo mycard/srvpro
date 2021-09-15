@@ -665,17 +665,32 @@
       load_tips();
     }
     if (settings.modules.tips.enabled) {
-      setInterval(function() {
-        var l, len1, room;
-        for (l = 0, len1 = ROOM_all.length; l < len1; l++) {
-          room = ROOM_all[l];
-          if (room && room.established) {
-            if (room.duel_stage === ygopro.constants.DUEL_STAGE.SIDING || room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN) {
-              ygopro.stoc_send_random_tip_to_room(room);
+      if (settings.modules.tips.interval) {
+        setInterval(function() {
+          var l, len1, room;
+          for (l = 0, len1 = ROOM_all.length; l < len1; l++) {
+            room = ROOM_all[l];
+            if (room && room.established && room.duel_stage !== ygopro.constants.END) {
+              if (room.duel_stage !== ygopro.constants.DUEL_STAGE.DUELING) {
+                ygopro.stoc_send_random_tip_to_room(room);
+              }
             }
           }
-        }
-      }, 30000);
+        }, settings.modules.tips.interval);
+      }
+      if (settings.modules.tips.interval_ingame) {
+        setInterval(function() {
+          var l, len1, room;
+          for (l = 0, len1 = ROOM_all.length; l < len1; l++) {
+            room = ROOM_all[l];
+            if (room && room.established && room.duel_stage !== ygopro.constants.END) {
+              if (room.duel_stage === ygopro.constants.DUEL_STAGE.DUELING) {
+                ygopro.stoc_send_random_tip_to_room(room);
+              }
+            }
+          }
+        }, settings.modules.tips.interval_ingame);
+      }
     }
     if (settings.modules.dialogues.get) {
       load_dialogues();
