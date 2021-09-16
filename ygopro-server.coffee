@@ -1198,23 +1198,7 @@ SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
   return true
 
 getSeedTimet = global.getSeedTimet = (count) ->
-  ret = []
-  for i in [0...count]
-    curTime = null
-    while !curTime or _.any(ret, (time) ->
-      return time == curTime.unix()
-    )
-      curTime = moment()
-      offset = Math.floor(Math.random() * 240) - 120
-      if offset > 0
-        curTime = curTime.add(offset, "s")
-      else if offset < 0
-        curTime = curTime.subtract(-offset, "s")
-    ret.push(curTime.unix())
-  ret.sort((a, b) ->
-    return a - b
-  )
-  return ret
+  return _.range(count).map(() => 0)
 
 class Room
   constructor: (name, @hostinfo) ->

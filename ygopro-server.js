@@ -1582,27 +1582,9 @@
   };
 
   getSeedTimet = global.getSeedTimet = function(count) {
-    var curTime, i, j, offset, ref, ret;
-    ret = [];
-    for (i = j = 0, ref = count; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
-      curTime = null;
-      while (!curTime || _.any(ret, function(time) {
-          return time === curTime.unix();
-        })) {
-        curTime = moment();
-        offset = Math.floor(Math.random() * 240) - 120;
-        if (offset > 0) {
-          curTime = curTime.add(offset, "s");
-        } else if (offset < 0) {
-          curTime = curTime.subtract(-offset, "s");
-        }
-      }
-      ret.push(curTime.unix());
-    }
-    ret.sort(function(a, b) {
-      return a - b;
+    return _.range(count).map(() => {
+      return 0;
     });
-    return ret;
   };
 
   Room = class Room {
