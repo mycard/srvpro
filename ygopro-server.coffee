@@ -2178,9 +2178,9 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
             auto_death: !!(opt0 & 0x1) ? 40 : false
           }
           #console.log(options)
-          if(options.rule == 2)
+          if options.rule == 2
             options.lflist = -1
-          else
+          else if options.rule != 3
             options.lflist = _.findIndex lflists, (list)-> ((options.rule == 1) == list.tcg) and list.date.isBefore()
           room_title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           if badwordR.level3.test(room_title)
