@@ -2124,7 +2124,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
         banMCRequest = await axios.get settings.modules.mycard.ban_get, 
           paramsSerializer: qs.stringify
           params:
-            user: name
+            user: client.name
         if typeof(banMCRequest.data) == "object"
           client.ban_mc = banMCRequest.data
         else
