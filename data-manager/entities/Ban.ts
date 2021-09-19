@@ -4,7 +4,7 @@ import {CreateAndUpdateTimeBase} from "./CreateAndUpdateTimeBase";
 @Entity()
 @Unique(["ip", "name"])
 export class Ban extends CreateAndUpdateTimeBase {
-	@PrimaryGeneratedColumn({ unsigned: true, type: "bigint" })
+	@PrimaryGeneratedColumn({ unsigned: true, type: (global as any).PrimaryKeyType as ('bigint' | 'integer') || 'bigint' })
 	id: number;
 
 	@Index()

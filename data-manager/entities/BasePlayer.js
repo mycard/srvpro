@@ -13,9 +13,12 @@ exports.BasePlayer = void 0;
 const typeorm_1 = require("typeorm");
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 class BasePlayer extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
+    id;
+    name;
+    pos;
 }
 __decorate([
-    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
+    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
 ], BasePlayer.prototype, "id", void 0);
 __decorate([

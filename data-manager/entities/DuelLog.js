@@ -19,6 +19,15 @@ const moment_1 = __importDefault(require("moment"));
 const underscore_1 = __importDefault(require("underscore"));
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 let DuelLog = class DuelLog extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
+    id;
+    time;
+    name;
+    roomId;
+    cloudReplayId; // not very needed to become a relation
+    replayFileName;
+    roomMode;
+    duelCount;
+    players;
     getViewString() {
         const viewPlayers = underscore_1.default.clone(this.players);
         viewPlayers.sort((p1, p2) => p1.pos - p2.pos);
@@ -47,7 +56,7 @@ let DuelLog = class DuelLog extends CreateAndUpdateTimeBase_1.CreateAndUpdateTim
     }
 };
 __decorate([
-    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
+    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
 ], DuelLog.prototype, "id", void 0);
 __decorate([
@@ -65,7 +74,7 @@ __decorate([
     __metadata("design:type", Number)
 ], DuelLog.prototype, "roomId", void 0);
 __decorate([
-    typeorm_1.Column("bigint"),
+    typeorm_1.Column(global.PrimaryKeyType || 'bigint'),
     __metadata("design:type", Number)
 ], DuelLog.prototype, "cloudReplayId", void 0);
 __decorate([

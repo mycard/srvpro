@@ -13,6 +13,11 @@ exports.RandomDuelBan = void 0;
 const typeorm_1 = require("typeorm");
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 let RandomDuelBan = class RandomDuelBan extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
+    ip;
+    time;
+    count;
+    reasons;
+    needTip;
     setNeedTip(need) {
         this.needTip = need ? 1 : 0;
     }

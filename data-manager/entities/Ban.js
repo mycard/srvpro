@@ -13,9 +13,12 @@ exports.Ban = void 0;
 const typeorm_1 = require("typeorm");
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 let Ban = class Ban extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
+    id;
+    ip;
+    name;
 };
 __decorate([
-    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: "bigint" }),
+    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
 ], Ban.prototype, "id", void 0);
 __decorate([

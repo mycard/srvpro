@@ -8,6 +8,9 @@ const axios_1 = __importDefault(require("axios"));
 const querystring_1 = __importDefault(require("querystring"));
 const moment_1 = __importDefault(require("moment"));
 class AthleticChecker {
+    config;
+    athleticDeckCache;
+    lastAthleticDeckFetchTime;
     constructor(config) {
         this.config = config;
     }

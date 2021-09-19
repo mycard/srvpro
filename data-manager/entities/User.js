@@ -13,6 +13,8 @@ exports.User = void 0;
 const typeorm_1 = require("typeorm");
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 let User = class User extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
+    key;
+    chatColor;
 };
 __decorate([
     typeorm_1.PrimaryColumn({ type: "varchar", length: 128 }),

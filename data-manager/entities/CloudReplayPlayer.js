@@ -15,6 +15,8 @@ const typeorm_1 = require("typeorm");
 const CloudReplay_1 = require("./CloudReplay");
 const BasePlayer_1 = require("./BasePlayer");
 let CloudReplayPlayer = CloudReplayPlayer_1 = class CloudReplayPlayer extends BasePlayer_1.BasePlayer {
+    key;
+    cloudReplay;
     static fromPlayerInfo(info) {
         const p = new CloudReplayPlayer_1();
         p.key = info.key;

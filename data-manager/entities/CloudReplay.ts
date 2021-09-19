@@ -10,7 +10,7 @@ import {CreateAndUpdateTimeBase} from "./CreateAndUpdateTimeBase";
 	}
 })
 export class CloudReplay extends CreateAndUpdateTimeBase {
-	@PrimaryColumn({ unsigned: true, type: "bigint" })
+	@PrimaryColumn({ unsigned: true, type: (global as any).PrimaryKeyType as ('bigint' | 'integer') || 'bigint' })
 	id: number;
 
 	@Column({ type: "text" })

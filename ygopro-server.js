@@ -424,6 +424,7 @@
       await setting_save(settings);
     }
     if (settings.modules.mysql.enabled) {
+      global.PrimaryKeyType = settings.modules.mysql.db.type === 'sqlite' ? 'integer' : 'bigint';
       DataManager = require('./data-manager/DataManager.js').DataManager;
       dataManager = global.dataManager = new DataManager(settings.modules.mysql.db, log);
       log.info('Connecting to database.');

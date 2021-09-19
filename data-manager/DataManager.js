@@ -38,35 +38,40 @@ const jszip_1 = __importDefault(require("jszip"));
 const fs = __importStar(require("fs"));
 require("reflect-metadata");
 class DataManager {
+    config;
+    log;
+    ready;
+    db;
     constructor(config, log) {
         this.config = config;
-        this.ready = false;
         this.log = log;
+        this.ready = false;
     }
     async transaction(fun) {
-        const runner = this.db.createQueryRunner();
-        await runner.connect();
-        await runner.startTransaction();
-        let result = false;
         try {
-            result = await fun(runner.manager);
+            // @ts-ignore
+            if (this.config.type !== 'sqlite') {
+                this.db.transaction(async (mdb) => {
+                    const result = await fun(mdb);
+                    if (!result) {
+                        throw new Error('Rollback requested.');
+                    }
+                });
+            }
+            else {
+                await fun(this.db.manager);
+            }
         }
         catch (e) {
-            result = false;
-            this.log.warn(`Failed running transaction: ${e.toString()}`);
+            this.log.warn(`Transaction failed: ${e.toString()}`);
         }
-        if (result) {
-            await runner.commitTransaction();
-        }
-        else {
-            await runner.rollbackTransaction();
-        }
-        await runner.release();
     }
     async init() {
         this.db = await typeorm_1.createConnection({
             type: "mysql",
             synchronize: true,
+            supportBigNumbers: true,
+            bigNumberStrings: false,
             entities: ["./data-manager/entities/*.js"],
             ...this.config
         });
@@ -74,8 +79,13 @@ class DataManager {
     }
     async getCloudReplaysFromKey(key) {
         try {
-            const replays = await this.db.createQueryBuilder(CloudReplay_1.CloudReplay, "replay")
-                .where("exists (select id from cloud_replay_player where cloud_replay_player.cloudReplayId = replay.id and cloud_replay_player.key = :key)", { key })
+            const replaysQuery = this.db.createQueryBuilder(CloudReplay_1.CloudReplay, "replay");
+            const sqb = replaysQuery.subQuery()
+                .select('splayer.id')
+                .from(CloudReplayPlayer_1.CloudReplayPlayer, 'splayer')
+                .where('splayer.cloudReplayId = replay.id')
+                .andWhere('splayer.key = :key');
+            const replays = await replaysQuery.where(`exists ${sqb.getQuery()}`, { key })
                 .orderBy("replay.date", "DESC")
                 .limit(10)
                 .leftJoinAndSelect("replay.players", "player")
@@ -273,18 +283,24 @@ class DataManager {
                 queryBuilder.andWhere("duelLog.duelCount = :duelCount", { duelCount });
             }
             if (playerName != null && playerName.length || playerScore != null && !isNaN(playerScore)) {
-                let innerQuery = "select id from duel_log_player where duel_log_player.duelLogId = duelLog.id";
+                const sqb = queryBuilder.subQuery()
+                    .select('splayer.id')
+                    .from(DuelLogPlayer_1.DuelLogPlayer, 'splayer')
+                    .where('splayer.duelLogId = duelLog.id');
+                //let innerQuery = "select id from duel_log_player where duel_log_player.duelLogId = duelLog.id";
                 const innerQueryParams = {};
                 if (playerName != null && playerName.length) {
                     //const escapedPlayerName = this.getEscapedString(playerName);
-                    innerQuery += " and duel_log_player.realName = :playerName";
+                    sqb.andWhere('splayer.realName = :playerName');
+                    //innerQuery += " and duel_log_player.realName = :playerName";
                     innerQueryParams.playerName = playerName;
                 }
                 if (playerScore != null && !isNaN(playerScore)) {
-                    innerQuery += " and duel_log_player.score = :playerScore";
+                    //innerQuery += " and duel_log_player.score = :playerScore";
+                    sqb.andWhere('splayer.score = :playerScore');
                     innerQueryParams.playerScore = playerScore;
                 }
-                queryBuilder.andWhere(`exists (${innerQuery})`, innerQueryParams);
+                queryBuilder.andWhere(`exists ${sqb.getQuery()}`, innerQueryParams);
             }
             queryBuilder.orderBy("duelLog.id", "DESC")
                 .leftJoinAndSelect("duelLog.players", "player");
@@ -311,8 +327,16 @@ class DataManager {
     async getDuelLogFromRecoverSearch(realName) {
         const repo = this.db.getRepository(DuelLog_1.DuelLog);
         try {
-            const duelLogs = await repo.createQueryBuilder("duelLog")
-                .where("startDeckBuffer is not null and currentDeckBuffer is not null and roomMode != 2 and exists (select id from duel_log_player where duel_log_player.duelLogId = duelLog.id and duel_log_player.realName = :realName)", { realName })
+            const duelLogsQuery = repo.createQueryBuilder("duelLog")
+                .where('startDeckBuffer is not null')
+                .andWhere('currentDeckBuffer is not null')
+                .andWhere('roomMode != 2');
+            const sqb = duelLogsQuery.subQuery()
+                .select('splayer.id')
+                .from(DuelLogPlayer_1.DuelLogPlayer, 'splayer')
+                .andWhere('splayer.duelLogId = duelLog.id')
+                .andWhere('splayer.realName = :realName');
+            const duelLogs = await duelLogsQuery.andWhere(`exists ${sqb.getQuery()}`, { realName })
                 .orderBy("duelLog.id", "DESC")
                 .limit(10)
                 .leftJoinAndSelect("duelLog.players", "player")

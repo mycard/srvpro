@@ -10,7 +10,7 @@ import {CreateAndUpdateTimeBase} from "./CreateAndUpdateTimeBase";
     }
 })
 export class DuelLog extends CreateAndUpdateTimeBase {
-    @PrimaryGeneratedColumn({unsigned: true, type: "bigint"})
+    @PrimaryGeneratedColumn({unsigned: true, type: (global as any).PrimaryKeyType as ('bigint' | 'integer') || 'bigint'})
     id: number;
 
     @Index()
@@ -24,7 +24,7 @@ export class DuelLog extends CreateAndUpdateTimeBase {
     @Column("int")
     roomId: number;
 
-    @Column("bigint")
+    @Column((global as any).PrimaryKeyType as ('bigint' | 'integer') || 'bigint')
     cloudReplayId: number; // not very needed to become a relation
 
     @Column({type: "varchar", length: 256})

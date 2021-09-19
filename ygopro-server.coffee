@@ -323,6 +323,7 @@ init = () ->
     log.info('Saving migrated settings.')
     await setting_save(settings)
   if settings.modules.mysql.enabled
+    global.PrimaryKeyType = if settings.modules.mysql.db.type == 'sqlite' then 'integer' else 'bigint'
     DataManager = require('./data-manager/DataManager.js').DataManager
     dataManager = global.dataManager = new DataManager(settings.modules.mysql.db, log)
     log.info('Connecting to database.')
