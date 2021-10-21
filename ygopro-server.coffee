@@ -2121,16 +2121,16 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       return
     
     if settings.modules.mycard.enabled and settings.modules.mycard.ban_get and !client.is_local
-      try
-        banMCRequest = await axios.get settings.modules.mycard.ban_get, 
-          paramsSerializer: qs.stringify
-          params:
-            user: client.name
+      axios.get settings.modules.mycard.ban_get, 
+        paramsSerializer: qs.stringify
+        params:
+          user: client.name
+      .then (banMCRequest) ->
         if typeof(banMCRequest.data) == "object"
           client.ban_mc = banMCRequest.data
         else
           log.warn "ban get bad json", banMCRequest.data
-      catch e
+      .catch (e) ->
         log.warn 'ban get error', e.toString()
 
     check_buffer_indentity = (buf)->

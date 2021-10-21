@@ -2728,7 +2728,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', true, async function(buffer, info, client, server, datas) {
-    var available_logs, banMCRequest, check_buffer_indentity, create_room_with_action, duelLog, e, exactBan, index, j, l, len, len1, pre_room, recover_match, replay, replay_id, replays, room, struct;
+    var available_logs, check_buffer_indentity, create_room_with_action, duelLog, exactBan, index, j, l, len, len1, pre_room, recover_match, replay, replay_id, replays, room, struct;
     //log.info info
     info.pass = info.pass.trim();
     client.pass = info.pass;
@@ -2809,22 +2809,20 @@
         return;
       }
       if (settings.modules.mycard.enabled && settings.modules.mycard.ban_get && !client.is_local) {
-        try {
-          banMCRequest = (await axios.get(settings.modules.mycard.ban_get, {
-            paramsSerializer: qs.stringify,
-            params: {
-              user: client.name
-            }
-          }));
-          if (typeof banMCRequest.data === "object") {
-            client.ban_mc = banMCRequest.data;
-          } else {
-            log.warn("ban get bad json", banMCRequest.data);
+        axios.get(settings.modules.mycard.ban_get, {
+          paramsSerializer: qs.stringify,
+          params: {
+            user: client.name
           }
-        } catch (error1) {
-          e = error1;
-          log.warn('ban get error', e.toString());
-        }
+        }).then(function(banMCRequest) {
+          if (typeof banMCRequest.data === "object") {
+            return client.ban_mc = banMCRequest.data;
+          } else {
+            return log.warn("ban get bad json", banMCRequest.data);
+          }
+        }).catch(function(e) {
+          return log.warn('ban get error', e.toString());
+        });
       }
       check_buffer_indentity = function(buf) {
         var checksum, i, m, ref;
