@@ -2212,6 +2212,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
             try
               match_permit = await axios.get settings.modules.arena_mode.check_permit,
                 responseType: 'json'
+                timeout: 3000
             catch e
               log.warn "match permit fail #{e.toString()}"
             if match_permit and match_permit.permit == false
