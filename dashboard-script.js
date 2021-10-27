@@ -75,7 +75,7 @@ function playerinfo(player, mode) {
             status = status + "Score: " + player.status.score + " " ;
         if (mode != 2 || player.pos % 2 == 0)
             status = status + "LP: "+ player.status.lp;
-        if (mode != 2)
+        if (mode != 2 && player.status.cards)
             status = status + " Cards: "+ player.status.cards;
         if (status != "")
             info = info + " <em>(" + status + ")</em>";

@@ -23,6 +23,11 @@ h1.title {
     background-color: #e7e7e7;
 }
 
+.btn.active.focus, .btn.active:focus, .btn.focus, .btn:active.focus, .btn:active:focus, .btn:focus {
+    outline-color: #4d90fe;
+    outline-offset: 0px;
+}
+
 h1.title .date {
     font-size: 14px;
     float: right;
