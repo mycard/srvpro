@@ -2259,7 +2259,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
 
     try
       userUrl = "#{settings.modules.mycard.auth_base_url}/users/#{encodeURIComponent(client.name)}.json"
-      console.log(userUrl)
+      #console.log(userUrl)
       userDataRes = await axios.get userUrl,
         responseType: 'json'
         timeout: 10000
