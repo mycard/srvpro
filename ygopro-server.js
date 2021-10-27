@@ -2832,8 +2832,8 @@
         }
         return (checksum & 0xFF) === 0;
       };
-      create_room_with_action = async function(buffer, decrypted_buffer, match_permit) {
-        var action, firstByte, len2, m, name, opt0, opt1, opt2, opt3, options, player, ref, ref1, room, room_title, title;
+      create_room_with_action = async function(buffer, decrypted_buffer) {
+        var action, e, firstByte, len2, m, match_permit, name, opt0, opt1, opt2, opt3, options, player, ref, ref1, room, room_title, title;
         if (client.closed) {
           return;
         }
@@ -2913,9 +2913,20 @@
             }
             break;
           case 4:
-            if (match_permit && !match_permit.permit) {
-              ygopro.stoc_die(client, '${invalid_password_unauthorized}');
-              return;
+            if (settings.modules.arena_mode.check_permit) {
+              match_permit = null;
+              try {
+                match_permit = (await axios.get(settings.modules.arena_mode.check_permit, {
+                  responseType: 'json'
+                }));
+              } catch (error1) {
+                e = error1;
+                log.warn(`match permit fail ${e.toString()}`);
+              }
+              if (match_permit && match_permit.permit === false) {
+                ygopro.stoc_die(client, '${invalid_password_unauthorized}');
+                return;
+              }
             }
             room = (await ROOM_find_or_create_by_name('M#' + info.pass.slice(8)));
             if (room) {
@@ -2957,36 +2968,33 @@
         }
       };
       _async.auto({
-        match_permit: function(done) {
-          if (client.closed) {
-            done();
-            return;
-          }
-          if (!settings.modules.arena_mode.check_permit) {
-            done(null, null);
-            return;
-          }
-          request({
+        /*
+        match_permit: (done) ->
+          if client.closed
+            done()
+            return
+          if(!settings.modules.arena_mode.check_permit)
+            done(null, null)
+            return
+          request
             url: settings.modules.arena_mode.check_permit,
             json: true,
-            qs: {
+            qs:
               username: client.name,
               password: info.pass,
               arena: settings.modules.arena_mode.mode
-            }
-          }, function(error, response, body) {
-            if (client.closed) {
-              done(null, null);
-              return;
-            }
-            if (!error && body) {
-              done(null, body);
-            } else {
-              log.warn("Match permit request error", error);
-              done(null, null);
-            }
-          });
-        },
+          , (error, response, body)->
+            if client.closed
+              done(null, null)
+              return
+            if !error and body
+              done(null, body)
+            else
+              log.warn("Match permit request error", error)
+              done(null, null)
+            return
+          return
+        */
         get_user: function(done) {
           var decrypted_buffer, i, id, len2, m, ref, secret;
           if (client.closed) {
@@ -3056,7 +3064,7 @@
           ygopro.stoc_die(client, err);
           return;
         }
-        return create_room_with_action(data.get_user.original, data.get_user.decrypted, data.match_permit);
+        return create_room_with_action(data.get_user.original, data.get_user.decrypted);
       });
     } else if (settings.modules.challonge.enabled) {
       if (info.version !== settings.version && settings.alternative_versions.includes(info.version)) {
