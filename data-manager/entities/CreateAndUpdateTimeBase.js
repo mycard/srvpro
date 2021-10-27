@@ -16,11 +16,11 @@ class CreateAndUpdateTimeBase {
     updateTime;
 }
 __decorate([
-    typeorm_1.CreateDateColumn(),
+    (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], CreateAndUpdateTimeBase.prototype, "createTime", void 0);
 __decorate([
-    typeorm_1.UpdateDateColumn(),
+    (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], CreateAndUpdateTimeBase.prototype, "updateTime", void 0);
 exports.CreateAndUpdateTimeBase = CreateAndUpdateTimeBase;

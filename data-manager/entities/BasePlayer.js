@@ -18,15 +18,15 @@ class BasePlayer extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
     pos;
 }
 __decorate([
-    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
+    (0, typeorm_1.PrimaryGeneratedColumn)({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
 ], BasePlayer.prototype, "id", void 0);
 __decorate([
-    typeorm_1.Column({ type: "varchar", length: 20 }),
+    (0, typeorm_1.Column)({ type: "varchar", length: 20 }),
     __metadata("design:type", String)
 ], BasePlayer.prototype, "name", void 0);
 __decorate([
-    typeorm_1.Column({ type: "tinyint" }),
+    (0, typeorm_1.Column)({ type: "tinyint" }),
     __metadata("design:type", Number)
 ], BasePlayer.prototype, "pos", void 0);
 exports.BasePlayer = BasePlayer;

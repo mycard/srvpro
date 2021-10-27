@@ -29,7 +29,7 @@ let CloudReplay = class CloudReplay extends CreateAndUpdateTimeBase_1.CreateAndU
     }
     date;
     getDateString() {
-        return moment_1.default(this.date).format('YYYY-MM-DD HH:mm:ss');
+        return (0, moment_1.default)(this.date).format('YYYY-MM-DD HH:mm:ss');
     }
     players;
     getPlayerNamesString() {
@@ -42,24 +42,24 @@ let CloudReplay = class CloudReplay extends CreateAndUpdateTimeBase_1.CreateAndU
     }
 };
 __decorate([
-    typeorm_1.PrimaryColumn({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
+    (0, typeorm_1.PrimaryColumn)({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
 ], CloudReplay.prototype, "id", void 0);
 __decorate([
-    typeorm_1.Column({ type: "text" }),
+    (0, typeorm_1.Column)({ type: "text" }),
     __metadata("design:type", String)
 ], CloudReplay.prototype, "data", void 0);
 __decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column({ type: "datetime" }),
+    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)({ type: "datetime" }),
     __metadata("design:type", Date)
 ], CloudReplay.prototype, "date", void 0);
 __decorate([
-    typeorm_1.OneToMany(() => CloudReplayPlayer_1.CloudReplayPlayer, player => player.cloudReplay),
+    (0, typeorm_1.OneToMany)(() => CloudReplayPlayer_1.CloudReplayPlayer, player => player.cloudReplay),
     __metadata("design:type", Array)
 ], CloudReplay.prototype, "players", void 0);
 CloudReplay = __decorate([
-    typeorm_1.Entity({
+    (0, typeorm_1.Entity)({
         orderBy: {
             date: "DESC"
         }

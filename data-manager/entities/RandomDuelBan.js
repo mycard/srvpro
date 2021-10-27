@@ -26,27 +26,27 @@ let RandomDuelBan = class RandomDuelBan extends CreateAndUpdateTimeBase_1.Create
     }
 };
 __decorate([
-    typeorm_1.PrimaryColumn({ type: "varchar", length: 64 }),
+    (0, typeorm_1.PrimaryColumn)({ type: "varchar", length: 64 }),
     __metadata("design:type", String)
 ], RandomDuelBan.prototype, "ip", void 0);
 __decorate([
-    typeorm_1.Column("datetime"),
+    (0, typeorm_1.Column)("datetime"),
     __metadata("design:type", Date)
 ], RandomDuelBan.prototype, "time", void 0);
 __decorate([
-    typeorm_1.Column("smallint"),
+    (0, typeorm_1.Column)("smallint"),
     __metadata("design:type", Number)
 ], RandomDuelBan.prototype, "count", void 0);
 __decorate([
-    typeorm_1.Column({ type: "simple-array" }),
+    (0, typeorm_1.Column)({ type: "simple-array" }),
     __metadata("design:type", Array)
 ], RandomDuelBan.prototype, "reasons", void 0);
 __decorate([
-    typeorm_1.Column({ type: "tinyint", unsigned: true }),
+    (0, typeorm_1.Column)({ type: "tinyint", unsigned: true }),
     __metadata("design:type", Number)
 ], RandomDuelBan.prototype, "needTip", void 0);
 RandomDuelBan = __decorate([
-    typeorm_1.Entity()
+    (0, typeorm_1.Entity)()
 ], RandomDuelBan);
 exports.RandomDuelBan = RandomDuelBan;
 //# sourceMappingURL=RandomDuelBan.js.map

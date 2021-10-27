@@ -19,7 +19,7 @@ class AthleticChecker {
         return deckText;
     }
     async getAthleticDecks() {
-        if (this.athleticDeckCache && moment_1.default().diff(this.lastAthleticDeckFetchTime, "seconds") < this.config.ttl) {
+        if (this.athleticDeckCache && (0, moment_1.default)().diff(this.lastAthleticDeckFetchTime, "seconds") < this.config.ttl) {
             return this.athleticDeckCache;
         }
         const { data } = await axios_1.default.get(this.config.rankURL, {
@@ -30,7 +30,7 @@ class AthleticChecker {
         });
         const athleticDecks = data.slice(0, this.config.rankCount).map(m => m.name);
         this.athleticDeckCache = athleticDecks;
-        this.lastAthleticDeckFetchTime = moment_1.default();
+        this.lastAthleticDeckFetchTime = (0, moment_1.default)();
         return athleticDecks;
     }
     async getDeckType(deck) {

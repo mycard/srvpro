@@ -17,7 +17,7 @@ function encodeDeck(deck) {
         buffer.writeInt32LE(cardCode, pointer);
         pointer += 4;
     }
-    assert_1.default(pointer === bufferSize, `Invalid buffer size. Expected: ${bufferSize}. Got: ${pointer}`);
+    (0, assert_1.default)(pointer === bufferSize, `Invalid buffer size. Expected: ${bufferSize}. Got: ${pointer}`);
     return buffer;
 }
 exports.encodeDeck = encodeDeck;
@@ -28,7 +28,7 @@ function decodeDeck(buffer) {
     const sideLength = buffer.readInt32LE(pointer);
     pointer += 4;
     const correctBufferLength = (2 + mainLength + sideLength) * 4;
-    assert_1.default(buffer.length >= (2 + mainLength + sideLength) * 4, `Invalid buffer size. Expected: ${correctBufferLength}. Got: ${buffer.length}`);
+    (0, assert_1.default)(buffer.length >= (2 + mainLength + sideLength) * 4, `Invalid buffer size. Expected: ${correctBufferLength}. Got: ${buffer.length}`);
     const main = [];
     const side = [];
     for (let i = 0; i < mainLength; ++i) {

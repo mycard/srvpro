@@ -71,7 +71,7 @@ class YGOProMessagesHelper {
         this.structs = new Map();
         for (let name in this.structs_declaration) {
             const declaration = this.structs_declaration[name];
-            let result = struct_1.Struct();
+            let result = (0, struct_1.Struct)();
             for (let field of declaration) {
                 if (field.encoding) {
                     switch (field.encoding) {
@@ -180,7 +180,7 @@ class YGOProMessagesHelper {
         }
         handlerCollection.get(translatedProto).push(handlerObj);
     }
-    async handleBuffer(messageBuffer, direction, protoFilter, params) {
+    async handleBuffer(messageBuffer, direction, protoFilter, params, disconnectIfInvalid = false) {
         let feedback = null;
         let messageLength = 0;
         let bufferProto = 0;
@@ -215,7 +215,14 @@ class YGOProMessagesHelper {
             else {
                 if (messageBuffer.length >= 2 + messageLength) {
                     const proto = this.constants[direction][bufferProto];
-                    let cancel = proto && protoFilter && underscore_1.default.indexOf(protoFilter, proto) === -1;
+                    let cancel = proto && protoFilter && !protoFilter.includes(proto);
+                    if (cancel && disconnectIfInvalid) {
+                        feedback = {
+                            type: "INVALID_PACKET",
+                            message: `${direction} proto not allowed`
+                        };
+                        break;
+                    }
                     let buffer = messageBuffer.slice(3, 2 + messageLength);
                     //console.log(l, direction, proto, cancel);
                     for (let priority = 0; priority < 4; ++priority) {

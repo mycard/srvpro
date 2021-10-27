@@ -49,30 +49,30 @@ let RandomDuelScore = class RandomDuelScore extends CreateAndUpdateTimeBase_1.Cr
     }
 };
 __decorate([
-    typeorm_1.PrimaryColumn({ type: "varchar", length: 20 }),
+    (0, typeorm_1.PrimaryColumn)({ type: "varchar", length: 20 }),
     __metadata("design:type", String)
 ], RandomDuelScore.prototype, "name", void 0);
 __decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column("int", { unsigned: true, default: 0 }),
+    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)("int", { unsigned: true, default: 0 }),
     __metadata("design:type", Number)
 ], RandomDuelScore.prototype, "winCount", void 0);
 __decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column("int", { unsigned: true, default: 0 }),
+    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)("int", { unsigned: true, default: 0 }),
     __metadata("design:type", Number)
 ], RandomDuelScore.prototype, "loseCount", void 0);
 __decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column("int", { unsigned: true, default: 0 }),
+    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)("int", { unsigned: true, default: 0 }),
     __metadata("design:type", Number)
 ], RandomDuelScore.prototype, "fleeCount", void 0);
 __decorate([
-    typeorm_1.Column("int", { unsigned: true, default: 0 }),
+    (0, typeorm_1.Column)("int", { unsigned: true, default: 0 }),
     __metadata("design:type", Number)
 ], RandomDuelScore.prototype, "winCombo", void 0);
 RandomDuelScore = __decorate([
-    typeorm_1.Entity()
+    (0, typeorm_1.Entity)()
 ], RandomDuelScore);
 exports.RandomDuelScore = RandomDuelScore;
 //# sourceMappingURL=RandomDuelScore.js.map

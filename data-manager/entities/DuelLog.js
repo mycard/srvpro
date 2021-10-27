@@ -32,12 +32,12 @@ let DuelLog = class DuelLog extends CreateAndUpdateTimeBase_1.CreateAndUpdateTim
         const viewPlayers = underscore_1.default.clone(this.players);
         viewPlayers.sort((p1, p2) => p1.pos - p2.pos);
         const playerString = viewPlayers[0].realName.split("$")[0] + (viewPlayers[2] ? "+" + viewPlayers[2].realName.split("$")[0] : "") + " VS " + (viewPlayers[1] ? viewPlayers[1].realName.split("$")[0] : "AI") + (viewPlayers[3] ? "+" + viewPlayers[3].realName.split("$")[0] : "");
-        return `<${this.id}> ${playerString} ${moment_1.default(this.time).format("YYYY-MM-DD HH-mm-ss")}`;
+        return `<${this.id}> ${playerString} ${(0, moment_1.default)(this.time).format("YYYY-MM-DD HH-mm-ss")}`;
     }
     getViewJSON(tournamentModeSettings) {
         const data = {
             id: this.id,
-            time: moment_1.default(this.time).format("YYYY-MM-DD HH:mm:ss"),
+            time: (0, moment_1.default)(this.time).format("YYYY-MM-DD HH:mm:ss"),
             name: this.name + (tournamentModeSettings.show_info ? " (Duel:" + this.duelCount + ")" : ""),
             roomid: this.roomId,
             cloud_replay_id: "R#" + this.cloudReplayId,
@@ -56,46 +56,46 @@ let DuelLog = class DuelLog extends CreateAndUpdateTimeBase_1.CreateAndUpdateTim
     }
 };
 __decorate([
-    typeorm_1.PrimaryGeneratedColumn({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
+    (0, typeorm_1.PrimaryGeneratedColumn)({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
 ], DuelLog.prototype, "id", void 0);
 __decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column("datetime"),
+    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)("datetime"),
     __metadata("design:type", Date)
 ], DuelLog.prototype, "time", void 0);
 __decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column({ type: "varchar", length: 20 }),
+    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)({ type: "varchar", length: 20 }),
     __metadata("design:type", String)
 ], DuelLog.prototype, "name", void 0);
 __decorate([
-    typeorm_1.Column("int"),
+    (0, typeorm_1.Column)("int"),
     __metadata("design:type", Number)
 ], DuelLog.prototype, "roomId", void 0);
 __decorate([
-    typeorm_1.Column(global.PrimaryKeyType || 'bigint'),
+    (0, typeorm_1.Column)(global.PrimaryKeyType || 'bigint'),
     __metadata("design:type", Number)
 ], DuelLog.prototype, "cloudReplayId", void 0);
 __decorate([
-    typeorm_1.Column({ type: "varchar", length: 256 }),
+    (0, typeorm_1.Column)({ type: "varchar", length: 256 }),
     __metadata("design:type", String)
 ], DuelLog.prototype, "replayFileName", void 0);
 __decorate([
-    typeorm_1.Column("tinyint", { unsigned: true }),
+    (0, typeorm_1.Column)("tinyint", { unsigned: true }),
     __metadata("design:type", Number)
 ], DuelLog.prototype, "roomMode", void 0);
 __decorate([
-    typeorm_1.Index(),
-    typeorm_1.Column("tinyint", { unsigned: true }),
+    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)("tinyint", { unsigned: true }),
     __metadata("design:type", Number)
 ], DuelLog.prototype, "duelCount", void 0);
 __decorate([
-    typeorm_1.OneToMany(() => DuelLogPlayer_1.DuelLogPlayer, player => player.duelLog),
+    (0, typeorm_1.OneToMany)(() => DuelLogPlayer_1.DuelLogPlayer, player => player.duelLog),
     __metadata("design:type", Array)
 ], DuelLog.prototype, "players", void 0);
 DuelLog = __decorate([
-    typeorm_1.Entity({
+    (0, typeorm_1.Entity)({
         orderBy: {
             id: "DESC"
         }

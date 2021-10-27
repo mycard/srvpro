@@ -17,15 +17,15 @@ let User = class User extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase 
     chatColor;
 };
 __decorate([
-    typeorm_1.PrimaryColumn({ type: "varchar", length: 128 }),
+    (0, typeorm_1.PrimaryColumn)({ type: "varchar", length: 128 }),
     __metadata("design:type", String)
 ], User.prototype, "key", void 0);
 __decorate([
-    typeorm_1.Column("varchar", { length: 16, nullable: true }),
+    (0, typeorm_1.Column)("varchar", { length: 16, nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "chatColor", void 0);
 User = __decorate([
-    typeorm_1.Entity()
+    (0, typeorm_1.Entity)()
 ], User);
 exports.User = User;
 //# sourceMappingURL=User.js.map
