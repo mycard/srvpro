@@ -2207,13 +2207,11 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
             return
         when 4
           if settings.modules.arena_mode.check_permit
-            match_permit = null
             try
-              match_permit = await (axios.get settings.modules.arena_mode.check_permit,
+              matchPermitRes = await axios.get settings.modules.arena_mode.check_permit,
                 responseType: 'json'
                 timeout: 3000
-              )
-              .data
+              match_permit = matchPermitRes.data
             catch e
               log.warn "match permit fail #{e.toString()}"
             if client.closed
@@ -2260,11 +2258,13 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
         return create_room_with_action(decrypted_buffer, decrypted_buffer)
 
     try
-      userData = await (axios.get "#{settings.modules.mycard.auth_base_url}/users/#{encodeURIComponent(client.name)}.json",
+      userUrl = "#{settings.modules.mycard.auth_base_url}/users/#{encodeURIComponent(client.name)}.json"
+      console.log(userUrl)
+      userDataRes = await axios.get userUrl,
         responseType: 'json'
         timeout: 10000
-      )
-      .data
+      userData = userDataRes.data
+      console.log userData
     catch e
       log.warn("READ USER FAIL", client.name, e.toString())
       if !client.closed

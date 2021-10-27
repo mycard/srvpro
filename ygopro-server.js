@@ -2726,7 +2726,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', true, async function(buffer, info, client, server, datas) {
-    var available_logs, check_buffer_indentity, create_room_with_action, decrypted_buffer, duelLog, e, exactBan, i, id, index, j, l, len, len1, len2, len3, m, n, pre_room, recover_match, ref, ref1, replay, replay_id, replays, room, secret, struct, userData;
+    var available_logs, check_buffer_indentity, create_room_with_action, decrypted_buffer, duelLog, e, exactBan, i, id, index, j, l, len, len1, len2, len3, m, n, pre_room, recover_match, ref, ref1, replay, replay_id, replays, room, secret, struct, userData, userDataRes, userUrl;
     //log.info info
     info.pass = info.pass.trim();
     client.pass = info.pass;
@@ -2831,7 +2831,7 @@
         return (checksum & 0xFF) === 0;
       };
       create_room_with_action = async function(buffer, decrypted_buffer) {
-        var action, e, firstByte, len2, m, match_permit, name, opt0, opt1, opt2, opt3, options, player, ref, ref1, room, room_title, title;
+        var action, e, firstByte, len2, m, matchPermitRes, match_permit, name, opt0, opt1, opt2, opt3, options, player, ref, ref1, room, room_title, title;
         if (client.closed) {
           return;
         }
@@ -2912,12 +2912,12 @@
             break;
           case 4:
             if (settings.modules.arena_mode.check_permit) {
-              match_permit = null;
               try {
-                match_permit = (await (axios.get(settings.modules.arena_mode.check_permit, {
+                matchPermitRes = (await axios.get(settings.modules.arena_mode.check_permit, {
                   responseType: 'json',
                   timeout: 3000
-                })).data);
+                }));
+                match_permit = matchPermitRes.data;
               } catch (error1) {
                 e = error1;
                 log.warn(`match permit fail ${e.toString()}`);
@@ -2983,10 +2983,14 @@
         }
       }
       try {
-        userData = (await (axios.get(`${settings.modules.mycard.auth_base_url}/users/${encodeURIComponent(client.name)}.json`, {
+        userUrl = `${settings.modules.mycard.auth_base_url}/users/${encodeURIComponent(client.name)}.json`;
+        console.log(userUrl);
+        userDataRes = (await axios.get(userUrl, {
           responseType: 'json',
           timeout: 10000
-        })).data);
+        }));
+        userData = userDataRes.data;
+        console.log(userData);
       } catch (error1) {
         e = error1;
         log.warn("READ USER FAIL", client.name, e.toString());
