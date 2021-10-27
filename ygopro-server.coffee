@@ -1943,14 +1943,20 @@ netRequestHandler = (client) ->
             return
         room.watcher.write(buffer) for buffer in handle_data.datas
     else
-      ctos_filter = if settings.modules.reconnect.enabled and client.pre_reconnecting then ["UPDATE_DECK"] else null
+      ctos_filter = null
+      disconnectIfInvalid = false
+      if settings.modules.reconnect.enabled and client.pre_reconnecting_to_room
+        ctos_filter = ["UPDATE_DECK"]
+      if !client.name
+        ctos_filter = ["JOIN_GAME", "PLAYER_INFO"]
+        disconnectIfInvalid = true
       handle_data = await ygopro.helper.handleBuffer(ctos_buffer, "CTOS", ctos_filter, {
         client: client,
         server: client.server
-      })
+      }, disconnectIfInvalid)
       if handle_data.feedback
         log.warn(handle_data.feedback.message, client.name, client.ip)
-        if handle_data.feedback.type == "OVERSIZE" or ROOM_bad_ip[client.ip] > 5
+        if handle_data.feedback.type == "OVERSIZE" or handle_data.feedback.type == "INVALID_PACKET" or ROOM_bad_ip[client.ip] > 5
           bad_ip_count = ROOM_bad_ip[client.ip]
           if bad_ip_count
             ROOM_bad_ip[client.ip] = bad_ip_count + 1

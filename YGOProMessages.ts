@@ -226,7 +226,7 @@ export class YGOProMessagesHelper {
 		handlerCollection.get(translatedProto).push(handlerObj);
 	}
 
-	async handleBuffer(messageBuffer: Buffer, direction: string, protoFilter?: string[], params?: any): Promise<HandleResult> {
+	async handleBuffer(messageBuffer: Buffer, direction: string, protoFilter?: string[], params?: any, disconnectIfInvalid = false): Promise<HandleResult> {
 		let feedback: Feedback = null;
 		let messageLength = 0;
 		let bufferProto = 0;
@@ -257,7 +257,14 @@ export class YGOProMessagesHelper {
 			} else {
 				if (messageBuffer.length >= 2 + messageLength) {
 					const proto = this.constants[direction][bufferProto];
-					let cancel = proto && protoFilter && _.indexOf(protoFilter, proto) === -1;
+					let cancel = proto && protoFilter && !protoFilter.includes(proto);
+					if (cancel && disconnectIfInvalid) {
+						feedback = {
+							type: "INVALID_PACKET",
+							message: `${direction} proto not allowed`
+						};
+						break;
+					}
 					let buffer = messageBuffer.slice(3, 2 + messageLength);
 					//console.log(l, direction, proto, cancel);
 					for (let priority = 0; priority < 4; ++priority) {
