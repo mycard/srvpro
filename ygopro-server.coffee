@@ -18,7 +18,6 @@ _.str = require 'underscore.string'
 _.mixin(_.str.exports())
 
 request = require 'request'
-axios = require 'axios'
 qs = require "querystring"
 zlib = require 'zlib'
 axios = require 'axios'
@@ -2210,11 +2209,15 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
           if settings.modules.arena_mode.check_permit
             match_permit = null
             try
-              match_permit = await axios.get settings.modules.arena_mode.check_permit,
+              match_permit = await (axios.get settings.modules.arena_mode.check_permit,
                 responseType: 'json'
                 timeout: 3000
+              )
+              .data
             catch e
               log.warn "match permit fail #{e.toString()}"
+            if client.closed
+              return
             if match_permit and match_permit.permit == false
               ygopro.stoc_die(client, '${invalid_password_unauthorized}')
               return
@@ -2246,95 +2249,40 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
         room.join_player(client)
       return
 
-    _async.auto({
-      ###
-      match_permit: (done) ->
-        if client.closed
-          done()
-          return
-        if(!settings.modules.arena_mode.check_permit)
-          done(null, null)
-          return
-        request
-          url: settings.modules.arena_mode.check_permit,
-          json: true,
-          qs:
-            username: client.name,
-            password: info.pass,
-            arena: settings.modules.arena_mode.mode
-        , (error, response, body)->
-          if client.closed
-            done(null, null)
-            return
-          if !error and body
-            done(null, body)
-          else
-            log.warn("Match permit request error", error)
-            done(null, null)
-          return
-        return
-      ###
-      get_user: (done) ->
-        if client.closed
-          done()
-          return
-        if id = users_cache[client.name]
-          secret = id % 65535 + 1
-          decrypted_buffer = Buffer.allocUnsafe(6)
-          for i in [0, 2, 4]
-            decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
-          if check_buffer_indentity(decrypted_buffer)
-            done(null, {
-              original: decrypted_buffer,
-              decrypted: decrypted_buffer
-            })
-            return
+    decrypted_buffer = null
 
-        #TODO: query database directly, like preload.
-        request
-          baseUrl: settings.modules.mycard.auth_base_url,
-          url: '/users/' + encodeURIComponent(client.name) + '.json',
-          qs:
-            api_key: settings.modules.mycard.auth_key,
-            api_username: client.name,
-            skip_track_visit: true
-          json: true
-        , (error, response, body)->
-          if !error and body and body.user
-            users_cache[client.name] = body.user.id
-            secret = body.user.id % 65535 + 1
-            decrypted_buffer = Buffer.allocUnsafe(6)
-            for i in [0, 2, 4]
-              decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
-            if check_buffer_indentity(decrypted_buffer)
-              buffer = decrypted_buffer
-          else
-            log.warn("READ USER FAIL", client.name, error, body)
-            done("${load_user_info_fail}")
-            return
+    if id = users_cache[client.name]
+      secret = id % 65535 + 1
+      decrypted_buffer = Buffer.allocUnsafe(6)
+      for i in [0, 2, 4]
+        decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
+      if check_buffer_indentity(decrypted_buffer)
+        return create_room_with_action(decrypted_buffer, decrypted_buffer)
 
-          # buffer != decrypted_buffer  ==> auth failed
-
-          if !check_buffer_indentity(buffer)
-            done('${invalid_password_checksum}')
-            return
-          done(null, {
-            original: buffer,
-            decrypted: decrypted_buffer
-          })
-          return
-        return
-    }, (err, data) ->
-      if(client.closed)
-        return
-      if(err)
-        ygopro.stoc_die(client, err)
-        return
-
-
-      create_room_with_action(data.get_user.original, data.get_user.decrypted)
-    )
-
+    try
+      userData = await (axios.get "#{settings.modules.mycard.auth_base_url}/users/#{encodeURIComponent(client.name)}.json",
+        responseType: 'json'
+        timeout: 10000
+      )
+      .data
+    catch e
+      log.warn("READ USER FAIL", client.name, e.toString())
+      if !client.closed
+        ygopro.stoc_die(client, '${load_user_info_fail}')
+      return
+    if client.closed
+      return
+    users_cache[client.name] = userData.user.id
+    secret = userData.user.id % 65535 + 1
+    decrypted_buffer = Buffer.allocUnsafe(6)
+    for i in [0, 2, 4]
+      decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
+    if check_buffer_indentity(decrypted_buffer)
+      buffer = decrypted_buffer
+    if !check_buffer_indentity(buffer)
+      ygopro.stoc_die(client, '${invalid_password_checksum}')
+      return
+    return create_room_with_action(buffer, decrypted_buffer)
 
   else if settings.modules.challonge.enabled
     if info.version != settings.version and settings.alternative_versions.includes(info.version)

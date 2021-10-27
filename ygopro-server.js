@@ -36,8 +36,6 @@
 
   request = require('request');
 
-  axios = require('axios');
-
   qs = require("querystring");
 
   zlib = require('zlib');
@@ -2728,7 +2726,7 @@
   });
 
   ygopro.ctos_follow('JOIN_GAME', true, async function(buffer, info, client, server, datas) {
-    var available_logs, check_buffer_indentity, create_room_with_action, duelLog, exactBan, index, j, l, len, len1, pre_room, recover_match, replay, replay_id, replays, room, struct;
+    var available_logs, check_buffer_indentity, create_room_with_action, decrypted_buffer, duelLog, e, exactBan, i, id, index, j, l, len, len1, len2, len3, m, n, pre_room, recover_match, ref, ref1, replay, replay_id, replays, room, secret, struct, userData;
     //log.info info
     info.pass = info.pass.trim();
     client.pass = info.pass;
@@ -2916,12 +2914,16 @@
             if (settings.modules.arena_mode.check_permit) {
               match_permit = null;
               try {
-                match_permit = (await axios.get(settings.modules.arena_mode.check_permit, {
-                  responseType: 'json'
-                }));
+                match_permit = (await (axios.get(settings.modules.arena_mode.check_permit, {
+                  responseType: 'json',
+                  timeout: 3000
+                })).data);
               } catch (error1) {
                 e = error1;
                 log.warn(`match permit fail ${e.toString()}`);
+              }
+              if (client.closed) {
+                return;
               }
               if (match_permit && match_permit.permit === false) {
                 ygopro.stoc_die(client, '${invalid_password_unauthorized}');
@@ -2967,105 +2969,51 @@
           room.join_player(client);
         }
       };
-      _async.auto({
-        /*
-        match_permit: (done) ->
-          if client.closed
-            done()
-            return
-          if(!settings.modules.arena_mode.check_permit)
-            done(null, null)
-            return
-          request
-            url: settings.modules.arena_mode.check_permit,
-            json: true,
-            qs:
-              username: client.name,
-              password: info.pass,
-              arena: settings.modules.arena_mode.mode
-          , (error, response, body)->
-            if client.closed
-              done(null, null)
-              return
-            if !error and body
-              done(null, body)
-            else
-              log.warn("Match permit request error", error)
-              done(null, null)
-            return
-          return
-        */
-        get_user: function(done) {
-          var decrypted_buffer, i, id, len2, m, ref, secret;
-          if (client.closed) {
-            done();
-            return;
-          }
-          if (id = users_cache[client.name]) {
-            secret = id % 65535 + 1;
-            decrypted_buffer = Buffer.allocUnsafe(6);
-            ref = [0, 2, 4];
-            for (m = 0, len2 = ref.length; m < len2; m++) {
-              i = ref[m];
-              decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
-            }
-            if (check_buffer_indentity(decrypted_buffer)) {
-              done(null, {
-                original: decrypted_buffer,
-                decrypted: decrypted_buffer
-              });
-              return;
-            }
-          }
-          //TODO: query database directly, like preload.
-          request({
-            baseUrl: settings.modules.mycard.auth_base_url,
-            url: '/users/' + encodeURIComponent(client.name) + '.json',
-            qs: {
-              api_key: settings.modules.mycard.auth_key,
-              api_username: client.name,
-              skip_track_visit: true
-            },
-            json: true
-          }, function(error, response, body) {
-            var len3, n, ref1;
-            if (!error && body && body.user) {
-              users_cache[client.name] = body.user.id;
-              secret = body.user.id % 65535 + 1;
-              decrypted_buffer = Buffer.allocUnsafe(6);
-              ref1 = [0, 2, 4];
-              for (n = 0, len3 = ref1.length; n < len3; n++) {
-                i = ref1[n];
-                decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
-              }
-              if (check_buffer_indentity(decrypted_buffer)) {
-                buffer = decrypted_buffer;
-              }
-            } else {
-              log.warn("READ USER FAIL", client.name, error, body);
-              done("${load_user_info_fail}");
-              return;
-            }
-            if (!check_buffer_indentity(buffer)) {
-              done('${invalid_password_checksum}');
-              return;
-            }
-            done(null, {
-              original: buffer,
-              decrypted: decrypted_buffer
-            });
-          });
+      decrypted_buffer = null;
+      if (id = users_cache[client.name]) {
+        secret = id % 65535 + 1;
+        decrypted_buffer = Buffer.allocUnsafe(6);
+        ref = [0, 2, 4];
+        for (m = 0, len2 = ref.length; m < len2; m++) {
+          i = ref[m];
+          decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
         }
-      }, function(err, data) {
-        if (client.closed) {
-          return;
+        if (check_buffer_indentity(decrypted_buffer)) {
+          return create_room_with_action(decrypted_buffer, decrypted_buffer);
         }
-        if (err) {
-          ygopro.stoc_die(client, err);
-          return;
+      }
+      try {
+        userData = (await (axios.get(`${settings.modules.mycard.auth_base_url}/users/${encodeURIComponent(client.name)}.json`, {
+          responseType: 'json',
+          timeout: 10000
+        })).data);
+      } catch (error1) {
+        e = error1;
+        log.warn("READ USER FAIL", client.name, e.toString());
+        if (!client.closed) {
+          ygopro.stoc_die(client, '${load_user_info_fail}');
         }
-        return create_room_with_action(data.get_user.original, data.get_user.decrypted);
-      });
+        return;
+      }
+      if (client.closed) {
+        return;
+      }
+      users_cache[client.name] = userData.user.id;
+      secret = userData.user.id % 65535 + 1;
+      decrypted_buffer = Buffer.allocUnsafe(6);
+      ref1 = [0, 2, 4];
+      for (n = 0, len3 = ref1.length; n < len3; n++) {
+        i = ref1[n];
+        decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i);
+      }
+      if (check_buffer_indentity(decrypted_buffer)) {
+        buffer = decrypted_buffer;
+      }
+      if (!check_buffer_indentity(buffer)) {
+        ygopro.stoc_die(client, '${invalid_password_checksum}');
+        return;
+      }
+      return create_room_with_action(buffer, decrypted_buffer);
     } else if (settings.modules.challonge.enabled) {
       if (info.version !== settings.version && settings.alternative_versions.includes(info.version)) {
         info.version = settings.version;
@@ -3097,7 +3045,7 @@
             });
           }
         }, async function(err, datas) {
-          var create_room_name, found, k, match, ref, ref1, room, user;
+          var create_room_name, found, k, match, ref2, ref3, room, user;
           if (client.closed) {
             return;
           }
@@ -3107,9 +3055,9 @@
             return;
           }
           found = false;
-          ref = datas.participant_data;
-          for (k in ref) {
-            user = ref[k];
+          ref2 = datas.participant_data;
+          for (k in ref2) {
+            user = ref2[k];
             if (user.participant && user.participant.name && deck_name_match(user.participant.name, client.name)) {
               found = user.participant;
               break;
@@ -3121,9 +3069,9 @@
           }
           client.challonge_info = found;
           found = false;
-          ref1 = datas.match_data;
-          for (k in ref1) {
-            match = ref1[k];
+          ref3 = datas.match_data;
+          for (k in ref3) {
+            match = ref3[k];
             if (match && match.match && !match.match.winnerId && match.match.state !== "complete" && match.match.player1Id && match.match.player2Id && (match.match.player1Id === client.challonge_info.id || match.match.player2Id === client.challonge_info.id)) {
               found = match.match;
               break;
