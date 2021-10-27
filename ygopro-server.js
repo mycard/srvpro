@@ -2992,7 +2992,7 @@
         //console.log(userUrl)
         userDataRes = (await axios.get(userUrl, {
           responseType: 'json',
-          timeout: 10000,
+          timeout: 4000,
           params: {
             api_key: settings.modules.mycard.auth_key,
             api_username: client.name,
