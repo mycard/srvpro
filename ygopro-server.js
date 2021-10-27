@@ -2990,8 +2990,8 @@
           timeout: 10000
         }));
         userData = userDataRes.data;
-        console.log(userData);
       } catch (error1) {
+        //console.log userData
         e = error1;
         log.warn("READ USER FAIL", client.name, e.toString());
         if (!client.closed) {

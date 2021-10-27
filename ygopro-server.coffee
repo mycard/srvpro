@@ -2264,7 +2264,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
         responseType: 'json'
         timeout: 10000
       userData = userDataRes.data
-      console.log userData
+      #console.log userData
     catch e
       log.warn("READ USER FAIL", client.name, e.toString())
       if !client.closed
