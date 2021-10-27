@@ -2915,7 +2915,12 @@
               try {
                 matchPermitRes = (await axios.get(settings.modules.arena_mode.check_permit, {
                   responseType: 'json',
-                  timeout: 3000
+                  timeout: 3000,
+                  params: {
+                    username: client.name,
+                    password: info.pass,
+                    arena: settings.modules.arena_mode.mode
+                  }
                 }));
                 match_permit = matchPermitRes.data;
               } catch (error1) {
@@ -2987,7 +2992,12 @@
         //console.log(userUrl)
         userDataRes = (await axios.get(userUrl, {
           responseType: 'json',
-          timeout: 10000
+          timeout: 10000,
+          params: {
+            api_key: settings.modules.mycard.auth_key,
+            api_username: client.name,
+            skip_track_visit: true
+          }
         }));
         userData = userDataRes.data;
       } catch (error1) {
