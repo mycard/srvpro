@@ -185,6 +185,7 @@
       client.system_kicked = true;
       client.destroy();
     }
+    return '_cancel';
   };
 
 }).call(this);

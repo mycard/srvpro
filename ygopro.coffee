@@ -113,4 +113,4 @@ translateHandler = (handler) ->
   if client
     client.system_kicked = true
     client.destroy()
-  return
+  return '_cancel'

@@ -180,12 +180,13 @@ class YGOProMessagesHelper {
         }
         handlerCollection.get(translatedProto).push(handlerObj);
     }
-    async handleBuffer(messageBuffer, direction, protoFilter, params, disconnectIfInvalid = false) {
+    async handleBuffer(messageBuffer, direction, protoFilter, params, preconnect = false) {
         let feedback = null;
         let messageLength = 0;
         let bufferProto = 0;
         let datas = [];
-        for (let l = 0; l < this.singleHandleLimit; ++l) {
+        const limit = preconnect ? 2 : this.singleHandleLimit;
+        for (let l = 0; l < limit; ++l) {
             if (messageLength === 0) {
                 if (messageBuffer.length >= 2) {
                     messageLength = messageBuffer.readUInt16LE(0);
@@ -216,7 +217,7 @@ class YGOProMessagesHelper {
                 if (messageBuffer.length >= 2 + messageLength) {
                     const proto = this.constants[direction][bufferProto];
                     let cancel = proto && protoFilter && !protoFilter.includes(proto);
-                    if (cancel && disconnectIfInvalid) {
+                    if (cancel && preconnect) {
                         feedback = {
                             type: "INVALID_PACKET",
                             message: `${direction} proto not allowed`
@@ -240,6 +241,12 @@ class YGOProMessagesHelper {
                             for (let handler of handlerCollection.get(bufferProto)) {
                                 cancel = await handler.handle(buffer, info, datas, params);
                                 if (cancel) {
+                                    if (cancel === '_cancel') {
+                                        return {
+                                            datas: [],
+                                            feedback
+                                        };
+                                    }
                                     break;
                                 }
                             }
@@ -262,10 +269,10 @@ class YGOProMessagesHelper {
                     break;
                 }
             }
-            if (l === this.singleHandleLimit - 1) {
+            if (l === limit - 1) {
                 feedback = {
                     type: "OVERSIZE",
-                    message: `Oversized ${direction}`
+                    message: `Oversized ${direction} ${limit}`
                 };
             }
         }

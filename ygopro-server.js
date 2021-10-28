@@ -2631,7 +2631,7 @@
             return;
           }
         }
-        if (!client.server) {
+        if (client.closed || !client.server) {
           return;
         }
         if (client.established) {
@@ -2686,6 +2686,12 @@
   // return true to cancel a synchronous message
   ygopro.ctos_follow('PLAYER_INFO', true, async function(buffer, info, client, server, datas) {
     var geo, lang, name, name_full, struct, vpass;
+    // second PLAYER_INFO = attack
+    if (client.name) {
+      log.info('DUP PLAYER_INFO', client.ip);
+      CLIENT_kick(client);
+      return '_cancel';
+    }
     // checkmate use username$password, but here don't
     // so remove the password
     name_full = info.name.replace(/\\/g, "").split("$");

@@ -1964,7 +1964,7 @@ netRequestHandler = (client) ->
             ROOM_bad_ip[client.ip] = 1
           CLIENT_kick(client)
           return
-      if !client.server
+      if client.closed || !client.server
         return
       if client.established
         client.server.write buffer for buffer in handle_data.datas
@@ -2000,6 +2000,11 @@ deck_name_match = global.deck_name_match = (deck_name, player_name) ->
 # return true to cancel a synchronous message
 
 ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
+  # second PLAYER_INFO = attack
+  if client.name
+    log.info 'DUP PLAYER_INFO', client.ip
+    CLIENT_kick client
+    return '_cancel'
   # checkmate use username$password, but here don't
   # so remove the password
   name_full =info.name.replace(/\\/g, "").split("$")
