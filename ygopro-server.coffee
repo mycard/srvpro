@@ -1813,6 +1813,11 @@ netRequestHandler = (client) ->
   ROOM_connected_ip[client.ip] = connect_count
   #log.info "connect", client.ip, ROOM_connected_ip[client.ip]
 
+  if ROOM_bad_ip[client.ip] > 5 or ROOM_connected_ip[client.ip] > 10
+    log.info 'BAD IP', client.ip
+    client.destroy()
+    return
+
   # server stand for the connection to ygopro server process
   server = new net.Socket()
   client.server = server
@@ -1894,11 +1899,6 @@ netRequestHandler = (client) ->
       SERVER_clear_disconnect(server)
     return
 
-  if ROOM_bad_ip[client.ip] > 5 or ROOM_connected_ip[client.ip] > 10
-    log.info 'BAD IP', client.ip
-    CLIENT_kick(client)
-    return
-
   if settings.modules.cloud_replay.enabled
     client.open_cloud_replay = (replay)->
       if !replay
@@ -1944,16 +1944,16 @@ netRequestHandler = (client) ->
         room.watcher.write(buffer) for buffer in handle_data.datas
     else
       ctos_filter = null
-      disconnectIfInvalid = false
+      preconnect = false
       if settings.modules.reconnect.enabled and client.pre_reconnecting_to_room
         ctos_filter = ["UPDATE_DECK"]
-      if !client.name
+      if client.name == null
         ctos_filter = ["JOIN_GAME", "PLAYER_INFO"]
-        disconnectIfInvalid = true
+        preconnect = true
       handle_data = await ygopro.helper.handleBuffer(ctos_buffer, "CTOS", ctos_filter, {
         client: client,
         server: client.server
-      }, disconnectIfInvalid)
+      }, preconnect)
       if handle_data.feedback
         log.warn(handle_data.feedback.message, client.name, client.ip)
         if handle_data.feedback.type == "OVERSIZE" or handle_data.feedback.type == "INVALID_PACKET" or ROOM_bad_ip[client.ip] > 5

@@ -226,12 +226,13 @@ export class YGOProMessagesHelper {
 		handlerCollection.get(translatedProto).push(handlerObj);
 	}
 
-	async handleBuffer(messageBuffer: Buffer, direction: string, protoFilter?: string[], params?: any, disconnectIfInvalid = false): Promise<HandleResult> {
+	async handleBuffer(messageBuffer: Buffer, direction: string, protoFilter?: string[], params?: any, preconnect = false): Promise<HandleResult> {
 		let feedback: Feedback = null;
 		let messageLength = 0;
 		let bufferProto = 0;
 		let datas: Buffer[] = [];
-		for (let l = 0; l < this.singleHandleLimit; ++l) {
+		const limit = preconnect ? 2 : this.singleHandleLimit;
+		for (let l = 0; l < limit; ++l) {
 			if (messageLength === 0) {
 				if (messageBuffer.length >= 2) {
 					messageLength = messageBuffer.readUInt16LE(0);
@@ -258,7 +259,7 @@ export class YGOProMessagesHelper {
 				if (messageBuffer.length >= 2 + messageLength) {
 					const proto = this.constants[direction][bufferProto];
 					let cancel = proto && protoFilter && !protoFilter.includes(proto);
-					if (cancel && disconnectIfInvalid) {
+					if (cancel && preconnect) {
 						feedback = {
 							type: "INVALID_PACKET",
 							message: `${direction} proto not allowed`
@@ -303,7 +304,7 @@ export class YGOProMessagesHelper {
 					break;
 				}
 			}
-			if (l === this.singleHandleLimit - 1) {
+			if (l === limit - 1) {
 				feedback = {
 					type: "OVERSIZE",
 					message: `Oversized ${direction}`
