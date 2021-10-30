@@ -941,8 +941,8 @@ net.createServer (client) ->
       CLIENT_kick(server.client)
     return
 
-  if ROOM_bad_ip[client.ip] > 5 or ROOM_connected_ip[client.ip] > 10
-    log.info 'BAD IP', client.ip
+  if client.ip == undefined or ROOM_bad_ip[client.ip] > 5 or ROOM_connected_ip[client.ip] > 10
+    log.info 'BAD IP', client.ip if client.ip
     CLIENT_kick(client)
     return
 

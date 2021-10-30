@@ -1297,8 +1297,10 @@
         CLIENT_kick(server.client);
       }
     });
-    if (ROOM_bad_ip[client.ip] > 5 || ROOM_connected_ip[client.ip] > 10) {
-      log.info('BAD IP', client.ip);
+    if (client.ip === void 0 || ROOM_bad_ip[client.ip] > 5 || ROOM_connected_ip[client.ip] > 10) {
+      if (client.ip) {
+        log.info('BAD IP', client.ip);
+      }
       CLIENT_kick(client);
       return;
     }
