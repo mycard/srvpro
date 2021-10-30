@@ -439,19 +439,19 @@ var packDatas = function (callback) {
             run7z(["a", "-tzip", "-x!*.ypk", config.ypk_name, "*"], config.db_path + "expansions/", done);
         }],
         run7zPC: ["run7zYPK", (results, done) => {
-            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md",
+            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
                         "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
                         "-x!expansions/pics", "-x!expansions/script", "-x!expansions/*.cdb", "-x!expansions/*.conf",
                         "ygosrv233-pre.zip", "*"], config.db_path, done);
         }],
         run7zMobile: ["run7zYPK", (results, done) => {
-            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md",
+            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
                         "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
                         "-x!expansions/pics", "-x!expansions/script", "-x!expansions/*.cdb", "-x!expansions/*.conf",
                         "ygosrv233-pre-mobile.zip", "*"], config.db_path, done);
         }],
         run7zPro2: ["preCommands", (results, done) => {
-            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md",
+            run7z(["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
                         "-x!expansions", "-x!pics", "-x!field",
                         "ygosrv233-pre-2.zip", "*"], config.db_path, done);
         }],
