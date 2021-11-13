@@ -2890,7 +2890,8 @@ ygopro.stoc_follow 'HS_PLAYER_CHANGE', true, (buffer, info, client, server, data
       if room.waiting_for_player != room.waiting_for_player2
         room.waiting_for_player2 = room.waiting_for_player
         room.waiting_for_player_time = settings.modules.arena_mode.ready_time
-        room.waiting_for_player_interval = setInterval (()-> wait_room_start_arena(ROOM_all[client.rid]);return), 1000
+        if !room.waiting_for_player_interval
+          room.waiting_for_player_interval = setInterval (()-> wait_room_start_arena(ROOM_all[client.rid]);return), 1000
       else if !room.waiting_for_player and room.waiting_for_player_interval
         clearInterval room.waiting_for_player_interval
         room.waiting_for_player_interval = null
