@@ -185,6 +185,7 @@
       "enable_recover": false,
       "show_ip": true,
       "show_info": true,
+      "log_save_json": false,
       "log_save_path": "./config/",
       "port": 7933
     },

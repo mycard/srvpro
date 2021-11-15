@@ -307,7 +307,7 @@
   };
 
   init = async function() {
-    var AthleticChecker, DataManager, challonge_module_name, challonge_type, chat_color, config, cppversion, defaultConfig, default_data, dirPath, dns, e, get_rooms_count, http_server, https, https_server, imported, j, l, len, len1, len2, m, mkdirList, options, pgClient, pg_client, pg_query, plugin_filename, plugin_list, plugin_path, postData, ref;
+    var AthleticChecker, DataManager, challonge_module_name, challonge_type, chat_color, config, cppversion, defaultConfig, default_data, dirPath, dns, duel_log, e, get_rooms_count, http_server, https, https_server, imported, j, l, len, len1, len2, m, mkdirList, options, pgClient, pg_client, pg_query, plugin_filename, plugin_list, plugin_path, postData, ref;
     log.info('Reading config.');
     await createDirectoryIfNotExists("./config");
     await importOldConfig();
@@ -470,6 +470,14 @@
     } catch (error1) {
       badwords = global.badwords = default_data.badwords;
       await setting_save(badwords);
+    }
+    if (settings.modules.tournament_mode.log_save_json) {
+      try {
+        duel_log = global.duel_log = (await loadJSONAsync('./config/duel_log.json'));
+      } catch (error1) {
+        duel_log = global.duel_log = default_data.duel_log;
+        await setting_save(duel_log);
+      }
     }
     if (settings.modules.chat_color.enabled && (await checkFileExists('./config/chat_color.json'))) {
       try {
@@ -4769,7 +4777,7 @@
   });
 
   ygopro.stoc_follow('REPLAY', true, async function(buffer, info, client, server, datas) {
-    var i, j, l, len, len1, player, playerInfos, ref, ref1, replay_filename, room;
+    var duellog, dueltime, i, j, l, len, len1, player, playerInfos, ref, ref1, replay_filename, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player || settings.modules.replay_delay;
@@ -4778,9 +4786,10 @@
       // console.log("Replay saved: ", room.duel_count - 1, client.pos)
       room.replays[room.duel_count - 1] = buffer;
     }
-    if (settings.modules.mysql.enabled || room.has_ygopro_error) {
+    if (settings.modules.mysql.enabled || room.has_ygopro_error || (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.replay_safe)) {
       if (client.pos === 0) {
-        replay_filename = moment_now.format("YYYY-MM-DD HH-mm-ss");
+        dueltime = moment_now.format('YYYY-MM-DD HH-mm-ss');
+        replay_filename = dueltime;
         if (room.hostinfo.mode !== 2) {
           ref = room.dueling_players;
           for (i = j = 0, len = ref.length; j < len; i = ++j) {
@@ -4800,6 +4809,31 @@
             return log.warn("SAVE REPLAY ERROR", replay_filename, err);
           }
         });
+        if (settings.modules.tournament_mode.log_save_json) {
+          duellog = {
+            time: dueltime,
+            name: room.name + (settings.modules.tournament_mode.show_info ? " (Duel:" + room.duel_count + ")" : ""),
+            roomid: room.process_pid.toString(),
+            cloud_replay_id: "R#" + room.cloud_replay_id,
+            replay_filename: replay_filename,
+            roommode: room.hostinfo.mode,
+            players: (function() {
+              var len2, m, ref2, results;
+              ref2 = room.dueling_players;
+              results = [];
+              for (m = 0, len2 = ref2.length; m < len2; m++) {
+                player = ref2[m];
+                results.push({
+                  name: player.name + (settings.modules.tournament_mode.show_ip && !player.is_local ? " (IP: " + player.ip.slice(7) + ")" : "") + (settings.modules.tournament_mode.show_info && !(room.hostinfo.mode === 2 && player.pos % 2 > 0) ? " (Score:" + room.scores[player.name_vpass] + " LP:" + (player.lp != null ? player.lp : room.hostinfo.start_lp) + (room.hostinfo.mode !== 2 ? " Cards:" + (player.card_count != null ? player.card_count : room.hostinfo.start_hand) : "") + ")" : ""),
+                  winner: player.pos === room.winner
+                });
+              }
+              return results;
+            })()
+          };
+          duel_log.duel_log.unshift(duellog);
+          setting_save(duel_log);
+        }
         if (settings.modules.mysql.enabled) {
           playerInfos = room.dueling_players.map(function(player) {
             return {
@@ -4906,7 +4940,7 @@
       return callback + "( " + text + " );";
     };
     httpRequestListener = async function(request, response) {
-      var archiveStream, buffer, death_room_found, duellog, e, err, error, filename, getpath, parseQueryString, pass_validated, roomsjson, success, u;
+      var archiveStream, archive_args, archive_name, archive_process, buffer, check, death_room_found, duellog, e, err, error, filename, getpath, j, len, parseQueryString, pass_validated, ref, replay, roomsjson, success, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       //pass_validated = u.query.pass == settings.modules.http.password
@@ -4962,52 +4996,108 @@
             })));
           });
         }
-      } else if (u.pathname === '/api/duellog' && settings.modules.mysql.enabled) {
+      } else if (u.pathname === '/api/duellog' && (settings.modules.mysql.enabled || settings.modules.tournament_mode.log_save_json)) {
         if (!(await auth.auth(u.query.username, u.query.pass, "duel_log", "duel_log"))) {
           response.writeHead(200);
           response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"));
           return;
         } else {
           response.writeHead(200);
-          duellog = JSON.stringify((await dataManager.getDuelLogJSONFromCondition(settings.modules.tournament_mode, getDuelLogQueryFromQs(u.query))), null, 2);
+          if (settings.modules.mysql.enabled) {
+            duellog = JSON.stringify((await dataManager.getDuelLogJSONFromCondition(settings.modules.tournament_mode, getDuelLogQueryFromQs(u.query))), null, 2);
+          } else {
+            duellog = JSON.stringify(duel_log.duel_log, null, 2);
+          }
           response.end(addCallback(u.query.callback, duellog));
         }
-      } else if (u.pathname === '/api/archive.zip' && settings.modules.mysql.enabled) {
+      } else if (u.pathname === '/api/archive.zip' && (settings.modules.mysql.enabled || settings.modules.tournament_mode.log_save_json)) {
         if (!(await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay_archive"))) {
           response.writeHead(403);
           response.end("Invalid password.");
           return;
         } else {
-          try {
-            archiveStream = (await dataManager.getReplayArchiveStreamFromCondition(settings.modules.tournament_mode.replay_path, getDuelLogQueryFromQs(u.query)));
-            if (!archiveStream) {
+          if (settings.modules.mysql.enabled) {
+            try {
+              archiveStream = (await dataManager.getReplayArchiveStreamFromCondition(settings.modules.tournament_mode.replay_path, getDuelLogQueryFromQs(u.query)));
+              if (!archiveStream) {
+                response.writeHead(403);
+                response.end("Replay not found.");
+                return;
+              }
+              response.writeHead(200, {
+                "Content-Type": "application/octet-stream",
+                "Content-Disposition": "attachment"
+              });
+              archiveStream.on("data", function(data) {
+                return response.write(data);
+              });
+              archiveStream.on("end", function() {
+                return response.end();
+              });
+              archiveStream.on("close", function() {
+                return log.warn("Archive closed");
+              });
+              archiveStream.on("error", function(error) {
+                return log.warn(`Archive error: ${error}`);
+              });
+            } catch (error1) {
+              error = error1;
               response.writeHead(403);
-              response.end("Replay not found.");
-              return;
+              response.end("Failed reading replays. " + error);
             }
-            response.writeHead(200, {
-              "Content-Type": "application/octet-stream",
-              "Content-Disposition": "attachment"
-            });
-            archiveStream.on("data", function(data) {
-              return response.write(data);
-            });
-            archiveStream.on("end", function() {
-              return response.end();
-            });
-            archiveStream.on("close", function() {
-              return log.warn("Archive closed");
-            });
-            archiveStream.on("error", function(error) {
-              return log.warn(`Archive error: ${error}`);
-            });
-          } catch (error1) {
-            error = error1;
-            response.writeHead(403);
-            response.end("Failed reading replays. " + error);
+          } else {
+            try {
+              archive_name = moment_now.format('YYYY-MM-DD HH-mm-ss') + ".zip";
+              archive_args = ["a", "-mx0", "-y", archive_name];
+              check = false;
+              ref = duel_log.duel_log;
+              for (j = 0, len = ref.length; j < len; j++) {
+                replay = ref[j];
+                check = true;
+                archive_args.push(replay.replay_filename);
+              }
+              if (!check) {
+                response.writeHead(403);
+                response.end("Duel logs not found.");
+                return;
+              }
+              archive_process = spawn(settings.modules.tournament_mode.replay_archive_tool, archive_args, {
+                cwd: settings.modules.tournament_mode.replay_path
+              });
+              archive_process.on('error', (err) => {
+                response.writeHead(403);
+                response.end("Failed packing replays. " + err);
+              });
+              archive_process.on('exit', (code) => {
+                return fs.readFile(settings.modules.tournament_mode.replay_path + archive_name, function(error, buffer) {
+                  if (error) {
+                    response.writeHead(403);
+                    response.end("Failed sending replays. " + error);
+                  } else {
+                    response.writeHead(200, {
+                      "Content-Type": "application/octet-stream",
+                      "Content-Disposition": "attachment"
+                    });
+                    response.end(buffer);
+                  }
+                });
+              });
+              archive_process.stdout.setEncoding('utf8');
+              archive_process.stdout.on('data', (data) => {
+                return log.info("archive process: " + data);
+              });
+              archive_process.stderr.setEncoding('utf8');
+              archive_process.stderr.on('data', (data) => {
+                return log.warn("archive error: " + data);
+              });
+            } catch (error1) {
+              error = error1;
+              response.writeHead(403);
+              response.end("Failed reading replays. " + error);
+            }
           }
         }
-      } else if (u.pathname === '/api/clearlog' && settings.modules.mysql.enabled) {
+      } else if (u.pathname === '/api/clearlog' && (settings.modules.mysql.enabled || settings.modules.tournament_mode.log_save_json)) {
         if (!(await auth.auth(u.query.username, u.query.pass, "clear_duel_log", "clear_duel_log"))) {
           response.writeHead(200);
           response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"));
@@ -5015,16 +5105,26 @@
         } else {
           response.writeHead(200);
           if (settings.modules.tournament_mode.log_save_path) {
-            fs.writeFile(settings.modules.tournament_mode.log_save_path + 'duel_log.' + moment_now.format('YYYY-MM-DD HH-mm-ss') + '.json', JSON.stringify((await dataManager.getDuelLogJSON(settings.modules.tournament_mode)), null, 2), function(err) {
+            if (settings.modules.mysql.enabled) {
+              duellog = JSON.stringify((await dataManager.getDuelLogJSON(settings.modules.tournament_mode)), null, 2);
+            } else {
+              duellog = JSON.stringify(duel_log, null, 2);
+            }
+            fs.writeFile(settings.modules.tournament_mode.log_save_path + 'duel_log.' + moment_now.format('YYYY-MM-DD HH-mm-ss') + '.json', duellog, function(err) {
               if (err) {
                 return log.warn('DUEL LOG SAVE ERROR', err);
               }
             });
           }
-          await dataManager.clearDuelLog();
+          if (settings.modules.mysql.enabled) {
+            await dataManager.clearDuelLog();
+          } else {
+            duel_log.duel_log = [];
+            setting_save(duel_log);
+          }
           response.end(addCallback(u.query.callback, "[{name:'Success'}]"));
         }
-      } else if (_.startsWith(u.pathname, '/api/replay') && settings.modules.mysql.enabled) {
+      } else if (_.startsWith(u.pathname, '/api/replay') && (settings.modules.mysql.enabled || settings.modules.tournament_mode.replay_safe)) {
         if (!(await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay"))) {
           response.writeHead(403);
           response.end("密码错误");
