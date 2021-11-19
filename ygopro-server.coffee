@@ -3190,7 +3190,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     client.abuse_count=client.abuse_count+2 if client.abuse_count
     ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
-  if !(room and (room.random_type or room.arena))
+  if !(room and (room.random_type or room.arena)) and not settings.modules.mycard.enabled
     if !cancel and settings.modules.display_watchers and client.is_post_watcher
       ygopro.stoc_send_chat_to_room(room, "#{client.name}: #{msg}", 9)
       return true

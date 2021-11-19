@@ -4260,7 +4260,7 @@
       ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED);
       cancel = true;
     }
-    if (!(room && (room.random_type || room.arena))) {
+    if (!(room && (room.random_type || room.arena)) && !settings.modules.mycard.enabled) {
       if (!cancel && settings.modules.display_watchers && client.is_post_watcher) {
         ygopro.stoc_send_chat_to_room(room, `${client.name}: ${msg}`, 9);
         return true;
