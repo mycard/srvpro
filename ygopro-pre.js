@@ -208,9 +208,9 @@ var writeToFile = function(message, callback) {
     var fileContent=fs.readFileSync(config.html_path+config.html_filename, {"encoding":"utf-8"});
     var newContent=cardHTMLs.join("\n");
     fileContent=fileContent.replace(/<tbody class="auto-generated">[\w\W]*<\/tbody>/,'<tbody class="auto-generated">\n'+newContent+'\n</tbody>');
-    fileContent = fileContent.replace(/data-ygosrv233-download="(http.+)" href="http.+"/g, 'data-ygosrv233-download="$1" href="$1"');
-    fileContent = fileContent.replace(/href="(http.+)dataver/g, 'href="$1' + dataver);
-    fileContent = fileContent.replace(/$dataver="\d+/, '$dataver="' + dataver);
+    //fileContent = fileContent.replace(/data-ygosrv233-download="(http.+)" href="http.+"/g, 'data-ygosrv233-download="$1" href="$1"');
+    //fileContent = fileContent.replace(/href="(http.+)dataver/g, 'href="$1' + dataver);
+    fileContent = fileContent.replace(/\$dataver="\d+/, '$dataver="' + dataver);
     if (message) {
         message="<li>"+moment().format('L HH:mm')+"<ul><li>"+message.split("！换行符！").join("</li><li>")+"</li></ul></li>";
         fileContent=fileContent.replace(/<ul class="auto-generated">/,'<ul class="auto-generated">\n'+message);
