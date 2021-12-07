@@ -73,7 +73,7 @@ export class DuelLogPlayer extends BasePlayer {
         p.cardCount = info.cardCount;
         p.isFirst = info.isFirst ? 1 : 0;
         p.winner = info.winner ? 1 : 0;
-        p.startDeckBuffer = info.startDeckBuffer.toString("base64");
+        p.startDeckBuffer = info.startDeckBuffer?.toString("base64") || null;
         p.setCurrentDeck(info.deck);
         return p;
     }
