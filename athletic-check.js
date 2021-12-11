@@ -45,7 +45,7 @@ class AthleticChecker {
         try {
             const athleticDecks = await this.getAthleticDecks();
             const deckType = await this.getDeckType(deck);
-            const athletic = athleticDecks.includes(deckType);
+            const athletic = athleticDecks.findIndex(d => d === deckType) + 1;
             return { success: true, athletic, message: null };
         }
         catch (e) {

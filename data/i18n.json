@@ -173,6 +173,8 @@
     "windbot_disable_random_room": "By adding the AI, this random game won't get any new player unless they enter the room name:",
     "refresh_success": "Refresh field succeeded.",
     "refresh_failed": "Refresh field failed.",
+    "banned_athletic_deck_part1": "Entertainment Mode does not allow top ",
+    "banned_athletic_deck_part2": " popular meta decks. Please change your deck.",
     "using_athletic_deck": " is using a competitive deck."
   },
   "es-es": {
@@ -495,6 +497,8 @@
     "windbot_disable_random_room": "因为添加了AI，本随机对战房间将只能通过房间名加入：",
     "refresh_success": "刷新场面成功。",
     "refresh_fail": "刷新场面失败。",
+    "banned_athletic_deck_part1": "娱乐匹配中禁止使用使用数前",
+    "banned_athletic_deck_part2": "的竞技卡组。请更换卡组。",
     "using_athletic_deck": " 正在使用竞技卡组。"
   },
  "ko-kr": {

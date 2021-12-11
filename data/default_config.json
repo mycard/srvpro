@@ -197,6 +197,7 @@
         "source": "mycard-athletic"
       },
       "rankCount": 10,
+      "banCount": 0,
       "ttl": 600
     },
     "test_mode": {

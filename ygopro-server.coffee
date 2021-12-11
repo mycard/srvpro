@@ -3321,42 +3321,55 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
       struct.set("sidec", 1)
       struct.set("deckbuf", [4392470, 4392470])
       ygopro.stoc_send_chat(client, "${deck_incorrect_reconnect}", ygopro.constants.COLORS.RED)
-  else if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.deck_check and fs.readdirSync(settings.modules.tournament_mode.deck_path).length
-    decks = await fs.promises.readdir(settings.modules.tournament_mode.deck_path)
-    if decks.length
-      struct.set("mainc", 1)
-      struct.set("sidec", 1)
-      struct.set("deckbuf", [4392470, 4392470])
-      buffer = struct.buffer
-      found_deck=false
-      for deck in decks
-        if deck_name_match(deck, client.name)
-          found_deck=deck
-      if found_deck
-        deck_text = await fs.promises.readFile(settings.modules.tournament_mode.deck_path+found_deck,{encoding:"ASCII"})
-        deck_array=deck_text.split("\n")
-        deck_main=[]
-        deck_side=[]
-        current_deck=deck_main
-        for line in deck_array
-          if line.indexOf("!side")>=0
-            current_deck=deck_side
-          card=parseInt(line)
-          current_deck.push(card) unless isNaN(card)
-        if _.isEqual(buff_main, deck_main) and _.isEqual(buff_side, deck_side)
-          deckbuf=deck_main.concat(deck_side)
-          struct.set("mainc", deck_main.length)
-          struct.set("sidec", deck_side.length)
-          struct.set("deckbuf", deckbuf)
-          buffer = struct.buffer
-          #log.info("deck ok: " + client.name)
-          ygopro.stoc_send_chat(client, "${deck_correct_part1} #{found_deck} ${deck_correct_part2}", ygopro.constants.COLORS.BABYBLUE)
-        else
-          #log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
-          ygopro.stoc_send_chat(client, "${deck_incorrect_part1} #{found_deck} ${deck_incorrect_part2}", ygopro.constants.COLORS.RED)
+      return false
+  else
+    if settings.modules.athletic_check.enabled and settings.modules.athletic_check.banCount
+      athleticCheckResult = await athleticChecker.checkAthletic({main: buff_main, side: buff_side})
+      if athleticCheckResult.success
+        if athleticCheckResult.athletic and athleticCheckResult.athletic <= settings.modules.athletic_check.banCount
+          struct.set("mainc", 1)
+          struct.set("sidec", 1)
+          struct.set("deckbuf", [4392470, 4392470])
+          ygopro.stoc_send_chat(client, "${banned_athletic_deck_part1}#{settings.modules.athletic_check.banCount}${banned_athletic_deck_part2}", ygopro.constants.COLORS.RED)
+          return false
       else
-        #log.info("player deck not found: " + client.name)
-        ygopro.stoc_send_chat(client, "#{client.name}${deck_not_found}", ygopro.constants.COLORS.RED)
+        log.warn("GET ATHLETIC FAIL", client.name, athleticCheckResult.message)
+    if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.deck_check
+      decks = await fs.promises.readdir(settings.modules.tournament_mode.deck_path)
+      if decks.length
+        struct.set("mainc", 1)
+        struct.set("sidec", 1)
+        struct.set("deckbuf", [4392470, 4392470])
+        buffer = struct.buffer
+        found_deck=false
+        for deck in decks
+          if deck_name_match(deck, client.name)
+            found_deck=deck
+        if found_deck
+          deck_text = await fs.promises.readFile(settings.modules.tournament_mode.deck_path+found_deck,{encoding:"ASCII"})
+          deck_array=deck_text.split("\n")
+          deck_main=[]
+          deck_side=[]
+          current_deck=deck_main
+          for line in deck_array
+            if line.indexOf("!side")>=0
+              current_deck=deck_side
+            card=parseInt(line)
+            current_deck.push(card) unless isNaN(card)
+          if _.isEqual(buff_main, deck_main) and _.isEqual(buff_side, deck_side)
+            deckbuf=deck_main.concat(deck_side)
+            struct.set("mainc", deck_main.length)
+            struct.set("sidec", deck_side.length)
+            struct.set("deckbuf", deckbuf)
+            buffer = struct.buffer
+            #log.info("deck ok: " + client.name)
+            ygopro.stoc_send_chat(client, "${deck_correct_part1} #{found_deck} ${deck_correct_part2}", ygopro.constants.COLORS.BABYBLUE)
+          else
+            #log.info("bad deck: " + client.name + " / " + buff_main + " / " + buff_side)
+            ygopro.stoc_send_chat(client, "${deck_incorrect_part1} #{found_deck} ${deck_incorrect_part2}", ygopro.constants.COLORS.RED)
+        else
+          #log.info("player deck not found: " + client.name)
+          ygopro.stoc_send_chat(client, "#{client.name}${deck_not_found}", ygopro.constants.COLORS.RED)
   await return false
 
 ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server, datas)->
