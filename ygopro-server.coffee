@@ -3323,7 +3323,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
       ygopro.stoc_send_chat(client, "${deck_incorrect_reconnect}", ygopro.constants.COLORS.RED)
       return false
   else
-    if settings.modules.athletic_check.enabled and settings.modules.athletic_check.banCount
+    if room.arena and settings.modules.athletic_check.enabled and settings.modules.athletic_check.banCount
       athleticCheckResult = await athleticChecker.checkAthletic({main: buff_main, side: buff_side})
       if athleticCheckResult.success
         if athleticCheckResult.athletic and athleticCheckResult.athletic <= settings.modules.athletic_check.banCount

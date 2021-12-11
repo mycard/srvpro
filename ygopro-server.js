@@ -4436,7 +4436,7 @@
         return false;
       }
     } else {
-      if (settings.modules.athletic_check.enabled && settings.modules.athletic_check.banCount) {
+      if (room.arena && settings.modules.athletic_check.enabled && settings.modules.athletic_check.banCount) {
         athleticCheckResult = (await athleticChecker.checkAthletic({
           main: buff_main,
           side: buff_side
