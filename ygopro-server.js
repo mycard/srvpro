@@ -1335,7 +1335,7 @@
       return false;
     }
     disconnect_info = disconnect_list[CLIENT_get_authorize_key(client)];
-    if (!disconnect_info) {
+    if (!(disconnect_info && disconnect_info.deckbuf)) {
       return false;
     }
     room = ROOM_all[disconnect_info.room_id];

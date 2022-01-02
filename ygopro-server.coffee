@@ -1008,7 +1008,7 @@ CLIENT_is_able_to_reconnect = global.CLIENT_is_able_to_reconnect = (client, deck
   if client.system_kicked
     return false
   disconnect_info = disconnect_list[CLIENT_get_authorize_key(client)]
-  unless disconnect_info
+  unless disconnect_info and disconnect_info.deckbuf
     return false
   room = ROOM_all[disconnect_info.room_id]
   if !room
