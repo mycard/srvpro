@@ -3492,12 +3492,14 @@
         pos = pos * 2;
       }
       val = buffer.readInt32LE(2);
-      room.dueling_players[pos].lp -= val;
-      if (room.dueling_players[pos].lp < 0) {
-        room.dueling_players[pos].lp = 0;
-      }
-      if ((0 < (ref1 = room.dueling_players[pos].lp) && ref1 <= 100)) {
-        ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK);
+      if (room.dueling_players[pos]) {
+        room.dueling_players[pos].lp -= val;
+        if (room.dueling_players[pos].lp < 0) {
+          room.dueling_players[pos].lp = 0;
+        }
+        if ((0 < (ref1 = room.dueling_players[pos].lp) && ref1 <= 100)) {
+          ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK);
+        }
       }
     }
     if (msg_name === 'RECOVER' && client.pos === 0) {
@@ -3509,7 +3511,9 @@
         pos = pos * 2;
       }
       val = buffer.readInt32LE(2);
-      room.dueling_players[pos].lp += val;
+      if (room.dueling_players[pos]) {
+        room.dueling_players[pos].lp += val;
+      }
     }
     if (msg_name === 'LPUPDATE' && client.pos === 0) {
       pos = buffer.readUInt8(1);
@@ -3520,7 +3524,9 @@
         pos = pos * 2;
       }
       val = buffer.readInt32LE(2);
-      room.dueling_players[pos].lp = val;
+      if (room.dueling_players[pos]) {
+        room.dueling_players[pos].lp = val;
+      }
     }
     if (msg_name === 'PAY_LPCOST' && client.pos === 0) {
       pos = buffer.readUInt8(1);
@@ -3531,12 +3537,14 @@
         pos = pos * 2;
       }
       val = buffer.readInt32LE(2);
-      room.dueling_players[pos].lp -= val;
-      if (room.dueling_players[pos].lp < 0) {
-        room.dueling_players[pos].lp = 0;
-      }
-      if ((0 < (ref2 = room.dueling_players[pos].lp) && ref2 <= 100)) {
-        ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK);
+      if (room.dueling_players[pos]) {
+        room.dueling_players[pos].lp -= val;
+        if (room.dueling_players[pos].lp < 0) {
+          room.dueling_players[pos].lp = 0;
+        }
+        if ((0 < (ref2 = room.dueling_players[pos].lp) && ref2 <= 100)) {
+          ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK);
+        }
       }
     }
     //track card count
