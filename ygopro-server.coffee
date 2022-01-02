@@ -2671,34 +2671,38 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
-    room.dueling_players[pos].lp -= val
-    room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
-    if 0 < room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
+    if room.dueling_players[pos]
+      room.dueling_players[pos].lp -= val
+      room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
+      if 0 < room.dueling_players[pos].lp <= 100
+        ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
 
   if msg_name == 'RECOVER' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
-    room.dueling_players[pos].lp += val
+    if room.dueling_players[pos]
+      room.dueling_players[pos].lp += val
 
   if msg_name == 'LPUPDATE' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
-    room.dueling_players[pos].lp = val
+    if room.dueling_players[pos]
+      room.dueling_players[pos].lp = val
 
   if msg_name == 'PAY_LPCOST' and client.pos == 0
     pos = buffer.readUInt8(1)
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
     val = buffer.readInt32LE(2)
-    room.dueling_players[pos].lp -= val
-    room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
-    if 0 < room.dueling_players[pos].lp <= 100
-      ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK)
+    if room.dueling_players[pos]
+      room.dueling_players[pos].lp -= val
+      room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
+      if 0 < room.dueling_players[pos].lp <= 100
+        ygopro.stoc_send_chat_to_room(room, "${lp_low_self}", ygopro.constants.COLORS.PINK)
 
   #track card count
   #todo: track card count in tag mode
