@@ -11,17 +11,14 @@
   ],
   "author": "zh99998 <zh99998@gmail.com>, mercury233 <me@mercury233.me>, Nanahira <78877@qq.com>",
   "dependencies": {
-    "@types/bunyan": "^1.8.6",
-    "@types/node": "^14.0.13",
-    "@types/underscore": "^1.10.24",
     "async": "^3.2.0",
     "axios": "^0.19.2",
     "bunyan": "^1.8.14",
-    "challonge": "latest",
+    "challonge": "^2.2.0",
     "coffeescript": "^2.5.1",
-    "deepmerge": "latest",
-    "formidable": "latest",
-    "geoip-country-lite": "latest",
+    "deepmerge": "^4.2.2",
+    "formidable": "^2.0.1",
+    "geoip-country-lite": "^1.0.0",
     "jszip": "^3.5.0",
     "load-json-file": "^6.2.0",
     "lzma": "^2.3.2",
@@ -32,12 +29,11 @@
     "q": "^1.5.1",
     "querystring": "^0.2.0",
     "reflect-metadata": "^0.1.13",
-    "request": "latest",
-    "sqlite3": "latest",
+    "request": "^2.88.2",
+    "sqlite3": "^5.0.2",
     "typeorm": "^0.2.29",
-    "typescript": "^4.0.5",
     "underscore": "^1.11.0",
-    "underscore.string": "latest",
+    "underscore.string": "^3.3.6",
     "ws": "^1.1.1"
   },
   "license": "AGPL-3.0",
@@ -48,5 +44,11 @@
     "pre": "node ygopro-pre.js",
     "updated": "node ygopro-update.js",
     "webhook": "node ygopro-webhook.js"
+  },
+  "devDependencies": {
+    "@types/bunyan": "^1.8.8",
+    "@types/node": "^17.0.19",
+    "@types/underscore": "^1.11.4",
+    "typescript": "^4.5.5"
   }
 }
