@@ -23,7 +23,7 @@
     "formidable": "latest",
     "geoip-country-lite": "latest",
     "jszip": "^3.5.0",
-    "load-json-file": "latest",
+    "load-json-file": "^6.2.0",
     "lzma": "^2.3.2",
     "moment": "^2.29.1",
     "mysql": "^2.18.1",
