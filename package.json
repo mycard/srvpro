@@ -15,7 +15,6 @@
     "axios": "^0.19.2",
     "bunyan": "^1.8.14",
     "challonge": "^2.2.0",
-    "coffeescript": "^2.5.1",
     "deepmerge": "^4.2.2",
     "formidable": "^2.0.1",
     "geoip-country-lite": "^1.0.0",
@@ -39,7 +38,7 @@
   "license": "AGPL-3.0",
   "scripts": {
     "build": "coffee -c *.coffee && tsc",
-    "start": "node ygopro-server.js",
+    "start": "node ygopro-server.js | bunyan",
     "tournament": "node ygopro-tournament.js",
     "pre": "node ygopro-pre.js",
     "updated": "node ygopro-update.js",
@@ -49,6 +48,7 @@
     "@types/bunyan": "^1.8.8",
     "@types/node": "^17.0.19",
     "@types/underscore": "^1.11.4",
+    "coffeescript": "^2.6.1",
     "typescript": "^4.5.5"
   }
 }
