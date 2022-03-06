@@ -6,34 +6,34 @@
  
  不带参数运行时，会建立一个服务器，调用API执行对应操作
 */
-var http = require('http');
-var https = require('https');
-var fs = require('fs');
-var url = require('url');
-var request = require('request');
-var formidable = require('formidable');
-var _ = require('underscore');
+const http = require('http');
+const https = require('https');
+const fs = require('fs');
+const url = require('url');
+const request = require('request');
+const formidable = require('formidable');
+const _ = require('underscore');
 _.str = require('underscore.string');
 _.mixin(_.str.exports());
-var loadJSON = require('load-json-file').sync;
+const loadJSON = require('load-json-file').sync;
 
-var auth = require('./ygopro-auth.js');
+const auth = require('./ygopro-auth.js');
 
-var settings = loadJSON('./config/config.json');
+const settings = loadJSON('./config/config.json');
 config = settings.modules.tournament_mode;
 challonge_config = settings.modules.challonge;
 ssl_config = settings.modules.http.ssl;
 
-var challonge;
+let challonge;
 if (challonge_config.enabled) {
     challonge = require('challonge').createClient(challonge_config.options);
 }
-let _async = require("async");
+const _async = require("async");
 const os = require("os");
 const PROCESS_COUNT = os.cpus().length;
 
 //http长连接
-var responder;
+let responder;
 
 config.wallpapers=[""];
 request({
@@ -48,9 +48,9 @@ request({
     }
     else {
         config.wallpapers=[];
-        for (var i in body.images) {
-            var wallpaper=body.images[i];
-            var img={
+        for (const i in body.images) {
+            const wallpaper=body.images[i];
+            const img={
                 "url": "http://s.cn.bing.net"+wallpaper.urlbase+"_768x1366.jpg",
                 "desc": wallpaper.copyright
             }
@@ -60,7 +60,7 @@ request({
 });
 
 //输出反馈信息，如有http长连接则输出到http，否则输出到控制台
-var sendResponse = function(text) {
+const sendResponse = function(text) {
     text=""+text;
     if (responder) {
         text=text.replace(/\n/g,"<br>");
@@ -72,10 +72,10 @@ var sendResponse = function(text) {
 }
 
 //读取指定卡组
-var readDeck = function(deck_name, deck_full_path) {
-    var deck={};
+const readDeck = async function(deck_name, deck_full_path) {
+    const deck={};
     deck.name=deck_name;
-    deck_text = fs.readFileSync(deck_full_path, { encoding: "ASCII" });
+    deck_text = await fs.promises.readFile(deck_full_path, { encoding: "ASCII" });
     deck_array = deck_text.split("\n");
     deck.main = [];
     deck.extra = [];
@@ -98,20 +98,19 @@ var readDeck = function(deck_name, deck_full_path) {
 }
 
 //读取指定文件夹中所有卡组
-var getDecks = function(callback) {
-    var decks=[];
+const getDecks = function(callback) {
+    const decks=[];
     _async.auto({
         readDir: (done) => {
             fs.readdir(config.deck_path, done);
         },
         handleDecks: ["readDir", (results, done) => {
             const decks_list = results.readDir;
-            _async.each(decks_list, (deck_name, _done) => {
+            _async.each(decks_list, async(deck_name) => {
                 if (_.endsWith(deck_name, ".ydk")) {
-                    var deck = readDeck(deck_name, config.deck_path + deck_name);
+                    const deck = await readDeck(deck_name, config.deck_path + deck_name);
                     decks.push(deck);
                 }
-                _done();
             }, done)
         }]
     }, (err) => { 
@@ -120,14 +119,14 @@ var getDecks = function(callback) {
 
 }
 
-var delDeck = function (deck_name, callback) {
+const delDeck = function (deck_name, callback) {
     if (deck_name.startsWith("../") || deck_name.match(/\/\.\.\//)) { //security issue
         callback("Invalid deck");
     }
     fs.unlink(config.deck_path + deck_name, callback);
 }
 
-var clearDecks = function (callback) {
+const clearDecks = function (callback) {
     _async.auto({
         deckList: (done) => { 
             fs.readdir(config.deck_path, done);
@@ -139,16 +138,16 @@ var clearDecks = function (callback) {
     }, callback);
 }
 
-var UploadToChallonge = function () {
+const UploadToChallonge = function () {
     if (!challonge) {
         sendResponse("未开启Challonge模式。");
         return false;
     }
     sendResponse("开始读取玩家列表。");
-    var decks_list = fs.readdirSync(config.deck_path);
-    var player_list = [];
-    for (var k in decks_list) {
-        var deck_name = decks_list[k];
+    const decks_list = fs.readdirSync(config.deck_path);
+    const player_list = [];
+    for (const k in decks_list) {
+        const deck_name = decks_list[k];
         if (_.endsWith(deck_name, ".ydk")) {
             player_list.push(deck_name.slice(0, deck_name.length - 4));
         }
@@ -185,11 +184,11 @@ var UploadToChallonge = function () {
     return true;
 }
 
-var receiveDecks = function(files, callback) {
-    var result = [];
-    _async.eachSeries(files, (file, done) => {
+const receiveDecks = function(files, callback) {
+    const result = [];
+    _async.eachSeries(files, async(file) => {
         if (_.endsWith(file.name, ".ydk")) {
-            var deck = readDeck(file.name, file.path);
+            const deck = await readDeck(file.name, file.path);
             if (deck.main.length >= 40) {
                 fs.createReadStream(file.path).pipe(fs.createWriteStream(config.deck_path + file.name));
                 result.push({
@@ -210,7 +209,6 @@ var receiveDecks = function(files, callback) {
                 status: "不是卡组文件"
             });
         }
-        done();
     }, (err) => { 
         callback(err, result);
     });
@@ -218,7 +216,7 @@ var receiveDecks = function(files, callback) {
 
 //建立一个http服务器，接收API操作
 async function requestListener(req, res) {
-    var u = url.parse(req.url, true);
+    const u = url.parse(req.url, true);
     
     /*if (u.query.password !== config.password) {
         res.writeHead(403);
@@ -232,15 +230,17 @@ async function requestListener(req, res) {
             res.end("Auth Failed.");
             return;
         }
-        var form = new formidable.IncomingForm();
+        const form = new formidable.IncomingForm();
         form.parse(req, function(err, fields, files) {
             receiveDecks(files, (err, result) => { 
                 if (err) {
-                    res.writeHead(200, {
+                    console.error(`Upload error: ${err}`);
+                    res.writeHead(500, {
                         "Access-Control-Allow-origin": "*",
                         'content-type': 'text/plain'
                     });
-                    res.end(err.toString());
+                    res.end(JSON.stringify({error: err.toString()}));
+                    return;
                 }
                 res.writeHead(200, {
                     "Access-Control-Allow-origin": "*",
@@ -338,7 +338,7 @@ async function requestListener(req, res) {
             return;
         }
         res.writeHead(200);
-        var result=UploadToChallonge();
+        const result = UploadToChallonge();
         res.end(u.query.callback+'("操作完成。");');
     }
     else {

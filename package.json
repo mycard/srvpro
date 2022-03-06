@@ -16,7 +16,7 @@
     "bunyan": "^1.8.14",
     "challonge": "^2.2.0",
     "deepmerge": "^4.2.2",
-    "formidable": "^2.0.1",
+    "formidable": "^1.2.6",
     "geoip-country-lite": "^1.0.0",
     "jszip": "^3.5.0",
     "load-json-file": "^6.2.0",
