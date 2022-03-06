@@ -227,7 +227,7 @@ async function requestListener(req, res) {
     }*/
     
     if (u.pathname === '/api/upload_decks' && req.method.toLowerCase() == 'post') {
-        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "upload_deck")) { 
+        if (!await auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "upload_deck")) { 
             res.writeHead(403);
             res.end("Auth Failed.");
             return;
@@ -251,7 +251,7 @@ async function requestListener(req, res) {
         });
     }
     else if (u.pathname === '/api/msg') {
-        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "login_deck_dashboard")) { 
+        if (!await auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "login_deck_dashboard")) { 
             res.writeHead(403);
             res.end("Auth Failed.");
             return;
@@ -272,7 +272,7 @@ async function requestListener(req, res) {
         sendResponse("已连接。");
     }
     else if (u.pathname === '/api/get_bg') {
-        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "login_deck_dashboard")) { 
+        if (!await auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "login_deck_dashboard")) { 
             res.writeHead(403);
             res.end("Auth Failed.");
             return;
@@ -281,7 +281,7 @@ async function requestListener(req, res) {
         res.end(u.query.callback+'('+JSON.stringify(config.wallpapers[Math.floor(Math.random() * config.wallpapers.length)])+');');
     }
     else if (u.pathname === '/api/get_decks') {
-        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "get_decks")) { 
+        if (!await auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "get_decks")) { 
             res.writeHead(403);
             res.end("Auth Failed.");
             return;
@@ -297,7 +297,7 @@ async function requestListener(req, res) {
         })
     }
     else if (u.pathname === '/api/del_deck') {
-        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "delete_deck")) { 
+        if (!await auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "delete_deck")) { 
             res.writeHead(403);
             res.end("Auth Failed.");
             return;
@@ -315,7 +315,7 @@ async function requestListener(req, res) {
         });
     }
     else if (u.pathname === '/api/clear_decks') {
-        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "clear_decks")) { 
+        if (!await auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "clear_decks")) { 
             res.writeHead(403);
             res.end("Auth Failed.");
             return;
@@ -332,7 +332,7 @@ async function requestListener(req, res) {
         });
     }
     else if (u.pathname === '/api/upload_to_challonge') {
-        if (!auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "upload_to_challonge")) { 
+        if (!await auth.auth(u.query.username, u.query.password, "deck_dashboard_write", "upload_to_challonge")) { 
             res.writeHead(403);
             res.end("Auth Failed.");
             return;
