@@ -3,7 +3,7 @@ FROM debian:bullseye as premake-builder
 
 RUN apt update && \
     env DEBIAN_FRONTEND=noninteractive apt install -y wget build-essential p7zip-full && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/*
 
 WORKDIR /usr/src
 RUN wget -O premake.zip https://github.com/premake/premake-core/releases/download/v5.0.0-alpha14/premake-5.0.0-alpha14-src.zip && \

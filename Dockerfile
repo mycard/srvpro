@@ -5,7 +5,7 @@ LABEL Author="Nanahira <nanahira@momobako.com>"
 RUN apt update && \
     apt -y install mono-complete && \
     npm install -g pm2 && \
-    rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+    rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* /var/log/*
 
 # windbot
 RUN git clone --depth=1 https://code.mycard.moe/mycard/windbot /tmp/windbot && \
