@@ -24,6 +24,10 @@
       ]
     }
   },
+  "duel_log": {
+    "file": "./config/duel_log.json",
+    "duel_log": []
+  },
   "users": {
     "file": "./config/admin_user.json",
     "permission_examples": {

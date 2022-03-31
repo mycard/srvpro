@@ -364,6 +364,12 @@ init = () ->
   catch
     badwords = global.badwords = default_data.badwords
     await setting_save(badwords)
+  if settings.modules.tournament_mode.log_save_json
+    try
+      duel_log = global.duel_log = await loadJSONAsync('./config/duel_log.json')
+    catch
+      duel_log = global.duel_log = default_data.duel_log
+      await setting_save(duel_log)
   if settings.modules.chat_color.enabled and await checkFileExists('./config/chat_color.json')
     try
       chat_color = await loadJSONAsync('./config/chat_color.json')
@@ -3584,9 +3590,10 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   if !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
-  if settings.modules.mysql.enabled or room.has_ygopro_error
+  if settings.modules.mysql.enabled or room.has_ygopro_error or (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe)
     if client.pos == 0
-      replay_filename=moment_now.format("YYYY-MM-DD HH-mm-ss")
+      dueltime=moment_now.format('YYYY-MM-DD HH-mm-ss')
+      replay_filename=dueltime
       if room.hostinfo.mode != 2
         for player,i in room.dueling_players
           replay_filename=replay_filename + (if i > 0 then " VS " else " ") + player.name
@@ -3597,6 +3604,21 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
       fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
+      if settings.modules.tournament_mode.log_save_json
+        duellog = {
+          time: dueltime,
+          name: room.name + (if settings.modules.tournament_mode.show_info then (" (Duel:" + room.duel_count + ")") else ""),
+          roomid: room.process_pid.toString(),
+          cloud_replay_id: "R#"+room.cloud_replay_id,
+          replay_filename: replay_filename,
+          roommode: room.hostinfo.mode,
+          players: (for player in room.dueling_players
+            name: player.name + (if settings.modules.tournament_mode.show_ip and !player.is_local then (" (IP: " + player.ip.slice(7) + ")") else "") + (if settings.modules.tournament_mode.show_info and not (room.hostinfo.mode == 2 and player.pos % 2 > 0) then (" (Score:" + room.scores[player.name_vpass] + " LP:" + (if player.lp? then player.lp else room.hostinfo.start_lp) + (if room.hostinfo.mode != 2 then (" Cards:" + (if player.card_count? then player.card_count else room.hostinfo.start_hand)) else "") + ")") else ""),
+            winner: player.pos == room.winner
+          )
+        }
+        duel_log.duel_log.unshift duellog
+        setting_save(duel_log)
       if settings.modules.mysql.enabled
         playerInfos = room.dueling_players.map((player) ->
           return {
@@ -3724,42 +3746,83 @@ if true
         )
 
 
-    else if u.pathname == '/api/duellog' and settings.modules.mysql.enabled
+    else if u.pathname == '/api/duellog' and (settings.modules.mysql.enabled or settings.modules.tournament_mode.log_save_json)
       if !await auth.auth(u.query.username, u.query.pass, "duel_log", "duel_log")
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
         return
       else
         response.writeHead(200)
-        duellog = JSON.stringify(await dataManager.getDuelLogJSONFromCondition(settings.modules.tournament_mode, getDuelLogQueryFromQs(u.query)), null, 2)
+        if settings.modules.mysql.enabled
+          duellog = JSON.stringify(await dataManager.getDuelLogJSONFromCondition(settings.modules.tournament_mode, getDuelLogQueryFromQs(u.query)), null, 2)
+        else
+          duellog = JSON.stringify duel_log.duel_log, null, 2
         response.end(addCallback(u.query.callback, duellog))
 
-    else if u.pathname == '/api/archive.zip' and settings.modules.mysql.enabled
+    else if u.pathname == '/api/archive.zip' and (settings.modules.mysql.enabled or settings.modules.tournament_mode.log_save_json)
       if !await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay_archive")
         response.writeHead(403)
         response.end("Invalid password.")
         return
       else
-        try
-          archiveStream = await dataManager.getReplayArchiveStreamFromCondition(settings.modules.tournament_mode.replay_path, getDuelLogQueryFromQs(u.query))
-          if !archiveStream
+        if settings.modules.mysql.enabled
+          try
+            archiveStream = await dataManager.getReplayArchiveStreamFromCondition(settings.modules.tournament_mode.replay_path, getDuelLogQueryFromQs(u.query))
+            if !archiveStream
+              response.writeHead(403)
+              response.end("Replay not found.")
+              return
+            response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
+            archiveStream.on "data", (data) ->
+              response.write data
+            archiveStream.on "end", () ->
+              response.end()
+            archiveStream.on "close", () ->
+              log.warn("Archive closed")
+            archiveStream.on "error", (error) ->
+              log.warn("Archive error: #{error}")
+          catch error
             response.writeHead(403)
-            response.end("Replay not found.")
-            return
-          response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
-          archiveStream.on "data", (data) ->
-            response.write data
-          archiveStream.on "end", () ->
-            response.end()
-          archiveStream.on "close", () ->
-            log.warn("Archive closed")
-          archiveStream.on "error", (error) ->
-            log.warn("Archive error: #{error}")
-        catch error
-          response.writeHead(403)
-          response.end("Failed reading replays. " + error)
+            response.end("Failed reading replays. " + error)
+        else
+          try
+            archive_name = moment_now.format('YYYY-MM-DD HH-mm-ss') + ".zip"
+            archive_args = ["a", "-mx0", "-y", archive_name]
+            check = false
+            for replay in duel_log.duel_log
+              check = true
+              archive_args.push(replay.replay_filename)
+            if !check
+              response.writeHead(403)
+              response.end("Duel logs not found.")
+              return
+            archive_process = spawn settings.modules.tournament_mode.replay_archive_tool, archive_args, {cwd: settings.modules.tournament_mode.replay_path}
+            archive_process.on 'error', (err)=>
+              response.writeHead(403)
+              response.end("Failed packing replays. " + err)
+              return
+            archive_process.on 'exit', (code)=>
+              fs.readFile(settings.modules.tournament_mode.replay_path + archive_name, (error, buffer)->
+                if error
+                  response.writeHead(403)
+                  response.end("Failed sending replays. " + error)
+                  return
+                else
+                  response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Disposition": "attachment" })
+                  response.end(buffer)
+                  return
+              )
+            archive_process.stdout.setEncoding 'utf8'
+            archive_process.stdout.on 'data', (data)=>
+              log.info "archive process: " + data
+            archive_process.stderr.setEncoding 'utf8'
+            archive_process.stderr.on 'data', (data)=>
+              log.warn "archive error: " + data
+          catch error
+            response.writeHead(403)
+            response.end("Failed reading replays. " + error)
 
-    else if u.pathname == '/api/clearlog' and settings.modules.mysql.enabled
+    else if u.pathname == '/api/clearlog' and (settings.modules.mysql.enabled or settings.modules.tournament_mode.log_save_json)
       if !await auth.auth(u.query.username, u.query.pass, "clear_duel_log", "clear_duel_log")
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "[{name:'密码错误'}]"))
@@ -3767,14 +3830,22 @@ if true
       else
         response.writeHead(200)
         if settings.modules.tournament_mode.log_save_path
-          fs.writeFile(settings.modules.tournament_mode.log_save_path + 'duel_log.' + moment_now.format('YYYY-MM-DD HH-mm-ss') + '.json', JSON.stringify(await dataManager.getDuelLogJSON(settings.modules.tournament_mode), null, 2), (err) ->
+          if settings.modules.mysql.enabled
+            duellog = JSON.stringify(await dataManager.getDuelLogJSON(settings.modules.tournament_mode), null, 2)
+          else
+            duellog = JSON.stringify duel_log, null, 2
+          fs.writeFile(settings.modules.tournament_mode.log_save_path + 'duel_log.' + moment_now.format('YYYY-MM-DD HH-mm-ss') + '.json', duellog, (err) ->
             if err
               log.warn 'DUEL LOG SAVE ERROR', err
           )
-        await dataManager.clearDuelLog()
+        if settings.modules.mysql.enabled
+          await dataManager.clearDuelLog()
+        else
+          duel_log.duel_log = []
+          setting_save(duel_log)
         response.end(addCallback(u.query.callback, "[{name:'Success'}]"))
 
-    else if _.startsWith(u.pathname, '/api/replay') and settings.modules.mysql.enabled
+    else if _.startsWith(u.pathname, '/api/replay') and (settings.modules.mysql.enabled or settings.modules.tournament_mode.replay_safe)
       if !await auth.auth(u.query.username, u.query.pass, "download_replay", "download_replay")
         response.writeHead(403)
         response.end("密码错误")
