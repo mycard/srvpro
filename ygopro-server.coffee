@@ -3195,7 +3195,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat(client, "${chat_warn_level0}", ygopro.constants.COLORS.RED)
     cancel = true
   if !(room and (room.random_type or room.arena)) and not settings.modules.mycard.enabled
-    if !cancel and settings.modules.display_watchers and client.is_post_watcher
+    if !cancel and settings.modules.display_watchers and (client.is_post_watcher or client.pos > 3)
       ygopro.stoc_send_chat_to_room(room, "#{client.name}: #{msg}", 9)
       return true
     return cancel
@@ -3255,7 +3255,7 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   if client.abuse_count>=5
     ygopro.stoc_send_chat_to_room(room, "#{client.name} ${chat_banned}", ygopro.constants.COLORS.RED)
     await ROOM_ban_player(client.name, client.ip, "${random_ban_reason_abuse}")
-  if !cancel and settings.modules.display_watchers and client.is_post_watcher
+  if !cancel and settings.modules.display_watchers and (client.is_post_watcher or client.pos > 3)
     ygopro.stoc_send_chat_to_room(room, "#{client.name}: #{msg}", 9)
     return true
   await return cancel
