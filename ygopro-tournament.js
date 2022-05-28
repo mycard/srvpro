@@ -167,7 +167,7 @@ const UploadToChallonge = async function () {
             await axios.post(`https://api.challonge.com/v1/tournaments/${challonge_config.tournament_id}/participants/bulk_add.json`, {
             api_key: challonge_config.options.apiKey,
             participants: chunk.map(name => ({ name })),
-        }, axiosPostConfig);
+        });
         }
         sendResponse("玩家列表上传完成。");
     } catch (e) {
