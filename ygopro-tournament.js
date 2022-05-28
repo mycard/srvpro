@@ -16,6 +16,7 @@ const _ = require('underscore');
 _.str = require('underscore.string');
 _.mixin(_.str.exports());
 const loadJSON = require('load-json-file').sync;
+const axios = require('axios');
 
 const auth = require('./ygopro-auth.js');
 
@@ -24,10 +25,6 @@ config = settings.modules.tournament_mode;
 challonge_config = settings.modules.challonge;
 ssl_config = settings.modules.http.ssl;
 
-let challonge;
-if (challonge_config.enabled) {
-    challonge = require('challonge').createClient(challonge_config.options);
-}
 const _async = require("async");
 const os = require("os");
 const PROCESS_COUNT = os.cpus().length;
@@ -138,8 +135,8 @@ const clearDecks = function (callback) {
     }, callback);
 }
 
-const UploadToChallonge = function () {
-    if (!challonge) {
+const UploadToChallonge = async function () {
+    if (!challonge_config.enabled) {
         sendResponse("未开启Challonge模式。");
         return false;
     }
@@ -157,30 +154,25 @@ const UploadToChallonge = function () {
         return false;
     }
     sendResponse("读取玩家列表完毕，共有" + player_list.length + "名玩家。");
-    sendResponse("开始上传玩家列表至Challonge。");
-    _async.each(player_list, (player_name, done) => {
-        sendResponse("正在上传玩家 " + player_name + " 至Challonge。");
-        challonge.participants.create({
-            id: challonge_config.tournament_id,
-            participant: {
-                name: player_name
-            },
-            callback: (err, data) => { 
-                if (err) {
-                    sendResponse("玩家 "+player_name+" 上传失败："+err.text);
-                } else {
-                    if (data.participant) {
-                        sendResponse("玩家 "+player_name+" 上传完毕，其Challonge ID是 "+data.participant.id+" 。");
-                    } else {
-                        sendResponse("玩家 "+player_name+" 上传完毕。");
-                    }
-                }
-                done();
+    try {
+        sendResponse("开始清空 Challonge 玩家列表。");
+        await axios.delete(`https://api.challonge.com/v1/tournaments/${challonge_config.tournament_id}/participants/clear.json`, {
+            params: {
+                api_key: challonge_config.options.apiKey
             }
         });
-    }, (err) => { 
+        sendResponse("开始上传玩家列表至 Challonge。");
+        for (const chunk of _.chunk(player_list, 10)) {
+            sendResponse(`开始上传玩家 ${chunk.join(', ')} 至 Challonge。`);
+            await axios.post(`https://api.challonge.com/v1/tournaments/${challonge_config.tournament_id}/participants/bulk_add.json`, {
+            api_key: challonge_config.options.apiKey,
+            participants: chunk.map(name => ({ name })),
+        }, axiosPostConfig);
+        }
         sendResponse("玩家列表上传完成。");
-    });
+    } catch (e) {
+        sendResponse("Challonge 上传失败：" + e.message);
+    }
     return true;
 }
 
@@ -338,7 +330,7 @@ async function requestListener(req, res) {
             return;
         }
         res.writeHead(200);
-        const result = UploadToChallonge();
+        const result = await UploadToChallonge();
         res.end(u.query.callback+'("操作完成。");');
     }
     else {
