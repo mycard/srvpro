@@ -288,7 +288,7 @@ init = () ->
     imported = true
   #import the old Challonge api key option
   if settings.modules.challonge.options
-    settings.modules.challonge.api_key = settings.modules.challonge.options.api_key
+    settings.modules.challonge.api_key = settings.modules.challonge.options.apiKey
     delete settings.modules.challonge.options
     imported = true
   #import the old random_duel.blank_pass_match option
