@@ -28,6 +28,7 @@ class Challonge {
                     include_participants: 1,
                     include_matches: 1,
                 },
+                timeout: 5000,
             });
             this.previous = tournament;
             this.previousTime = (0, moment_1.default)();

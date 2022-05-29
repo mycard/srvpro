@@ -176,6 +176,7 @@ export class Challonge {
             include_participants: 1,
             include_matches: 1,
           },
+          timeout: 5000,
         },
       );
       this.previous = tournament;
