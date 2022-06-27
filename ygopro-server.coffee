@@ -252,7 +252,12 @@ if settings.modules.i18n.auto_pick
 # 获取可用内存
 memory_usage = 0
 get_memory_usage = get_memory_usage = ()->
-  prc_free = exec("free")
+  try
+    prc_free = exec("free")
+  catch
+    memory_usage = 99
+    log.warn 'get free errored!'
+    return
   if not prc_free
     log.warn 'get free failed!'
     return

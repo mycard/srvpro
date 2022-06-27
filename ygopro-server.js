@@ -367,7 +367,13 @@
 
   get_memory_usage = get_memory_usage = function() {
     var prc_free;
-    prc_free = exec("free");
+    try {
+      prc_free = exec("free");
+    } catch (error1) {
+      memory_usage = 99;
+      log.warn('get free errored!');
+      return;
+    }
     if (!prc_free) {
       log.warn('get free failed!');
       return;
