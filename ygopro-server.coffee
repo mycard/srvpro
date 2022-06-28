@@ -389,7 +389,7 @@ ROOM_player_get_score = (player)->
     return "${random_score_part1}#{player.name} ${random_score_part2} #{Math.ceil(score.win/total*100)}${random_score_part3} #{Math.ceil(score.flee/total*100)}${random_score_part4}"
   return
 
-if settings.modules.random_duel.post_match_scores
+if settings.modules.random_duel.record_match_scores and settings.modules.random_duel.post_match_scores
   setInterval(()->
     scores_pair = _.pairs ROOM_players_scores
     scores_by_lose = _.sortBy(scores_pair, (score)-> return score[1].lose).reverse() # 败场由高到低

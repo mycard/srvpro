@@ -554,7 +554,7 @@
     }
   };
 
-  if (settings.modules.random_duel.post_match_scores) {
+  if (settings.modules.random_duel.record_match_scores && settings.modules.random_duel.post_match_scores) {
     setInterval(function() {
       var scores, scores_by_lose, scores_by_win, scores_pair;
       scores_pair = _.pairs(ROOM_players_scores);
