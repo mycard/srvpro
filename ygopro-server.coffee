@@ -6,7 +6,6 @@ path = require 'path'
 fs = require 'fs'
 exec = require('child_process').exec
 spawn = require('child_process').spawn
-util = require 'util'
 
 # 三方库
 _async = require('async')
@@ -88,15 +87,11 @@ try
 catch e
   log.info e unless e.code == 'ENOENT'
 
-setting_save = (settings, callback) ->
-  if !callback
-    callback = (err) ->
-      if(err)
-        log.warn("setting save fail", err.toString())
-  fs.writeFile(settings.file, JSON.stringify(settings, null, 2), callback)
+setting_save = (settings) ->
+  fs.writeFileSync(settings.file, JSON.stringify(settings, null, 2))
   return
 
-setting_change = (settings, path, val, callback) ->
+setting_change = (settings, path, val) ->
   # path should be like "modules:welcome"
   log.info("setting changed", path, val) if _.isString(val)
   path=path.split(':')
@@ -109,7 +104,7 @@ setting_change = (settings, path, val, callback) ->
       target=target[key]
     key = path.shift()
     target[key] = val
-  setting_save(settings, callback)
+  setting_save(settings)
   return
 
 # 读取配置
@@ -1979,7 +1974,7 @@ if settings.modules.http
           u.query.stop = false
         response.writeHead(200)
         try
-          await util.promisify(setting_change)(settings, 'modules:stop', u.query.stop)
+          setting_change(settings, 'modules:stop', u.query.stop)
           response.end(addCallback(u.query.callback, "['stop ok', '" + u.query.stop + "']"))
         catch err
           response.end(addCallback(u.query.callback, "['stop fail', '" + u.query.stop + "']"))
@@ -1990,7 +1985,7 @@ if settings.modules.http
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         try
-          await util.promisify(setting_change)(settings, 'modules:welcome', u.query.welcome)
+          setting_change(settings, 'modules:welcome', u.query.welcome)
           response.end(addCallback(u.query.callback, "['welcome ok', '" + u.query.welcome + "']"))
         catch err
           response.end(addCallback(u.query.callback, "['welcome fail', '" + u.query.welcome + "']"))
