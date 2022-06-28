@@ -15,7 +15,7 @@
     "bunyan": "latest",
     "deepmerge": "latest",
     "geoip-country-lite": "latest",
-    "load-json-file": "latest",
+    "load-json-file": "^6.2.0",
     "moment": "latest",
     "request": "latest",
     "sqlite3": "latest",
