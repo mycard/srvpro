@@ -163,50 +163,8 @@
             "push",
             "origin"
           ]
-        },
-        {
-          "name": "Coding",
-          "push": [
-            "push",
-            "coding",
-            "master:master"
-          ]
         }
       ]
-    },
-    "webhook": {
-      "enabled": false,
-      "port": 7966,
-      "password": "123456",
-      "hooks": {
-        "ygopro": {
-          "path": "./ygopro/",
-          "remote": "origin",
-          "branch": "server",
-          "forced": false,
-          "callback": {
-            "command": "bash",
-            "args": [
-              "-c",
-              "cd ocgcore ; git pull origin master ; cd ../script ; git pull origin master ; cd .. ; ~/premake5 gmake ; cd build ; make config=release ; cd .. ; strip ygopro"
-            ],
-            "path": "./ygopro/"
-          }
-        },
-        "srvpro": {
-          "path": ".",
-          "remote": "origin",
-          "branch": "master",
-          "forced": false,
-          "callback": {
-            "command": "npm",
-            "args": [
-              "install"
-            ],
-            "path": "."
-          }
-        }
-      }
     },
     "update_util": {
       "enabled": false,
@@ -222,14 +180,6 @@
           "push": [
             "push",
             "origin"
-          ]
-        },
-        {
-          "name": "Coding",
-          "push": [
-            "push",
-            "coding",
-            "master:master"
           ]
         }
       ]
