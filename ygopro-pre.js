@@ -398,7 +398,7 @@ var copyToYGOPRO = function(callback) {
 }
 
 function run7z(params, cwd, callback) { 
-    let proc = spawn(settings.modules.tournament_mode.replay_archive_tool, params, { cwd: cwd, env: process.env });
+    let proc = spawn(settings.modules.archive_tool, params, { cwd: cwd, env: process.env });
     proc.stdout.setEncoding('utf8');
     proc.stdout.on('data', function(data) {
         //sendResponse("7z: "+data);

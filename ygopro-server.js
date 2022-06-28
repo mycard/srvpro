@@ -2494,7 +2494,8 @@
           }
         }
         replay_filename = replay_filename.replace(/[\/\\\?\*]/g, '_') + ".yrp";
-        fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, function(err) {
+        fs.writeFile(settings.modules.replay_path + replay_filename, buffer, function(err) {
+          room.has_ygopro_error = false;
           if (err) {
             return log.warn("SAVE REPLAY ERROR", replay_filename, err);
           }

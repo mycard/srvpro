@@ -1825,7 +1825,8 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
         for player,i in room.dueling_players
           replay_filename=replay_filename + (if i > 0 then (if i == 2 then " VS " else " & ") else " ") + player.name
       replay_filename=replay_filename.replace(/[\/\\\?\*]/g, '_')+".yrp"
-      fs.writeFile(settings.modules.tournament_mode.replay_path + replay_filename, buffer, (err)->
+      fs.writeFile(settings.modules.replay_path + replay_filename, buffer, (err)->
+        room.has_ygopro_error = false
         if err then log.warn "SAVE REPLAY ERROR", replay_filename, err
       )
   return settings.modules.replay_delay and room.hostinfo.mode == 1

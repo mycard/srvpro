@@ -14,8 +14,7 @@
     "start_hand": 5,
     "draw_count": 1,
     "time_limit": 180,
-    "no_watch": false,
-    "auto_death": false
+    "no_watch": false
   },
   "modules": {
     "welcome": "MyCard YGOPro Server",
@@ -28,6 +27,8 @@
     "replay_delay": false,
     "hide_name": false,
     "enable_halfway_watch": true,
+    "replay_path": "./replays/",
+    "archive_tool": "7z",
     "i18n": {
       "auto_pick": false,
       "default": "zh-cn",
@@ -103,19 +104,6 @@
       "enabled": false,
       "accesskey": "233",
       "post": "https://api.mycard.moe/ygopro/big-brother"
-    },
-    "tournament_mode": {
-      "enabled": false,
-      "deck_check": true,
-      "deck_path": "./decks/",
-      "replay_safe": true,
-      "replay_path": "./replays/",
-      "replay_archive_tool": "7z",
-      "block_replay_to_player": true,
-      "show_ip": false,
-      "show_info": true,
-      "log_save_path": "./config/",
-      "port": 7933
     },
     "test_mode": {
       "no_connect_count_limit": false,
