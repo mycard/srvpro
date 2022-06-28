@@ -1202,7 +1202,7 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     else if room.error
       ygopro.stoc_die(client, room.error)
     else if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN
-      if settings.modules.cloud_replay.enable_halfway_watch and !room.hostinfo.no_watch
+      if settings.modules.enable_halfway_watch and !room.hostinfo.no_watch
         client.setTimeout(300000) #连接后超时5分钟
         client.rid = _.indexOf(ROOM_all, room)
         client.is_post_watcher = true
@@ -1236,7 +1236,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     for player in room.players when player.pos != 7 and player != client
       ygopro.stoc_send_chat(client, ROOM_player_get_score(player), ygopro.constants.COLORS.GREEN)
 
-  if settings.modules.cloud_replay.enable_halfway_watch and !room.watcher and !room.hostinfo.no_watch
+  if settings.modules.enable_halfway_watch and !room.watcher and !room.hostinfo.no_watch
     room.watcher = watcher = net.connect room.port, ->
       ygopro.ctos_send watcher, 'PLAYER_INFO', {
         name: "the Big Brother"

@@ -1592,7 +1592,7 @@
       } else if (room.error) {
         ygopro.stoc_die(client, room.error);
       } else if (room.duel_stage !== ygopro.constants.DUEL_STAGE.BEGIN) {
-        if (settings.modules.cloud_replay.enable_halfway_watch && !room.hostinfo.no_watch) {
+        if (settings.modules.enable_halfway_watch && !room.hostinfo.no_watch) {
           client.setTimeout(300000); //连接后超时5分钟
           client.rid = _.indexOf(ROOM_all, room);
           client.is_post_watcher = true;
@@ -1643,7 +1643,7 @@
         }
       }
     }
-    if (settings.modules.cloud_replay.enable_halfway_watch && !room.watcher && !room.hostinfo.no_watch) {
+    if (settings.modules.enable_halfway_watch && !room.watcher && !room.hostinfo.no_watch) {
       room.watcher = watcher = net.connect(room.port, function() {
         ygopro.ctos_send(watcher, 'PLAYER_INFO', {
           name: "the Big Brother"

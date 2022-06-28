@@ -27,6 +27,7 @@
     "side_timeout": false,
     "replay_delay": false,
     "hide_name": false,
+    "enable_halfway_watch": true,
     "i18n": {
       "auto_pick": false,
       "default": "zh-cn",
@@ -82,14 +83,6 @@
       },
       "ready_time": 20,
       "hang_timeout": 90
-    },
-    "cloud_replay": {
-      "enabled": false,
-      "redis": {
-        "host": "127.0.0.1",
-        "port": 6379
-      },
-      "enable_halfway_watch": true
     },
     "windbot": {
       "enabled": false,
