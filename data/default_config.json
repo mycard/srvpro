@@ -7,7 +7,7 @@
     "rule": 0,
     "mode": 0,
     "comment": "rule: 0=OCG-ONLY, 1=TCG-ONLY, 2=SC-ONLY, 3=CUSTOM-ONLY, 4=NO-UNIQUE, 5=ALL; mode: 0=SINGLE, 1=MATCH, 2=TAG",
-    "duel_rule": 4,
+    "duel_rule": 5,
     "no_check_deck": false,
     "no_shuffle_deck": false,
     "start_lp": 8000,
@@ -66,7 +66,7 @@
     },
     "dialogues": {
       "enabled": true,
-      "get": "http://mercury233.me/ygosrv233/dialogues.json"
+      "get": "https://mercury233.me/ygosrv233/dialogues.json"
     },
     "random_duel": {
       "enabled": true,
@@ -89,7 +89,6 @@
         "host": "127.0.0.1",
         "port": 6379
       },
-      "never_expire": false,
       "enable_halfway_watch": true
     },
     "windbot": {
@@ -99,42 +98,6 @@
       "port": 2399,
       "server_ip": "127.0.0.1",
       "my_ip": "127.0.0.1"
-    },
-    "chat_color": {
-      "enabled": false
-    },
-    "retry_handle": {
-      "enabled": true,
-      "max_retry_count": false
-    },
-    "reconnect": {
-      "enabled": true,
-      "auto_surrender_after_disconnect": false,
-      "allow_kick_reconnect": true,
-      "wait_time": 90000
-    },
-    "heartbeat_detection": {
-      "enabled": false,
-      "interval": 20000,
-      "wait_time": 10000
-    },
-    "mycard": {
-      "enabled": false,
-      "auth_base_url": "https://ygobbs.com",
-      "auth_database": "postgres://233@233.mycard.moe/233",
-      "ban_get": "https://api.mycard.moe/ygopro/big-brother/ban",
-      "auth_key": "233333"
-    },
-    "challonge": {
-      "enabled": false,
-      "post_detailed_score": true,
-      "post_score_midduel": true,
-      "cache_ttl": 60000,
-      "options": {
-        "apiKey": "123"
-      },
-      "tournament_id": "456",
-      "use_custom_module": false
     },
     "deck_log": {
       "enabled": false,
@@ -147,22 +110,6 @@
       "enabled": false,
       "accesskey": "233",
       "post": "https://api.mycard.moe/ygopro/big-brother"
-    },
-    "arena_mode": {
-      "enabled": false,
-      "mode": "entertain",
-      "comment": "mode: athletic / entertain",
-      "accesskey": "233",
-      "ready_time": 30,
-      "check_permit": "https://api.mycard.moe/ygopro/match/permit",
-      "post_score": false,
-      "get_score": false,
-      "punish_quit_before_match": false,
-      "init_post": {
-        "enabled": false,
-        "url": "https://api.mycard.moe/ygopro/match/clear",
-        "accesskey": "momobako"
-      }
     },
     "tournament_mode": {
       "enabled": false,
@@ -178,7 +125,6 @@
       "port": 7933
     },
     "test_mode": {
-      "watch_public_hand": false,
       "no_connect_count_limit": false,
       "no_ban_player": false,
       "surrender_anytime": false
@@ -290,11 +236,9 @@
     },
     "http": {
       "port": 7922,
-      "websocket_roomlist": false,
       "public_roomlist": false,
       "show_ip": false,
       "show_info": true,
-      "quick_death_rule": 2,
       "ssl": {
         "enabled": false,
         "port": 7923,
@@ -306,12 +250,7 @@
   "ban": {
     "banned_user": [],
     "banned_ip": [],
-    "illegal_id": [
-      "^Lv\\.-*\\d+\\s*(.*)",
-      "^VIP\\.\\d+\\s*(.*)"
-    ],
-    "spam_word": [
-      "——"
-    ]
+    "illegal_id": [],
+    "spam_word": []
   }
 }

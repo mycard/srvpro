@@ -33,7 +33,7 @@
   bunyan = require('bunyan');
 
   log = bunyan.createLogger({
-    name: "mycard"
+    name: "SRVPro"
   });
 
   moment = require('moment');

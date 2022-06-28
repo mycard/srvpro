@@ -18,7 +18,7 @@ _.mixin(_.str.exports())
 request = require 'request'
 
 bunyan = require 'bunyan'
-log = bunyan.createLogger name: "mycard"
+log = bunyan.createLogger name: "SRVPro"
 
 moment = require 'moment'
 moment.updateLocale('zh-cn', {
