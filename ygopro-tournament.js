@@ -159,7 +159,8 @@ const UploadToChallonge = async function () {
         await axios.delete(`https://api.challonge.com/v1/tournaments/${challonge_config.tournament_id}/participants/clear.json`, {
             params: {
                 api_key: challonge_config.api_key
-            }
+            },
+            validateStatus: () => true,
         });
         sendResponse("开始上传玩家列表至 Challonge。");
         for (const chunk of _.chunk(player_list, 10)) {
