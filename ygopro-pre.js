@@ -291,7 +291,7 @@ var pushDatas = function(callback) {
     if (config.cdn.enabled) {
         _async.auto({
             local: (done) => {
-                uploadCDN(config.cdn.local, config.cdn.remote + "/" + dataver, done);
+                uploadCDN(config.cdn.local, config.cdn.remote, done);
             },
             pics: ["local", (results, done) => {
                 uploadCDN(config.db_path + "pics", config.cdn.pics_remote + "pics", done);
@@ -416,7 +416,7 @@ function run7z(params, cwd, callback) {
 var packDatas = function (callback) {
     file_path = config.html_path;
     if (config.cdn.enabled) {
-        file_path = config.cdn.local;
+        file_path = config.cdn.local + '/' + dataver;
     }
 
     _async.auto({
@@ -433,7 +433,8 @@ var packDatas = function (callback) {
                 'cp -r "' + config.db_path + 'field" "' + config.db_path + 'expansions/pics/field"',
                 'cp -r "' + config.db_path + 'script" "' + config.db_path + 'expansions/script"',
                 'cp -r "' + config.db_path + 'pics" "' + config.db_path + 'picture/card"',
-                'cp -r "' + config.db_path + 'field" "' + config.db_path + 'picture/field"'
+                'cp -r "' + config.db_path + 'field" "' + config.db_path + 'picture/field"',
+                'mkdir "' + file_path + '"'
             ], done);
         },
         run7zYPK: ["preCommands", (results, done) => {
