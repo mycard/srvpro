@@ -308,13 +308,7 @@ async function uploadCDN(local, remote) {
     params.push(local);
     params.push(remote);
 
-    await runCommand(config.cdn.exe, params, ".", (data) => {
-        data = data + "";
-        if (data.includes("fails")) {
-            var datas = data.split("\n");
-            sendResponse("CDN " + remote + " : " + datas[datas.length - 2]);
-        }
-    });
+    await runCommand(config.cdn.exe, params, ".", (data) => { sendResponse("CDN " + remote + " : " + data); });
     sendResponse("CDN " + remote + " 上传完成。");
 }
 
