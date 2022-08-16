@@ -6,6 +6,8 @@ coffeelint.json
 password.json
 config.*.json
 config.user.bak
+pm2.json
+pre.sh
 
 /bak
 /config

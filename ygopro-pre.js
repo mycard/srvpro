@@ -32,7 +32,6 @@ var cardHTMLs = [];
 var responder;
 //URL里的更新时间戳
 var dataver = moment().format("YYYYMMDDHHmmss");
-const _async = require("async");
 
 //输出反馈信息，如有http长连接则输出到http，否则输出到控制台
 function sendResponse(data) {
@@ -276,6 +275,9 @@ async function pushDatas() {
     if (config.cdn.enabled) {
         await uploadCDN(config.cdn.local, config.cdn.remote);
         await uploadCDN(path.join(config.db_path, "pics"), path.join(config.cdn.pics_remote, "pics"));
+        if (config.cdn.script) {
+            await runCommand("bash", [config.cdn.script], ".");
+        }
     }
     sendResponse("CDN上传全部完成。");
     await pushHTMLs();

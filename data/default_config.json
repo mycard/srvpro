@@ -130,6 +130,7 @@
         ],
         "local": "./ygosrv233",
         "remote": "/ygosrv233",
+        "script": false,
         "pics_remote": "/ygopro/"
       },
       "ygopro_path": "../ygopro-pre/",
