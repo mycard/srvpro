@@ -120,6 +120,7 @@ function login() {
 
         var data_li = $('<li>'+ e.data +'</li>');
         data_li.appendTo($("#output"));
+        data_li[0].scrollIntoView();
         
         if (e.data=="已连接。") {
             $(".row.buttons").removeClass("hidden");
