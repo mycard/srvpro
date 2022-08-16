@@ -45,16 +45,15 @@ function sendResponse(data) {
     }
 }
 
-async function runCommand(cmd, params, cwd,
-    complete = () => { }, output = () => { },
+async function runCommand(cmd, params, cwd, output = () => { },
     fail = (code, cmd, params) => { sendResponse(`运行命令出错：${code} ${cmd} ${params.join(' ')}`); }) {
     return new Promise((resolve, reject) => {
         let proc = spawn(cmd, params, { cwd: cwd, env: process.env });
         proc.stdout.setEncoding('utf8');
-        proc.stdout.on('data', (data) => { output(data) });
+        proc.stdout.on('data', (data) => { output(data); });
         proc.stderr.setEncoding('utf8');
-        proc.stderr.on('data', (data) => { output(data); console.log(data); });
-        proc.on('close', (code) => { if (code == 0) { complete(); resolve(); } else { fail(code, cmd, params); reject(); } });
+        proc.stderr.on('data', (data) => { output(data); });
+        proc.on('close', (code) => { if (code == 0) { resolve(); } else { fail(code, cmd, params); reject(); } });
     });
 }
 
@@ -263,10 +262,10 @@ async function loadAllDbs() {
 
 //从远程更新数据库
 async function fetchDatas() {
-    await runCommand("git", ["pull", "origin", "master"], config.git_db_path,
-        () => { sendResponse("数据更新完成。"); }, (data) => { sendResponse("git pull: " + data); });
-    await runCommand("git", ["pull", "origin", "master"], config.git_html_path,
-        () => { sendResponse("网页同步完成。"); }, (data) => { sendResponse("git pull: " + data); });
+    await runCommand("git", ["pull", "origin", "master"], config.git_db_path, (data) => { sendResponse("git pull: " + data); });
+    sendResponse("数据更新完成。");
+    await runCommand("git", ["pull", "origin", "master"], config.git_html_path, (data) => { sendResponse("git pull: " + data); });
+    sendResponse("网页同步完成。");
     return;
 }
 
@@ -276,7 +275,9 @@ async function pushDatas() {
         await uploadCDN(config.cdn.local, config.cdn.remote);
         await uploadCDN(path.join(config.db_path, "pics"), path.join(config.cdn.pics_remote, "pics"));
         if (config.cdn.script) {
-            await runCommand("bash", [config.cdn.script], ".");
+            sendResponse("开始执行CDN脚本。");
+            await runCommand("bash", [config.cdn.script], ".", (data) => { sendResponse("CDN: " + data); });
+            sendResponse("CDN脚本执行完成。");
         }
     }
     sendResponse("CDN上传全部完成。");
@@ -295,9 +296,8 @@ async function pushHTMLs() {
 
     for (var i in config.html_gits) {
         var git = config.html_gits[i];
-        await runCommand("git", git.push, config.git_html_path,
-            () => { sendResponse(git.name + "上传完成。"); },
-            (data) => { sendResponse(git.name + " git push: " + data); });
+        await runCommand("git", git.push, config.git_html_path, (data) => { sendResponse(git.name + " git push: " + data); });
+        sendResponse(git.name + "上传完成。");
     }
 }
 
@@ -308,15 +308,14 @@ async function uploadCDN(local, remote) {
     params.push(local);
     params.push(remote);
 
-    await runCommand(config.cdn.exe, params, ".",
-        () => { sendResponse("CDN " + remote + " 上传完成。"); },
-        (data) => {
-            data = data + "";
-            if (data.includes("fails")) {
-                var datas = data.split("\n");
-                sendResponse("CDN " + remote + " : " + datas[datas.length - 2]);
-            }
-        });
+    await runCommand(config.cdn.exe, params, ".", (data) => {
+        data = data + "";
+        if (data.includes("fails")) {
+            var datas = data.split("\n");
+            sendResponse("CDN " + remote + " : " + datas[datas.length - 2]);
+        }
+    });
+    sendResponse("CDN " + remote + " 上传完成。");
 }
 
 //将数据库文件夹复制到YGOPro文件夹里
@@ -357,15 +356,15 @@ async function packDatas() {
     await runCommand(settings.modules.archive_tool,
         ["a", "-tzip", "-x!*.ypk",
             config.ypk_name, "*"],
-        path.join(config.db_path, "expansions"),
-        () => { sendResponse("YPK打包完成。"); });
+        path.join(config.db_path, "expansions"));
+    sendResponse("YPK打包完成。");
 
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
             "-x!expansions", "-x!pics", "-x!field", "-x!cdb/pics", "-x!cdb/script",
             "ygosrv233-pre-2.zip", "*"],
-        config.db_path,
-        () => { sendResponse("Pro2压缩包打包完成。"); });
+        config.db_path);
+    sendResponse("Pro2压缩包打包完成。");
 
     await fse.remove(path.join(config.db_path, "cdb"));
     await fse.remove(path.join(config.db_path, "picture"));
@@ -375,16 +374,16 @@ async function packDatas() {
             "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
             "-x!expansions/pics", "-x!expansions/script", "-x!expansions/*.cdb", "-x!expansions/*.conf",
             "ygosrv233-pre.zip", "*"],
-        config.db_path,
-        () => { sendResponse("电脑压缩包打包完成。"); });
+        config.db_path);
+    sendResponse("电脑压缩包打包完成。");
 
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
             "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
             "-x!expansions/pics", "-x!expansions/script", "-x!expansions/*.cdb", "-x!expansions/*.conf",
             "ygosrv233-pre-mobile.zip", "*"],
-        config.db_path,
-        () => { sendResponse("手机压缩包打包完成。"); });
+        config.db_path);
+    sendResponse("手机压缩包打包完成。");
 
     await fse.remove(path.join(config.db_path, "expansions", config.ypk_name));
     await fse.remove(path.join(config.db_path, "expansions", "script"));
