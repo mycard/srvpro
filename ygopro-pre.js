@@ -335,6 +335,10 @@ async function packDatas() {
     file_path = config.html_path;
     if (config.cdn.enabled) {
         file_path = config.cdn.local + '/' + dataver;
+        let olddirs = fse.readdirSync(config.cdn.local).filter((filename) => { return filename.match(/^\d+$/); });
+        for (let i in olddirs) {
+            await fse.remove(path.join(config.cdn.local, olddirs[i]));
+        }
     }
 
     await fse.remove(path.join(config.db_path, "expansions", config.ypk_name));
