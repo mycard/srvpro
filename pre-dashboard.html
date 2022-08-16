@@ -114,6 +114,10 @@ function login() {
 	username=$("#username").val();
     var es = new EventSource($("#http").val() + "://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
     es.onmessage = function(e) {
+        if(e.data.toString().includes("\x1b[2K")) {
+            $("#output").children().last().remove();
+        }
+
         var data_li = $('<li>'+ e.data +'</li>');
         data_li.appendTo($("#output"));
         
