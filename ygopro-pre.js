@@ -288,7 +288,7 @@ async function pushHTMLs() {
         await runCommand("git", ["commit", "-m", "update-auto"], config.git_html_path);
     }
     catch (error) {
-        sendResponse("git error: " + error.stdout);
+        sendResponse("git error: " + error);
     }
 
     for (var i in config.html_gits) {
