@@ -309,3 +309,7 @@ div.buttons {
 #output .add {
 	background-color:#94fbb1;
 }
+
+.emoji {
+    font-family: 'Helvetica Neue', Helvetica, 'Microsoft Yahei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Noto Emoji';
+}

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>SRVPro Pre-Release Dashboard</title>
 <link rel="stylesheet" href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-y/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+<link rel="stylesheet" href="https://fonts.googleapis.cn/css?family=Noto+Emoji" crossorigin="anonymous">
 <link href="/static/style.css" rel="stylesheet">
 </head>
 <body>
@@ -107,22 +108,42 @@ function parseQueryString() {
     return objURL;
 }
 
+function ansiRegex({onlyFirst = false} = {}) {
+    //https://github.com/chalk/ansi-regex
+	const pattern = [
+		'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+		'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))'
+	].join('|');
+
+	return new RegExp(pattern, onlyFirst ? undefined : 'g');
+}
+
 function login() {
     ip=$("#ip").val();
     port=$("#port").val();
     password=$("#password").val();
 	username=$("#username").val();
     var es = new EventSource($("#http").val() + "://"+ip+":"+port+"/api/msg?username="+username+"&password="+password);
-    es.onmessage = function(e) {
-        if(e.data.toString().includes("\x1b[2K")) {
+    es.onmessage = function (e) {
+        var msg = e.data.toString();
+        
+        if (msg.includes("+=====")) {
+            msg = "<pre>" + msg + "</pre>";
+        }
+        if (msg.match(/\x1B\[2K/gu)) {
             $("#output").children().last().remove();
+            msg = msg.replace(ansiRegex(), "");
+        }
+        var data_li = $('<li>' + msg + '</li>');
+
+        if (msg.match(/\p{Emoji_Presentation}/gu)) {
+            data_li.addClass("emoji");
         }
 
-        var data_li = $('<li>'+ e.data +'</li>');
         data_li.appendTo($("#output"));
         data_li[0].scrollIntoView();
-        
-        if (e.data=="已连接。") {
+
+        if (msg == "已连接。") {
             $(".row.buttons").removeClass("hidden");
         }
     };
