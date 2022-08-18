@@ -329,9 +329,9 @@ async function packDatas() {
     file_path = config.html_path;
     if (config.cdn.enabled) {
         file_path = config.cdn.local + '/' + dataver;
-        let olddirs = fse.readdirSync(config.cdn.local).filter((filename) => { return filename.match(/^\d+$/); });
+        let olddirs = fse.readdirSync(config.cdn.local).filter((filename) => { return filename.match(/^\d+$/); }).sort();
         if (olddirs.length > 0) {
-            olddirs = olddirs.sort().pop(); // keep the latest version
+            olddirs.pop(); // keep the latest version
         }
         for (let i in olddirs) {
             await fse.remove(path.join(config.cdn.local, olddirs[i]));
