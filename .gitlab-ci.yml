@@ -43,7 +43,7 @@ build_lite_arm:
 .build_full:
   stage: build2
   script:
-    - docker build --build-arg $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$ARCH-lite--pull --no-cache -t
+    - docker build --build-arg $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$ARCH-lite --pull --no-cache -t
       $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$ARCH-full .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$ARCH-full
 
