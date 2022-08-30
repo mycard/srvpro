@@ -175,7 +175,6 @@
       "enabled": false,
       "deck_check": true,
       "deck_path": "./decks/",
-      "replay_safe": true,
       "replay_path": "./replays/",
       "replay_archive_tool": "7z",
       "block_replay_to_player": false,

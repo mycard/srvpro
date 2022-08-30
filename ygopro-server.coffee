@@ -113,7 +113,19 @@ setting_save = global.setting_save = (settings) ->
     log.warn("setting save fail", e.toString())
   return
 
-setting_change = global.setting_change = (settings, path, val) ->
+setting_get = global.setting_get = (settings, path) ->
+  path = path.split(':')
+  if path.length == 0
+    return settings[path[0]]
+  else
+    target = settings
+    while path.length > 1
+      key = path.shift()
+      target = target[key]
+    key = path.shift()
+    return target[key]
+
+setting_change = global.setting_change = (settings, path, val, noSave) ->
   # path should be like "modules:welcome"
   log.info("setting changed", path, val) if _.isString(val)
   path=path.split(':')
@@ -126,7 +138,8 @@ setting_change = global.setting_change = (settings, path, val) ->
       target=target[key]
     key = path.shift()
     target[key] = val
-  await setting_save(settings)
+  if !noSave
+    await setting_save(settings)
   return
 
 importOldConfig = () ->
@@ -301,6 +314,23 @@ init = () ->
     delete settings.modules.random_duel.blank_pass_match
     imported = true
   #finish
+  keysFromEnv = Object.keys(process.env).filter((key) => key.startsWith('SRVPRO_'))
+  if keysFromEnv.length > 0
+    log.info('Migrating settings from environment variables.')
+    for key in keysFromEnv
+      settingKey = key.slice(7).replace(/__/g, ':')
+      val = process.env[key]
+      valFromDefault = setting_get(defaultConfig, settingKey)
+      if Array.isArray(valFromDefault)
+        val = val.split(',')
+        valFromDefault = valFromDefault[0]
+      if typeof valFromDefault == 'number'
+        val = parseFloat(val)
+      if typeof valFromDefault == 'boolean'
+        val = (val != 'false') && (val != '0')
+      setting_change(settings, settingKey, val, true)
+    imported = true
+
   if imported
     log.info('Saving migrated settings.')
     await setting_save(settings)
@@ -3462,12 +3492,11 @@ ygopro.stoc_follow 'CHANGE_SIDE', false, (buffer, info, client, server, datas)->
 
 ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay unless room
-  if !room.replays[room.duel_count - 1]
+  if room and !room.replays[room.duel_count - 1]
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
-  if settings.modules.mysql.enabled or room.has_ygopro_error
-    if client.pos == 0
+    if settings.modules.mysql.enabled or room.has_ygopro_error
+      console.log('save replay')
       replay_filename=moment_now.format("YYYY-MM-DD HH-mm-ss")
       if room.hostinfo.mode != 2
         for player,i in room.dueling_players
@@ -3499,11 +3528,9 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
           }
         )
         dataManager.saveDuelLog(room.name, room.process_pid, room.cloud_replay_id, replay_filename, room.hostinfo.mode, room.duel_count, playerInfos) # no synchronize here because too slow
-    if settings.modules.mysql.enabled && settings.modules.cloud_replay.enabled and settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.replay_safe
+    if settings.modules.mysql.enabled && settings.modules.cloud_replay.enabled and settings.modules.tournament_mode.enabled
       ygopro.stoc_send_chat(client, "${cloud_replay_delay_part1}R##{room.cloud_replay_id}${cloud_replay_delay_part2}", ygopro.constants.COLORS.BABYBLUE)
-    await return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
-  else
-    await return settings.modules.replay_delay and room.hostinfo.mode == 1
+  await return settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player or settings.modules.replay_delay and room.hostinfo.mode == 1
 
 # spawn windbot
 windbot_looplimit = 0
