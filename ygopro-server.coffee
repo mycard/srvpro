@@ -3496,7 +3496,7 @@ ygopro.stoc_follow 'REPLAY', true, (buffer, info, client, server, datas)->
     # console.log("Replay saved: ", room.duel_count - 1, client.pos)
     room.replays[room.duel_count - 1] = buffer
     if settings.modules.mysql.enabled or room.has_ygopro_error
-      console.log('save replay')
+      #console.log('save replay')
       replay_filename=moment_now.format("YYYY-MM-DD HH-mm-ss")
       if room.hostinfo.mode != 2
         for player,i in room.dueling_players

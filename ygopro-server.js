@@ -4708,7 +4708,7 @@
       // console.log("Replay saved: ", room.duel_count - 1, client.pos)
       room.replays[room.duel_count - 1] = buffer;
       if (settings.modules.mysql.enabled || room.has_ygopro_error) {
-        console.log('save replay');
+        //console.log('save replay')
         replay_filename = moment_now.format("YYYY-MM-DD HH-mm-ss");
         if (room.hostinfo.mode !== 2) {
           ref = room.dueling_players;
