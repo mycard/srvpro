@@ -341,12 +341,14 @@ async function packDatas() {
     await fse.remove(path.join(config.db_path, "expansions", config.ypk_name));
     await fse.remove(path.join(config.db_path, "expansions", "script"));
     await fse.remove(path.join(config.db_path, "expansions", "pics"));
+    await fse.remove(path.join(config.db_path, "expansions", "pack"));
     await fse.remove(path.join(config.db_path, "cdb"));
     await fse.remove(path.join(config.db_path, "picture"));
 
     await fse.copy(path.join(config.db_path, "pics"), path.join(config.db_path, "expansions", "pics"));
     await fse.copy(path.join(config.db_path, "field"), path.join(config.db_path, "expansions", "pics", "field"));
     await fse.copy(path.join(config.db_path, "script"), path.join(config.db_path, "expansions", "script"));
+    await fse.copy(path.join(config.db_path, "deck"), path.join(config.db_path, "expansions", "pack"));
 
     await fse.copy(path.join(config.db_path, "expansions"), path.join(config.db_path, "cdb"));
     await fse.copy(path.join(config.db_path, "pics"), path.join(config.db_path, "picture", "card"));
@@ -355,14 +357,14 @@ async function packDatas() {
     await fse.ensureDir(file_path);
 
     await runCommand(settings.modules.archive_tool,
-        ["a", "-tzip", "-x!*.ypk",
+        ["a", "-tzip", "-x!*.ypk", "-x!pics/field/.gitkeep",
             config.ypk_name, "*"],
         path.join(config.db_path, "expansions"));
     sendResponse("YPK打包完成。");
 
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
-            "-x!expansions", "-x!pics", "-x!field", "-x!cdb/pics", "-x!cdb/script",
+            "-x!expansions", "-x!pics", "-x!field", "-x!cdb/pics", "-x!cdb/script", "-x!cdb/pack", "-x!picture/field/.gitkeep",
             "ygosrv233-pre-2.zip", "*"],
         config.db_path);
     sendResponse("Pro2压缩包打包完成。");
@@ -373,7 +375,7 @@ async function packDatas() {
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
             "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
-            "-x!expansions/pics", "-x!expansions/script", "-x!expansions/*.cdb", "-x!expansions/*.conf",
+            "-x!expansions/pics", "-x!expansions/script", "-x!expansions/pack", "-x!expansions/*.cdb", "-x!expansions/*.conf",
             "ygosrv233-pre.zip", "*"],
         config.db_path);
     sendResponse("电脑压缩包打包完成。");
@@ -381,7 +383,7 @@ async function packDatas() {
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
             "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
-            "-x!expansions/pics", "-x!expansions/script", "-x!expansions/*.cdb", "-x!expansions/*.conf",
+            "-x!expansions/pics", "-x!expansions/script", "-x!expansions/pack", "-x!expansions/*.cdb", "-x!expansions/*.conf",
             "ygosrv233-pre-mobile.zip", "*"],
         config.db_path);
     sendResponse("手机压缩包打包完成。");
@@ -389,6 +391,7 @@ async function packDatas() {
     await fse.remove(path.join(config.db_path, "expansions", config.ypk_name));
     await fse.remove(path.join(config.db_path, "expansions", "script"));
     await fse.remove(path.join(config.db_path, "expansions", "pics"));
+    await fse.remove(path.join(config.db_path, "expansions", "pack"));
 
     await fse.move(path.join(config.db_path, "ygosrv233-pre.zip"), path.join(file_path, "ygosrv233-pre.zip"), { overwrite: true });
     await fse.move(path.join(config.db_path, "ygosrv233-pre-mobile.zip"), path.join(file_path, "ygosrv233-pre-mobile.zip"), { overwrite: true });
