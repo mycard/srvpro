@@ -350,9 +350,9 @@ async function packDatas() {
     await fse.copy(path.join(config.db_path, "script"), path.join(config.db_path, "expansions", "script"));
     await fse.copy(path.join(config.db_path, "deck"), path.join(config.db_path, "expansions", "pack"));
 
-    await fse.copy(path.join(config.db_path, "expansions"), path.join(config.db_path, "cdb"));
-    await fse.copy(path.join(config.db_path, "pics"), path.join(config.db_path, "picture", "card"));
-    await fse.copy(path.join(config.db_path, "field"), path.join(config.db_path, "picture", "field"));
+    //await fse.copy(path.join(config.db_path, "expansions"), path.join(config.db_path, "cdb"));
+    //await fse.copy(path.join(config.db_path, "pics"), path.join(config.db_path, "picture", "card"));
+    //await fse.copy(path.join(config.db_path, "field"), path.join(config.db_path, "picture", "field"));
 
     await fse.ensureDir(file_path);
 
@@ -364,13 +364,14 @@ async function packDatas() {
 
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
-            "-x!expansions", "-x!pics", "-x!field", "-x!cdb/pics", "-x!cdb/script", "-x!cdb/pack", "-x!picture/field/.gitkeep",
+            "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
+            "-x!expansions/pics", "-x!expansions/script", "-x!expansions/pack", "-x!expansions/*.cdb", "-x!expansions/*.conf",
             "ygosrv233-pre-2.zip", "*"],
         config.db_path);
     sendResponse("Pro2压缩包打包完成。");
 
-    await fse.remove(path.join(config.db_path, "cdb"));
-    await fse.remove(path.join(config.db_path, "picture"));
+    //await fse.remove(path.join(config.db_path, "cdb"));
+    //await fse.remove(path.join(config.db_path, "picture"));
 
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
@@ -388,7 +389,6 @@ async function packDatas() {
         config.db_path);
     sendResponse("手机压缩包打包完成。");
 
-    await fse.remove(path.join(config.db_path, "expansions", config.ypk_name));
     await fse.remove(path.join(config.db_path, "expansions", "script"));
     await fse.remove(path.join(config.db_path, "expansions", "pics"));
     await fse.remove(path.join(config.db_path, "expansions", "pack"));
@@ -396,6 +396,7 @@ async function packDatas() {
     await fse.move(path.join(config.db_path, "ygosrv233-pre.zip"), path.join(file_path, "ygosrv233-pre.zip"), { overwrite: true });
     await fse.move(path.join(config.db_path, "ygosrv233-pre-mobile.zip"), path.join(file_path, "ygosrv233-pre-mobile.zip"), { overwrite: true });
     await fse.move(path.join(config.db_path, "ygosrv233-pre-2.zip"), path.join(file_path, "ygosrv233-pre-2.zip"), { overwrite: true });
+    await fse.move(path.join(config.db_path, "expansions", config.ypk_name), path.join(file_path, config.ypk_name), { overwrite: true });
 }
 
 //建立一个http服务器，接收API操作
