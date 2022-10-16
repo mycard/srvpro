@@ -1710,6 +1710,7 @@ class Room
         log.warn("GET ATHLETIC FAIL", player.name, using_athletic.message)
       else if using_athletic.athletic
         ygopro.stoc_send_chat_to_room(room, "#{player.name}${using_athletic_deck}", ygopro.constants.COLORS.BABYBLUE)
+      return
     ))
     await return
   

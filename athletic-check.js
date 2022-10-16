@@ -43,8 +43,11 @@ class AthleticChecker {
     }
     async checkAthletic(deck) {
         try {
-            const athleticDecks = await this.getAthleticDecks();
             const deckType = await this.getDeckType(deck);
+            if (deckType === '迷之卡组') {
+                return { success: true, athletic: 0, message: null };
+            }
+            const athleticDecks = await this.getAthleticDecks();
             const athletic = athleticDecks.findIndex(d => d === deckType) + 1;
             return { success: true, athletic, message: null };
         }
