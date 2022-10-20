@@ -196,6 +196,15 @@
       "banCount": 0,
       "ttl": 600
     },
+    "neos": {
+      "enabled": false,
+      "port": 7977,
+      "trusted_proxies": [
+        "127.0.0.1/8",
+        "::1/128"
+      ],
+      "ip_header": "x-forwarded-for"
+    },
     "test_mode": {
       "watch_public_hand": false,
       "no_connect_count_limit": false,

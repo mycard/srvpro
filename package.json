@@ -17,6 +17,7 @@
     "deepmerge": "^4.2.2",
     "formidable": "^1.2.6",
     "geoip-country-lite": "^1.0.0",
+    "ip6addr": "^0.2.5",
     "jszip": "^3.5.0",
     "load-json-file": "^6.2.0",
     "lzma": "^2.3.2",
@@ -46,6 +47,7 @@
   },
   "devDependencies": {
     "@types/bunyan": "^1.8.8",
+    "@types/ip6addr": "^0.2.3",
     "@types/node": "^17.0.19",
     "@types/underscore": "^1.11.4",
     "@types/ws": "^8.5.3",
