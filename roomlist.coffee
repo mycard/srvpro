@@ -16,8 +16,8 @@ init = (http_server, ROOM_all)->
   server = new WebSocketServer
     server: http_server
 
-  server.on 'connection', (connection) ->
-    connection.filter = url.parse(connection.upgradeReq.url, true).query.filter || 'waiting'
+  server.on 'connection', (connection, upgradeReq) ->
+    connection.filter = url.parse(upgradeReq.url, true).query.filter || 'waiting'
     connection.send JSON.stringify
       event: 'init'
       data: room_data(room) for room in ROOM_all when room and room.established and (connection.filter == 'started' or !room.private) and ((room.duel_stage != 0) == (connection.filter == 'started'))

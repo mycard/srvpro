@@ -33,7 +33,7 @@
     "typeorm": "^0.2.29",
     "underscore": "^1.11.0",
     "underscore.string": "^3.3.6",
-    "ws": "^1.1.1"
+    "ws": "^8.9.0"
   },
   "license": "AGPL-3.0",
   "scripts": {
@@ -48,6 +48,7 @@
     "@types/bunyan": "^1.8.8",
     "@types/node": "^17.0.19",
     "@types/underscore": "^1.11.4",
+    "@types/ws": "^8.5.3",
     "coffeescript": "^2.6.1",
     "typescript": "^4.5.5"
   }
