@@ -783,7 +783,7 @@
       ws = require('ws');
       neosHttpServer = null;
       if (settings.modules.http.ssl.enabled) {
-        neosHttpServer = https.createServer(httpsOptions, neosRequestListener);
+        neosHttpServer = https.createServer(httpsOptions);
       } else {
         neosHttpServer = http.createServer();
       }
