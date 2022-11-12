@@ -362,6 +362,7 @@ async function packDatas() {
         path.join(config.db_path, "expansions"));
     sendResponse("YPK打包完成。");
 
+    /*
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
             "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
@@ -369,6 +370,7 @@ async function packDatas() {
             "ygosrv233-pre-2.zip", "*"],
         config.db_path);
     sendResponse("Pro2压缩包打包完成。");
+    */
 
     //await fse.remove(path.join(config.db_path, "cdb"));
     //await fse.remove(path.join(config.db_path, "picture"));
@@ -381,6 +383,7 @@ async function packDatas() {
         config.db_path);
     sendResponse("电脑压缩包打包完成。");
 
+    /*
     await runCommand(settings.modules.archive_tool,
         ["a", "-x!*.zip", "-x!.git", "-x!LICENSE", "-x!README.md", "-x!.gitlab-ci.yml",
             "-x!cdb", "-x!picture", "-x!field", "-x!script", "-x!pics",
@@ -388,14 +391,15 @@ async function packDatas() {
             "ygosrv233-pre-mobile.zip", "*"],
         config.db_path);
     sendResponse("手机压缩包打包完成。");
+    */
 
     await fse.remove(path.join(config.db_path, "expansions", "script"));
     await fse.remove(path.join(config.db_path, "expansions", "pics"));
     await fse.remove(path.join(config.db_path, "expansions", "pack"));
 
     await fse.move(path.join(config.db_path, "ygosrv233-pre.zip"), path.join(file_path, "ygosrv233-pre.zip"), { overwrite: true });
-    await fse.move(path.join(config.db_path, "ygosrv233-pre-mobile.zip"), path.join(file_path, "ygosrv233-pre-mobile.zip"), { overwrite: true });
-    await fse.move(path.join(config.db_path, "ygosrv233-pre-2.zip"), path.join(file_path, "ygosrv233-pre-2.zip"), { overwrite: true });
+    //await fse.move(path.join(config.db_path, "ygosrv233-pre-mobile.zip"), path.join(file_path, "ygosrv233-pre-mobile.zip"), { overwrite: true });
+    //await fse.move(path.join(config.db_path, "ygosrv233-pre-2.zip"), path.join(file_path, "ygosrv233-pre-2.zip"), { overwrite: true });
     await fse.move(path.join(config.db_path, "expansions", config.ypk_name), path.join(file_path, config.ypk_name), { overwrite: true });
 }
 
