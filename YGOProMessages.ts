@@ -196,16 +196,22 @@ export class YGOProMessagesHelper {
 		return sendBuffer;
 	}
 
-	sendMessage(socket: net.Socket, protostr: string, info?: string | Buffer | any) {
-		const sendBuffer = this.prepareMessage(protostr, info);
-		socket.write(sendBuffer);
+	send(socket: net.Socket | WebSocket, buffer: Buffer) {
+		return new Promise<Error | undefined>(done => {
+			if (socket['isWs']) {
+				const ws = socket as WebSocket;
+				// @ts-ignore
+				ws.send(buffer, {}, done);
+			} else {
+				const sock = socket as net.Socket;
+				sock.write(buffer, done);
+			}
+		})
 	}
 
-	sendMessageAsync(socket: net.Socket, protostr: string, info?: string | Buffer | any): Promise<Error> {
+	sendMessage(socket: net.Socket | WebSocket, protostr: string, info?: string | Buffer | any): Promise<Error> {
 		const sendBuffer = this.prepareMessage(protostr, info);
-		return new Promise(done => {
-			socket.write(sendBuffer, done);
-		});
+		return this.send(socket, sendBuffer);
 	}
 
 	addHandler(protostr: string, handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean | string>, synchronous: boolean, priority: number) {

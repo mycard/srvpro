@@ -590,17 +590,31 @@ init = () ->
     log.info "NOTE: server not open due to config, ", settings.modules.stop
 
   http_server = http.createServer(httpRequestListener)
-  http_server.listen settings.modules.http.port
+  main_http_server = http_server
 
   if settings.modules.http.ssl.enabled
     https = require 'https'
-    options =
+    httpsOptions =
       cert: await fs.promises.readFile(settings.modules.http.ssl.cert)
       key: await fs.promises.readFile(settings.modules.http.ssl.key)
-    https_server = https.createServer(options, httpRequestListener)
-    if settings.modules.http.websocket_roomlist and roomlist
-      roomlist.init https_server, ROOM_all
+    https_server = https.createServer(httpsOptions, httpRequestListener)
     https_server.listen settings.modules.http.ssl.port
+    main_http_server = https_server
+  
+  if settings.modules.http.websocket_roomlist and roomlist
+    roomlist.init main_http_server, ROOM_all
+  http_server.listen settings.modules.http.port
+
+  if settings.modules.neos.enabled
+    ws = require 'ws'
+    neosHttpServer = null
+    if settings.modules.http.ssl.enabled
+      neosHttpServer = https.createServer(httpsOptions)
+    else
+      neosHttpServer = http.createServer()
+    neosWsServer = new ws.WebSocketServer({server: neosHttpServer})
+    neosWsServer.on 'connection', neosRequestListener
+    neosHttpServer.listen settings.modules.neos.port
 
   mkdirList = [
     "./plugins",
@@ -838,7 +852,7 @@ CLIENT_kick = global.CLIENT_kick = (client) ->
   if !client
     return false
   client.system_kicked = true
-  if settings.modules.reconnect.enabled and client.closed
+  if settings.modules.reconnect.enabled and client.isClosed
     if client.server and !client.had_new_reconnection
       room = ROOM_all[client.rid]
       if room
@@ -977,7 +991,7 @@ CLIENT_is_able_to_reconnect = global.CLIENT_is_able_to_reconnect = (client, deck
 
 CLIENT_get_kick_reconnect_target = global.CLIENT_get_kick_reconnect_target = (client, deckbuf) ->
   for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and !room.windbot
-    for player in room.get_playing_player() when !player.closed and player.name == client.name and (settings.modules.challonge.enabled or player.pass == client.pass) and (settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or player.ip == client.ip or (client.vpass and client.vpass == player.vpass)) and (!deckbuf or deckbuf.compare(player.start_deckbuf) == 0)
+    for player in room.get_playing_player() when !player.isClosed and player.name == client.name and (settings.modules.challonge.enabled or player.pass == client.pass) and (settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or player.ip == client.ip or (client.vpass and client.vpass == player.vpass)) and (!deckbuf or deckbuf.compare(player.start_deckbuf) == 0)
       return player
   return null
 
@@ -1110,7 +1124,7 @@ CLIENT_heartbeat_unregister = global.CLIENT_heartbeat_unregister = (client) ->
   return true
 
 CLIENT_heartbeat_register = global.CLIENT_heartbeat_register = (client, send) ->
-  if !settings.modules.heartbeat_detection.enabled or client.closed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.waiting_for_last or client.pos > 3 or client.heartbeat_protected
+  if !settings.modules.heartbeat_detection.enabled or client.isClosed or client.is_post_watcher or client.pre_reconnecting or client.reconnecting or client.waiting_for_last or client.pos > 3 or client.heartbeat_protected
     return false
   if client.heartbeat_timeout
     CLIENT_heartbeat_unregister(client)
@@ -1126,7 +1140,7 @@ CLIENT_heartbeat_register = global.CLIENT_heartbeat_register = (client, send) ->
     })
   client.heartbeat_timeout = setTimeout(() ->
     CLIENT_heartbeat_unregister(client)
-    client.destroy() unless client.closed or client.heartbeat_responsed
+    client.destroy() unless client.isClosed or client.heartbeat_responsed
     return
   , settings.modules.heartbeat_detection.wait_time)
   #log.info(1, client.name)
@@ -1136,7 +1150,7 @@ CLIENT_is_banned_by_mc = global.CLIENT_is_banned_by_mc = (client) ->
   return client.ban_mc and client.ban_mc.banned and moment_now.isBefore(client.ban_mc.until)
 
 CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
-  return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
+  return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.isClosed
   client.replays_sent = true
   i = 0
   for buffer in room.replays
@@ -1147,11 +1161,11 @@ CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
   return true
 
 SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
-  if !sk or sk.closed
+  if !sk or sk.isClosed
     return false
-  for buffer in datas
-    sk.write(buffer)
-  datas.splice(0, datas.length)
+  while datas.length
+    buffer = datas.shift()
+    await ygopro.helper.send(sk, buffer)
   return true
 
 getSeedTimet = global.getSeedTimet = (count) ->
@@ -1304,12 +1318,14 @@ class Room
         @recover_buffers = [[], [], [], []]
         @welcome = "${recover_hint}"
 
-    @hostinfo.replay_mode = 0 # 0x1: Save the replays in file. 0x2: Block the replays to observers.
+    @hostinfo.replay_mode = 0
 
-    if settings.modules.tournament_mode.enabled
+    if settings.modules.tournament_mode.enabled # 0x1: Save the replays in file
       @hostinfo.replay_mode |= 0x1
-    if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) or (@hostinfo.mode == 1 and settings.modules.replay_delay)
+    if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) or (@hostinfo.mode == 1 and settings.modules.replay_delay) # 0x2: Block the replays to observers
       @hostinfo.replay_mode |= 0x2
+    if settings.modules.tournament_mode.enabled or room.arena # 0x4: Save chat in cloud replay
+      @hostinfo.replay_mode |= 0x4
 
     if !@recovered
       @spawn()
@@ -1347,7 +1363,7 @@ class Room
         @port = parseInt data
         _.each @players, (player)=>
           player.server.connect @port, '127.0.0.1', ->
-            player.server.write buffer for buffer in player.pre_establish_buffers
+            await ygopro.helper.send(player.server, buffer) for buffer in player.pre_establish_buffers
             player.established = true
             player.pre_establish_buffers = []
             return
@@ -1496,7 +1512,7 @@ class Room
     if !settings.modules.reconnect.enabled
       return 0
     found = 0
-    for player in @get_playing_player() when player.closed
+    for player in @get_playing_player() when player.isClosed
       found++
     return found
 
@@ -1577,7 +1593,7 @@ class Room
     if @established
       roomlist.update(this) if !@windbot and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.http.websocket_roomlist
       client.server.connect @port, '127.0.0.1', ->
-        client.server.write buffer for buffer in client.pre_establish_buffers
+        await ygopro.helper.send(client.server, buffer) for buffer in client.pre_establish_buffers
         client.established = true
         client.pre_establish_buffers = []
         return
@@ -1724,7 +1740,7 @@ class Room
         @watchers.push client
         ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
         for buffer in @watcher_buffers
-          client.write buffer
+          await ygopro.helper.send(client, buffer)
         return true
       else
         ygopro.stoc_die(client, "${watch_denied}")
@@ -1756,9 +1772,26 @@ class Room
     else
       @last_active_time = moment_now_string
 
+  addRecorderBuffer: (buffer) ->
+    if settings.modules.cloud_replay.enabled
+      @recorder_buffers.push buffer
+    return
+  
+  recordChatMessage: (msg, player) ->
+    unless settings.modules.cloud_replay.enabled and (@arena or settings.modules.tournament_mode.enabled)
+      return
+    for line in ygopro.split_chat_lines(msg, player, settings.modules.i18n.default)
+      chat_buf = ygopro.helper.prepareMessage("STOC_CHAT", {
+        player: player
+        msg: line
+      })
+      @addRecorderBuffer(chat_buf)
+    return
+
 # 网络连接
 netRequestHandler = (client) ->
-  client.ip = client.remoteAddress
+  if !client.isWs
+    client.ip = client.remoteAddress
   client.is_local = client.ip and (client.ip.includes('127.0.0.1') or client.ip.includes(real_windbot_server_ip))
 
   connect_count = ROOM_connected_ip[client.ip] or 0
@@ -1780,56 +1813,48 @@ netRequestHandler = (client) ->
   client.setTimeout(2000) #连接前超时2秒
 
   # 释放处理
-  client.on 'close', (had_error) ->
-    #log.info "client closed", client.name, had_error
-    room=ROOM_all[client.rid]
-    connect_count = ROOM_connected_ip[client.ip]
-    if connect_count > 0
-      connect_count--
-    ROOM_connected_ip[client.ip] = connect_count
+  closeHandler = (error) ->
+    #log.info "client closed", client.name, error, client.isClosed
     #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
-    unless client.closed
-      client.closed = true
-      if settings.modules.heartbeat_detection.enabled
-        CLIENT_heartbeat_unregister(client)
-      if room
-        if !CLIENT_reconnect_register(client, client.rid)
-          room.disconnect(client)
-      else if !client.had_new_reconnection
-        SERVER_kick(client.server)
-    return
-
-  client.on 'error', (error)->
-    #log.info "client error", client.name, error
+    if client.isClosed
+      return
     room=ROOM_all[client.rid]
     connect_count = ROOM_connected_ip[client.ip]
     if connect_count > 0
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
-    #log.info "err disconnect", client.ip, ROOM_connected_ip[client.ip]
-    unless client.closed
-      client.closed = true
-      if room
-        if !CLIENT_reconnect_register(client, client.rid, error)
-          room.disconnect(client, error)
-      else if !client.had_new_reconnection
-        SERVER_kick(client.server)
+    client.isClosed = true
+    if settings.modules.heartbeat_detection.enabled
+      CLIENT_heartbeat_unregister(client)
+    if room
+      if !CLIENT_reconnect_register(client, client.rid, error)
+        room.disconnect(client, error)
+    else if !client.had_new_reconnection
+      SERVER_kick(client.server)
     return
+  
+  if client.isWs
+    client.on 'close', (code, reason) ->
+      closeHandler()
+  else
+    client.on 'close', (had_error) ->
+      closeHandler(had_error ? 'unknown' : undefined)
+    client.on 'timeout', ()->
+      unless settings.modules.reconnect.enabled and (disconnect_list[CLIENT_get_authorize_key(client)] or client.had_new_reconnection)
+        client.destroy()
+      return
+  client.on 'error', closeHandler
 
-  client.on 'timeout', ()->
-    unless settings.modules.reconnect.enabled and (disconnect_list[CLIENT_get_authorize_key(client)] or client.had_new_reconnection)
-      client.destroy()
-    return
 
   server.on 'close', (had_error) ->
-    server.closed = true unless server.closed
+    server.isClosed = true unless server.isClosed
     if !server.client
       return
-    #log.info "server closed", server.client.name, had_error
+    #log.info "server isClosed", server.client.name, had_error
     room=ROOM_all[server.client.rid]
     #log.info "server close", server.client.ip, ROOM_connected_ip[server.client.ip]
     room.disconnector = 'server' if room and !server.system_kicked and !server.had_new_reconnection
-    unless server.client.closed
+    unless server.client.isClosed
       ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED)
       #if room and settings.modules.replay_delay
       #  room.send_replays()
@@ -1838,14 +1863,14 @@ netRequestHandler = (client) ->
     return
 
   server.on 'error', (error)->
-    server.closed = error
+    server.isClosed = error
     if !server.client
       return
     #log.info "server error", client.name, error
     room=ROOM_all[server.client.rid]
     #log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
     room.disconnector = 'server' if room and !server.system_kicked and !server.had_new_reconnection
-    unless server.client.closed
+    unless server.client.isClosed
       ygopro.stoc_send_chat(server.client, "${server_error}: #{error}", ygopro.constants.COLORS.RED)
       #if room and settings.modules.replay_delay
       #  room.send_replays()
@@ -1867,9 +1892,8 @@ netRequestHandler = (client) ->
         ygopro.stoc_die(client, "${cloud_replay_error}")
         return
       ygopro.stoc_send_chat(client, "${cloud_replay_playing} #{replay.getDisplayString()}", ygopro.constants.COLORS.BABYBLUE)
-      client.write replay_buffer, ()->
-        CLIENT_kick(client)
-        return
+      await ygopro.helper.send(client, replay_buffer)
+      CLIENT_kick(client)
       return
 
   # 需要重构
@@ -1877,7 +1901,7 @@ netRequestHandler = (client) ->
 
   client.pre_establish_buffers = new Array()
 
-  client.on 'data', (ctos_buffer) ->
+  dataHandler = (ctos_buffer) ->
     if client.is_post_watcher
       room=ROOM_all[client.rid]
       if room
@@ -1895,7 +1919,7 @@ netRequestHandler = (client) ->
               ROOM_bad_ip[client.ip] = 1
             CLIENT_kick(client)
             return
-        room.watcher.write(buffer) for buffer in handle_data.datas
+        await ygopro.helper.send(room.watcher, buffer) for buffer in handle_data.datas
     else
       ctos_filter = null
       preconnect = false
@@ -1918,14 +1942,19 @@ netRequestHandler = (client) ->
             ROOM_bad_ip[client.ip] = 1
           CLIENT_kick(client)
           return
-      if client.closed || !client.server
+      if client.isClosed || !client.server
         return
       if client.established
-        client.server.write buffer for buffer in handle_data.datas
+        await ygopro.helper.send(client.server, buffer) for buffer in handle_data.datas
       else
-        client.pre_establish_buffers.push buffer for buffer in handle_data.datas
+        client.pre_establish_buffers = client.pre_establish_buffers.concat(handle_data.datas) 
 
     return
+
+  if client.isWs
+    client.on 'message', dataHandler
+  else
+    client.on 'data', dataHandler
 
   # 服务端到客户端(stoc)
   server.on 'data', (stoc_buffer)->
@@ -1938,8 +1967,8 @@ netRequestHandler = (client) ->
       if handle_data.feedback.type == "OVERSIZE"
         server.destroy()
         return
-    if server.client and !server.client.closed
-      server.client.write buffer for buffer in handle_data.datas
+    if server.client and !server.client.isClosed
+      await ygopro.helper.send(server.client, buffer) for buffer in handle_data.datas
 
     return
   return
@@ -2104,7 +2133,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       (checksum & 0xFF) == 0
 
     create_room_with_action = (buffer, decrypted_buffer)->
-      if client.closed
+      if client.isClosed
         return
       firstByte = buffer.readUInt8(1)
       action = firstByte >> 4
@@ -2183,7 +2212,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
               match_permit = matchPermitRes.data
             catch e
               log.warn "match permit fail #{e.toString()}"
-            if client.closed
+            if client.isClosed
               return
             if match_permit and match_permit.permit == false
               ygopro.stoc_die(client, '${invalid_password_unauthorized}')
@@ -2240,10 +2269,10 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       #console.log userData
     catch e
       log.warn("READ USER FAIL", client.name, e.toString())
-      if !client.closed
+      if !client.isClosed
         ygopro.stoc_die(client, '${load_user_info_fail}')
       return
-    if client.closed
+    if client.isClosed
       return
     users_cache[client.name] = userData.user.id
     secret = userData.user.id % 65535 + 1
@@ -2274,18 +2303,18 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       recover_match = info.pass.match(/^(RC|RECOVER)(\d*)T(\d*)$/)
       tournament_data = await challonge.getTournament(!!recover_match)
       if !tournament_data
-        if !client.closed
+        if !client.isClosed
           ygopro.stoc_die(client, '${challonge_match_load_failed}')
         return
       matching_participant = tournament_data.participants.find((p) => p.participant.name and deck_name_match(p.participant.name, client.name))
       unless matching_participant
-        if !client.closed
+        if !client.isClosed
           ygopro.stoc_die(client, '${challonge_user_not_found}')
         return
       client.challonge_info = matching_participant.participant
       matching_match = tournament_data.matches.find((match) => match.match and !match.match.winner_id and match.match.state != "complete" and match.match.player1_id and match.match.player2_id and (match.match.player1_id == client.challonge_info.id or match.match.player2_id == client.challonge_info.id))
       unless matching_match
-        if !client.closed
+        if !client.isClosed
           ygopro.stoc_die(client, '${challonge_match_not_found}')
         return
       create_room_name = matching_match.match.id.toString()
@@ -2392,8 +2421,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
 
     recorder.on 'data', (data)->
       room=ROOM_all[client.rid]
-      return unless room and settings.modules.cloud_replay.enabled
-      room.recorder_buffers.push data
+      return unless room
+      room.addRecorderBuffer(data)
       return
 
     recorder.on 'error', (error)->
@@ -2416,7 +2445,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
       return unless room
       room.watcher_buffers.push data
       for w in room.watchers
-        w.write data if w #a WTF fix
+        ygopro.helper.send(w, data) if w #a WTF fix
       return
 
     watcher.on 'error', (error)->
@@ -2850,7 +2879,7 @@ ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server, datas)->
 ygopro.stoc_follow 'DUEL_END', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and settings.modules.replay_delay and room.hostinfo.mode == 1
-  SOCKET_flush_data(client, datas)
+  await SOCKET_flush_data(client, datas)
   CLIENT_send_replays(client, room)
   if !room.replays_sent_to_watchers
     room.replays_sent_to_watchers = true
@@ -3340,7 +3369,7 @@ ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server, datas)->
       ygopro.ctos_send(server, 'TIME_CONFIRM')
     return true
   if settings.modules.reconnect.enabled
-    if client.closed
+    if client.isClosed
       ygopro.ctos_send(server, 'TIME_CONFIRM')
       return true
     else
@@ -3878,5 +3907,24 @@ if true
       response.writeHead(400)
       response.end()
     return
+
+ip6addr = require('ip6addr')
+
+neosRequestListener = (client, req) ->
+  physicalAddress = req.socket.remoteAddress
+  if settings.modules.neos.trusted_proxies.some((trusted) ->
+    cidr =  if trusted.includes('/') then ip6addr.createCIDR(trusted) else ip6addr.createAddrRange(trusted, trusted)
+    return cidr.contains(physicalAddress)
+  )
+    ipHeader = req.headers[settings.modules.neos.trusted_proxy_header]
+    if ipHeader
+      client.ip = ipHeader.split(',')[0].trim()
+  if !client.ip
+    client.ip = physicalAddress
+  client.setTimeout = () -> true
+  client.destroy = () -> client.close()
+  client.isWs = true
+  netRequestHandler(client)
+
 
 init()

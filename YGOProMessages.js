@@ -156,15 +156,22 @@ class YGOProMessagesHelper {
         }
         return sendBuffer;
     }
+    send(socket, buffer) {
+        return new Promise(done => {
+            if (socket['isWs']) {
+                const ws = socket;
+                // @ts-ignore
+                ws.send(buffer, {}, done);
+            }
+            else {
+                const sock = socket;
+                sock.write(buffer, done);
+            }
+        });
+    }
     sendMessage(socket, protostr, info) {
         const sendBuffer = this.prepareMessage(protostr, info);
-        socket.write(sendBuffer);
-    }
-    sendMessageAsync(socket, protostr, info) {
-        const sendBuffer = this.prepareMessage(protostr, info);
-        return new Promise(done => {
-            socket.write(sendBuffer, done);
-        });
+        return this.send(socket, sendBuffer);
     }
     addHandler(protostr, handler, synchronous, priority) {
         if (priority < 0 || priority > 4) {
