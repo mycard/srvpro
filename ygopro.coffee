@@ -59,15 +59,21 @@ translateHandler = (handler) ->
   return @helper.sendMessage(socket, "CTOS_#{proto}", info)
 
 #util
+@split_chat_lines = (msg, player, lang) ->
+  lines = []
+  for line in _.lines(msg)
+    if player>=10
+      line="[Server]: "+line
+    for o,r of @i18nR[lang]
+      line=line.replace(r.regex, r.text)
+    lines.push(line)
+  return lines
+
 @stoc_send_chat = (client, msg, player = 8)->
   if !client
     console.log "err stoc_send_chat"
     return
-  for line in _.lines(msg)
-    if player>=10
-      line="[Server]: "+line
-    for o,r of @i18nR[client.lang]
-      line=line.replace(r.regex, r.text)
+  for line in @split_chat_lines(msg, player, client.lang)
     await @stoc_send client, 'CHAT', {
       player: player
       msg: line
@@ -82,6 +88,7 @@ translateHandler = (handler) ->
     @stoc_send_chat(client, msg, player) if client
   for client in room.watchers
     @stoc_send_chat(client, msg, player) if client
+  room.recordChatMessage(msg, player)
   return
 
 @stoc_send_hint_card_to_room = (room, card)->

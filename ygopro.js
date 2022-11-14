@@ -94,7 +94,8 @@
     return this.helper.sendMessage(socket, `CTOS_${proto}`, info);
   };
 
-  this.splitLines = function(msg, player) {
+  //util
+  this.split_chat_lines = function(msg, player, lang) {
     var i, len, line, lines, o, r, ref, ref1;
     lines = [];
     ref = _.lines(msg);
@@ -103,7 +104,7 @@
       if (player >= 10) {
         line = "[Server]: " + line;
       }
-      ref1 = this.i18nR[client.lang];
+      ref1 = this.i18nR[lang];
       for (o in ref1) {
         r = ref1[o];
         line = line.replace(r.regex, r.text);
@@ -113,14 +114,13 @@
     return lines;
   };
 
-  //util
   this.stoc_send_chat = async function(client, msg, player = 8) {
     var i, len, line, ref;
     if (!client) {
       console.log("err stoc_send_chat");
       return;
     }
-    ref = this.splitLines(msg, player);
+    ref = this.split_chat_lines(msg, player, client.lang);
     for (i = 0, len = ref.length; i < len; i++) {
       line = ref[i];
       await this.stoc_send(client, 'CHAT', {
@@ -131,36 +131,26 @@
   };
 
   this.stoc_send_chat_to_room = function(room, msg, player = 8) {
-    var chat_buffer, client, i, j, k, len, len1, len2, line, ref, ref1, ref2;
+    var client, i, j, len, len1, ref, ref1;
     if (!room) {
       console.log("err stoc_send_chat_to_room");
       return;
     }
-    ref = this.splitLines(msg, player);
+    ref = room.players;
     for (i = 0, len = ref.length; i < len; i++) {
-      line = ref[i];
-      chat_buffer = this.helper.prepareMessage("STOC_CHAT", {
-        player: player,
-        msg: line
-      });
-      ref1 = room.players;
-      for (j = 0, len1 = ref1.length; j < len1; j++) {
-        client = ref1[j];
-        if (client) {
-          this.helper.send(client, chat_buffer);
-        }
-      }
-      ref2 = room.watchers;
-      for (k = 0, len2 = ref2.length; k < len2; k++) {
-        client = ref2[k];
-        if (client) {
-          this.helper.send(client, chat_buffer);
-        }
-      }
-      if (room.duel_stage !== this.constants.DUEL_STAGE.BEGIN) {
-        room.addRecorderBuffer(chat_buffer, true);
+      client = ref[i];
+      if (client) {
+        this.stoc_send_chat(client, msg, player);
       }
     }
+    ref1 = room.watchers;
+    for (j = 0, len1 = ref1.length; j < len1; j++) {
+      client = ref1[j];
+      if (client) {
+        this.stoc_send_chat(client, msg, player);
+      }
+    }
+    room.recordChatMessage(msg, player);
   };
 
   this.stoc_send_hint_card_to_room = function(room, card) {

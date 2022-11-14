@@ -1321,7 +1321,7 @@
         ref = room.get_playing_player();
         for (l = 0, len1 = ref.length; l < len1; l++) {
           player = ref[l];
-          if (!player.closed && player.name === client.name && (settings.modules.challonge.enabled || player.pass === client.pass) && (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || player.ip === client.ip || (client.vpass && client.vpass === player.vpass)) && (!deckbuf || deckbuf.compare(player.start_deckbuf) === 0)) {
+          if (!player.isClosed && player.name === client.name && (settings.modules.challonge.enabled || player.pass === client.pass) && (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || player.ip === client.ip || (client.vpass && client.vpass === player.vpass)) && (!deckbuf || deckbuf.compare(player.start_deckbuf) === 0)) {
             return player;
           }
         }
@@ -1481,7 +1481,7 @@
   };
 
   CLIENT_heartbeat_register = global.CLIENT_heartbeat_register = function(client, send) {
-    if (!settings.modules.heartbeat_detection.enabled || client.closed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.waiting_for_last || client.pos > 3 || client.heartbeat_protected) {
+    if (!settings.modules.heartbeat_detection.enabled || client.isClosed || client.is_post_watcher || client.pre_reconnecting || client.reconnecting || client.waiting_for_last || client.pos > 3 || client.heartbeat_protected) {
       return false;
     }
     if (client.heartbeat_timeout) {
@@ -1500,7 +1500,7 @@
     }
     client.heartbeat_timeout = setTimeout(function() {
       CLIENT_heartbeat_unregister(client);
-      if (!(client.closed || client.heartbeat_responsed)) {
+      if (!(client.isClosed || client.heartbeat_responsed)) {
         client.destroy();
       }
     }, settings.modules.heartbeat_detection.wait_time);
@@ -1514,7 +1514,7 @@
 
   CLIENT_send_replays = global.CLIENT_send_replays = function(client, room) {
     var buffer, i, j, len, ref;
-    if (!(settings.modules.replay_delay && !(settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player) && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.closed)) {
+    if (!(settings.modules.replay_delay && !(settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player) && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.isClosed)) {
       return false;
     }
     client.replays_sent = true;
@@ -1533,7 +1533,7 @@
 
   SOCKET_flush_data = global.SOCKET_flush_data = async function(sk, datas) {
     var buffer;
-    if (!sk || sk.closed) {
+    if (!sk || sk.isClosed) {
       return false;
     }
     while (datas.length) {
@@ -2002,7 +2002,7 @@
       ref = this.get_playing_player();
       for (j = 0, len = ref.length; j < len; j++) {
         player = ref[j];
-        if (player.closed) {
+        if (player.isClosed) {
           found++;
         }
       }
@@ -2397,9 +2397,25 @@
       }
     }
 
-    addRecorderBuffer(buffer, isChat) {
-      if (settings.modules.cloud_replay.enabled && (!isChat || this.arena || settings.modules.tournament_mode.enabled)) {
+    addRecorderBuffer(buffer) {
+      if (settings.modules.cloud_replay.enabled) {
         this.recorder_buffers.push(buffer);
+      }
+    }
+
+    recordChatMessage(msg, player) {
+      var chat_buf, j, len, line, ref;
+      if (!(settings.modules.cloud_replay.enabled && (this.arena || settings.modules.tournament_mode.enabled))) {
+        return;
+      }
+      ref = ygopro.split_chat_lines(msg, player, settings.modules.i18n.default);
+      for (j = 0, len = ref.length; j < len; j++) {
+        line = ref[j];
+        chat_buf = ygopro.helper.prepareMessage("STOC_CHAT", {
+          player: player,
+          msg: line
+        });
+        this.addRecorderBuffer(chat_buf);
       }
     }
 
@@ -2432,9 +2448,9 @@
     // 释放处理
     closeHandler = function(error) {
       var room;
-      log.info("client closed", client.name, error, client.closed);
-      log.info("disconnect", client.ip, ROOM_connected_ip[client.ip]);
-      if (client.closed) {
+      //log.info "client closed", client.name, error, client.isClosed
+      //log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
+      if (client.isClosed) {
         return;
       }
       room = ROOM_all[client.rid];
@@ -2443,7 +2459,7 @@
         connect_count--;
       }
       ROOM_connected_ip[client.ip] = connect_count;
-      client.closed = true;
+      client.isClosed = true;
       if (settings.modules.heartbeat_detection.enabled) {
         CLIENT_heartbeat_unregister(client);
       }
@@ -2474,19 +2490,19 @@
     client.on('error', closeHandler);
     server.on('close', function(had_error) {
       var room;
-      if (!server.closed) {
-        server.closed = true;
+      if (!server.isClosed) {
+        server.isClosed = true;
       }
       if (!server.client) {
         return;
       }
-      //log.info "server closed", server.client.name, had_error
+      //log.info "server isClosed", server.client.name, had_error
       room = ROOM_all[server.client.rid];
       if (room && !server.system_kicked && !server.had_new_reconnection) {
         //log.info "server close", server.client.ip, ROOM_connected_ip[server.client.ip]
         room.disconnector = 'server';
       }
-      if (!server.client.closed) {
+      if (!server.client.isClosed) {
         ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED);
         //if room and settings.modules.replay_delay
         //  room.send_replays()
@@ -2496,7 +2512,7 @@
     });
     server.on('error', function(error) {
       var room;
-      server.closed = error;
+      server.isClosed = error;
       if (!server.client) {
         return;
       }
@@ -2506,7 +2522,7 @@
         //log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
         room.disconnector = 'server';
       }
-      if (!server.client.closed) {
+      if (!server.client.isClosed) {
         ygopro.stoc_send_chat(server.client, `\${server_error}: ${error}`, ygopro.constants.COLORS.RED);
         //if room and settings.modules.replay_delay
         //  room.send_replays()
@@ -2594,7 +2610,7 @@
             return;
           }
         }
-        if (client.closed || !client.server) {
+        if (client.isClosed || !client.server) {
           return;
         }
         if (client.established) {
@@ -2627,7 +2643,7 @@
           return;
         }
       }
-      if (server.client && !server.client.closed) {
+      if (server.client && !server.client.isClosed) {
         ref = handle_data.datas;
         for (j = 0, len = ref.length; j < len; j++) {
           buffer = ref[j];
@@ -2809,7 +2825,7 @@
       };
       create_room_with_action = async function(buffer, decrypted_buffer) {
         var action, e, firstByte, len2, m, matchPermitRes, match_permit, name, opt0, opt1, opt2, opt3, options, player, ref, ref1, room, room_title, title;
-        if (client.closed) {
+        if (client.isClosed) {
           return;
         }
         firstByte = buffer.readUInt8(1);
@@ -2904,7 +2920,7 @@
                 e = error1;
                 log.warn(`match permit fail ${e.toString()}`);
               }
-              if (client.closed) {
+              if (client.isClosed) {
                 return;
               }
               if (match_permit && match_permit.permit === false) {
@@ -2981,12 +2997,12 @@
         //console.log userData
         e = error1;
         log.warn("READ USER FAIL", client.name, e.toString());
-        if (!client.closed) {
+        if (!client.isClosed) {
           ygopro.stoc_die(client, '${load_user_info_fail}');
         }
         return;
       }
-      if (client.closed) {
+      if (client.isClosed) {
         return;
       }
       users_cache[client.name] = userData.user.id;
@@ -3023,7 +3039,7 @@
         recover_match = info.pass.match(/^(RC|RECOVER)(\d*)T(\d*)$/);
         tournament_data = (await challonge.getTournament(!!recover_match));
         if (!tournament_data) {
-          if (!client.closed) {
+          if (!client.isClosed) {
             ygopro.stoc_die(client, '${challonge_match_load_failed}');
           }
           return;
@@ -3032,7 +3048,7 @@
           return p.participant.name && deck_name_match(p.participant.name, client.name);
         });
         if (!matching_participant) {
-          if (!client.closed) {
+          if (!client.isClosed) {
             ygopro.stoc_die(client, '${challonge_user_not_found}');
           }
           return;
@@ -3042,7 +3058,7 @@
           return match.match && !match.match.winner_id && match.match.state !== "complete" && match.match.player1_id && match.match.player2_id && (match.match.player1_id === client.challonge_info.id || match.match.player2_id === client.challonge_info.id);
         });
         if (!matching_match) {
-          if (!client.closed) {
+          if (!client.isClosed) {
             ygopro.stoc_die(client, '${challonge_match_not_found}');
           }
           return;
@@ -4502,7 +4518,7 @@
       return true;
     }
     if (settings.modules.reconnect.enabled) {
-      if (client.closed) {
+      if (client.isClosed) {
         ygopro.ctos_send(server, 'TIME_CONFIRM');
         return true;
       } else {
