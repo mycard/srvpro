@@ -1304,12 +1304,14 @@ class Room
         @recover_buffers = [[], [], [], []]
         @welcome = "${recover_hint}"
 
-    @hostinfo.replay_mode = 0 # 0x1: Save the replays in file. 0x2: Block the replays to observers.
+    @hostinfo.replay_mode = 0
 
-    if settings.modules.tournament_mode.enabled
+    if settings.modules.tournament_mode.enabled # 0x1: Save the replays in file
       @hostinfo.replay_mode |= 0x1
-    if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) or (@hostinfo.mode == 1 and settings.modules.replay_delay)
+    if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) or (@hostinfo.mode == 1 and settings.modules.replay_delay) # 0x2: Block the replays to observers
       @hostinfo.replay_mode |= 0x2
+    if settings.modules.tournament_mode.enabled or room.arena # 0x4: Save chat in cloud replay
+      @hostinfo.replay_mode |= 0x4
 
     if !@recovered
       @spawn()
@@ -1755,6 +1757,11 @@ class Room
       @last_active_time = moment_long_ago_string
     else
       @last_active_time = moment_now_string
+
+  addRecorderBuffer: (buffer) ->
+    if settings.modules.cloud_replay.enabled
+      @recorder_buffers.push buffer
+    return
 
 # 网络连接
 netRequestHandler = (client) ->
@@ -2392,8 +2399,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
 
     recorder.on 'data', (data)->
       room=ROOM_all[client.rid]
-      return unless room and settings.modules.cloud_replay.enabled
-      room.recorder_buffers.push data
+      return unless room
+      room.addRecorderBuffer(data)
       return
 
     recorder.on 'error', (error)->
