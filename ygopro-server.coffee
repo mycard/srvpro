@@ -852,7 +852,7 @@ CLIENT_kick = global.CLIENT_kick = (client) ->
   if !client
     return false
   client.system_kicked = true
-  if settings.modules.reconnect.enabled and client.closed
+  if settings.modules.reconnect.enabled and client.isClosed
     if client.server and !client.had_new_reconnection
       room = ROOM_all[client.rid]
       if room
@@ -1803,8 +1803,8 @@ netRequestHandler = (client) ->
 
   # 释放处理
   closeHandler = (error) ->
-    #log.info "client closed", client.name, had_error
-    #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
+    log.info "client closed", client.name, error, client.closed
+    log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
     if client.closed
       return
     room=ROOM_all[client.rid]
@@ -1817,7 +1817,7 @@ netRequestHandler = (client) ->
       CLIENT_heartbeat_unregister(client)
     if room
       if !CLIENT_reconnect_register(client, client.rid, error)
-        room.disconnect(client)
+        room.disconnect(client, error)
     else if !client.had_new_reconnection
       SERVER_kick(client.server)
     return
