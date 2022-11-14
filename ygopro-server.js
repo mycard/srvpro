@@ -1725,7 +1725,7 @@
       if ((settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player) || (this.hostinfo.mode === 1 && settings.modules.replay_delay)) { // 0x2: Block the replays to observers
         this.hostinfo.replay_mode |= 0x2;
       }
-      if (settings.modules.tournament_mode.enabled || room.arena) { // 0x4: Save chat in cloud replay
+      if (settings.modules.tournament_mode.enabled || this.arena) { // 0x4: Save chat in cloud replay
         this.hostinfo.replay_mode |= 0x4;
       }
       if (!this.recovered) {

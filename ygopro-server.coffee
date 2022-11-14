@@ -1324,7 +1324,7 @@ class Room
       @hostinfo.replay_mode |= 0x1
     if (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) or (@hostinfo.mode == 1 and settings.modules.replay_delay) # 0x2: Block the replays to observers
       @hostinfo.replay_mode |= 0x2
-    if settings.modules.tournament_mode.enabled or room.arena # 0x4: Save chat in cloud replay
+    if settings.modules.tournament_mode.enabled or @arena # 0x4: Save chat in cloud replay
       @hostinfo.replay_mode |= 0x4
 
     if !@recovered
