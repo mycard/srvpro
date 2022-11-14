@@ -2405,9 +2405,6 @@
 
     recordChatMessage(msg, player) {
       var chat_buf, j, len, line, ref;
-      if (!(settings.modules.cloud_replay.enabled && (this.arena || settings.modules.tournament_mode.enabled))) {
-        return;
-      }
       ref = ygopro.split_chat_lines(msg, player, settings.modules.i18n.default);
       for (j = 0, len = ref.length; j < len; j++) {
         line = ref[j];
@@ -2415,7 +2412,10 @@
           player: player,
           msg: line
         });
-        this.addRecorderBuffer(chat_buf);
+        if (settings.modules.cloud_replay.enabled && (this.arena || settings.modules.tournament_mode.enabled)) {
+          this.addRecorderBuffer(chat_buf);
+        }
+        this.watcher_buffers.push(chat_buf);
       }
     }
 

@@ -1778,14 +1778,14 @@ class Room
     return
   
   recordChatMessage: (msg, player) ->
-    unless settings.modules.cloud_replay.enabled and (@arena or settings.modules.tournament_mode.enabled)
-      return
     for line in ygopro.split_chat_lines(msg, player, settings.modules.i18n.default)
       chat_buf = ygopro.helper.prepareMessage("STOC_CHAT", {
         player: player
         msg: line
       })
-      @addRecorderBuffer(chat_buf)
+      if settings.modules.cloud_replay.enabled and (@arena or settings.modules.tournament_mode.enabled)
+        @addRecorderBuffer(chat_buf)
+      @watcher_buffers.push chat_buf
     return
 
 # 网络连接
