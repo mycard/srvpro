@@ -18,7 +18,7 @@
     "formidable": "^1.2.6",
     "geoip-country-lite": "^1.0.0",
     "ip6addr": "^0.2.5",
-    "jszip": "^3.5.0",
+    "jszip": "^3.7.0",
     "load-json-file": "^6.2.0",
     "lzma": "^2.3.2",
     "moment": "^2.29.1",
