@@ -94,13 +94,9 @@
     return this.helper.sendMessage(socket, `CTOS_${proto}`, info);
   };
 
-  //util
-  this.stoc_send_chat = async function(client, msg, player = 8) {
-    var i, len, line, o, r, ref, ref1;
-    if (!client) {
-      console.log("err stoc_send_chat");
-      return;
-    }
+  this.splitLines = function(msg, player) {
+    var i, len, line, lines, o, r, ref, ref1;
+    lines = [];
     ref = _.lines(msg);
     for (i = 0, len = ref.length; i < len; i++) {
       line = ref[i];
@@ -112,6 +108,21 @@
         r = ref1[o];
         line = line.replace(r.regex, r.text);
       }
+      lines.push(line);
+    }
+    return lines;
+  };
+
+  //util
+  this.stoc_send_chat = async function(client, msg, player = 8) {
+    var i, len, line, ref;
+    if (!client) {
+      console.log("err stoc_send_chat");
+      return;
+    }
+    ref = this.splitLines(msg, player);
+    for (i = 0, len = ref.length; i < len; i++) {
+      line = ref[i];
       await this.stoc_send(client, 'CHAT', {
         player: player,
         msg: line
@@ -125,7 +136,7 @@
       console.log("err stoc_send_chat_to_room");
       return;
     }
-    ref = _.lines(msg);
+    ref = this.splitLines(msg, player);
     for (i = 0, len = ref.length; i < len; i++) {
       line = ref[i];
       chat_buffer = this.helper.prepareMessage("STOC_CHAT", {

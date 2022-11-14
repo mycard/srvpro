@@ -1825,13 +1825,13 @@ netRequestHandler = (client) ->
   if client.isWs
     client.on 'close', (code, reason) ->
       closeHandler()
+  else
+    client.on 'close', (had_error) ->
+      closeHandler(had_error ? 'unknown' : undefined)
     client.on 'timeout', ()->
       unless settings.modules.reconnect.enabled and (disconnect_list[CLIENT_get_authorize_key(client)] or client.had_new_reconnection)
         client.destroy()
       return
-  else
-    client.on 'close', (had_error) ->
-      closeHandler(had_error ? 'unknown' : undefined)
   client.on 'error', closeHandler
 
 

@@ -78,17 +78,10 @@ translateHandler = (handler) ->
   if !room
     console.log "err stoc_send_chat_to_room"
     return
-  for line in _.lines(msg)
-    chat_buffer = @helper.prepareMessage("STOC_CHAT", {
-      player: player
-      msg: line
-    })
-    for client in room.players
-      @helper.send(client, chat_buffer) if client
-    for client in room.watchers
-      @helper.send(client, chat_buffer) if client
-    if room.duel_stage != @constants.DUEL_STAGE.BEGIN
-      room.addRecorderBuffer(chat_buffer, true)
+  for client in room.players
+    @stoc_send_chat(client, msg, player) if client
+  for client in room.watchers
+    @stoc_send_chat(client, msg, player) if client
   return
 
 @stoc_send_hint_card_to_room = (room, card)->
