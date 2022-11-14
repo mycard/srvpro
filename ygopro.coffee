@@ -68,7 +68,7 @@ translateHandler = (handler) ->
       line="[Server]: "+line
     for o,r of @i18nR[client.lang]
       line=line.replace(r.regex, r.text)
-    @stoc_send client, 'CHAT', {
+    await @stoc_send client, 'CHAT', {
       player: player
       msg: line
     }
@@ -105,8 +105,8 @@ translateHandler = (handler) ->
   return
 
 @stoc_die = (client, msg)->
-  @stoc_send_chat(client, msg, @constants.COLORS.RED)
-  @stoc_send client, 'ERROR_MSG', {
+  await @stoc_send_chat(client, msg, @constants.COLORS.RED)
+  await @stoc_send client, 'ERROR_MSG', {
     msg: 1
     code: 9
   } if client
