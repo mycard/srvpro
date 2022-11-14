@@ -1119,7 +1119,7 @@
       return false;
     }
     client.system_kicked = true;
-    if (settings.modules.reconnect.enabled && client.closed) {
+    if (settings.modules.reconnect.enabled && client.isClosed) {
       if (client.server && !client.had_new_reconnection) {
         room = ROOM_all[client.rid];
         if (room) {
@@ -2423,8 +2423,8 @@
     // 释放处理
     closeHandler = function(error) {
       var room;
-      //log.info "client closed", client.name, had_error
-      //log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
+      log.info("client closed", client.name, error, client.closed);
+      log.info("disconnect", client.ip, ROOM_connected_ip[client.ip]);
       if (client.closed) {
         return;
       }
@@ -2440,7 +2440,7 @@
       }
       if (room) {
         if (!CLIENT_reconnect_register(client, client.rid, error)) {
-          room.disconnect(client);
+          room.disconnect(client, error);
         }
       } else if (!client.had_new_reconnection) {
         SERVER_kick(client.server);
@@ -2450,16 +2450,16 @@
       client.on('close', function(code, reason) {
         return closeHandler();
       });
-      client.on('timeout', function() {
-        if (!(settings.modules.reconnect.enabled && (disconnect_list[CLIENT_get_authorize_key(client)] || client.had_new_reconnection))) {
-          client.destroy();
-        }
-      });
     } else {
       client.on('close', function(had_error) {
         return closeHandler(had_error != null ? had_error : {
           'unknown': void 0
         });
+      });
+      client.on('timeout', function() {
+        if (!(settings.modules.reconnect.enabled && (disconnect_list[CLIENT_get_authorize_key(client)] || client.had_new_reconnection))) {
+          client.destroy();
+        }
       });
     }
     client.on('error', closeHandler);
