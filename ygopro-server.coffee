@@ -1772,8 +1772,8 @@ class Room
     else
       @last_active_time = moment_now_string
 
-  addRecorderBuffer: (buffer) ->
-    if settings.modules.cloud_replay.enabled
+  addRecorderBuffer: (buffer, isChat) ->
+    if settings.modules.cloud_replay.enabled and (!isChat or @arena or settings.modules.tournament_mode.enabled)
       @recorder_buffers.push buffer
     return
 

@@ -120,23 +120,34 @@
   };
 
   this.stoc_send_chat_to_room = function(room, msg, player = 8) {
-    var client, i, j, len, len1, ref, ref1;
+    var chat_buffer, client, i, j, k, len, len1, len2, line, ref, ref1, ref2;
     if (!room) {
       console.log("err stoc_send_chat_to_room");
       return;
     }
-    ref = room.players;
+    ref = _.lines(msg);
     for (i = 0, len = ref.length; i < len; i++) {
-      client = ref[i];
-      if (client) {
-        this.stoc_send_chat(client, msg, player);
+      line = ref[i];
+      chat_buffer = this.helper.prepareMessage("STOC_CHAT", {
+        player: player,
+        msg: line
+      });
+      ref1 = room.players;
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        client = ref1[j];
+        if (client) {
+          this.helper.send(client, chat_buffer);
+        }
       }
-    }
-    ref1 = room.watchers;
-    for (j = 0, len1 = ref1.length; j < len1; j++) {
-      client = ref1[j];
-      if (client) {
-        this.stoc_send_chat(client, msg, player);
+      ref2 = room.watchers;
+      for (k = 0, len2 = ref2.length; k < len2; k++) {
+        client = ref2[k];
+        if (client) {
+          this.helper.send(client, chat_buffer);
+        }
+      }
+      if (room.duel_stage !== this.constants.DUEL_STAGE.BEGIN) {
+        room.addRecorderBuffer(chat_buffer, true);
       }
     }
   };

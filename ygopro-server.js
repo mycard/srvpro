@@ -2397,8 +2397,8 @@
       }
     }
 
-    addRecorderBuffer(buffer) {
-      if (settings.modules.cloud_replay.enabled) {
+    addRecorderBuffer(buffer, isChat) {
+      if (settings.modules.cloud_replay.enabled && (!isChat || this.arena || settings.modules.tournament_mode.enabled)) {
         this.recorder_buffers.push(buffer);
       }
     }
@@ -4280,8 +4280,19 @@
     return cancel;
   });
 
+  ygopro.ctos_follow('HS_READY', true, function(buffer, info, client, server, datas) {
+    log.info("HS_READY", client.name);
+    return false;
+  });
+
+  ygopro.stoc_follow('ERROR_MSG', true, function(buffer, info, client, server, datas) {
+    log.info("ERROR_MSG", client.name, JSON.stringify(info));
+    return false;
+  });
+
   ygopro.ctos_follow('UPDATE_DECK', true, async function(buffer, info, client, server, datas) {
     var athleticCheckResult, buff_main, buff_side, card, current_deck, deck, deck_array, deck_main, deck_side, deck_text, deckbuf, decks, found_deck, i, j, l, len, len1, line, oppo_pos, recover_player_data, recoveredDeck, room, struct, win_pos;
+    log.info("UPDATE_DECK", client.name, info.mainc, info.sidec);
     if (settings.modules.reconnect.enabled && client.pre_reconnecting) {
       if (!CLIENT_is_able_to_reconnect(client) && !CLIENT_is_able_to_kick_reconnect(client)) {
         ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED);
