@@ -230,7 +230,7 @@ async function writeToFile(message) {
     fileContent = fileContent.replace(/\$dataver="\d+/, '$dataver="' + dataver);
 
     if (message) {
-        message = "<li>" + moment().format('L HH:mm') + "<ul><li>" + message.split("！换行符！").join("</li><li>") + "</li></ul></li>";
+        message = "<li>" + moment().format('YYYY-MM-DD HH:mm') + "<ul><li>" + message.split("！换行符！").join("</li><li>") + "</li></ul></li>";
         fileContent = fileContent.replace(/<ul class="auto-generated">/, '<ul class="auto-generated">\n' + message);
     }
 
