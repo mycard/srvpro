@@ -2231,6 +2231,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
             room.max_player = 2
             if room.arena == "athletic"
               room.welcome = "${athletic_arena_tip}"
+            else
+              room.welcome = "${entertain_arena_tip}"
         when 5
           title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room = ROOM_find_by_title(title)
