@@ -124,6 +124,7 @@ var loadDb = function(db_file, callback) {
                 if (result.race & constants.RACES.RACE_CREATORGOD) {cardRace="创造神";}
                 if (result.race & constants.RACES.RACE_WYRM) {cardRace="幻龙";}
                 if (result.race & constants.RACES.RACE_CYBERS) {cardRace="电子界";}
+                if (result.race & constants.RACES.RACE_ILLUSION) {cardRace = "幻想魔";}
                 cardText+=" "+ cardRace;
                 
                 var cardAttr="";
