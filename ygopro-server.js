@@ -1681,7 +1681,7 @@
           this.hostinfo.lflist = lflist;
         }
         for (extra_mode_func of extra_mode_list) {
-          extra_mode_func(rule);
+          extra_mode_func.call(this, rule);
         }
         if (rule.match(/(^|，|,)(NOLFLIST|NF)(，|,|$)/)) {
           this.hostinfo.lflist = -1;
