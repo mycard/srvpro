@@ -4793,7 +4793,7 @@
         ygopro.stoc_send_chat(client, `\${cloud_replay_delay_part1}R#${room.cloud_replay_id}\${cloud_replay_delay_part2}`, ygopro.constants.COLORS.BABYBLUE);
       }
     }
-    return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player || settings.modules.replay_delay && room.hostinfo.mode === 1;
+    return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player || settings.modules.replay_delay && room && room.hostinfo.mode === 1;
   });
 
   // spawn windbot
