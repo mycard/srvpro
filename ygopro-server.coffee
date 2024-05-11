@@ -952,7 +952,7 @@ net.createServer (client) ->
   client.pre_establish_buffers = new Array()
 
   client.on 'data', (ctos_buffer) ->
-    if client.is_post_watcher
+    if false # client.is_post_watcher
       room=ROOM_all[client.rid]
       room.watcher.write ctos_buffer if room
     else
@@ -1013,7 +1013,10 @@ net.createServer (client) ->
           break
       if !client.server
         return
-      if client.established
+      if client.is_post_watcher
+        room=ROOM_all[client.rid]
+        room.watcher.write buffer for buffer in datas
+      else if client.established
         client.server.write buffer for buffer in datas
       else
         client.pre_establish_buffers.push buffer for buffer in datas

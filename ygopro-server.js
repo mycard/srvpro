@@ -1305,8 +1305,8 @@
     // 客户端到服务端(ctos)协议分析
     client.pre_establish_buffers = new Array();
     client.on('data', function(ctos_buffer) {
-      var b, bad_ip_count, buffer, cancel, ctos_message_length, ctos_proto, datas, info, l, len2, len3, looplimit, m, result, room, struct;
-      if (client.is_post_watcher) {
+      var b, bad_ip_count, buffer, cancel, ctos_message_length, ctos_proto, datas, info, l, len2, len3, len4, looplimit, m, n, result, room, struct;
+      if (false) { // client.is_post_watcher
         room = ROOM_all[client.rid];
         if (room) {
           room.watcher.write(ctos_buffer);
@@ -1382,14 +1382,20 @@
         if (!client.server) {
           return;
         }
-        if (client.established) {
+        if (client.is_post_watcher) {
+          room = ROOM_all[client.rid];
           for (l = 0, len2 = datas.length; l < len2; l++) {
             buffer = datas[l];
+            room.watcher.write(buffer);
+          }
+        } else if (client.established) {
+          for (m = 0, len3 = datas.length; m < len3; m++) {
+            buffer = datas[m];
             client.server.write(buffer);
           }
         } else {
-          for (m = 0, len3 = datas.length; m < len3; m++) {
-            buffer = datas[m];
+          for (n = 0, len4 = datas.length; n < len4; n++) {
+            buffer = datas[n];
             client.pre_establish_buffers.push(buffer);
           }
         }
