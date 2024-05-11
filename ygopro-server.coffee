@@ -452,7 +452,7 @@ ROOM_find_or_create_random = (type, player_ip)->
       (room.random_type == settings.modules.random_duel.default_type or
         settings.modules.random_duel.blank_pass_modes[room.random_type])) or
       room.random_type == type) and
-    room.get_playing_player().length < max_player and
+    0 < room.get_playing_player().length < max_player and
     (settings.modules.random_duel.no_rematch_check or room.get_host() == null or
     room.get_host().ip != ROOM_players_oppentlist[player_ip]) and
     (playerbanned == room.deprecated or type == 'T')
