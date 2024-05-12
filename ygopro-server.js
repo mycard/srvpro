@@ -1385,9 +1385,11 @@
         }
         if (client.is_post_watcher) {
           room = ROOM_all[client.rid];
-          for (l = 0, len2 = datas.length; l < len2; l++) {
-            buffer = datas[l];
-            room.watcher.write(buffer);
+          if (room) {
+            for (l = 0, len2 = datas.length; l < len2; l++) {
+              buffer = datas[l];
+              room.watcher.write(buffer);
+            }
           }
         } else if (client.established) {
           for (m = 0, len3 = datas.length; m < len3; m++) {

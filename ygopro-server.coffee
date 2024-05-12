@@ -1015,7 +1015,7 @@ net.createServer (client) ->
         return
       if client.is_post_watcher
         room=ROOM_all[client.rid]
-        room.watcher.write buffer for buffer in datas
+        room.watcher.write buffer for buffer in datas if room
       else if client.established
         client.server.write buffer for buffer in datas
       else
