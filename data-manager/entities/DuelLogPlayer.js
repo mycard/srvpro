@@ -26,7 +26,7 @@ let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.B
     currentDeckBuffer;
     winner;
     setStartDeck(deck) {
-        if (deck === null) {
+        if (!deck) {
             this.startDeckBuffer = null;
             return;
         }
@@ -36,7 +36,7 @@ let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.B
         return (0, DeckEncoder_1.decodeDeck)(Buffer.from(this.startDeckBuffer, "base64"));
     }
     setCurrentDeck(deck) {
-        if (deck === null) {
+        if (!deck) {
             this.currentDeckBuffer = null;
             return;
         }

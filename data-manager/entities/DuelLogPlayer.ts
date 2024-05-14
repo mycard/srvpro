@@ -36,7 +36,7 @@ export class DuelLogPlayer extends BasePlayer {
     winner: number;
 
     setStartDeck(deck: Deck) {
-        if(deck === null) {
+        if(!deck) {
             this.startDeckBuffer = null;
             return;
         }
@@ -48,7 +48,7 @@ export class DuelLogPlayer extends BasePlayer {
     }
 
     setCurrentDeck(deck: Deck) {
-        if(deck === null) {
+        if(!deck) {
             this.currentDeckBuffer = null;
             return;
         }
