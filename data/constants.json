@@ -54,6 +54,7 @@
         "32": "HS_PLAYER_ENTER",
         "33": "HS_PLAYER_CHANGE",
         "34": "HS_WATCH_CHANGE",
+        "35": "TEAMMATE_SURRENDER",
         "48": "FIELD_FINISH"
     },
     "PLAYERCHANGE":{
