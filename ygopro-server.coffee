@@ -3052,7 +3052,7 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server, datas)->
       ygopro.stoc_send_chat(client, "${surrender_confirm_sent}", ygopro.constants.COLORS.BABYBLUE)
       sur_player.surrend_confirm = true
       for player in [client, sur_player]
-          ygopro.stoc_send(client, 'TEAMMATE_SURRENDER')
+        ygopro.stoc_send(client, 'TEAMMATE_SURRENDER')
       return true
   await return false
 

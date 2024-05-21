@@ -4060,7 +4060,7 @@
   });
 
   ygopro.ctos_follow('SURRENDER', true, async function(buffer, info, client, server, datas) {
-    var room, sur_player;
+    var j, len, player, ref, room, sur_player;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -4078,6 +4078,11 @@
         ygopro.stoc_send_chat(sur_player, "${surrender_confirm_tag}", ygopro.constants.COLORS.BABYBLUE);
         ygopro.stoc_send_chat(client, "${surrender_confirm_sent}", ygopro.constants.COLORS.BABYBLUE);
         sur_player.surrend_confirm = true;
+        ref = [client, sur_player];
+        for (j = 0, len = ref.length; j < len; j++) {
+          player = ref[j];
+          ygopro.stoc_send(client, 'TEAMMATE_SURRENDER');
+        }
         return true;
       }
     }
@@ -4113,7 +4118,7 @@
   //else
   //log.info 'BIG BROTHER OK', response.statusCode, roomname, body
   ygopro.ctos_follow('CHAT', true, async function(buffer, info, client, server, datas) {
-    var cancel, ccolor, cip, cmd, cmsg, cname, color, cvalue, msg, name, oldmsg, ref, room, struct, sur_player, windbot;
+    var cancel, ccolor, cip, cmd, cmsg, cname, color, cvalue, j, len, msg, name, oldmsg, player, ref, ref1, room, struct, sur_player, windbot;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -4144,6 +4149,11 @@
           if (room.hostinfo.mode === 2 && sur_player !== client) {
             ygopro.stoc_send_chat(sur_player, "${surrender_confirm_tag}", ygopro.constants.COLORS.BABYBLUE);
             ygopro.stoc_send_chat(client, "${surrender_confirm_sent}", ygopro.constants.COLORS.BABYBLUE);
+            ref = [client, sur_player];
+            for (j = 0, len = ref.length; j < len; j++) {
+              player = ref[j];
+              ygopro.stoc_send(client, 'TEAMMATE_SURRENDER');
+            }
           } else {
             ygopro.stoc_send_chat(client, "${surrender_confirm}", ygopro.constants.COLORS.BABYBLUE);
           }
@@ -4219,9 +4229,9 @@
           if (cmsg = cmd[1]) {
             if (cmsg.toLowerCase() === "help") {
               ygopro.stoc_send_chat(client, "${show_color_list}", ygopro.constants.COLORS.BABYBLUE);
-              ref = ygopro.constants.COLORS;
-              for (cname in ref) {
-                cvalue = ref[cname];
+              ref1 = ygopro.constants.COLORS;
+              for (cname in ref1) {
+                cvalue = ref1[cname];
                 if (cvalue > 10) {
                   ygopro.stoc_send_chat(client, cname, cvalue);
                 }
