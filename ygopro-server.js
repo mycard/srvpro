@@ -2138,7 +2138,7 @@
     if (!room) {
       return;
     }
-    if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN || room.hostinfo.mode === 2) {
+    if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN) {
       return true;
     }
     if (room.random_type && room.turn < 3 && !client.flee_free && !settings.modules.test_mode.surrender_anytime && !(room.random_type === 'M' && settings.modules.random_duel.record_match_scores)) {
