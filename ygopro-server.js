@@ -749,6 +749,7 @@
     for (l = 0, len2 = ref2.length; l < len2; l++) {
       player = ref2[l];
       if (player && player === bad_player) {
+        player.bad_player = true;
         ygopro.stoc_send_chat(player, `\${unwelcome_warn_part1}${reason}\${unwelcome_warn_part2}`, ygopro.constants.COLORS.RED);
       } else if (player && player.pos !== 7 && player !== bad_player) {
         player.flee_free = true;
@@ -1074,6 +1075,15 @@
         }
       });
       return playing_player;
+    }
+
+    get_teammate_player(player) {
+      if (player.pos >= 4) {
+        return null;
+      }
+      return _.find(this.players, (player2) => {
+        return player2.pos === [1, 0, 3, 2][player.pos];
+      });
     }
 
     get_host() {
@@ -1883,7 +1893,7 @@
     is_host = ((info.type >> 4) & 0xf) !== 0;
     client.is_host = is_host;
     client.pos = selftype;
-    //console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
+    //log.info "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
     return false;
   });
 
@@ -2104,13 +2114,24 @@
   });
 
   ygopro.ctos_follow('SURRENDER', true, function(buffer, info, client, server, datas) {
-    var room;
+    var room, teammate;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
     }
     if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN) {
       return true;
+    }
+    if (room.random_type && client.flee_free && room.hostinfo.mode === 2) {
+      teammate = room.get_teammate_player(client);
+      if (teammate && teammate.bad_player) {
+        setTimeout((function() {
+          if (teammate && teammate.server) {
+            ygopro.ctos_send(teammate.server, 'SURRENDER');
+          }
+        }), 200);
+      }
+      return false;
     }
     if (room.random_type && room.turn < 3 && !client.flee_free && !settings.modules.test_mode.surrender_anytime && !(room.random_type === 'M' && settings.modules.random_duel.record_match_scores)) {
       ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE);

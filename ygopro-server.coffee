@@ -526,6 +526,7 @@ ROOM_unwelcome = (room, bad_player, reason)->
   return unless room
   for player in room.players
     if player and player == bad_player
+      player.bad_player=true
       ygopro.stoc_send_chat(player, "${unwelcome_warn_part1}#{reason}${unwelcome_warn_part2}", ygopro.constants.COLORS.RED)
     else if player and player.pos!=7 and player != bad_player
       player.flee_free=true
@@ -776,6 +777,12 @@ class Room
       if player.pos < 4 then playing_player.push player
       return
     return playing_player
+
+  get_teammate_player: (player) ->
+    if player.pos >= 4
+      return null
+    return _.find @players, (player2)=>
+      return player2.pos == [1,0,3,2][player.pos]
 
   get_host: ->
     host_player = null
@@ -1409,7 +1416,7 @@ ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server, datas)->
   is_host = ((info.type >> 4) & 0xf) != 0
   client.is_host = is_host
   client.pos = selftype
-  #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
+  #log.info "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
   return false
 
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server, datas)->
@@ -1557,6 +1564,14 @@ ygopro.ctos_follow 'SURRENDER', true, (buffer, info, client, server, datas)->
   return unless room
   if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
     return true
+  if room.random_type and client.flee_free and room.hostinfo.mode == 2
+    teammate = room.get_teammate_player(client)
+    if teammate and teammate.bad_player
+      setTimeout (()->
+        if teammate and teammate.server
+          ygopro.ctos_send(teammate.server, 'SURRENDER')
+        return) , 200
+    return false
   if room.random_type and room.turn < 3 and not client.flee_free and not settings.modules.test_mode.surrender_anytime and not (room.random_type=='M' and settings.modules.random_duel.record_match_scores)
     ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
     return true
