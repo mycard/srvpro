@@ -1731,10 +1731,6 @@
       if (client.pos === 0) {
         room.turn++;
       }
-      if (client.surrend_confirm) {
-        client.surrend_confirm = false;
-        ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE);
-      }
     }
     if (msg_name === 'WIN' && client.pos === 0) {
       pos = buffer.readUInt8(1);
@@ -2193,22 +2189,6 @@
     }
     cmd = msg.split(' ');
     switch (cmd[0]) {
-      case '/投降':
-      case '/surrender':
-        if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN || room.hostinfo.mode === 2) {
-          return cancel;
-        }
-        if (room.random_type && room.turn < 3) {
-          ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE);
-          return cancel;
-        }
-        if (client.surrend_confirm) {
-          ygopro.ctos_send(client.server, 'SURRENDER');
-        } else {
-          ygopro.stoc_send_chat(client, "${surrender_confirm}", ygopro.constants.COLORS.BABYBLUE);
-          client.surrend_confirm = true;
-        }
-        break;
       case '/help':
         ygopro.stoc_send_chat(client, "${chat_order_main}");
         ygopro.stoc_send_chat(client, "${chat_order_help}");

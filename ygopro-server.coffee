@@ -1308,9 +1308,6 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   if msg_name == 'NEW_TURN'
     if client.pos == 0
       room.turn++
-    if client.surrend_confirm
-      client.surrend_confirm = false
-      ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
 
   if msg_name == 'WIN' and client.pos == 0
     pos = buffer.readUInt8(1)
@@ -1612,18 +1609,6 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
   room.last_active_time = moment_now_string unless cancel or not room.random_type or room.duel_stage == ygopro.constants.DUEL_STAGE.FINGER or room.duel_stage == ygopro.constants.DUEL_STAGE.FIRSTGO or room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING
   cmd = msg.split(' ')
   switch cmd[0]
-    when '/投降', '/surrender'
-      if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN or room.hostinfo.mode == 2
-        return cancel
-      if room.random_type and room.turn < 3
-        ygopro.stoc_send_chat(client, "${surrender_denied}", ygopro.constants.COLORS.BABYBLUE)
-        return cancel
-      if client.surrend_confirm
-        ygopro.ctos_send(client.server, 'SURRENDER')
-      else
-        ygopro.stoc_send_chat(client, "${surrender_confirm}", ygopro.constants.COLORS.BABYBLUE)
-        client.surrend_confirm = true
-
     when '/help'
       ygopro.stoc_send_chat(client, "${chat_order_main}")
       ygopro.stoc_send_chat(client, "${chat_order_help}")
