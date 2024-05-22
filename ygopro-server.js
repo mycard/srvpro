@@ -777,7 +777,7 @@
 
   CLIENT_send_replays = function(client, room) {
     var buffer, i, l, len2, ref2;
-    if (!(settings.modules.replay_delay && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.closed)) {
+    if (!(settings.modules.replay_delay && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.room_closed)) {
       return false;
     }
     client.replays_sent = true;
@@ -1215,7 +1215,7 @@
     // 释放处理
     client.on('close', function(had_error) {
       var room;
-      //log.info "client closed", client.name, had_error
+      //log.info "client closed", client.name, had_error, client.closed, client.room_closed
       room = ROOM_all[client.rid];
       connect_count = ROOM_connected_ip[client.ip];
       if (connect_count > 0) {
@@ -1223,8 +1223,8 @@
       }
       ROOM_connected_ip[client.ip] = connect_count;
       //log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
-      if (!client.closed) {
-        client.closed = true;
+      if (!client.room_closed) {
+        client.room_closed = true;
         if (room) {
           room.disconnect(client);
         } else {
@@ -1242,8 +1242,8 @@
       }
       ROOM_connected_ip[client.ip] = connect_count;
       //log.info "err disconnect", client.ip, ROOM_connected_ip[client.ip]
-      if (!client.closed) {
-        client.closed = true;
+      if (!client.room_closed) {
+        client.room_closed = true;
         if (room) {
           room.disconnect(client, error);
         } else {
@@ -1256,8 +1256,8 @@
     });
     server.on('close', function(had_error) {
       var room;
-      if (!server.closed) {
-        server.closed = true;
+      if (!server.room_closed) {
+        server.room_closed = true;
       }
       if (!server.client) {
         return;
@@ -1268,7 +1268,7 @@
         //log.info "server close", server.client.ip, ROOM_connected_ip[server.client.ip]
         room.disconnector = 'server';
       }
-      if (!server.client.closed) {
+      if (!server.client.room_closed) {
         ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED);
         //if room and settings.modules.replay_delay
         //  room.send_replays()
@@ -1277,7 +1277,7 @@
     });
     server.on('error', function(error) {
       var room;
-      server.closed = error;
+      server.room_closed = error;
       if (!server.client) {
         return;
       }
@@ -1287,7 +1287,7 @@
         //log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
         room.disconnector = 'server';
       }
-      if (!server.client.closed) {
+      if (!server.client.room_closed) {
         ygopro.stoc_send_chat(server.client, `\${server_error}: ${error}`, ygopro.constants.COLORS.RED);
         //if room and settings.modules.replay_delay
         //  room.send_replays()
@@ -1468,7 +1468,7 @@
           break;
         }
       }
-      if (server.client && !server.client.closed) {
+      if (server.client && !server.client.room_closed) {
         for (l = 0, len2 = datas.length; l < len2; l++) {
           buffer = datas[l];
           server.client.write(buffer);

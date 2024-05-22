@@ -547,7 +547,7 @@ SERVER_kick = (server) ->
   return true
 
 CLIENT_send_replays = (client, room) ->
-  return false unless settings.modules.replay_delay and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.closed
+  return false unless settings.modules.replay_delay and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.room_closed
   client.replays_sent = true
   i = 0
   for buffer in room.replays
@@ -876,15 +876,15 @@ net.createServer (client) ->
 
   # 释放处理
   client.on 'close', (had_error) ->
-    #log.info "client closed", client.name, had_error
+    #log.info "client closed", client.name, had_error, client.closed, client.room_closed
     room=ROOM_all[client.rid]
     connect_count = ROOM_connected_ip[client.ip]
     if connect_count > 0
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
     #log.info "disconnect", client.ip, ROOM_connected_ip[client.ip]
-    unless client.closed
-      client.closed = true
+    unless client.room_closed
+      client.room_closed = true
       if room
         room.disconnect(client)
       else
@@ -899,8 +899,8 @@ net.createServer (client) ->
       connect_count--
     ROOM_connected_ip[client.ip] = connect_count
     #log.info "err disconnect", client.ip, ROOM_connected_ip[client.ip]
-    unless client.closed
-      client.closed = true
+    unless client.room_closed
+      client.room_closed = true
       if room
         room.disconnect(client, error)
       else
@@ -912,14 +912,14 @@ net.createServer (client) ->
     return
 
   server.on 'close', (had_error) ->
-    server.closed = true unless server.closed
+    server.room_closed = true unless server.room_closed
     if !server.client
       return
     #log.info "server closed", server.client.name, had_error
     room=ROOM_all[server.client.rid]
     #log.info "server close", server.client.ip, ROOM_connected_ip[server.client.ip]
     room.disconnector = 'server' if room and !server.system_kicked
-    unless server.client.closed
+    unless server.client.room_closed
       ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED)
       #if room and settings.modules.replay_delay
       #  room.send_replays()
@@ -927,14 +927,14 @@ net.createServer (client) ->
     return
 
   server.on 'error', (error)->
-    server.closed = error
+    server.room_closed = error
     if !server.client
       return
     #log.info "server error", client.name, error
     room=ROOM_all[server.client.rid]
     #log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
     room.disconnector = 'server' if room and !server.system_kicked
-    unless server.client.closed
+    unless server.client.room_closed
       ygopro.stoc_send_chat(server.client, "${server_error}: #{error}", ygopro.constants.COLORS.RED)
       #if room and settings.modules.replay_delay
       #  room.send_replays()
@@ -1077,7 +1077,7 @@ net.createServer (client) ->
         log.info("error stoc", server.client.name)
         server.destroy()
         break
-    if server.client and !server.client.closed
+    if server.client and !server.client.room_closed
       server.client.write buffer for buffer in datas
 
     return
