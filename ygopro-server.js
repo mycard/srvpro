@@ -1153,7 +1153,7 @@
     }
 
     disconnect(client, error) {
-      var index, left_name;
+      var index;
       if (client.is_post_watcher) {
         ygopro.stoc_send_chat_to_room(this, `${client.name} \${quit_watch}` + (error ? `: ${error}` : ''));
         index = _.indexOf(this.watchers, client);
@@ -1179,8 +1179,7 @@
           }
         }
         if (this.players.length && !(this.windbot && client.is_host)) {
-          left_name = (settings.modules.hide_name && this.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN ? "********" : client.name);
-          ygopro.stoc_send_chat_to_room(this, `${left_name} \${left_game}` + (error ? `: ${error}` : ''));
+          ygopro.stoc_send_chat_to_room(this, `${client.name} \${left_game}` + (error ? `: ${error}` : ''));
         } else {
           //client.room = null
           this.send_replays();
@@ -1888,22 +1887,6 @@
     return false;
   });
 
-  ygopro.stoc_follow('HS_PLAYER_ENTER', true, function(buffer, info, client, server, datas) {
-    var pos, room, struct;
-    room = ROOM_all[client.rid];
-    if (!(room && settings.modules.hide_name && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN)) {
-      return false;
-    }
-    pos = info.pos;
-    if (pos < 4 && pos !== client.pos) {
-      struct = ygopro.structs["STOC_HS_PlayerEnter"];
-      struct._setBuff(buffer);
-      struct.set("name", "********");
-      buffer = struct.buffer;
-    }
-    return false;
-  });
-
   ygopro.stoc_follow('HS_PLAYER_CHANGE', false, function(buffer, info, client, server, datas) {
     var is_ready, l, len2, player, pos, ref2, room;
     room = ROOM_all[client.rid];
@@ -2035,7 +2018,7 @@
   }
 
   ygopro.stoc_follow('DUEL_START', false, function(buffer, info, client, server, datas) {
-    var deck_arena, deck_name, deck_text, l, len2, len3, m, player, ref2, ref3, room;
+    var deck_arena, deck_name, deck_text, l, len2, player, ref2, room;
     room = ROOM_all[client.rid];
     if (!room) {
       return;
@@ -2063,18 +2046,6 @@
         clearInterval(client.side_interval);
         client.side_interval = null;
         client.side_tcount = null;
-      }
-    }
-    if (settings.modules.hide_name && room.duel_count === 0) {
-      ref3 = room.get_playing_player();
-      for (m = 0, len3 = ref3.length; m < len3; m++) {
-        player = ref3[m];
-        if (player !== client) {
-          ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
-            name: player.name,
-            pos: player.pos
-          });
-        }
       }
     }
     if (settings.modules.tips.enabled) {

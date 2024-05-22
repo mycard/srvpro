@@ -845,8 +845,7 @@ class Room
           if settings.modules.random_duel.record_match_scores and @random_type == 'M'
             ROOM_player_flee(client.name_vpass)
       if @players.length and !(@windbot and client.is_host)
-        left_name = (if settings.modules.hide_name and @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN then "********" else client.name)
-        ygopro.stoc_send_chat_to_room this, "#{left_name} ${left_game}" + if error then ": #{error}" else ''
+        ygopro.stoc_send_chat_to_room this, "#{client.name} ${left_game}" + if error then ": #{error}" else ''
         #client.room = null
       else
         @send_replays()
@@ -1413,17 +1412,6 @@ ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server, datas)->
   #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
   return false
 
-ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas)->
-  room=ROOM_all[client.rid]
-  return false unless room and settings.modules.hide_name and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
-  pos = info.pos
-  if pos < 4 and pos != client.pos
-    struct = ygopro.structs["STOC_HS_PlayerEnter"]
-    struct._setBuff(buffer)
-    struct.set("name", "********")
-    buffer = struct.buffer
-  return false
-
 ygopro.stoc_follow 'HS_PLAYER_CHANGE', false, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and room.max_player and client.is_host
@@ -1522,12 +1510,6 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
       clearInterval client.side_interval
       client.side_interval = null
       client.side_tcount = null
-  if settings.modules.hide_name and room.duel_count == 0
-    for player in room.get_playing_player() when player != client
-      ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
-        name: player.name,
-        pos: player.pos
-      })
   if settings.modules.tips.enabled
     ygopro.stoc_send_random_tip(client)
   deck_text = null

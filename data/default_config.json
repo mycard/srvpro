@@ -25,7 +25,6 @@
     "max_rooms_count": 0,
     "side_timeout": false,
     "replay_delay": false,
-    "hide_name": false,
     "enable_halfway_watch": true,
     "replay_path": "./replays/",
     "archive_tool": "7z",
