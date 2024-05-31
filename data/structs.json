@@ -78,7 +78,8 @@
     ],
     "STOC_HS_PlayerEnter": [
         {"name": "name", "type": "unsigned short", "length": 20, "encoding": "UTF-16LE"},
-        {"name": "pos", "type": "unsigned char"}
+        {"name": "pos", "type": "unsigned char"},
+        {"name": "padding", "type": "unsigned char"}
     ],
     "STOC_HS_PlayerChange": [
         {"name": "status", "type": "unsigned char"}

@@ -1014,6 +1014,7 @@ CLIENT_send_pre_reconnect_info = global.CLIENT_send_pre_reconnect_info = (client
     ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
       name: player.name,
       pos: player.pos,
+      padding: 0,
     })
   return
 
@@ -2994,6 +2995,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
       ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
         name: player.name,
         pos: player.pos
+        padding: 0,
       })
   if settings.modules.tips.enabled
     ygopro.stoc_send_random_tip(client)
