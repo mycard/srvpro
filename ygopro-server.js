@@ -4075,7 +4075,7 @@
       return true;
     }
     if (room.hostinfo.mode === 2) {
-      if (!client.surrend_confirm && !CLIENT_get_partner(client).closed && !CLIENT_get_partner(client).is_local) {
+      if (!client.surrend_confirm && !CLIENT_get_partner(client).isClosed && !CLIENT_get_partner(client).is_local) {
         sur_player = CLIENT_get_partner(client);
         ygopro.stoc_send_chat(sur_player, "${surrender_confirm_tag}", ygopro.constants.COLORS.BABYBLUE);
         ygopro.stoc_send_chat(client, "${surrender_confirm_sent}", ygopro.constants.COLORS.BABYBLUE);
@@ -4145,7 +4145,7 @@
           ygopro.ctos_send(client.server, 'SURRENDER');
         } else {
           sur_player = CLIENT_get_partner(client);
-          if (!sur_player || sur_player.closed || sur_player.is_local) {
+          if (!sur_player || sur_player.isClosed || sur_player.is_local) {
             sur_player = client;
           }
           if (room.hostinfo.mode === 2 && sur_player !== client) {
