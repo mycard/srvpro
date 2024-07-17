@@ -3179,7 +3179,7 @@
     if (room.welcome2) {
       ygopro.stoc_send_chat(client, room.welcome2, ygopro.constants.COLORS.PINK);
     }
-    if (settings.modules.arena_mode.enabled && !client.is_local) { //and not client.score_shown
+    if (settings.modules.arena_mode.enabled && !client.is_local && settings.modules.arena_mode.get_score) { //and not client.score_shown
       request({
         url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
         json: true

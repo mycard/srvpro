@@ -2418,7 +2418,7 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat(client, room.welcome, ygopro.constants.COLORS.BABYBLUE)
   if room.welcome2
     ygopro.stoc_send_chat(client, room.welcome2, ygopro.constants.COLORS.PINK)
-  if settings.modules.arena_mode.enabled and !client.is_local #and not client.score_shown
+  if settings.modules.arena_mode.enabled and !client.is_local and settings.modules.arena_mode.get_score #and not client.score_shown
     request
       url: settings.modules.arena_mode.get_score + encodeURIComponent(client.name),
       json: true
