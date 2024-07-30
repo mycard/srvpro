@@ -1417,8 +1417,9 @@ class Room
     return if @deleted
     #log.info 'room-delete', this.name, ROOM_all.length
     score_array=[]
-    for name, score of @scores
-      score_form = { name: name.split('$')[0], score: score, deck: null, name_vpass: name }
+    for name_vpass, score of @scores
+      name = name_vpass.split('$')[0]
+      score_form = { name: name, score: score, deck: null, name_vpass: name_vpass }
       if @decks[name]
         score_form.deck = @decks[name]
       score_array.push score_form
