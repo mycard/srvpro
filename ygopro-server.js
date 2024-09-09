@@ -3732,7 +3732,7 @@
   ygopro.stoc_follow('HS_PLAYER_ENTER', true, async function(buffer, info, client, server, datas) {
     var pos, room, struct;
     room = ROOM_all[client.rid];
-    if (room && settings.modules.hide_name && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN) {
+    if (room && (room.random_type || room.arena) && settings.modules.hide_name && room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN) {
       pos = info.pos;
       if (pos < 4 && pos !== client.pos) {
         struct = ygopro.structs.get("STOC_HS_PlayerEnter");
