@@ -40,8 +40,7 @@ export class RandomDuelScore extends CreateAndUpdateTimeBase {
         this.lose();
     }
 
-    getScoreText() {
-        const displayName = this.getDisplayName();
+    getScoreText(displayName = this.getDisplayName()) {
         const total = this.winCount + this.loseCount;
         if (this.winCount < 2 && total < 3) {
             return `${displayName} \${random_score_not_enough}`;

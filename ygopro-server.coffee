@@ -709,10 +709,10 @@ ROOM_player_flee = global.ROOM_player_flee = (name)->
   await dataManager.randomDuelPlayerFlee(name)
   return
 
-ROOM_player_get_score = global.ROOM_player_get_score = (player)->
+ROOM_player_get_score = global.ROOM_player_get_score = (player, display_name)->
   if !settings.modules.mysql.enabled
     return ""
-  return await dataManager.getRandomDuelScoreDisplay(player.name_vpass)
+  return await dataManager.getRandomDuelScoreDisplay(player.name_vpass, display_name)
 
 ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player_ip)->
   uname=name.toUpperCase()
@@ -2446,9 +2446,10 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         #client.score_shown = true
       return
   if settings.modules.random_duel.record_match_scores and room.random_type == 'M'
-    ygopro.stoc_send_chat_to_room(room, await ROOM_player_get_score(client), ygopro.constants.COLORS.GREEN)
-    for player in room.players when player.pos != 7 and player != client
-      ygopro.stoc_send_chat(client, await ROOM_player_get_score(player), ygopro.constants.COLORS.GREEN)
+    ygopro.stoc_send_chat_to_room(room, await ROOM_player_get_score(client, client.name), ygopro.constants.COLORS.GREEN)
+    if not settings.modules.hide_name
+      for player in room.players when player.pos != 7 and player != client
+        ygopro.stoc_send_chat(client, await ROOM_player_get_score(player, room.getMaskedPlayerName(player, client)), ygopro.constants.COLORS.GREEN)
   if !room.recorder
     room.recorder = recorder = net.connect room.port, ->
       ygopro.ctos_send recorder, 'PLAYER_INFO', {
