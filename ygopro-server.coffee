@@ -1819,7 +1819,7 @@ class Room
       @watcher_buffers.push chat_buf
     return
 
-  getMaskedPlayerName(player, sight_player) ->
+  getMaskedPlayerName: (player, sight_player) ->
     if not settings.modules.hide_name or (sight_player and player == sight_player) or not (@random_type or @arena)
       return player.name
     if @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.hide_name == "start"
