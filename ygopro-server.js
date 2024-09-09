@@ -3216,13 +3216,11 @@
     //client.score_shown = true
     if (settings.modules.random_duel.record_match_scores && room.random_type === 'M') {
       ygopro.stoc_send_chat_to_room(room, (await ROOM_player_get_score(client, client.name)), ygopro.constants.COLORS.GREEN);
-      if (!settings.modules.hide_name) {
-        ref = room.players;
-        for (j = 0, len = ref.length; j < len; j++) {
-          player = ref[j];
-          if (player.pos !== 7 && player !== client) {
-            ygopro.stoc_send_chat(client, (await ROOM_player_get_score(player, room.getMaskedPlayerName(player, client))), ygopro.constants.COLORS.GREEN);
-          }
+      ref = room.players;
+      for (j = 0, len = ref.length; j < len; j++) {
+        player = ref[j];
+        if (player.pos !== 7 && player !== client) {
+          ygopro.stoc_send_chat(client, (await ROOM_player_get_score(player, room.getMaskedPlayerName(player, client))), ygopro.constants.COLORS.GREEN);
         }
       }
     }

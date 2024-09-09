@@ -528,7 +528,7 @@ class DataManager {
         newScore.name = name;
         return await this.saveRandomDuelScore(newScore);
     }
-    async getRandomDuelScoreDisplay(name, displayName = name.split("$")[0]) {
+    async getRandomDuelScoreDisplay(name, displayName) {
         const score = await this.getRandomDuelScore(name);
         if (!score) {
             return `${displayName} \${random_score_blank}`;

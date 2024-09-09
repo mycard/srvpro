@@ -33,7 +33,7 @@ let RandomDuelScore = class RandomDuelScore extends CreateAndUpdateTimeBase_1.Cr
         ++this.fleeCount;
         this.lose();
     }
-    getScoreText(displayName = this.getDisplayName()) {
+    getScoreText(displayName) {
         const total = this.winCount + this.loseCount;
         if (this.winCount < 2 && total < 3) {
             return `${displayName} \${random_score_not_enough}`;
