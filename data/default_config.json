@@ -79,6 +79,7 @@
       "record_match_scores": false,
       "post_match_scores": false,
       "post_match_accesskey": "123456",
+      "disable_chat": false,
       "blank_pass_modes": {
         "S": true,
         "M": true,
