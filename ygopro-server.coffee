@@ -922,7 +922,7 @@ CLIENT_reconnect_register = global.CLIENT_reconnect_register = (client, room_id,
   dinfo.timeout = tmot
   disconnect_list[CLIENT_get_authorize_key(client)] = dinfo
   #console.log("#{client.name} ${disconnect_from_game}")
-  ygopro.stoc_send_chat_to_room(room, "#{client.name} ${disconnect_from_game}" + if error then ": #{error}" else '')
+  ygopro.stoc_send_chat_to_room(room, "#{room.getMaskedPlayerName(client)} ${disconnect_from_game}" + if error then ": #{error}" else '')
   if client.time_confirm_required
     client.time_confirm_required = false
     ygopro.ctos_send(client.server, 'TIME_CONFIRM')
@@ -1015,7 +1015,7 @@ CLIENT_send_pre_reconnect_info = global.CLIENT_send_pre_reconnect_info = (client
   })
   for player in room.players
     ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
-      name: player.name,
+      name: room.getMaskedPlayerName(player, old_client),
       pos: player.pos,
       padding: 0,
     })
@@ -1085,7 +1085,7 @@ CLIENT_reconnect = global.CLIENT_reconnect = (client) ->
   CLIENT_import_data(client, dinfo.old_client, room)
   CLIENT_send_reconnect_info(client, client.server, room)
   #console.log("#{client.name} ${reconnect_to_game}")
-  ygopro.stoc_send_chat_to_room(room, "#{client.name} ${reconnect_to_game}")
+  ygopro.stoc_send_chat_to_room(room, "#{room.getMaskedPlayerName(client)} ${reconnect_to_game}")
   CLIENT_reconnect_unregister(client, true)
   return
 
@@ -1822,10 +1822,8 @@ class Room
   getMaskedPlayerName: (player, sight_player) ->
     if not settings.modules.hide_name or (sight_player and player == sight_player) or not (@random_type or @arena)
       return player.name
-    if @duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.hide_name == "start"
-      return "********"
-    if settings.modules.hide_name == "always"
-      return "********"
+    if (@duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and settings.modules.hide_name == "start") or settings.modules.hide_name == "always"
+      return "Player #{player.pos + 1}" 
     return player.name
 
 # 网络连接
@@ -2832,7 +2830,7 @@ ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas
     if pos < 4 and pos != client.pos
       struct = ygopro.structs.get("STOC_HS_PlayerEnter")
       struct._setBuff(buffer)
-      struct.set("name", "********")
+      struct.set("name", room.getMaskedPlayerName())
       buffer = struct.buffer
   await return false
 
