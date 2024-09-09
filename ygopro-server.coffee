@@ -2830,7 +2830,7 @@ ygopro.stoc_follow 'HS_PLAYER_ENTER', true, (buffer, info, client, server, datas
     if pos < 4 and pos != client.pos
       struct = ygopro.structs.get("STOC_HS_PlayerEnter")
       struct._setBuff(buffer)
-      struct.set("name", info.name + " " + (pos + 1))
+      struct.set("name", "Player " + (pos + 1))
       buffer = struct.buffer
   await return false
 
