@@ -188,11 +188,12 @@ catch
   setting_save(duel_log)
 
 badwordR={}
-badwordR.level0=new RegExp('(?:'+badwords.level0.join(')|(?:')+')','i');
-badwordR.level1=new RegExp('(?:'+badwords.level1.join(')|(?:')+')','i');
-badwordR.level1g=new RegExp('(?:'+badwords.level1.join(')|(?:')+')','ig');
-badwordR.level2=new RegExp('(?:'+badwords.level2.join(')|(?:')+')','i');
-badwordR.level3=new RegExp('(?:'+badwords.level3.join(')|(?:')+')','i');
+badwordR.level0=new RegExp('(?:'+badwords.level0.join(')|(?:')+')','i');  # log
+badwordR.level1=new RegExp('(?:'+badwords.level1.join(')|(?:')+')','i');  # replace
+badwordR.level1g=new RegExp('(?:'+badwords.level1.join(')|(?:')+')','ig');  # replace
+badwordR.level2=new RegExp('(?:'+badwords.level2.join(')|(?:')+')','i');  # can't send
+badwordR.level3=new RegExp('(?:'+badwords.level3.join(')|(?:')+')','i');  # can't send, more weight
+badwordR.level4=new RegExp('(?:'+badwords.level4.join(')|(?:')+')','i');  # can't send, but same weight as level2, generally for the name of some special persons
 
 moment_now = moment()
 moment_now_string = moment_now.format()
@@ -1175,6 +1176,10 @@ ygopro.ctos_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
     log.warn("BANNED IP LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${banned_ip_login}")
 
+  else if badwordR.level4.test(client.name)
+    log.warn("BAD NAME LEVEL 4", client.name, client.ip)
+    ygopro.stoc_die(client, "${bad_name_level2}")
+
   else if badwordR.level3.test(client.name)
     log.warn("BAD NAME LEVEL 3", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level3}")
@@ -1649,7 +1654,13 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
     ygopro.stoc_send_chat(client, "${banned_chat_tip}", ygopro.constants.COLORS.RED)
     return true
   oldmsg = msg
-  if badwordR.level3.test(msg)
+  if badwordR.level4.test(msg)
+    log.warn "BAD WORD LEVEL 4", client.name, client.ip, oldmsg, RegExp.$1
+    report_to_big_brother room.name, client.name, client.ip, 2, oldmsg, RegExp.$1
+    client.abuse_count=client.abuse_count+3
+    ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED)
+    cancel = true
+  else if badwordR.level3.test(msg)
     log.warn "BAD WORD LEVEL 3", client.name, client.ip, oldmsg, RegExp.$1
     report_to_big_brother room.name, client.name, client.ip, 3, oldmsg, RegExp.$1
     cancel = true

@@ -273,6 +273,8 @@
 
   badwordR.level3 = new RegExp('(?:' + badwords.level3.join(')|(?:') + ')', 'i');
 
+  badwordR.level4 = new RegExp('(?:' + badwords.level4.join(')|(?:') + ')', 'i');
+
   moment_now = moment();
 
   moment_now_string = moment_now.format();
@@ -1573,6 +1575,9 @@
     } else if (_.indexOf(settings.ban.banned_ip, client.ip) > -1) { //IP被封
       log.warn("BANNED IP LOGIN", client.name, client.ip);
       ygopro.stoc_die(client, "${banned_ip_login}");
+    } else if (badwordR.level4.test(client.name)) {
+      log.warn("BAD NAME LEVEL 4", client.name, client.ip);
+      ygopro.stoc_die(client, "${bad_name_level2}");
     } else if (badwordR.level3.test(client.name)) {
       log.warn("BAD NAME LEVEL 3", client.name, client.ip);
       ygopro.stoc_die(client, "${bad_name_level3}");
@@ -2243,7 +2248,13 @@
       return true;
     }
     oldmsg = msg;
-    if (badwordR.level3.test(msg)) {
+    if (badwordR.level4.test(msg)) {
+      log.warn("BAD WORD LEVEL 4", client.name, client.ip, oldmsg, RegExp.$1);
+      report_to_big_brother(room.name, client.name, client.ip, 2, oldmsg, RegExp.$1);
+      client.abuse_count = client.abuse_count + 3;
+      ygopro.stoc_send_chat(client, "${chat_warn_level2}", ygopro.constants.COLORS.RED);
+      cancel = true;
+    } else if (badwordR.level3.test(msg)) {
       log.warn("BAD WORD LEVEL 3", client.name, client.ip, oldmsg, RegExp.$1);
       report_to_big_brother(room.name, client.name, client.ip, 3, oldmsg, RegExp.$1);
       cancel = true;
