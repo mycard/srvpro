@@ -2444,7 +2444,8 @@ ygopro.stoc_follow 'JOIN_GAME', false, (buffer, info, client, server, datas)->
         #client.score_shown = true
       return
   if settings.modules.random_duel.record_match_scores and room.random_type == 'M'
-    ygopro.stoc_send_chat_to_room(room, await ROOM_player_get_score(client, client.name), ygopro.constants.COLORS.GREEN)
+    for player in room.players when player.pos != 7
+      ygopro.stoc_send_chat(player, await ROOM_player_get_score(client, room.getMaskedPlayerName(client, player)), ygopro.constants.COLORS.GREEN)
     for player in room.players when player.pos != 7 and player != client
       ygopro.stoc_send_chat(client, await ROOM_player_get_score(player, room.getMaskedPlayerName(player, client)), ygopro.constants.COLORS.GREEN)
   if !room.recorder

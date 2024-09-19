@@ -3175,7 +3175,7 @@
   });
 
   ygopro.stoc_follow('JOIN_GAME', false, async function(buffer, info, client, server, datas) {
-    var j, len, player, recorder, ref, room, watcher;
+    var j, l, len, len1, player, recorder, ref, ref1, room, watcher;
     //欢迎信息
     room = ROOM_all[client.rid];
     if (!(room && !client.reconnecting)) {
@@ -3212,10 +3212,16 @@
     }
     //client.score_shown = true
     if (settings.modules.random_duel.record_match_scores && room.random_type === 'M') {
-      ygopro.stoc_send_chat_to_room(room, (await ROOM_player_get_score(client, client.name)), ygopro.constants.COLORS.GREEN);
       ref = room.players;
       for (j = 0, len = ref.length; j < len; j++) {
         player = ref[j];
+        if (player.pos !== 7) {
+          ygopro.stoc_send_chat(player, (await ROOM_player_get_score(client, room.getMaskedPlayerName(client, player))), ygopro.constants.COLORS.GREEN);
+        }
+      }
+      ref1 = room.players;
+      for (l = 0, len1 = ref1.length; l < len1; l++) {
+        player = ref1[l];
         if (player.pos !== 7 && player !== client) {
           ygopro.stoc_send_chat(client, (await ROOM_player_get_score(player, room.getMaskedPlayerName(player, client))), ygopro.constants.COLORS.GREEN);
         }
@@ -3253,15 +3259,15 @@
         ygopro.ctos_send(watcher, 'HS_TOOBSERVER');
       });
       watcher.on('data', function(data) {
-        var l, len1, ref1, w;
+        var len2, m, ref2, w;
         room = ROOM_all[client.rid];
         if (!room) {
           return;
         }
         room.watcher_buffers.push(data);
-        ref1 = room.watchers;
-        for (l = 0, len1 = ref1.length; l < len1; l++) {
-          w = ref1[l];
+        ref2 = room.watchers;
+        for (m = 0, len2 = ref2.length; m < len2; m++) {
+          w = ref2[m];
           if (w) { //a WTF fix
             ygopro.helper.send(w, data);
           }
