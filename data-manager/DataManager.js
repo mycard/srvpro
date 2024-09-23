@@ -528,12 +528,12 @@ class DataManager {
         newScore.name = name;
         return await this.saveRandomDuelScore(newScore);
     }
-    async getRandomDuelScoreDisplay(name) {
+    async getRandomDuelScoreDisplay(name, displayName) {
         const score = await this.getRandomDuelScore(name);
         if (!score) {
-            return `${name.split("$")[0]} \${random_score_blank}`;
+            return `${displayName} \${random_score_blank}`;
         }
-        return score.getScoreText();
+        return score.getScoreText(displayName);
     }
     async randomDuelPlayerWin(name) {
         const score = await this.getOrCreateRandomDuelScore(name);

@@ -178,6 +178,7 @@
     "refresh_failed": "Refresh field failed.",
     "banned_athletic_deck_part1": "Entertainment Mode does not allow top ",
     "banned_athletic_deck_part2": " popular meta decks. Please change your deck.",
+    "chat_disabled": "Chat is disabled in this room.",
     "using_athletic_deck": " is using a competitive deck."
   },
   "es-es": {
@@ -505,6 +506,7 @@
     "refresh_fail": "刷新场面失败。",
     "banned_athletic_deck_part1": "娱乐匹配中禁止使用使用数前",
     "banned_athletic_deck_part2": "的竞技卡组。请更换卡组。",
+    "chat_disabled": "本房间禁止聊天。",
     "using_athletic_deck": " 正在使用竞技卡组。"
   },
  "ko-kr": {
