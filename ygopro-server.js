@@ -882,14 +882,14 @@
   ROOM_kick = function(name, callback) {
     var found;
     found = false;
-    return _async.each(ROOM_all, function(room, done) {
+    return _async.eachSeries(ROOM_all, function(room, done) {
       if (!(room && room.established && (name === "all" || name === room.process_pid.toString() || name === room.name))) {
         done();
         return;
       }
       found = true;
       room.terminate();
-      return done();
+      done();
     }, function(err) {
       callback(null, found);
     });
@@ -4951,7 +4951,7 @@
           response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'));
         } else {
           roomsjson = [];
-          _async.each(ROOM_all, function(room, done) {
+          _async.eachSeries(ROOM_all, function(room, done) {
             var player;
             if (!(room && room.established)) {
               done();
@@ -5096,7 +5096,7 @@
             response.end(addCallback(u.query.callback, "['密码错误', 0]"));
             return;
           }
-          _async.each(ROOM_all, function(room) {
+          _async.eachSeries(ROOM_all, function(room) {
             if (room && room.established) {
               return ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW);
             }
@@ -5207,7 +5207,7 @@
             return;
           }
           death_room_found = false;
-          _async.each(ROOM_all, function(room, done) {
+          _async.eachSeries(ROOM_all, function(room, done) {
             if (!(room && (u.query.death === "all" || u.query.death === room.process_pid.toString() || u.query.death === room.name))) {
               done();
               return;
@@ -5231,7 +5231,7 @@
             return;
           }
           death_room_found = false;
-          _async.each(ROOM_all, function(room, done) {
+          _async.eachSeries(ROOM_all, function(room, done) {
             if (!(room && (u.query.deathcancel === "all" || u.query.deathcancel === room.process_pid.toString() || u.query.deathcancel === room.name))) {
               done();
               return;
@@ -5239,7 +5239,7 @@
             if (room.cancel_death()) {
               death_room_found = true;
             }
-            return done();
+            done();
           }, function() {
             response.writeHead(200);
             if (death_room_found) {
