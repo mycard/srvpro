@@ -1830,7 +1830,7 @@ class Room
 # 网络连接
 netRequestHandler = (client) ->
   if !client.isWs
-    client.ip = client.remoteAddress
+    client.ip = client.remoteAddress or ''
   client.is_local = client.ip and (client.ip.includes('127.0.0.1') or client.ip.includes(real_windbot_server_ip))
 
   connect_count = ROOM_connected_ip[client.ip] or 0

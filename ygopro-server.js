@@ -2478,7 +2478,7 @@
   netRequestHandler = function(client) {
     var closeHandler, connect_count, dataHandler, server;
     if (!client.isWs) {
-      client.ip = client.remoteAddress;
+      client.ip = client.remoteAddress || '';
     }
     client.is_local = client.ip && (client.ip.includes('127.0.0.1') || client.ip.includes(real_windbot_server_ip));
     connect_count = ROOM_connected_ip[client.ip] || 0;
