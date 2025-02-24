@@ -4502,7 +4502,7 @@
             deck_text = (await fs.promises.readFile(settings.modules.tournament_mode.deck_path + found_deck, {
               encoding: "ASCII"
             }));
-            deck_array = deck_text.split("\n");
+            deck_array = deck_text.split(/\r?\n/);
             deck_main = [];
             deck_side = [];
             current_deck = deck_main;
@@ -4512,7 +4512,7 @@
                 current_deck = deck_side;
               }
               card = parseInt(line);
-              if (!isNaN(card)) {
+              if (!(isNaN(card) || line.endsWith("#"))) {
                 current_deck.push(card);
               }
             }
