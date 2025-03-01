@@ -288,7 +288,7 @@
   }, 500);
 
   try {
-    cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16');
+    cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION\s?=\s?([x\dABCDEF]+)/)[1], '16');
     setting_change(settings, "version", cppversion);
     log.info("ygopro version 0x" + settings.version.toString(16), "(from source code)");
   } catch (error1) {
@@ -852,7 +852,9 @@
       } else if ((param = name.match(/^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i))) {
         this.hostinfo.rule = parseInt(param[1]);
         this.hostinfo.mode = parseInt(param[2]);
-        this.hostinfo.duel_rule = (param[3] === 'T' ? 3 : 4);
+        if (param[3] === 'T') {
+          this.hostinfo.duel_rule = 3;
+        }
         this.hostinfo.no_check_deck = param[4] === 'T';
         this.hostinfo.no_shuffle_deck = param[5] === 'T';
         this.hostinfo.start_lp = parseInt(param[6]);
