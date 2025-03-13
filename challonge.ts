@@ -10,7 +10,7 @@ export interface Match {
   player1_id: number;
   player2_id: number;
   winner_id?: number | 'tie'; // 如果存在，则代表该比赛已经结束
-  scores_csv: string; // 2-1
+  scores_csv?: string; // 比分，2-1 这样的格式，请保证和上传的情况相同
 }
 
 export interface MatchWrapper {
@@ -32,13 +32,15 @@ export interface Tournament {
   matches: MatchWrapper[];
 }
 
+// GET /v1/tournaments/${tournament_id}.json?api_key=xxx&include_participants=1&include_matches=1 returns { tournament: Tournament }
 export interface TournamentWrapper {
   tournament: Tournament;
 }
 
+// PUT /v1/tournaments/${tournament_id}/matches/${match_id}.json { api_key: string, match: MatchPost } returns ANY
 export interface MatchPost {
-  scores_csv: string;
-  winner_id?: number | 'tie';
+  scores_csv: string; // 比分。2-1 这样的格式。可能有特殊情况，比如 -9-1 或者 1--9，代表有一方掉线，或是加时赛胜利。也就是允许负数（从第一串数字的最后一个 - 区分）
+  winner_id?: number | 'tie'; // 上传比分的时候这个字段不一定存在。如果不存在的话代表比赛没打完（比如 1-0 就会上传，这时候换 side）
 }
 
 export interface ChallongeConfig {
@@ -113,6 +115,7 @@ export class Challonge {
     }
   }
 
+  // DELETE /v1/tournaments/${tournament_id}/participants/clear.json?api_key=xxx returns ANY
   async clearParticipants() { 
     try {
       await axios.delete(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/clear.json`, {
@@ -128,6 +131,7 @@ export class Challonge {
     }
   }
 
+  // POST /v1/tournaments/${tournament_id}/participants/bulk_add.json { api_key: string, participants: { name: string }[] } returns ANY
   async uploadParticipants(participantNames: string[]) { 
     try {
       await axios.post(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/bulk_add.json`, {
