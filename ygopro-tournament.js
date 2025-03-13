@@ -75,7 +75,7 @@ const readDeck = async function(deck_name, deck_full_path) {
     const deck={};
     deck.name=deck_name;
     deck_text = await fs.promises.readFile(deck_full_path, { encoding: "ASCII" });
-    deck_array = deck_text.split("\n");
+    deck_array = deck_text.split(/\r?\n/);
     deck.main = [];
     deck.extra = [];
     deck.side = [];
@@ -89,7 +89,7 @@ const readDeck = async function(deck_name, deck_full_path) {
             current_deck = deck.side;
         }
         card = parseInt(line);
-        if (!isNaN(card)) {
+        if (!isNaN(card) && !line.endsWith("#")) {
             current_deck.push(card);
         }
     }

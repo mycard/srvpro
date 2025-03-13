@@ -3352,7 +3352,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
             found_deck=deck
         if found_deck
           deck_text = await fs.promises.readFile(settings.modules.tournament_mode.deck_path+found_deck,{encoding:"ASCII"})
-          deck_array=deck_text.split("\n")
+          deck_array=deck_text.split(/\r?\n/)
           deck_main=[]
           deck_side=[]
           current_deck=deck_main
@@ -3360,7 +3360,7 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
             if line.indexOf("!side")>=0
               current_deck=deck_side
             card=parseInt(line)
-            current_deck.push(card) unless isNaN(card)
+            current_deck.push(card) unless isNaN(card) or line.endsWith("#")
           if _.isEqual(buff_main, deck_main) and _.isEqual(buff_side, deck_side)
             deckbuf=deck_main.concat(deck_side)
             struct.set("mainc", deck_main.length)
