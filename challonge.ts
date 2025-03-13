@@ -19,8 +19,10 @@ export interface MatchWrapper {
 
 export interface Participant {
   id: number;
-  name: string;
-  deckbuf?: string;
+  name: string; // 玩家的名称，影响玩家的进服匹配
+  deckbuf?: string; // 玩家的卡组。如果存在，那么卡组由比赛系统管理。base64
+  // 构造方法: [uint32 maincount+extracount][uint32 sideccount][uint32 card1][uint32 card2]...
+  // 示例: NwAAAA8AAAC8beUDdgljAnYJYwJ2CWMCEUKKAxFCigOzoLECB1ekBQdXpAUHV6QFPO4FAzzuBQOSZMQEziwNBM4sDQTOLA0EryPeAK8j3gCvI94AKpVlASqVZQEqlWUBTkEDAE5BAwBOQQMAUI+IAFCPiABQj4gA+twUAaab9AGEoUIBwsdyAcLHcgHCx3IBPRWmBSJImQAiSJkAIkiZADdj4QF8oe8FpFt8A5chZAW1XJ8APXyNAMYzYwOIEXYDtfABBavrrQBq4agDn5BqANCkFwEJWmMAWfK5A3OVmwF8e+QD1xqfAdcanwF99r8Affa/AB43ggEeN4IBhCV+AIQlfgCEJX4APqRxAT6kcQE/OuoDb3bvAG927wC0/F4B
 }
 
 export interface ParticipantWrapper {
