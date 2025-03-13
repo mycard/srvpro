@@ -142,7 +142,8 @@
       "cache_ttl": 60000,
       "no_match_mode": false,
       "api_key": "123",
-      "tournament_id": "456"
+      "tournament_id": "456",
+      "challonge_url": "https://api.challonge.com"
     },
     "deck_log": {
       "enabled": false,

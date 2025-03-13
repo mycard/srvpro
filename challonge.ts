@@ -2,34 +2,15 @@ import axios from 'axios';
 import { createLogger } from 'bunyan';
 import moment, { Moment } from 'moment';
 import PQueue from 'p-queue';
+import _ from 'underscore';
 
 export interface Match {
-  attachment_count?: any;
-  created_at: string;
-  group_id?: any;
-  has_attachment: boolean;
   id: number;
-  identifier: string;
-  location?: any;
-  loser_id?: any;
+  state: 'pending' | 'open' | 'complete'; // pending: 还未开始，open: 进行中，complete: 已结束
   player1_id: number;
-  player1_is_prereq_match_loser: boolean;
-  player1_prereq_match_id?: any;
-  player1_votes?: any;
   player2_id: number;
-  player2_is_prereq_match_loser: boolean;
-  player2_prereq_match_id?: any;
-  player2_votes?: any;
-  round: number;
-  scheduled_time?: any;
-  started_at: string;
-  state: string;
-  tournament_id: number;
-  underway_at?: any;
-  updated_at: string;
-  winner_id?: any;
-  prerequisite_match_ids_csv: string;
-  scores_csv: string;
+  winner_id?: number | 'tie'; // 如果存在，则代表该比赛已经结束
+  scores_csv: string; // 2-1
 }
 
 export interface MatchWrapper {
@@ -37,34 +18,8 @@ export interface MatchWrapper {
 }
 
 export interface Participant {
-  active: boolean;
-  checked_in_at?: any;
-  created_at: string;
-  final_rank?: any;
-  group_id?: any;
-  icon?: any;
   id: number;
-  invitation_id?: any;
-  invite_email?: any;
-  misc?: any;
   name: string;
-  on_waiting_list: boolean;
-  seed: number;
-  tournament_id: number;
-  updated_at: string;
-  challonge_username?: any;
-  challonge_email_address_verified?: any;
-  removable: boolean;
-  participatable_or_invitation_attached: boolean;
-  confirm_remove: boolean;
-  invitation_pending: boolean;
-  display_name_with_invitation_email_address: string;
-  email_hash?: any;
-  username?: any;
-  attached_participatable_portrait_url?: any;
-  can_check_in: boolean;
-  checked_in: boolean;
-  reactivatable: boolean;
 }
 
 export interface ParticipantWrapper {
@@ -72,69 +27,7 @@ export interface ParticipantWrapper {
 }
 
 export interface Tournament {
-  accept_attachments: boolean;
-  allow_participant_match_reporting: boolean;
-  anonymous_voting: boolean;
-  category?: any;
-  check_in_duration?: any;
-  completed_at?: any;
-  created_at: string;
-  created_by_api: boolean;
-  credit_capped: boolean;
-  description: string;
-  game_id: number;
-  group_stages_enabled: boolean;
-  hide_forum: boolean;
-  hide_seeds: boolean;
-  hold_third_place_match: boolean;
   id: number;
-  max_predictions_per_user: number;
-  name: string;
-  notify_users_when_matches_open: boolean;
-  notify_users_when_the_tournament_ends: boolean;
-  open_signup: boolean;
-  participants_count: number;
-  prediction_method: number;
-  predictions_opened_at?: any;
-  private: boolean;
-  progress_meter: number;
-  pts_for_bye: string;
-  pts_for_game_tie: string;
-  pts_for_game_win: string;
-  pts_for_match_tie: string;
-  pts_for_match_win: string;
-  quick_advance: boolean;
-  ranked_by: string;
-  require_score_agreement: boolean;
-  rr_pts_for_game_tie: string;
-  rr_pts_for_game_win: string;
-  rr_pts_for_match_tie: string;
-  rr_pts_for_match_win: string;
-  sequential_pairings: boolean;
-  show_rounds: boolean;
-  signup_cap?: any;
-  start_at?: any;
-  started_at: string;
-  started_checking_in_at?: any;
-  state: string;
-  swiss_rounds: number;
-  teams: boolean;
-  tie_breaks: string[];
-  tournament_type: string;
-  updated_at: string;
-  url: string;
-  description_source: string;
-  subdomain?: any;
-  full_challonge_url: string;
-  live_image_url: string;
-  sign_up_url?: any;
-  review_before_finalizing: boolean;
-  accepting_predictions: boolean;
-  participants_locked: boolean;
-  game_name: string;
-  participants_swappable: boolean;
-  team_convertable: boolean;
-  group_stages_were_started: boolean;
   participants: ParticipantWrapper[];
   matches: MatchWrapper[];
 }
@@ -145,13 +38,14 @@ export interface TournamentWrapper {
 
 export interface MatchPost {
   scores_csv: string;
-  winner_id: number;
+  winner_id?: number | 'tie';
 }
 
 export interface ChallongeConfig {
   api_key: string;
   tournament_id: string;
   cache_ttl: number;
+  challonge_url: string;
 }
 
 export class Challonge {
@@ -169,7 +63,7 @@ export class Challonge {
     }
     try {
       const { data: { tournament } } = await axios.get<TournamentWrapper>(
-        `https://api.challonge.com/v1/tournaments/${this.config.tournament_id}.json`,
+        `${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}.json`,
         {
           params: {
             api_key: this.config.api_key,
@@ -183,7 +77,7 @@ export class Challonge {
       this.previousTime = moment();
       return tournament;
     } catch (e) {
-      this.log.error(`Failed to get tournament ${this.config.tournament_id}`, e);
+      this.log.error(`Failed to get tournament ${this.config.tournament_id}: ${e}`);
       return;
     }
   }
@@ -198,7 +92,7 @@ export class Challonge {
   async putScore(matchId: number, match: MatchPost, retried = 0) { 
     try {
       await axios.put(
-        `https://api.challonge.com/v1/tournaments/${this.config.tournament_id}/matches/${matchId}.json`,
+        `${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/matches/${matchId}.json`,
         {
           api_key: this.config.api_key,
           match: match,
@@ -208,7 +102,7 @@ export class Challonge {
       this.previousTime = undefined;
       return true;
     } catch (e) {
-      this.log.error(`Failed to put score for match ${matchId}`, e);
+      this.log.error(`Failed to put score for match ${matchId}: ${e}`);
       if (retried < 5) { 
         this.log.info(`Retrying match ${matchId}`);
         return this.putScore(matchId, match, retried + 1);
@@ -216,6 +110,34 @@ export class Challonge {
         this.log.error(`Failed to put score for match ${matchId} after 5 retries`);
         return false;
       }
+    }
+  }
+
+  async clearParticipants() { 
+    try {
+      await axios.delete(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/clear.json`, {
+        params: {
+            api_key: this.config.api_key
+        },
+        validateStatus: () => true,
+      })
+      return true;
+    } catch (e) {
+      this.log.error(`Failed to clear participants for tournament ${this.config.tournament_id}: ${e}`);
+      return false;
+    }
+  }
+
+  async uploadParticipants(participantNames: string[]) { 
+    try {
+      await axios.post(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/bulk_add.json`, {
+        api_key: this.config.api_key,
+        participants: participantNames.map(name => ({ name })),
+      });
+      return true;
+    } catch (e) {
+      this.log.error(`Failed to upload participants for tournament ${this.config.tournament_id}: ${e}`);
+      return false;
     }
   }
 }
