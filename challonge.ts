@@ -20,6 +20,7 @@ export interface MatchWrapper {
 export interface Participant {
   id: number;
   name: string;
+  deckbuf?: string;
 }
 
 export interface ParticipantWrapper {
