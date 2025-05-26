@@ -13,7 +13,7 @@ variables:
 .docker-x86:
   extends: .docker-op
   tags:
-    - docker
+    - docker-noavx2
   variables:
     ARCH: x86
 
