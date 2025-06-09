@@ -317,6 +317,10 @@ init = () ->
   if settings.modules.hide_name == true
     settings.modules.hide_name = "start"
     imported = true
+  if settings.modules.neos.trusted_proxies
+    settings.modules.trusted_proxies = settings.modules.neos.trusted_proxies
+    delete settings.modules.neos.trusted_proxies
+    imported = true
   #finish
   keysFromEnv = Object.keys(process.env).filter((key) => key.startsWith('SRVPRO_'))
   if keysFromEnv.length > 0
@@ -1186,6 +1190,56 @@ CLIENT_send_replays_and_kick = global.CLIENT_send_replays_and_kick = (client, ro
   CLIENT_kick(client)
   return
 
+toIpv4 = global.toIpv4 = (ip) ->
+  if ip.startsWith('::ffff:')
+    return ip.slice(7)
+  return ip
+
+toIpv6 = global.toIpv6 = (ip) ->
+  if /^(\d{1,3}\.){3}\d{1,3}$/.test(ip)
+    return '::ffff:' + ip
+  return ip
+
+isTrustedProxy = global.isTrustedProxy = (ip) ->
+  return settings.modules.trusted_proxies.some((trusted) ->
+    cidr = if trusted.includes('/') then ip6addr.createCIDR(trusted) else ip6addr.createAddrRange(trusted, trusted)
+    return cidr.contains(ip)
+  )
+
+getRealIp = global.getRealIp = (physical_ip, xff_ip) ->
+  if not xff_ip or xff_ip == physical_ip
+    return toIpv6(physical_ip)
+  if isTrustedProxy(physical_ip)
+    return toIpv6(xff_ip.split(',')[0].trim())
+  log.warn("Untrusted proxy detected: #{physical_ip} -> #{xff_ip}")
+  return toIpv6(physical_ip)
+
+
+CLIENT_set_ip = global.CLIENT_set_ip = (client, xff_ip) ->
+  client_prev_ip = client.ip
+  client.ip = getRealIp(client.physical_ip, xff_ip)
+  if client_prev_ip == client.ip
+    return false
+  if client_prev_ip and ROOM_connected_ip[client_prev_ip] and ROOM_connected_ip[client_prev_ip] > 0
+    ROOM_connected_ip[client_prev_ip]--
+    if ROOM_connected_ip[client_prev_ip] <= 0
+      delete ROOM_connected_ip[client_prev_ip]
+
+  client.is_local = client.ip and (client.ip.includes('127.0.0.1') or client.ip.includes(real_windbot_server_ip))
+
+  connect_count = ROOM_connected_ip[client.ip] or 0
+  if !settings.modules.test_mode.no_connect_count_limit and !client.is_local and !isTrustedProxy(client.ip)
+    connect_count++
+  ROOM_connected_ip[client.ip] = connect_count
+  # log.info "connect", client.ip, ROOM_connected_ip[client.ip]
+
+  if ROOM_bad_ip[client.ip] > 5 or ROOM_connected_ip[client.ip] > 10
+    log.info 'BAD IP', client.ip
+    client.destroy()
+    return true
+
+  return false
+
 SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
   if !sk or sk.isClosed
     return false
@@ -1830,19 +1884,9 @@ class Room
 # 网络连接
 netRequestHandler = (client) ->
   if !client.isWs
-    client.ip = client.remoteAddress or ''
-  client.is_local = client.ip and (client.ip.includes('127.0.0.1') or client.ip.includes(real_windbot_server_ip))
-
-  connect_count = ROOM_connected_ip[client.ip] or 0
-  if !settings.modules.test_mode.no_connect_count_limit and !client.is_local
-    connect_count++
-  ROOM_connected_ip[client.ip] = connect_count
-  #log.info "connect", client.ip, ROOM_connected_ip[client.ip]
-
-  if ROOM_bad_ip[client.ip] > 5 or ROOM_connected_ip[client.ip] > 10
-    log.info 'BAD IP', client.ip
-    client.destroy()
-    return
+    client.physical_ip = client.remoteAddress or ""
+    if CLIENT_set_ip(client)
+      return
 
   # server stand for the connection to ygopro server process
   server = new net.Socket()
@@ -1859,9 +1903,12 @@ netRequestHandler = (client) ->
       return
     room=ROOM_all[client.rid]
     connect_count = ROOM_connected_ip[client.ip]
-    if connect_count > 0
+    if connect_count and connect_count > 0
       connect_count--
-    ROOM_connected_ip[client.ip] = connect_count
+      if connect_count == 0
+        delete ROOM_connected_ip[client.ip]
+      else
+        ROOM_connected_ip[client.ip] = connect_count
     client.isClosed = true
     if settings.modules.heartbeat_detection.enabled
       CLIENT_heartbeat_unregister(client)
@@ -2020,6 +2067,19 @@ deck_name_match = global.deck_name_match = (deck_name, player_name) ->
 
 # 功能模块
 # return true to cancel a synchronous message
+
+ygopro.ctos_follow 'EXTERNAL_ADDRESS', true, (buffer, info, client, server, datas)->
+  ip_uint = info.real_ip
+  if ip_uint == 0
+    return false
+  ip_parts = [
+    (ip_uint >>> 24) & 0xFF,
+    (ip_uint >>> 16) & 0xFF,
+    (ip_uint >>> 8) & 0xFF,
+    ip_uint & 0xFF
+  ]
+  xff_ip = ip_parts.join('.')
+  return CLIENT_set_ip(client, xff_ip)
 
 ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
   # second PLAYER_INFO = attack
@@ -3029,7 +3089,7 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
       deck_arena = deck_arena + 'custom'
     #log.info "DECK LOG START", client.name, room.arena
     if settings.modules.deck_log.local
-      deck_name = moment_now.format('YYYY-MM-DD HH-mm-ss') + ' ' + room.process_pid + ' ' + client.pos + ' ' + client.ip.slice(7) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
+      deck_name = moment_now.format('YYYY-MM-DD HH-mm-ss') + ' ' + room.process_pid + ' ' + client.pos + ' ' + toIpv4(client.ip) + ' ' + client.name.replace(/[\/\\\?\*]/g, '_')
       fs.writeFile settings.modules.deck_log.local + deck_name + '.ydk', deck_text, 'utf-8', (err) ->
         if err
           log.warn 'DECK SAVE ERROR', err
@@ -3695,7 +3755,7 @@ if true
             users: _.sortBy((for player in room.players when player.pos?
               id: (-1).toString(),
               name: player.name,
-              ip: if settings.modules.http.show_ip and pass_validated and !player.is_local then player.ip.slice(7) else null,
+              ip: if settings.modules.http.show_ip and pass_validated and !player.is_local then toIpv4(player.ip) else null,
               status: if settings.modules.http.show_info and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and player.pos != 7 then (
                 score: room.scores[player.name_vpass],
                 lp: if player.lp? then player.lp else room.hostinfo.start_lp,
@@ -3960,19 +4020,13 @@ if true
 ip6addr = require('ip6addr')
 
 neosRequestListener = (client, req) ->
-  physicalAddress = req.socket.remoteAddress
-  if settings.modules.neos.trusted_proxies.some((trusted) ->
-    cidr =  if trusted.includes('/') then ip6addr.createCIDR(trusted) else ip6addr.createAddrRange(trusted, trusted)
-    return cidr.contains(physicalAddress)
-  )
-    ipHeader = req.headers[settings.modules.neos.trusted_proxy_header]
-    if ipHeader
-      client.ip = ipHeader.split(',')[0].trim()
-  if !client.ip
-    client.ip = physicalAddress
   client.setTimeout = () -> true
   client.destroy = () -> client.close()
   client.isWs = true
+  client.physical_ip = req.socket.remoteAddress or ""
+  xff_ip = req.headers[settings.modules.neos.trusted_proxy_header]
+  if CLIENT_set_ip(client, xff_ip)
+    return
   netRequestHandler(client)
 
 
