@@ -1194,9 +1194,6 @@ SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
     await ygopro.helper.send(sk, buffer)
   return true
 
-getSeedTimet = global.getSeedTimet = (count) ->
-  return _.range(count).map(() => 0)
-
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -1365,12 +1362,11 @@ class Room
       @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
 
     if firstSeed
-      param.push(firstSeed)
-      seeds = getSeedTimet(2)
-      param.push(seeds[i]) for i in [0...2]
-    else
-      seeds = getSeedTimet(3)
-      param.push(seeds[i]) for i in [0...3]
+      # first seed is number[8], so we have to make it base64
+      firstSeedBuf = Buffer.allocUnsafe(firstSeed.length * 4)
+      for i in [0...firstSeed.length]
+        firstSeedBuf.writeUInt32LE(firstSeed[i], i * 4)
+      param.push(firstSeedBuf.toString('base64'))
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}
@@ -1515,7 +1511,7 @@ class Room
       return false
     try
       @recover_replay = await ReplayParser.fromFile(settings.modules.tournament_mode.replay_path + @recover_duel_log.replayFileName)
-      @spawn(@recover_replay.header.seed)
+      @spawn(@recover_replay.header.seed) # TODO: refa header.seed
       return true
     catch e
       log.warn("LOAD RECOVER REPLAY FAIL", e.toString())
