@@ -7,6 +7,10 @@ export interface DeckObject {
   ex: number[];
 }
 
+export const SEED_COUNT = 8;
+export const REPLAY_ID_YRP1 = 0x31707279;
+export const REPLAY_ID_YRP2 = 0x32707279;
+
 /**
  * Metadata stored at the beginning of every replay file.
  */
@@ -24,15 +28,16 @@ export class ReplayHeader {
   dataSizeRaw: number[] = [];
   hash = 0;
   props: number[] = [];
+  seedSequence: number[] = [];
+  headerVersion = 0;
+  value1 = 0;
+  value2 = 0;
+  value3 = 0;
+
 
   /** Decompressed size as little‑endian 32‑bit */
   get dataSize(): number {
-    return (
-      this.dataSizeRaw[0] +
-      this.dataSizeRaw[1] * 0x100 +
-      this.dataSizeRaw[2] * 0x10000 +
-      this.dataSizeRaw[3] * 0x1000000
-    );
+    return Buffer.from(this.dataSizeRaw).readUInt32LE(0);
   }
 
   get isTag(): boolean {
@@ -94,6 +99,14 @@ class ReplayReader {
     return this.advance(4, () => this.buffer.readInt32LE(this.pointer));
   }
 
+  readUInt16(): number {
+    return this.advance(2, () => this.buffer.readUInt16LE(this.pointer));
+  }
+
+  readUInt32(): number {
+    return this.advance(4, () => this.buffer.readUInt32LE(this.pointer));
+  }
+
   readAll(): Buffer {
     return this.buffer.slice(this.pointer);
   }
@@ -149,6 +162,14 @@ class ReplayWriter {
     this.advance(() => this.buffer.writeInt32LE(val, this.pointer), 4);
   }
 
+  writeUInt16(val: number): void {
+    this.advance(() => this.buffer.writeUInt16LE(val, this.pointer), 2);
+  }
+
+  writeUInt32(val: number): void {
+    this.advance(() => this.buffer.writeUInt32LE(val, this.pointer), 4);
+  }
+
   writeAll(buf: Buffer): void {
     this.buffer = Buffer.concat([this.buffer, buf]);
   }
@@ -202,8 +223,8 @@ export class Replay {
 
   /* ------------------ Static helpers ------------------ */
 
-  static fromFile(path: string): Replay {
-    return Replay.fromBuffer(fs.readFileSync(path));
+  static async fromFile(path: string): Promise<Replay> {
+    return Replay.fromBuffer(await fs.promises.readFile(path));
   }
 
   static fromBuffer(buffer: Buffer): Replay {
@@ -227,13 +248,22 @@ export class Replay {
 
   private static readHeader(reader: ReplayReader): ReplayHeader {
     const h = new ReplayHeader();
-    h.id = reader.readInt32();
-    h.version = reader.readInt32();
-    h.flag = reader.readInt32();
-    h.seed = reader.readInt32();
+    h.id = reader.readUInt32();
+    h.version = reader.readUInt32();
+    h.flag = reader.readUInt32();
+    h.seed = reader.readUInt32();
     h.dataSizeRaw = reader.readByteArray(4);
-    h.hash = reader.readInt32();
+    h.hash = reader.readUInt32();
     h.props = reader.readByteArray(8);
+    if (h.id === REPLAY_ID_YRP2) {
+      for(let i = 0; i < SEED_COUNT; i++) {
+        h.seedSequence.push(reader.readUInt32());
+      }
+      h.headerVersion = reader.readUInt32();
+      h.value1 = reader.readUInt32();
+      h.value2 = reader.readUInt32();
+      h.value3 = reader.readUInt32();
+    }
     return h;
   }
 
@@ -331,18 +361,27 @@ export class Replay {
     return Buffer.concat([headerWriter.buffer, body]);
   }
 
-  writeToFile(path: string): void {
-    fs.writeFileSync(path, this.toBuffer());
+  async writeToFile(path: string): Promise<void> {
+    await fs.promises.writeFile(path, this.toBuffer());
   }
 
   private writeHeader(w: ReplayWriter): void {
-    w.writeInt32(this.header!.id);
-    w.writeInt32(this.header!.version);
-    w.writeInt32(this.header!.flag);
-    w.writeInt32(this.header!.seed);
+    w.writeUInt32(this.header!.id);
+    w.writeUInt32(this.header!.version);
+    w.writeUInt32(this.header!.flag);
+    w.writeUInt32(this.header!.seed);
     w.writeByteArray(this.header!.dataSizeRaw);
-    w.writeInt32(this.header!.hash);
+    w.writeUInt32(this.header!.hash);
     w.writeByteArray(this.header!.props);
+    if (this.header!.id === REPLAY_ID_YRP2) {
+      for (let i = 0; i < SEED_COUNT; i++) {
+        w.writeUInt32(this.header!.seedSequence[i]);
+      }
+      w.writeUInt32(this.header!.headerVersion);
+      w.writeUInt32(this.header!.value1);
+      w.writeUInt32(this.header!.value2);
+      w.writeUInt32(this.header!.value3);
+    }
   }
 
   private writeContent(w: ReplayWriter): void {

@@ -33,9 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Replay = exports.ReplayHeader = void 0;
+exports.Replay = exports.ReplayHeader = exports.REPLAY_ID_YRP2 = exports.REPLAY_ID_YRP1 = exports.SEED_COUNT = void 0;
 const fs = __importStar(require("fs"));
 const lzma = __importStar(require("lzma"));
+exports.SEED_COUNT = 8;
+exports.REPLAY_ID_YRP1 = 0x31707279;
+exports.REPLAY_ID_YRP2 = 0x32707279;
 /**
  * Metadata stored at the beginning of every replay file.
  */
@@ -52,12 +55,14 @@ class ReplayHeader {
     dataSizeRaw = [];
     hash = 0;
     props = [];
+    seedSequence = [];
+    headerVersion = 0;
+    value1 = 0;
+    value2 = 0;
+    value3 = 0;
     /** Decompressed size as little‑endian 32‑bit */
     get dataSize() {
-        return (this.dataSizeRaw[0] +
-            this.dataSizeRaw[1] * 0x100 +
-            this.dataSizeRaw[2] * 0x10000 +
-            this.dataSizeRaw[3] * 0x1000000);
+        return Buffer.from(this.dataSizeRaw).readUInt32LE(0);
     }
     get isTag() {
         return (this.flag & ReplayHeader.REPLAY_TAG_FLAG) !== 0;
@@ -112,6 +117,12 @@ class ReplayReader {
     readInt32() {
         return this.advance(4, () => this.buffer.readInt32LE(this.pointer));
     }
+    readUInt16() {
+        return this.advance(2, () => this.buffer.readUInt16LE(this.pointer));
+    }
+    readUInt32() {
+        return this.advance(4, () => this.buffer.readUInt32LE(this.pointer));
+    }
     readAll() {
         return this.buffer.slice(this.pointer);
     }
@@ -162,6 +173,12 @@ class ReplayWriter {
     writeInt32(val) {
         this.advance(() => this.buffer.writeInt32LE(val, this.pointer), 4);
     }
+    writeUInt16(val) {
+        this.advance(() => this.buffer.writeUInt16LE(val, this.pointer), 2);
+    }
+    writeUInt32(val) {
+        this.advance(() => this.buffer.writeUInt32LE(val, this.pointer), 4);
+    }
     writeAll(buf) {
         this.buffer = Buffer.concat([this.buffer, buf]);
     }
@@ -207,8 +224,8 @@ class Replay {
         return this.header?.isTag ?? false;
     }
     /* ------------------ Static helpers ------------------ */
-    static fromFile(path) {
-        return Replay.fromBuffer(fs.readFileSync(path));
+    static async fromFile(path) {
+        return Replay.fromBuffer(await fs.promises.readFile(path));
     }
     static fromBuffer(buffer) {
         const headerReader = new ReplayReader(buffer);
@@ -227,13 +244,22 @@ class Replay {
     }
     static readHeader(reader) {
         const h = new ReplayHeader();
-        h.id = reader.readInt32();
-        h.version = reader.readInt32();
-        h.flag = reader.readInt32();
-        h.seed = reader.readInt32();
+        h.id = reader.readUInt32();
+        h.version = reader.readUInt32();
+        h.flag = reader.readUInt32();
+        h.seed = reader.readUInt32();
         h.dataSizeRaw = reader.readByteArray(4);
-        h.hash = reader.readInt32();
+        h.hash = reader.readUInt32();
         h.props = reader.readByteArray(8);
+        if (h.id === exports.REPLAY_ID_YRP2) {
+            for (let i = 0; i < exports.SEED_COUNT; i++) {
+                h.seedSequence.push(reader.readUInt32());
+            }
+            h.headerVersion = reader.readUInt32();
+            h.value1 = reader.readUInt32();
+            h.value2 = reader.readUInt32();
+            h.value3 = reader.readUInt32();
+        }
         return h;
     }
     static readReplay(header, reader) {
@@ -313,17 +339,26 @@ class Replay {
         }
         return Buffer.concat([headerWriter.buffer, body]);
     }
-    writeToFile(path) {
-        fs.writeFileSync(path, this.toBuffer());
+    async writeToFile(path) {
+        await fs.promises.writeFile(path, this.toBuffer());
     }
     writeHeader(w) {
-        w.writeInt32(this.header.id);
-        w.writeInt32(this.header.version);
-        w.writeInt32(this.header.flag);
-        w.writeInt32(this.header.seed);
+        w.writeUInt32(this.header.id);
+        w.writeUInt32(this.header.version);
+        w.writeUInt32(this.header.flag);
+        w.writeUInt32(this.header.seed);
         w.writeByteArray(this.header.dataSizeRaw);
-        w.writeInt32(this.header.hash);
+        w.writeUInt32(this.header.hash);
         w.writeByteArray(this.header.props);
+        if (this.header.id === exports.REPLAY_ID_YRP2) {
+            for (let i = 0; i < exports.SEED_COUNT; i++) {
+                w.writeUInt32(this.header.seedSequence[i]);
+            }
+            w.writeUInt32(this.header.headerVersion);
+            w.writeUInt32(this.header.value1);
+            w.writeUInt32(this.header.value2);
+            w.writeUInt32(this.header.value3);
+        }
     }
     writeContent(w) {
         w.writeString(this.hostName, 40);

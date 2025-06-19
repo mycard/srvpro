@@ -1362,11 +1362,15 @@ class Room
       @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
 
     if firstSeed
-      # first seed is number[8], so we have to make it base64
-      firstSeedBuf = Buffer.allocUnsafe(firstSeed.length * 4)
-      for i in [0...firstSeed.length]
-        firstSeedBuf.writeUInt32LE(firstSeed[i], i * 4)
-      param.push(firstSeedBuf.toString('base64'))
+      if Array.isArray(firstSeed)
+        # new replay with extended header and long seed
+        firstSeedBuf = Buffer.allocUnsafe(firstSeed.length * 4)
+        for i in [0...firstSeed.length]
+          firstSeedBuf.writeUInt32LE(firstSeed[i], i * 4)
+        param.push(firstSeedBuf.toString('base64'))
+      else
+        # old replay with short seed
+        param.push(firstSeed.toString())
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}
@@ -1511,7 +1515,7 @@ class Room
       return false
     try
       @recover_replay = await ReplayParser.fromFile(settings.modules.tournament_mode.replay_path + @recover_duel_log.replayFileName)
-      @spawn(@recover_replay.header.seed) # TODO: refa header.seed
+      @spawn(if @recover_replay.header.seed_sequence.length then @recover_replay.header.seed_sequence else @recover_replay.header.seed)
       return true
     catch e
       log.warn("LOAD RECOVER REPLAY FAIL", e.toString())
