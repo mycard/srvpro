@@ -1771,17 +1771,13 @@
       var e, firstSeedBuf, i, j, param, ref;
       param = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, this.hostinfo.duel_rule, (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode];
       if (firstSeed) {
-        if (Array.isArray(firstSeed)) {
-          // new replay with extended header and long seed
-          firstSeedBuf = Buffer.allocUnsafe(firstSeed.length * 4);
-          for (i = j = 0, ref = firstSeed.length; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
-            firstSeedBuf.writeUInt32LE(firstSeed[i], i * 4);
-          }
-          param.push(firstSeedBuf.toString('base64'));
-        } else {
-          // old replay with short seed
-          param.push(firstSeed.toString());
+        // new replay with extended header and long seed
+        firstSeedBuf = Buffer.allocUnsafe(firstSeed.length * 4);
+        for (i = j = 0, ref = firstSeed.length; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
+          firstSeedBuf.writeUInt32LE(firstSeed[i], i * 4);
         }
+        param.push(firstSeedBuf.toString('base64'));
+        console.log(firstSeed, firstSeedBuf.toString('base64'));
       }
       try {
         this.process = spawn('./ygopro', param, {
@@ -1997,7 +1993,13 @@
       }
       try {
         this.recover_replay = (await ReplayParser.fromFile(settings.modules.tournament_mode.replay_path + this.recover_duel_log.replayFileName));
-        this.spawn(this.recover_replay.header.seed_sequence.length ? this.recover_replay.header.seed_sequence : this.recover_replay.header.seed);
+        if (!this.recover_replay.header.seedSequence.length) {
+          // it's old replay, unsupported
+          log.warn("LOAD RECOVER REPLAY FAIL: Old replay format, unsupported", this.recover_duel_log.replayFileName);
+          this.terminate();
+          return false;
+        }
+        this.spawn(this.recover_replay.header.seedSequence);
         return true;
       } catch (error1) {
         e = error1;
@@ -2328,9 +2330,9 @@
     finish_recover(fail) {
       var buffer, j, len, player, ref, results;
       if (fail) {
-        ygopro.stoc_send_chat_to_room(this, "${recover_fail}", ygopro.constants.COLORS.RED);
-        return this.terminate();
+        return ygopro.stoc_send_chat_to_room(this, "${recover_fail}", ygopro.constants.COLORS.RED);
       } else {
+        // @terminate()
         ygopro.stoc_send_chat_to_room(this, "${recover_success}", ygopro.constants.COLORS.BABYBLUE);
         this.recovering = false;
         ref = this.get_playing_player();
