@@ -1367,7 +1367,6 @@ class Room
       for i in [0...firstSeed.length]
         firstSeedBuf.writeUInt32LE(firstSeed[i], i * 4)
       param.push(firstSeedBuf.toString('base64'))
-      console.log(firstSeed, firstSeedBuf.toString('base64'))
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}

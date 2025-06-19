@@ -1777,7 +1777,6 @@
           firstSeedBuf.writeUInt32LE(firstSeed[i], i * 4);
         }
         param.push(firstSeedBuf.toString('base64'));
-        console.log(firstSeed, firstSeedBuf.toString('base64'));
       }
       try {
         this.process = spawn('./ygopro', param, {
@@ -2330,9 +2329,9 @@
     finish_recover(fail) {
       var buffer, j, len, player, ref, results;
       if (fail) {
-        return ygopro.stoc_send_chat_to_room(this, "${recover_fail}", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send_chat_to_room(this, "${recover_fail}", ygopro.constants.COLORS.RED);
+        return this.terminate();
       } else {
-        // @terminate()
         ygopro.stoc_send_chat_to_room(this, "${recover_success}", ygopro.constants.COLORS.BABYBLUE);
         this.recovering = false;
         ref = this.get_playing_player();
