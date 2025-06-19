@@ -17,6 +17,7 @@ let Ban = class Ban extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
     ip;
     name;
 };
+exports.Ban = Ban;
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
@@ -31,9 +32,7 @@ __decorate([
     (0, typeorm_1.Column)({ type: "varchar", length: 20, nullable: true }),
     __metadata("design:type", String)
 ], Ban.prototype, "name", void 0);
-Ban = __decorate([
+exports.Ban = Ban = __decorate([
     (0, typeorm_1.Entity)(),
     (0, typeorm_1.Unique)(["ip", "name"])
 ], Ban);
-exports.Ban = Ban;
-//# sourceMappingURL=Ban.js.map

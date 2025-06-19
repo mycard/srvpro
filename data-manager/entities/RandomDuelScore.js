@@ -47,6 +47,7 @@ let RandomDuelScore = class RandomDuelScore extends CreateAndUpdateTimeBase_1.Cr
         }
     }
 };
+exports.RandomDuelScore = RandomDuelScore;
 __decorate([
     (0, typeorm_1.PrimaryColumn)({ type: "varchar", length: 20 }),
     __metadata("design:type", String)
@@ -70,8 +71,6 @@ __decorate([
     (0, typeorm_1.Column)("int", { unsigned: true, default: 0 }),
     __metadata("design:type", Number)
 ], RandomDuelScore.prototype, "winCombo", void 0);
-RandomDuelScore = __decorate([
+exports.RandomDuelScore = RandomDuelScore = __decorate([
     (0, typeorm_1.Entity)()
 ], RandomDuelScore);
-exports.RandomDuelScore = RandomDuelScore;
-//# sourceMappingURL=RandomDuelScore.js.map

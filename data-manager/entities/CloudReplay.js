@@ -41,6 +41,7 @@ let CloudReplay = class CloudReplay extends CreateAndUpdateTimeBase_1.CreateAndU
         return `R#${this.id} ${this.getPlayerNamesString()} ${this.getDateString()}`;
     }
 };
+exports.CloudReplay = CloudReplay;
 __decorate([
     (0, typeorm_1.PrimaryColumn)({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
@@ -58,12 +59,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => CloudReplayPlayer_1.CloudReplayPlayer, player => player.cloudReplay),
     __metadata("design:type", Array)
 ], CloudReplay.prototype, "players", void 0);
-CloudReplay = __decorate([
+exports.CloudReplay = CloudReplay = __decorate([
     (0, typeorm_1.Entity)({
         orderBy: {
             date: "DESC"
         }
     })
 ], CloudReplay);
-exports.CloudReplay = CloudReplay;
-//# sourceMappingURL=CloudReplay.js.map

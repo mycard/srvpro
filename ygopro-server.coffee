@@ -439,7 +439,7 @@ init = () ->
     long_resolve_cards = global.long_resolve_cards = await loadJSONAsync('./data/long_resolve_cards.json')
 
   if settings.modules.tournament_mode.enable_recover
-    ReplayParser = global.ReplayParser = require "./Replay.js"
+    ReplayParser = global.ReplayParser = (require "./Replay.js").Replay
 
   if settings.modules.athletic_check.enabled
     AthleticChecker = require("./athletic-check.js").AthleticChecker

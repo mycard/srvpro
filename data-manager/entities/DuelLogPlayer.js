@@ -62,6 +62,7 @@ let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.B
         return p;
     }
 };
+exports.DuelLogPlayer = DuelLogPlayer;
 __decorate([
     (0, typeorm_1.Index)(),
     (0, typeorm_1.Column)({ type: "varchar", length: 20 }),
@@ -104,8 +105,6 @@ __decorate([
     (0, typeorm_1.ManyToOne)(() => DuelLog_1.DuelLog, duelLog => duelLog.players),
     __metadata("design:type", DuelLog_1.DuelLog)
 ], DuelLogPlayer.prototype, "duelLog", void 0);
-DuelLogPlayer = DuelLogPlayer_1 = __decorate([
+exports.DuelLogPlayer = DuelLogPlayer = DuelLogPlayer_1 = __decorate([
     (0, typeorm_1.Entity)()
 ], DuelLogPlayer);
-exports.DuelLogPlayer = DuelLogPlayer;
-//# sourceMappingURL=DuelLogPlayer.js.map
