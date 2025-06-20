@@ -443,7 +443,7 @@ init = () ->
     long_resolve_cards = global.long_resolve_cards = await loadJSONAsync('./data/long_resolve_cards.json')
 
   if settings.modules.tournament_mode.enable_recover
-    ReplayParser = global.ReplayParser = require "./Replay.js"
+    ReplayParser = global.ReplayParser = (require "./Replay.js").Replay
 
   if settings.modules.athletic_check.enabled
     AthleticChecker = require("./athletic-check.js").AthleticChecker
@@ -1248,9 +1248,6 @@ SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
     await ygopro.helper.send(sk, buffer)
   return true
 
-getSeedTimet = global.getSeedTimet = (count) ->
-  return _.range(count).map(() => 0)
-
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -1419,12 +1416,11 @@ class Room
       @hostinfo.start_lp, @hostinfo.start_hand, @hostinfo.draw_count, @hostinfo.time_limit, @hostinfo.replay_mode]
 
     if firstSeed
-      param.push(firstSeed)
-      seeds = getSeedTimet(2)
-      param.push(seeds[i]) for i in [0...2]
-    else
-      seeds = getSeedTimet(3)
-      param.push(seeds[i]) for i in [0...3]
+     # new replay with extended header and long seed
+      firstSeedBuf = Buffer.allocUnsafe(firstSeed.length * 4)
+      for i in [0...firstSeed.length]
+        firstSeedBuf.writeUInt32LE(firstSeed[i], i * 4)
+      param.push(firstSeedBuf.toString('base64'))
 
     try
       @process = spawn './ygopro', param, {cwd: 'ygopro'}
@@ -1569,7 +1565,12 @@ class Room
       return false
     try
       @recover_replay = await ReplayParser.fromFile(settings.modules.tournament_mode.replay_path + @recover_duel_log.replayFileName)
-      @spawn(@recover_replay.header.seed)
+      if !@recover_replay.header.seedSequence.length
+        # it's old replay, unsupported
+        log.warn("LOAD RECOVER REPLAY FAIL: Old replay format, unsupported", @recover_duel_log.replayFileName)
+        @terminate()
+        return false
+      @spawn(@recover_replay.header.seedSequence)
       return true
     catch e
       log.warn("LOAD RECOVER REPLAY FAIL", e.toString())

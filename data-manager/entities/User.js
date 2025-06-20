@@ -16,6 +16,7 @@ let User = class User extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase 
     key;
     chatColor;
 };
+exports.User = User;
 __decorate([
     (0, typeorm_1.PrimaryColumn)({ type: "varchar", length: 128 }),
     __metadata("design:type", String)
@@ -24,8 +25,6 @@ __decorate([
     (0, typeorm_1.Column)("varchar", { length: 16, nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "chatColor", void 0);
-User = __decorate([
+exports.User = User = __decorate([
     (0, typeorm_1.Entity)()
 ], User);
-exports.User = User;
-//# sourceMappingURL=User.js.map

@@ -55,6 +55,7 @@ let DuelLog = class DuelLog extends CreateAndUpdateTimeBase_1.CreateAndUpdateTim
         return data;
     }
 };
+exports.DuelLog = DuelLog;
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
@@ -94,12 +95,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => DuelLogPlayer_1.DuelLogPlayer, player => player.duelLog),
     __metadata("design:type", Array)
 ], DuelLog.prototype, "players", void 0);
-DuelLog = __decorate([
+exports.DuelLog = DuelLog = __decorate([
     (0, typeorm_1.Entity)({
         orderBy: {
             id: "DESC"
         }
     })
 ], DuelLog);
-exports.DuelLog = DuelLog;
-//# sourceMappingURL=DuelLog.js.map

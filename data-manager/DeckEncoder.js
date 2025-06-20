@@ -3,7 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decodeDeck = exports.encodeDeck = void 0;
+exports.encodeDeck = encodeDeck;
+exports.decodeDeck = decodeDeck;
 const assert_1 = __importDefault(require("assert"));
 function encodeDeck(deck) {
     let pointer = 0;
@@ -20,7 +21,6 @@ function encodeDeck(deck) {
     (0, assert_1.default)(pointer === bufferSize, `Invalid buffer size. Expected: ${bufferSize}. Got: ${pointer}`);
     return buffer;
 }
-exports.encodeDeck = encodeDeck;
 function decodeDeck(buffer) {
     let pointer = 0;
     const mainLength = buffer.readInt32LE(pointer);
@@ -41,5 +41,3 @@ function decodeDeck(buffer) {
     }
     return { main, side };
 }
-exports.decodeDeck = decodeDeck;
-//# sourceMappingURL=DeckEncoder.js.map

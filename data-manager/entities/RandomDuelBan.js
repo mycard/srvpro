@@ -25,6 +25,7 @@ let RandomDuelBan = class RandomDuelBan extends CreateAndUpdateTimeBase_1.Create
         return this.needTip > 0 ? true : false;
     }
 };
+exports.RandomDuelBan = RandomDuelBan;
 __decorate([
     (0, typeorm_1.PrimaryColumn)({ type: "varchar", length: 64 }),
     __metadata("design:type", String)
@@ -45,8 +46,6 @@ __decorate([
     (0, typeorm_1.Column)({ type: "tinyint", unsigned: true }),
     __metadata("design:type", Number)
 ], RandomDuelBan.prototype, "needTip", void 0);
-RandomDuelBan = __decorate([
+exports.RandomDuelBan = RandomDuelBan = __decorate([
     (0, typeorm_1.Entity)()
 ], RandomDuelBan);
-exports.RandomDuelBan = RandomDuelBan;
-//# sourceMappingURL=RandomDuelBan.js.map

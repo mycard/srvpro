@@ -17,6 +17,7 @@ class BasePlayer extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
     name;
     pos;
 }
+exports.BasePlayer = BasePlayer;
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
     __metadata("design:type", Number)
@@ -29,5 +30,3 @@ __decorate([
     (0, typeorm_1.Column)({ type: "tinyint" }),
     __metadata("design:type", Number)
 ], BasePlayer.prototype, "pos", void 0);
-exports.BasePlayer = BasePlayer;
-//# sourceMappingURL=BasePlayer.js.map

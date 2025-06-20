@@ -5,8 +5,7 @@
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
 		"emitDecoratorMetadata": true,
-		"experimentalDecorators": true,
-		"sourceMap": true
+		"experimentalDecorators": true
 	},
 	"compileOnSave": true,
 	"allowJs": true,

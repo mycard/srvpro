@@ -67,6 +67,7 @@ class Challonge {
             }
         }
     }
+    // DELETE /v1/tournaments/${tournament_id}/participants/clear.json?api_key=xxx returns ANY
     async clearParticipants() {
         try {
             await axios_1.default.delete(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/clear.json`, {
@@ -82,6 +83,7 @@ class Challonge {
             return false;
         }
     }
+    // POST /v1/tournaments/${tournament_id}/participants/bulk_add.json { api_key: string, participants: { name: string }[] } returns ANY
     async uploadParticipants(participantNames) {
         try {
             await axios_1.default.post(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/bulk_add.json`, {
@@ -97,4 +99,3 @@ class Challonge {
     }
 }
 exports.Challonge = Challonge;
-//# sourceMappingURL=challonge.js.map
