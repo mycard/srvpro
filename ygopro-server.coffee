@@ -2070,7 +2070,7 @@ deck_name_match = global.deck_name_match = (deck_name, player_name) ->
 # return true to cancel a synchronous message
 
 ygopro.ctos_follow 'EXTERNAL_ADDRESS', true, (buffer, info, client, server, datas)->
-  ip_uint = info.real_ip
+  ip_uint = buffer.readUInt32BE(0)
   if ip_uint == 0
     return false
   ip_parts = [

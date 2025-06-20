@@ -2776,7 +2776,7 @@
   // return true to cancel a synchronous message
   ygopro.ctos_follow('EXTERNAL_ADDRESS', true, function(buffer, info, client, server, datas) {
     var ip_parts, ip_uint, xff_ip;
-    ip_uint = info.real_ip;
+    ip_uint = buffer.readUInt32BE(0);
     if (ip_uint === 0) {
       return false;
     }
