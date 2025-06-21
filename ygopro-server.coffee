@@ -3333,12 +3333,12 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
       CLIENT_kick_reconnect(client, buffer)
     else
       ygopro.stoc_send_chat(client, "${deck_incorrect_reconnect}", ygopro.constants.COLORS.RED)
+      ygopro.stoc_send(client, 'HS_PLAYER_CHANGE', {
+        status: (client.pos << 4) | 0xa
+      })
       ygopro.stoc_send(client, 'ERROR_MSG', {
         msg: 2,
         code: 0
-      })
-      ygopro.stoc_send(client, 'HS_PLAYER_CHANGE', {
-        status: (client.pos << 4) | 0xa
       })
     return true
   room=ROOM_all[client.rid]
@@ -3365,17 +3365,20 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
     CLIENT_kick(room.dueling_players[oppo_pos - win_pos])
     CLIENT_kick(room.dueling_players[oppo_pos - win_pos + 1]) if room.hostinfo.mode == 2
     return true
-  struct = ygopro.structs.get("deck")
-  struct._setBuff(buffer)
   deck_ok = (msg) ->
-    ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.BABYBLUE)
+    await ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.BABYBLUE)
     return false
   deck_bad = (msg) ->
-    struct.set("mainc", 1)
-    struct.set("sidec", 1)
-    struct.set("deckbuf", [4392470, 4392470])
     ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.RED)
-    return false
+    if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN
+      ygopro.stoc_send(client, 'HS_PLAYER_CHANGE', {
+        status: (client.pos << 4) | 0xa
+      })
+    ygopro.stoc_send(client, 'ERROR_MSG', {
+      msg: 2,
+      code: 0
+    })
+    return true
   if room.random_type or room.arena
     if client.pos == 0
       room.waiting_for_player = room.waiting_for_player2

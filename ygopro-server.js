@@ -4437,7 +4437,7 @@
   });
 
   ygopro.ctos_follow('UPDATE_DECK', true, async function(buffer, info, client, server, datas) {
-    var athleticCheckResult, buff_main, buff_side, card, current_deck, deck, deck_array, deck_bad, deck_main, deck_ok, deck_side, deck_text, deckbuf_from_challonge, decks, found_deck, i, j, l, len, len1, line, oppo_pos, recover_player_data, recoveredDeck, room, struct, trim_deckbuf, win_pos;
+    var athleticCheckResult, buff_main, buff_side, card, current_deck, deck, deck_array, deck_bad, deck_main, deck_ok, deck_side, deck_text, deckbuf_from_challonge, decks, found_deck, i, j, l, len, len1, line, oppo_pos, recover_player_data, recoveredDeck, room, trim_deckbuf, win_pos;
     if (settings.modules.reconnect.enabled && client.pre_reconnecting) {
       if (!CLIENT_is_able_to_reconnect(client) && !CLIENT_is_able_to_kick_reconnect(client)) {
         ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED);
@@ -4448,12 +4448,12 @@
         CLIENT_kick_reconnect(client, buffer);
       } else {
         ygopro.stoc_send_chat(client, "${deck_incorrect_reconnect}", ygopro.constants.COLORS.RED);
+        ygopro.stoc_send(client, 'HS_PLAYER_CHANGE', {
+          status: (client.pos << 4) | 0xa
+        });
         ygopro.stoc_send(client, 'ERROR_MSG', {
           msg: 2,
           code: 0
-        });
-        ygopro.stoc_send(client, 'HS_PLAYER_CHANGE', {
-          status: (client.pos << 4) | 0xa
         });
       }
       return true;
@@ -4507,18 +4507,22 @@
       }
       return true;
     }
-    struct = ygopro.structs.get("deck");
-    struct._setBuff(buffer);
-    deck_ok = function(msg) {
-      ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.BABYBLUE);
+    deck_ok = async function(msg) {
+      await ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.BABYBLUE);
       return false;
     };
     deck_bad = function(msg) {
-      struct.set("mainc", 1);
-      struct.set("sidec", 1);
-      struct.set("deckbuf", [4392470, 4392470]);
       ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.RED);
-      return false;
+      if (room.duel_stage === ygopro.constants.DUEL_STAGE.BEGIN) {
+        ygopro.stoc_send(client, 'HS_PLAYER_CHANGE', {
+          status: (client.pos << 4) | 0xa
+        });
+      }
+      ygopro.stoc_send(client, 'ERROR_MSG', {
+        msg: 2,
+        code: 0
+      });
+      return true;
     };
     if (room.random_type || room.arena) {
       if (client.pos === 0) {
