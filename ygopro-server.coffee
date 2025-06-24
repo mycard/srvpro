@@ -99,6 +99,8 @@ aragami = global.aragami = new Aragami() # we use memory mode only
 
 aragami_classes = global.aragami_classes = require('./aragami-classes.js')
 
+msg_polyfill = global.msg_polyfill = require('./msg-polyfill/index.js')
+
 #heapdump = require 'heapdump'
 
 checkFileExists = (path) =>
@@ -2592,6 +2594,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   return unless room and !client.reconnecting
   msg = buffer.readInt8(0)
   msg_name = ygopro.constants.MSG[msg]
+  if await msg_polyfill.polyfillGameMsg(client.actual_version, msg_name, buffer)
+    return true
   #console.log client.pos, "MSG", msg_name
   if msg_name == 'RETRY' and room.recovering
     room.finish_recover(true)
@@ -3468,11 +3472,13 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
             return deck_bad("#{client.name}${deck_not_found}")
   await return false
 
-ygopro.ctos_follow 'RESPONSE', false, (buffer, info, client, server, datas)->
+ygopro.ctos_follow 'RESPONSE', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
-  return unless room and (room.random_type or room.arena)
-  room.refreshLastActiveTime()
-  await return
+  if room and (room.random_type or room.arena)
+    room.refreshLastActiveTime()
+  if await msg_polyfill.polyfillResponse(client.actual_version, client.last_game_msg_title, buffer)
+    return true
+  return false
 
 ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
