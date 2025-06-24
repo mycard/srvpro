@@ -72,9 +72,6 @@ export class Polyfiller1361 extends BasePolyfiller {
       // same as above items
 
       const targetValue = buffer.readUInt32LE(3);
-      if (!(targetValue | 0x80000000)) {
-        return false;
-      }
       const forcedCount = buffer[9];
       const cardCount = buffer[10 + forcedCount * 11];
       const valueOffsets: number[] = [];
@@ -86,12 +83,38 @@ export class Polyfiller1361 extends BasePolyfiller {
         const itemOffset = 11 + forcedCount * 11 + i * 11;
         valueOffsets.push(itemOffset + 7);
       }
-      const values = valueOffsets.map(offset => buffer.readUInt32LE(offset));
-      const gcdValue = gcd([...values, targetValue & 0x7FFFFFFF]);
-      buffer.writeUInt32LE(Math.floor(targetValue / gcdValue) & 0xffff, 3);
-      for(const offset of valueOffsets) {
-        const value = buffer.readUInt32LE(offset);
-        buffer.writeUInt32LE(Math.floor(value / gcdValue), offset);
+      const values = valueOffsets.map(offset => ({
+        offset,
+        value: buffer.readUInt32LE(offset),
+      }));
+      if (!values.some(v => v.value & 0x80000000)) {
+        return false;
+      }
+      const gcds = [targetValue];
+      for(const { value } of values) {
+        if (value & 0x80000000) {
+          gcds.push(value & 0x7FFFFFFF);
+        } else {
+          const op1 = value & 0xffff;
+          const op2 = (value >>> 16) & 0xffff;
+          [op1, op2].filter(v => v > 0)
+            .forEach(v => gcds.push(v));
+        }
+      }
+      const gcdValue = gcd(gcds);
+      buffer.writeUInt32LE(targetValue / gcdValue, 3);
+      for (const trans of values) {
+        let target = 0;
+        const { value } = trans;
+        if (value & 0x80000000) {
+          target = ((value & 0x7FFFFFFF) / gcdValue) & 0xffff;
+        } else {
+          // shrink op1 and op2
+          const op1 = value & 0xffff;
+          const op2 = (value >>> 16) & 0xffff;
+          target = ((op1 / gcdValue) & 0xffff) | ((((op2 / gcdValue) & 0xffff) << 16) >>> 0);
+        }
+        buffer.writeUInt32LE(target, trans.offset);
       }
     }
     return false;
