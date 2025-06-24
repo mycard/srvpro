@@ -88,7 +88,7 @@ export class Polyfiller1361 extends BasePolyfiller {
         value: buffer.readUInt32LE(offset),
       }));
       if (!values.some(v => v.value & 0x80000000)) {
-        return false;
+        return;
       }
       const gcds = [targetValue];
       for(const { value } of values) {
@@ -117,6 +117,6 @@ export class Polyfiller1361 extends BasePolyfiller {
         buffer.writeUInt32LE(target, trans.offset);
       }
     }
-    return false;
+    return;
   }
 }

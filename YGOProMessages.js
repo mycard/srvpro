@@ -17,7 +17,7 @@ class Handler {
     }
     async handle(buffer, info, datas, params) {
         if (this.synchronous) {
-            return !!(await this.handler(buffer, info, datas, params));
+            return await this.handler(buffer, info, datas, params);
         }
         else {
             const newBuffer = Buffer.from(buffer);
@@ -183,7 +183,7 @@ class YGOProMessagesHelper {
         let messageLength = 0;
         let bufferProto = 0;
         let datas = [];
-        const limit = preconnect ? 2 : this.singleHandleLimit;
+        const limit = preconnect ? 9 : this.singleHandleLimit;
         for (let l = 0; l < limit; ++l) {
             if (messageLength === 0) {
                 if (messageBuffer.length >= 2) {
@@ -224,6 +224,7 @@ class YGOProMessagesHelper {
                     }
                     let buffer = messageBuffer.slice(3, 2 + messageLength);
                     //console.log(l, direction, proto, cancel);
+                    let shrinkCount = 0;
                     for (let priority = 0; priority < 4; ++priority) {
                         if (cancel) {
                             break;
@@ -239,19 +240,31 @@ class YGOProMessagesHelper {
                             for (let handler of handlerCollection.get(bufferProto)) {
                                 cancel = await handler.handle(buffer, info, datas, params);
                                 if (cancel) {
-                                    if (cancel === '_cancel') {
-                                        return {
-                                            datas: [],
-                                            feedback
-                                        };
+                                    if (typeof cancel === "string") {
+                                        if (cancel === '_cancel') {
+                                            return {
+                                                datas: [],
+                                                feedback
+                                            };
+                                        }
+                                        else if (cancel.startsWith('_shrink_')) {
+                                            shrinkCount += parseInt(cancel.slice(8));
+                                            cancel = false;
+                                        }
                                     }
                                     break;
                                 }
                             }
                         }
                     }
-                    if (!cancel) {
-                        datas.push(messageBuffer.slice(0, 2 + messageLength));
+                    if (!cancel && shrinkCount <= messageLength) {
+                        if (shrinkCount > 0) {
+                            // rewrite first 2 bytes of length
+                            const oldLength = messageBuffer.readUInt16LE(0);
+                            const newLength = oldLength - shrinkCount;
+                            messageBuffer.writeUInt16LE(newLength, 0);
+                        }
+                        datas.push(messageBuffer.slice(0, 2 + messageLength - shrinkCount));
                     }
                     messageBuffer = messageBuffer.slice(2 + messageLength);
                     messageLength = 0;

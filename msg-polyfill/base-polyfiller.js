@@ -2,12 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BasePolyfiller = void 0;
 class BasePolyfiller {
-    async polyfillGameMsg(msgTitle, buffer) {
-        return false;
+    constructor() {
+        this.shrinkCount = 0;
     }
-    async polyfillResponse(msgTitle, buffer) {
-        return false;
-    }
+    async polyfillGameMsg(msgTitle, buffer) { }
+    async polyfillResponse(msgTitle, buffer) { }
     splice(buf, offset, deleteCount = 1) {
         if (offset < 0 || offset >= buf.length)
             return Buffer.alloc(0);
@@ -20,6 +19,7 @@ class BasePolyfiller {
             buf.copy(buf, offset, end, buf.length);
         }
         buf.fill(0, buf.length - deleteCount);
+        this.shrinkCount += deleteCount;
         return deleted;
     }
     insert(buf, offset, insertBuf) {
@@ -27,6 +27,7 @@ class BasePolyfiller {
         const insertLength = Math.min(insertBuf.length, availableSpace);
         buf.copy(buf, offset + insertLength, offset, buf.length - insertLength);
         insertBuf.copy(buf, offset, 0, insertLength);
+        this.shrinkCount -= insertLength;
         return buf;
     }
 }

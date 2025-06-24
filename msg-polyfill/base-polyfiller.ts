@@ -1,11 +1,9 @@
 export class BasePolyfiller {
-  async polyfillGameMsg(msgTitle: string, buffer: Buffer) {
-    return false;
-  }
+  shrinkCount = 0;
 
-  async polyfillResponse(msgTitle: string, buffer: Buffer) {
-    return false;
-  }
+  async polyfillGameMsg(msgTitle: string, buffer: Buffer) {}
+
+  async polyfillResponse(msgTitle: string, buffer: Buffer) {}
 
   splice(buf: Buffer, offset: number, deleteCount = 1): Buffer {
     if (offset < 0 || offset >= buf.length) return Buffer.alloc(0);
@@ -22,6 +20,8 @@ export class BasePolyfiller {
     }
   
     buf.fill(0, buf.length - deleteCount);
+
+    this.shrinkCount += deleteCount;
   
     return deleted;
   }
@@ -33,6 +33,8 @@ export class BasePolyfiller {
     buf.copy(buf, offset + insertLength, offset, buf.length - insertLength);
 
     insertBuf.copy(buf, offset, 0, insertLength);
+
+    this.shrinkCount -= insertLength;
   
     return buf;
   }

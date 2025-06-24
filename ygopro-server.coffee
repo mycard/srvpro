@@ -2023,8 +2023,8 @@ netRequestHandler = (client) ->
       preconnect = false
       if settings.modules.reconnect.enabled and client.pre_reconnecting_to_room
         ctos_filter = ["UPDATE_DECK"]
-      if client.name == null
-        ctos_filter = ["JOIN_GAME", "PLAYER_INFO"]
+      else if client.name == null
+        ctos_filter = ["EXTERNAL_ADDRESS", "JOIN_GAME", "PLAYER_INFO"]
         preconnect = true
       handle_data = await ygopro.helper.handleBuffer(ctos_buffer, "CTOS", ctos_filter, {
         client: client,
@@ -2594,8 +2594,12 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   return unless room and !client.reconnecting
   msg = buffer.readInt8(0)
   msg_name = ygopro.constants.MSG[msg]
-  if await msg_polyfill.polyfillGameMsg(client.actual_version, msg_name, buffer)
+  shrink_count = await msg_polyfill.polyfillGameMsg(client.actual_version, msg_name, buffer)
+  if shrink_count == 0x3f3f3f3f
     return true
+  record_last_game_msg = () ->
+    client.last_game_msg = Buffer.from(buffer.slice(0, buffer.length - shrink_count))
+    client.last_game_msg_title = msg_name
   #console.log client.pos, "MSG", msg_name
   if msg_name == 'RETRY' and room.recovering
     room.finish_recover(true)
@@ -2621,12 +2625,10 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
         ygopro.stoc_send(client, 'GAME_MSG', client.last_game_msg)
         return true
     else
-      client.last_game_msg = buffer
-      client.last_game_msg_title = msg_name
+      record_last_game_msg()
       # log.info(client.name, client.last_game_msg_title)
   else if msg_name != 'RETRY'
-    client.last_game_msg = buffer
-    client.last_game_msg_title = msg_name
+    record_last_game_msg()
     # log.info(client.name, client.last_game_msg_title)
 
   if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg <= 144) #SELECT和ANNOUNCE开头的消息
@@ -2871,7 +2873,10 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       room.recover_buffers[client.pos].push(buffer)
     return true
 
-  await return false
+  if shrink_count > 0
+    return "_shrink_#{shrink_count}"
+  else
+    return false
 
 #房间管理
 ygopro.ctos_follow 'HS_TOOBSERVER', true, (buffer, info, client, server, datas)->
@@ -3476,8 +3481,7 @@ ygopro.ctos_follow 'RESPONSE', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   if room and (room.random_type or room.arena)
     room.refreshLastActiveTime()
-  if await msg_polyfill.polyfillResponse(client.actual_version, client.last_game_msg_title, buffer)
-    return true
+  await msg_polyfill.polyfillResponse(client.actual_version, client.last_game_msg_title, buffer)
   return false
 
 ygopro.stoc_follow 'TIME_LIMIT', true, (buffer, info, client, server, datas)->
