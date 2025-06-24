@@ -179,6 +179,8 @@
     "banned_athletic_deck_part1": "Entertainment Mode does not allow top ",
     "banned_athletic_deck_part2": " popular meta decks. Please change your deck.",
     "chat_disabled": "Chat is disabled in this room.",
+    "version_to_polyfill": "Your client version is not fully supported. Please rejoin to enable temporary compatibility mode. For the best experience, we recommend updating your game to the latest version.",
+    "version_polyfilled": "Temporary compatibility mode has been enabled for your version. We recommend updating your game to avoid potential compatibility issues in the future.",    
     "using_athletic_deck": " is using a competitive deck."
   },
   "es-es": {
@@ -507,6 +509,8 @@
     "banned_athletic_deck_part1": "娱乐匹配中禁止使用使用数前",
     "banned_athletic_deck_part2": "的竞技卡组。请更换卡组。",
     "chat_disabled": "本房间禁止聊天。",
+    "version_to_polyfill": "当前客户端版本暂未完全支持。请重新加入以启用临时兼容模式。为获得更佳体验，建议尽快更新游戏版本。",
+    "version_polyfilled": "已为当前版本启用临时兼容模式。建议尽快更新游戏，以避免后续兼容性问题。",
     "using_athletic_deck": " 正在使用竞技卡组。"
   },
  "ko-kr": {

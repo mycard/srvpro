@@ -10,6 +10,7 @@ const ygopro_deck_encode_1 = __importDefault(require("ygopro-deck-encode"));
 function encodeDeck(deck) {
     const pdeck = new ygopro_deck_encode_1.default();
     pdeck.main = deck.main;
+    pdeck.extra = [];
     pdeck.side = deck.side;
     return Buffer.from(pdeck.toUpdateDeckPayload());
 }

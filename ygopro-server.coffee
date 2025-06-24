@@ -77,7 +77,8 @@ import_datas = global.import_datas = [
   "ready_trap",
   "join_time",
   "arena_quit_free",
-  "replays_sent"
+  "replays_sent",
+  "actual_version",
 ]
 
 merge = require 'deepmerge'
@@ -91,6 +92,12 @@ util = require("util")
 Q = require("q")
 
 YGOProDeck = require('ygopro-deck-encode').default
+
+Aragami = require('aragami').Aragami
+
+aragami = global.aragami = new Aragami() # we use memory mode only
+
+aragami_classes = global.aragami_classes = require('./aragami-classes.js')
 
 #heapdump = require 'heapdump'
 
@@ -2131,16 +2138,31 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
 
 ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
   check_version = () ->
-    if info.version != settings.version and !settings.alternative_versions.includes(info.version)
-      ygopro.stoc_send_chat(client, (if info.version < settings.version then settings.modules.update else settings.modules.wait_update), ygopro.constants.COLORS.RED)
+    bad_version = (msg) ->
+      ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.RED)
       ygopro.stoc_send client, 'ERROR_MSG', {
         msg: 4
         code: settings.version
       }
       CLIENT_kick(client)
       return false
-    return true
+    if info.version == settings.version
+      return true
+    if settings.alternative_versions.includes(info.version)
+      client_key = CLIENT_get_authorize_key(client)
+      if !await aragami.has(aragami_classes.ClientVersionBlocker, client_key)
+        blocker_obj = new aragami_classes.ClientVersionBlocker()
+        blocker_obj.clientKey = client_key
+        await aragami.set(blocker_obj)
+        return bad_version("${version_to_polyfill}")
+      else
+        await aragami.del(aragami_classes.ClientVersionBlocker, client_key)
+        return true
+    return bad_version(if info.version < settings.version then settings.modules.update else settings.modules.wait_update)
   polyfill_version = () ->
+    if client.actual_version
+      # already polyfilled
+      return
     client.actual_version = info.version
     if info.version != settings.version and settings.alternative_versions.includes(info.version)
       info.version = settings.version
@@ -2148,13 +2170,12 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       struct._setBuff(buffer)
       struct.set("version", info.version)
       buffer = struct.buffer
+      ygopro.stoc_send_chat(client, "${version_polyfilled}", ygopro.constants.COLORS.BABYBLUE)
+    await return
 #log.info info
   info.pass=info.pass.trim()
   client.pass = info.pass
   if CLIENT_is_able_to_reconnect(client) or CLIENT_is_able_to_kick_reconnect(client)
-    if !check_version()
-      return
-    polyfill_version()
     CLIENT_pre_reconnect(client)
     return
   else if settings.modules.stop
@@ -2194,7 +2215,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     replay = await dataManager.getRandomCloudReplay()
     await client.open_cloud_replay(replay)
     return
-  else if !check_version()
+  else if !await check_version()
     return
   else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled and !settings.modules.challonge.enabled
     ygopro.stoc_die(client, "${blank_room_name}")
@@ -2216,7 +2237,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     if info.pass.length <= 8
       ygopro.stoc_die(client, '${invalid_password_length}')
       return
-    polyfill_version()
+    await polyfill_version()
 
     buffer = Buffer.from(info.pass[0...8], 'base64')
 
@@ -2472,7 +2493,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     ygopro.stoc_die(client, "${invalid_password_room}")
     return
   else
-    polyfill_version()
+    await polyfill_version()
 
     #log.info 'join_game',info.pass, client.name
     room = await ROOM_find_or_create_by_name(info.pass, client.ip)
