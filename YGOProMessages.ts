@@ -237,7 +237,7 @@ export class YGOProMessagesHelper {
 		let messageLength = 0;
 		let bufferProto = 0;
 		let datas: Buffer[] = [];
-		const limit = preconnect ? 9 : this.singleHandleLimit;
+		const limit = preconnect ? protoFilter.length * 3 : this.singleHandleLimit;
 		for (let l = 0; l < limit; ++l) {
 			if (messageLength === 0) {
 				if (messageBuffer.length >= 2) {
