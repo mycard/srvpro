@@ -16,15 +16,6 @@ const BasePlayer_1 = require("./BasePlayer");
 const DuelLog_1 = require("./DuelLog");
 const DeckEncoder_1 = require("../DeckEncoder");
 let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.BasePlayer {
-    realName;
-    ip;
-    isFirst;
-    score;
-    lp;
-    cardCount;
-    startDeckBuffer;
-    currentDeckBuffer;
-    winner;
     setStartDeck(deck) {
         if (!deck) {
             this.startDeckBuffer = null;
@@ -45,7 +36,6 @@ let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.B
     getCurrentDeck() {
         return (0, DeckEncoder_1.decodeDeck)(Buffer.from(this.currentDeckBuffer, "base64"));
     }
-    duelLog;
     static fromDuelLogPlayerInfo(info) {
         const p = new DuelLogPlayer_1();
         p.name = info.name;

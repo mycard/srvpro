@@ -19,19 +19,15 @@ const underscore_1 = __importDefault(require("underscore"));
 const moment_1 = __importDefault(require("moment"));
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 let CloudReplay = class CloudReplay extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
-    id;
-    data;
     fromBuffer(buffer) {
         this.data = buffer.toString("base64");
     }
     toBuffer() {
         return Buffer.from(this.data, "base64");
     }
-    date;
     getDateString() {
         return (0, moment_1.default)(this.date).format('YYYY-MM-DD HH:mm:ss');
     }
-    players;
     getPlayerNamesString() {
         const playerInfos = underscore_1.default.clone(this.players);
         playerInfos.sort((p1, p2) => p1.pos - p2.pos);

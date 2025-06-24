@@ -52,10 +52,6 @@ const jszip_1 = __importDefault(require("jszip"));
 const fs = __importStar(require("fs"));
 require("reflect-metadata");
 class DataManager {
-    config;
-    log;
-    ready;
-    db;
     constructor(config, log) {
         this.config = config;
         this.log = log;

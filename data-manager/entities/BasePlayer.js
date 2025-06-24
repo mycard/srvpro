@@ -13,9 +13,6 @@ exports.BasePlayer = void 0;
 const typeorm_1 = require("typeorm");
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 class BasePlayer extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
-    id;
-    name;
-    pos;
 }
 exports.BasePlayer = BasePlayer;
 __decorate([

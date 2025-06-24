@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientVersionBlocker = void 0;
 const aragami_1 = require("aragami");
 let ClientVersionBlocker = class ClientVersionBlocker {
-    clientKey;
 };
 exports.ClientVersionBlocker = ClientVersionBlocker;
 __decorate([

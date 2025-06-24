@@ -12,8 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateAndUpdateTimeBase = void 0;
 const typeorm_1 = require("typeorm");
 class CreateAndUpdateTimeBase {
-    createTime;
-    updateTime;
 }
 exports.CreateAndUpdateTimeBase = CreateAndUpdateTimeBase;
 __decorate([

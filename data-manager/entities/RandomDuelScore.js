@@ -13,11 +13,6 @@ exports.RandomDuelScore = void 0;
 const typeorm_1 = require("typeorm");
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 let RandomDuelScore = class RandomDuelScore extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
-    name;
-    winCount;
-    loseCount;
-    fleeCount;
-    winCombo;
     getDisplayName() {
         return this.name.split("$")[0];
     }

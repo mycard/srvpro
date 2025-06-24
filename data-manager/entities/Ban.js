@@ -13,9 +13,6 @@ exports.Ban = void 0;
 const typeorm_1 = require("typeorm");
 const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
 let Ban = class Ban extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
-    id;
-    ip;
-    name;
 };
 exports.Ban = Ban;
 __decorate([

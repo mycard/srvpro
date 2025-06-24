@@ -43,23 +43,20 @@ exports.REPLAY_ID_YRP2 = 0x32707279;
  * Metadata stored at the beginning of every replay file.
  */
 class ReplayHeader {
-    static REPLAY_COMPRESSED_FLAG = 0x1;
-    static REPLAY_TAG_FLAG = 0x2;
-    static REPLAY_DECODED_FLAG = 0x4;
-    static REPLAY_SINGLE_MODE = 0x8;
-    static REPLAY_UNIFORM = 0x10;
-    id = 0;
-    version = 0;
-    flag = 0;
-    seed = 0;
-    dataSizeRaw = [];
-    hash = 0;
-    props = [];
-    seedSequence = [];
-    headerVersion = 0;
-    value1 = 0;
-    value2 = 0;
-    value3 = 0;
+    constructor() {
+        this.id = 0;
+        this.version = 0;
+        this.flag = 0;
+        this.seed = 0;
+        this.dataSizeRaw = [];
+        this.hash = 0;
+        this.props = [];
+        this.seedSequence = [];
+        this.headerVersion = 0;
+        this.value1 = 0;
+        this.value2 = 0;
+        this.value3 = 0;
+    }
     /** Decompressed size as little‑endian 32‑bit */
     get dataSize() {
         return Buffer.from(this.dataSizeRaw).readUInt32LE(0);
@@ -84,12 +81,16 @@ class ReplayHeader {
     }
 }
 exports.ReplayHeader = ReplayHeader;
+ReplayHeader.REPLAY_COMPRESSED_FLAG = 0x1;
+ReplayHeader.REPLAY_TAG_FLAG = 0x2;
+ReplayHeader.REPLAY_DECODED_FLAG = 0x4;
+ReplayHeader.REPLAY_SINGLE_MODE = 0x8;
+ReplayHeader.REPLAY_UNIFORM = 0x10;
 /** Utility for reading little‑endian primitives from a Buffer */
 class ReplayReader {
-    buffer;
-    pointer = 0;
     constructor(buffer) {
         this.buffer = buffer;
+        this.pointer = 0;
     }
     advance(size, read) {
         const value = read();
@@ -145,10 +146,9 @@ class ReplayReader {
 }
 /** Utility for writing little‑endian primitives into a Buffer */
 class ReplayWriter {
-    buffer;
-    pointer = 0;
     constructor(buffer) {
         this.buffer = buffer;
+        this.pointer = 0;
     }
     advance(action, size) {
         action();
@@ -195,20 +195,22 @@ class ReplayWriter {
     }
 }
 class Replay {
-    header = null;
-    hostName = '';
-    clientName = '';
-    startLp = 0;
-    startHand = 0;
-    drawCount = 0;
-    opt = 0;
-    hostDeck = null;
-    clientDeck = null;
-    tagHostName = null;
-    tagClientName = null;
-    tagHostDeck = null;
-    tagClientDeck = null;
-    responses = [];
+    constructor() {
+        this.header = null;
+        this.hostName = '';
+        this.clientName = '';
+        this.startLp = 0;
+        this.startHand = 0;
+        this.drawCount = 0;
+        this.opt = 0;
+        this.hostDeck = null;
+        this.clientDeck = null;
+        this.tagHostName = null;
+        this.tagClientName = null;
+        this.tagHostDeck = null;
+        this.tagClientDeck = null;
+        this.responses = [];
+    }
     /** All deck objects in play order */
     get decks() {
         return this.isTag
