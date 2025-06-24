@@ -90,6 +90,8 @@ util = require("util")
 
 Q = require("q")
 
+YGOProDeck = require('ygopro-deck-encode').default
+
 #heapdump = require 'heapdump'
 
 checkFileExists = (path) =>
@@ -3431,15 +3433,9 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
               found_deck=deck
           if found_deck
             deck_text = await fs.promises.readFile(settings.modules.tournament_mode.deck_path+found_deck,{encoding:"ASCII"})
-            deck_array=deck_text.split(/\r?\n/)
-            deck_main=[]
-            deck_side=[]
-            current_deck=deck_main
-            for line in deck_array
-              if line.indexOf("!side")>=0
-                current_deck=deck_side
-              card=parseInt(line)
-              current_deck.push(card) unless isNaN(card) or line.endsWith("#")
+            deck_obj = YGOProDeck.fromYdkString(deck_text)
+            deck_main=deck_obj.main.concat(deck_obj.extra)
+            deck_side=deck_obj.side
             if _.isEqual(buff_main, deck_main) and _.isEqual(buff_side, deck_side)
               #log.info("deck ok: " + client.name)
               return deck_ok("${deck_correct_part1} #{found_deck} ${deck_correct_part2}")
