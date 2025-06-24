@@ -2128,17 +2128,39 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
   await return false
 
 ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
+  check_version = () ->
+    if info.version != settings.version and !settings.alternative_versions.includes(info.version)
+      ygopro.stoc_send_chat(client, (if info.version < settings.version then settings.modules.update else settings.modules.wait_update), ygopro.constants.COLORS.RED)
+      ygopro.stoc_send client, 'ERROR_MSG', {
+        msg: 4
+        code: settings.version
+      }
+      CLIENT_kick(client)
+      return false
+    return true
+  polyfill_version = () ->
+    client.actual_version = info.version
+    if info.version != settings.version and settings.alternative_versions.includes(info.version)
+      info.version = settings.version
+      struct = ygopro.structs.get("CTOS_JoinGame")
+      struct._setBuff(buffer)
+      struct.set("version", info.version)
+      buffer = struct.buffer
 #log.info info
   info.pass=info.pass.trim()
   client.pass = info.pass
   if CLIENT_is_able_to_reconnect(client) or CLIENT_is_able_to_kick_reconnect(client)
+    if !check_version()
+      return
+    polyfill_version()
     CLIENT_pre_reconnect(client)
     return
   else if settings.modules.stop
     ygopro.stoc_die(client, settings.modules.stop)
+    return
   else if info.pass == "Marshtomp" or info.pass == "the Big Brother"
     ygopro.stoc_die(client, "${bad_user_name}")
-
+    return
   else if info.pass.toUpperCase()=="R" and settings.modules.cloud_replay.enabled
     ygopro.stoc_send_chat(client,"${cloud_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
     replays = await dataManager.getCloudReplaysFromKey(CLIENT_get_authorize_key(client))
@@ -2149,7 +2171,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       code: 9
     }
     CLIENT_kick(client)
-
+    return
   else if info.pass.toUpperCase()=="RC" and settings.modules.tournament_mode.enable_recover
     ygopro.stoc_send_chat(client,"${recover_replay_hint}", ygopro.constants.COLORS.BABYBLUE)
     available_logs = await dataManager.getDuelLogFromRecoverSearch(client.name_vpass)
@@ -2160,28 +2182,21 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       code: 9
     }
     CLIENT_kick(client)
-
+    return
   else if info.pass[0...2].toUpperCase()=="R#" and settings.modules.cloud_replay.enabled
     replay_id=info.pass.split("#")[1]
     replay = await dataManager.getCloudReplayFromId(replay_id)
     await client.open_cloud_replay(replay)
-
+    return
   else if info.pass.toUpperCase()=="W" and settings.modules.cloud_replay.enabled
     replay = await dataManager.getRandomCloudReplay()
     await client.open_cloud_replay(replay)
-
-  else if info.version != settings.version and !settings.alternative_versions.includes(info.version)
-    ygopro.stoc_send_chat(client, (if info.version < settings.version then settings.modules.update else settings.modules.wait_update), ygopro.constants.COLORS.RED)
-    ygopro.stoc_send client, 'ERROR_MSG', {
-      msg: 4
-      code: settings.version
-    }
-    CLIENT_kick(client)
-
+    return
+  else if !check_version()
+    return
   else if !info.pass.length and !settings.modules.random_duel.enabled and !settings.modules.windbot.enabled and !settings.modules.challonge.enabled
     ygopro.stoc_die(client, "${blank_room_name}")
-
-
+    return
   else if settings.modules.mysql.enabled and await dataManager.checkBan("name", client.name) #账号被封
     exactBan = await dataManager.checkBanWithNameAndIP(client.name, client.ip)
     if !exactBan
@@ -2189,23 +2204,17 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       await dataManager.banPlayer(exactBan)
     log.warn("BANNED USER LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${banned_user_login}")
-
+    return
   else if settings.modules.mysql.enabled and await dataManager.checkBan("ip", client.ip) #IP被封
     log.warn("BANNED IP LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${banned_ip_login}")
-
+    return
   else if info.pass.length and settings.modules.mycard.enabled and info.pass[0...3] != 'AI#'
     ygopro.stoc_send_chat(client, '${loading_user_info}', ygopro.constants.COLORS.BABYBLUE)
     if info.pass.length <= 8
       ygopro.stoc_die(client, '${invalid_password_length}')
       return
-
-    if info.version != settings.version and settings.alternative_versions.includes(info.version)
-      info.version = settings.version
-      struct = ygopro.structs.get("CTOS_JoinGame")
-      struct._setBuff(buffer)
-      struct.set("version", info.version)
-      buffer = struct.buffer
+    polyfill_version()
 
     buffer = Buffer.from(info.pass[0...8], 'base64')
 
@@ -2440,33 +2449,28 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
 
   else if !client.name or client.name==""
     ygopro.stoc_die(client, "${bad_user_name}")
-
+    return
   else if ROOM_connected_ip[client.ip] > 5
     log.warn("MULTI LOGIN", client.name, client.ip)
     ygopro.stoc_die(client, "${too_much_connection}" + client.ip)
-
+    return
   else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and badwordR.level3.test(client.name)
     log.warn("BAD NAME LEVEL 3", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level3}")
-
+    return
   else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and badwordR.level2.test(client.name)
     log.warn("BAD NAME LEVEL 2", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level2}")
-
+    return
   else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and badwordR.level1.test(client.name)
     log.warn("BAD NAME LEVEL 1", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level1}")
-
+    return
   else if info.pass.length && !ROOM_validate(info.pass)
     ygopro.stoc_die(client, "${invalid_password_room}")
-
+    return
   else
-    if info.version != settings.version and settings.alternative_versions.includes(info.version)
-      info.version = settings.version
-      struct = ygopro.structs.get("CTOS_JoinGame")
-      struct._setBuff(buffer)
-      struct.set("version", info.version)
-      buffer = struct.buffer
+    polyfill_version()
 
     #log.info 'join_game',info.pass, client.name
     room = await ROOM_find_or_create_by_name(info.pass, client.ip)
