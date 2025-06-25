@@ -2859,7 +2859,7 @@
   ygopro.ctos_follow('JOIN_GAME', true, async function(buffer, info, client, server, datas) {
     var available_logs, check_buffer_indentity, check_version, create_room_name, create_room_with_action, decrypted_buffer, duelLog, e, exactBan, i, id, index, j, l, len, len1, len2, len3, m, matching_match, matching_participant, n, polyfill_version, pre_room, recover_match, ref, ref1, replay, replay_id, replays, room, secret, struct, tournament_data, userData, userDataRes, userUrl;
     check_version = async function() {
-      var bad_version, blocker_obj, client_key;
+      var bad_version, blocker_obj, clean_blocker, client_key;
       bad_version = function(msg) {
         ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.RED);
         ygopro.stoc_send(client, 'ERROR_MSG', {
@@ -2869,18 +2869,22 @@
         CLIENT_kick(client);
         return false;
       };
+      client_key = CLIENT_get_authorize_key(client);
+      clean_blocker = function() {
+        return aragami.del(aragami_classes.ClientVersionBlocker, client_key);
+      };
       if (info.version === settings.version) {
+        await clean_blocker();
         return true;
       }
       if (settings.alternative_versions.includes(info.version)) {
-        client_key = CLIENT_get_authorize_key(client);
         if (!(await aragami.has(aragami_classes.ClientVersionBlocker, client_key))) {
           blocker_obj = new aragami_classes.ClientVersionBlocker();
           blocker_obj.clientKey = client_key;
           await aragami.set(blocker_obj);
           return bad_version("${version_to_polyfill}");
         } else {
-          await aragami.del(aragami_classes.ClientVersionBlocker, client_key);
+          await clean_blocker();
           return true;
         }
       }

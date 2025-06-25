@@ -2159,17 +2159,20 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       }
       CLIENT_kick(client)
       return false
+    client_key = CLIENT_get_authorize_key(client)
+    clean_blocker = () ->
+      aragami.del(aragami_classes.ClientVersionBlocker, client_key)
     if info.version == settings.version
+      await clean_blocker()
       return true
     if settings.alternative_versions.includes(info.version)
-      client_key = CLIENT_get_authorize_key(client)
       if !await aragami.has(aragami_classes.ClientVersionBlocker, client_key)
         blocker_obj = new aragami_classes.ClientVersionBlocker()
         blocker_obj.clientKey = client_key
         await aragami.set(blocker_obj)
         return bad_version("${version_to_polyfill}")
       else
-        await aragami.del(aragami_classes.ClientVersionBlocker, client_key)
+        await clean_blocker()
         return true
     return bad_version(if info.version < settings.version then settings.modules.update else settings.modules.wait_update)
   polyfill_version = () ->
