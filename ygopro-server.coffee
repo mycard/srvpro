@@ -1538,7 +1538,7 @@ class Room
           headers:
             'Content-Type': 'application/x-www-form-urlencoded'
 
-      utility.retry post_match_scores, 10
+      utility.retry post_score_process, 10
 
       .then (response) =>
         log.info 'SCORE POST OK', response.status, response.statusText, @name, response.data

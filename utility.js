@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.retry = retry;
-async function retry(fn, count, delayFn = (attempt) => Math.pow(2, attempt) * 1000) {
+async function retry(fn, count, delayFn = (attempt) => Math.pow(2, attempt) * 100) {
     let lastError;
     for (let attempt = 0; attempt < count; attempt++) {
         try {

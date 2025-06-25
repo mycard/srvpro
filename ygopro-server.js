@@ -2014,7 +2014,7 @@
             }
           });
         };
-        utility.retry(post_match_scores, 10).then((response) => {
+        utility.retry(post_score_process, 10).then((response) => {
           return log.info('SCORE POST OK', response.status, response.statusText, this.name, response.data);
         }).catch((error) => {
           if (error.response != null) {
