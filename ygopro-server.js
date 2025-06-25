@@ -3417,7 +3417,7 @@
       buffer = new_buf;
     }
     record_last_game_msg = function() {
-      client.last_game_msg = new_buf || buffer;
+      client.last_game_msg = buffer;
       return client.last_game_msg_title = msg_name;
     };
     //console.log client.pos, "MSG", msg_name

@@ -2598,7 +2598,7 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   if new_buf
     buffer = new_buf
   record_last_game_msg = () ->
-    client.last_game_msg = new_buf or buffer
+    client.last_game_msg = buffer
     client.last_game_msg_title = msg_name
   #console.log client.pos, "MSG", msg_name
   if msg_name == 'RETRY' and room.recovering
