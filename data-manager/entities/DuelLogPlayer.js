@@ -16,15 +16,6 @@ const BasePlayer_1 = require("./BasePlayer");
 const DuelLog_1 = require("./DuelLog");
 const DeckEncoder_1 = require("../DeckEncoder");
 let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.BasePlayer {
-    realName;
-    ip;
-    isFirst;
-    score;
-    lp;
-    cardCount;
-    startDeckBuffer;
-    currentDeckBuffer;
-    winner;
     setStartDeck(deck) {
         if (!deck) {
             this.startDeckBuffer = null;
@@ -45,7 +36,6 @@ let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.B
     getCurrentDeck() {
         return (0, DeckEncoder_1.decodeDeck)(Buffer.from(this.currentDeckBuffer, "base64"));
     }
-    duelLog;
     static fromDuelLogPlayerInfo(info) {
         const p = new DuelLogPlayer_1();
         p.name = info.name;
@@ -62,6 +52,7 @@ let DuelLogPlayer = DuelLogPlayer_1 = class DuelLogPlayer extends BasePlayer_1.B
         return p;
     }
 };
+exports.DuelLogPlayer = DuelLogPlayer;
 __decorate([
     (0, typeorm_1.Index)(),
     (0, typeorm_1.Column)({ type: "varchar", length: 20 }),
@@ -104,8 +95,7 @@ __decorate([
     (0, typeorm_1.ManyToOne)(() => DuelLog_1.DuelLog, duelLog => duelLog.players),
     __metadata("design:type", DuelLog_1.DuelLog)
 ], DuelLogPlayer.prototype, "duelLog", void 0);
-DuelLogPlayer = DuelLogPlayer_1 = __decorate([
+exports.DuelLogPlayer = DuelLogPlayer = DuelLogPlayer_1 = __decorate([
     (0, typeorm_1.Entity)()
 ], DuelLogPlayer);
-exports.DuelLogPlayer = DuelLogPlayer;
 //# sourceMappingURL=DuelLogPlayer.js.map

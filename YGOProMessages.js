@@ -11,8 +11,6 @@ const typedefs_json_1 = __importDefault(require("./data/typedefs.json"));
 const proto_structs_json_1 = __importDefault(require("./data/proto_structs.json"));
 const constants_json_1 = __importDefault(require("./data/constants.json"));
 class Handler {
-    handler;
-    synchronous;
     constructor(handler, synchronous) {
         this.handler = handler;
         this.synchronous = synchronous || false;
@@ -30,13 +28,6 @@ class Handler {
     }
 }
 class YGOProMessagesHelper {
-    handlers;
-    structs;
-    structs_declaration;
-    typedefs;
-    proto_structs;
-    constants;
-    singleHandleLimit;
     constructor(singleHandleLimit) {
         this.handlers = {
             STOC: [new Map(),

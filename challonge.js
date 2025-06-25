@@ -9,14 +9,11 @@ const bunyan_1 = require("bunyan");
 const moment_1 = __importDefault(require("moment"));
 const p_queue_1 = __importDefault(require("p-queue"));
 class Challonge {
-    config;
     constructor(config) {
         this.config = config;
+        this.queue = new p_queue_1.default({ concurrency: 1 });
+        this.log = (0, bunyan_1.createLogger)({ name: 'challonge' });
     }
-    queue = new p_queue_1.default({ concurrency: 1 });
-    log = (0, bunyan_1.createLogger)({ name: 'challonge' });
-    previous;
-    previousTime;
     async getTournamentProcess(noCache = false) {
         if (!noCache && this.previous && this.previousTime.isAfter((0, moment_1.default)().subtract(this.config.cache_ttl, 'ms'))) {
             return this.previous;
@@ -67,6 +64,7 @@ class Challonge {
             }
         }
     }
+    // DELETE /v1/tournaments/${tournament_id}/participants/clear.json?api_key=xxx returns ANY
     async clearParticipants() {
         try {
             await axios_1.default.delete(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/clear.json`, {
@@ -82,6 +80,7 @@ class Challonge {
             return false;
         }
     }
+    // POST /v1/tournaments/${tournament_id}/participants/bulk_add.json { api_key: string, participants: { name: string }[] } returns ANY
     async uploadParticipants(participantNames) {
         try {
             await axios_1.default.post(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/bulk_add.json`, {
