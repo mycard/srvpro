@@ -12,6 +12,9 @@ spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
 _async = require('async')
 
+# ts utility
+utility = require './utility.js'
+
 # 三方库
 _ = global._ = require 'underscore'
 _.str = require 'underscore.string'
@@ -1515,28 +1518,36 @@ class Room
       formatted_replays = []
       for repbuf in @replays when repbuf
         formatted_replays.push(repbuf.toString("base64"))
-      request.post { url : settings.modules.arena_mode.post_score , form : {
-        accesskey: settings.modules.arena_mode.accesskey,
-        usernameA: score_array[0].name,
-        usernameB: score_array[1].name,
-        userscoreA: score_array[0].score,
-        userscoreB: score_array[1].score,
-        userdeckA: score_array[0].deck,
-        userdeckB: score_array[1].deck,
-        first: JSON.stringify(@first_list),
-        replays: JSON.stringify(formatted_replays),
-        start: @start_time,
-        end: end_time,
-        arena: @arena
-      }}, (error, response, body)=>
-        if error
-          log.warn 'SCORE POST ERROR', error
+      form_data = new URLSearchParams
+      form_data.append 'accesskey', settings.modules.arena_mode.accesskey
+      form_data.append 'usernameA', score_array[0].name
+      form_data.append 'usernameB', score_array[1].name
+      form_data.append 'userscoreA', score_array[0].score
+      form_data.append 'userscoreB', score_array[1].score
+      form_data.append 'userdeckA', score_array[0].deck
+      form_data.append 'userdeckB', score_array[1].deck
+      form_data.append 'first', JSON.stringify @first_list
+      form_data.append 'replays', JSON.stringify formatted_replays
+      form_data.append 'start', @start_time
+      form_data.append 'end', end_time
+      form_data.append 'arena', @arena
+
+      post_score_process = () ->
+        axios.post settings.modules.arena_mode.post_score, form_data,
+          validateStatus: (status) -> status < 400
+          headers:
+            'Content-Type': 'application/x-www-form-urlencoded'
+
+      utility.retry post_match_scores, 10
+
+      .then (response) =>
+        log.info 'SCORE POST OK', response.status, response.statusText, @name, response.data
+
+      .catch (error) =>
+        if error.response?
+          log.warn 'SCORE POST FAIL', error.response.status, error.response.statusText, @name, error.response.data
         else
-          if response.statusCode >= 300
-            log.warn 'SCORE POST FAIL', response.statusCode, response.statusMessage, @name, body
-          #else
-          #  log.info 'SCORE POST OK', response.statusCode, response.statusMessage, @name, body
-        return
+          log.warn 'SCORE POST ERROR', error.message
 
     if settings.modules.challonge.enabled and @duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and @hostinfo.mode != 2 and !@kicked
       room_name = @name
