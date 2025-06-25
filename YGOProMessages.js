@@ -223,8 +223,8 @@ class YGOProMessagesHelper {
                         break;
                     }
                     let buffer = messageBuffer.slice(3, 2 + messageLength);
+                    let bufferMutated = false;
                     //console.log(l, direction, proto, cancel);
-                    let shrinkCount = 0;
                     for (let priority = 0; priority < 4; ++priority) {
                         if (cancel) {
                             break;
@@ -232,15 +232,20 @@ class YGOProMessagesHelper {
                         const handlerCollection = this.handlers[direction][priority];
                         if (proto && handlerCollection.has(bufferProto)) {
                             let struct = this.structs.get(this.proto_structs[direction][proto]);
-                            let info = null;
-                            if (struct) {
-                                struct._setBuff(buffer);
-                                info = underscore_1.default.clone(struct.fields);
-                            }
-                            for (let handler of handlerCollection.get(bufferProto)) {
+                            for (const handler of handlerCollection.get(bufferProto)) {
+                                let info = null;
+                                if (struct) {
+                                    struct._setBuff(buffer);
+                                    info = underscore_1.default.clone(struct.fields);
+                                }
                                 cancel = await handler.handle(buffer, info, datas, params);
                                 if (cancel) {
-                                    if (typeof cancel === "string") {
+                                    if (Buffer.isBuffer(cancel)) {
+                                        buffer = cancel;
+                                        bufferMutated = true;
+                                        cancel = false;
+                                    }
+                                    else if (typeof cancel === "string") {
                                         if (cancel === '_cancel') {
                                             return {
                                                 datas: [],
@@ -248,8 +253,15 @@ class YGOProMessagesHelper {
                                             };
                                         }
                                         else if (cancel.startsWith('_shrink_')) {
-                                            shrinkCount += parseInt(cancel.slice(8));
-                                            cancel = false;
+                                            const targetShrinkCount = parseInt(cancel.slice(8));
+                                            if (targetShrinkCount > buffer.length) {
+                                                cancel = true;
+                                            }
+                                            else {
+                                                buffer = buffer.slice(0, buffer.length - targetShrinkCount);
+                                                bufferMutated = true;
+                                                cancel = false;
+                                            }
                                         }
                                     }
                                     break;
@@ -257,14 +269,15 @@ class YGOProMessagesHelper {
                             }
                         }
                     }
-                    if (!cancel && shrinkCount <= messageLength) {
-                        if (shrinkCount > 0) {
-                            // rewrite first 2 bytes of length
-                            const oldLength = messageBuffer.readUInt16LE(0);
-                            const newLength = oldLength - shrinkCount;
+                    if (!cancel) {
+                        if (bufferMutated) {
+                            const newLength = buffer.length + 1;
                             messageBuffer.writeUInt16LE(newLength, 0);
+                            datas.push(Buffer.concat([messageBuffer.slice(0, 3), buffer]));
                         }
-                        datas.push(messageBuffer.slice(0, 2 + messageLength - shrinkCount));
+                        else {
+                            datas.push(messageBuffer.slice(0, 2 + messageLength));
+                        }
                     }
                     messageBuffer = messageBuffer.slice(2 + messageLength);
                     messageLength = 0;

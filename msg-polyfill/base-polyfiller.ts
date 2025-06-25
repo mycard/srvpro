@@ -1,9 +1,12 @@
 export class BasePolyfiller {
-  shrinkCount = 0;
 
-  async polyfillGameMsg(msgTitle: string, buffer: Buffer) {}
+  async polyfillGameMsg(msgTitle: string, buffer: Buffer): Promise<Buffer | undefined> {
+    return;
+  }
 
-  async polyfillResponse(msgTitle: string, buffer: Buffer) {}
+  async polyfillResponse(msgTitle: string, buffer: Buffer): Promise<Buffer | undefined> {
+    return;
+  }
 
   splice(buf: Buffer, offset: number, deleteCount = 1): Buffer {
     if (offset < 0 || offset >= buf.length) return Buffer.alloc(0);
@@ -11,31 +14,24 @@ export class BasePolyfiller {
     deleteCount = Math.min(deleteCount, buf.length - offset);
     const end = offset + deleteCount;
   
-    const deleted = Buffer.allocUnsafe(deleteCount);
-    buf.copy(deleted, 0, offset, end);
+    const newBuf = Buffer.concat([
+      buf.slice(0, offset),
+      buf.slice(end)
+    ]);
   
-    const moveLength = buf.length - end;
-    if (moveLength > 0) {
-      buf.copy(buf, offset, end, buf.length);
-    }
-  
-    buf.fill(0, buf.length - deleteCount);
-
-    this.shrinkCount += deleteCount;
-  
-    return deleted;
+    return newBuf;
   }
 
-  insert(buf: Buffer, offset: number, insertBuf: Buffer) {
-    const availableSpace = buf.length - offset;
-    const insertLength = Math.min(insertBuf.length, availableSpace);
+  insert(buf: Buffer, offset: number, insertBuf: Buffer): Buffer {
+    if (offset < 0) offset = 0;
+    if (offset > buf.length) offset = buf.length;
   
-    buf.copy(buf, offset + insertLength, offset, buf.length - insertLength);
-
-    insertBuf.copy(buf, offset, 0, insertLength);
-
-    this.shrinkCount -= insertLength;
+    const newBuf = Buffer.concat([
+      buf.slice(0, offset),
+      insertBuf,
+      buf.slice(offset)
+    ]);
   
-    return buf;
+    return newBuf;
   }
 }

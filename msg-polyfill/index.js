@@ -15,17 +15,15 @@ const getPolyfillers = (version) => {
 };
 async function polyfillGameMsg(version, msgTitle, buffer) {
     const polyfillers = getPolyfillers(version);
-    let shrinkCount = 0;
+    let mutated = false;
     for (const polyfiller of polyfillers) {
-        await polyfiller.polyfillGameMsg(msgTitle, buffer);
-        if (polyfiller.shrinkCount > 0) {
-            if (polyfiller.shrinkCount === 0x3f3f3f3f) {
-                return 0x3f3f3f3f; // special case for cancel message
-            }
-            shrinkCount += polyfiller.shrinkCount;
+        const newBuf = await polyfiller.polyfillGameMsg(msgTitle, buffer);
+        if (newBuf) {
+            mutated = true;
+            buffer = newBuf;
         }
     }
-    return shrinkCount;
+    return mutated ? buffer : undefined;
 }
 async function polyfillResponse(version, msgTitle, buffer) {
     const polyfillers = getPolyfillers(version);

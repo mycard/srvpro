@@ -2594,11 +2594,11 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   return unless room and !client.reconnecting
   msg = buffer.readInt8(0)
   msg_name = ygopro.constants.MSG[msg]
-  shrink_count = await msg_polyfill.polyfillGameMsg(client.actual_version, msg_name, buffer)
-  if shrink_count == 0x3f3f3f3f
-    return true
+  new_buf = await msg_polyfill.polyfillGameMsg(client.actual_version, msg_name, buffer)
+  if new_buf
+    buffer = new_buf
   record_last_game_msg = () ->
-    client.last_game_msg = Buffer.from(buffer.slice(0, buffer.length - shrink_count))
+    client.last_game_msg = new_buf or buffer
     client.last_game_msg_title = msg_name
   #console.log client.pos, "MSG", msg_name
   if msg_name == 'RETRY' and room.recovering
@@ -2873,8 +2873,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       room.recover_buffers[client.pos].push(buffer)
     return true
 
-  if shrink_count > 0
-    return "_shrink_#{shrink_count}"
+  if new_buf
+    return buffer
   else
     return false
 

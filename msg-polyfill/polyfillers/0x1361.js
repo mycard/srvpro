@@ -17,7 +17,7 @@ class Polyfiller1361 extends base_polyfiller_1.BasePolyfiller {
             // buf[0]: MSG_CONFIRM_CARDS
             // buf[1]: playerid
             // buf[2]: ADDED skip_panel
-            this.splice(buffer, 2, 1);
+            return this.splice(buffer, 2, 1);
         }
         else if (msgTitle === 'SELECT_CHAIN') {
             // buf[0]: MSG_SELECT_CHAIN
@@ -46,10 +46,10 @@ class Polyfiller1361 extends base_polyfiller_1.BasePolyfiller {
             // 从后往前 splice 每个 item 的 forced 字段
             for (let i = size - 1; i >= 0; i--) {
                 const itemOffset = itemStartOffset + i * 14;
-                this.splice(buffer, itemOffset + 1, 1); // 删除每个 item 的 forced（第 1 字节）
+                buffer = this.splice(buffer, itemOffset + 1, 1); // 删除每个 item 的 forced（第 1 字节）
             }
             // 最后再插入旧版所需的 forced 标志
-            this.insert(buffer, 4, Buffer.from([anyForced ? 1 : 0]));
+            return this.insert(buffer, 4, Buffer.from([anyForced ? 1 : 0]));
         }
         else if (msgTitle === 'SELECT_SUM') {
             // buf[0]: MSG_SELECT_SUM
