@@ -1,7 +1,7 @@
 export async function retry<T>(
   fn: () => Promise<T>,
   count: number,
-  delayFn: (attempt: number) => number = (attempt) => Math.pow(2, attempt) * 1000
+  delayFn: (attempt: number) => number = (attempt) => Math.pow(2, attempt) * 100
 ): Promise<T> {
   let lastError: any;
 
