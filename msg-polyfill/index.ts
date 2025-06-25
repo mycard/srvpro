@@ -15,15 +15,23 @@ const getPolyfillers = (version: number) => {
 
 export async function polyfillGameMsg(version: number, msgTitle: string, buffer: Buffer) {
   const polyfillers = getPolyfillers(version);
-  let mutated = false;
+  let pbuf = buffer;
   for (const polyfiller of polyfillers) {
-    const newBuf = await polyfiller.polyfillGameMsg(msgTitle, buffer);
+    const newBuf = await polyfiller.polyfillGameMsg(msgTitle, pbuf);
     if (newBuf) {
-      mutated = true;
-      buffer = newBuf;
+      pbuf = newBuf;
     }
   }
-  return mutated ? buffer : undefined;
+  if (pbuf === buffer) {
+    return undefined;
+  } else if (pbuf.length <= buffer.length) {
+    pbuf.copy(buffer, 0, 0, pbuf.length);
+    return pbuf.length === buffer.length
+      ? undefined
+      : buffer.slice(0, pbuf.length);
+  } else {
+    return pbuf;
+  }
 }
 
 export async function polyfillResponse(version: number, msgTitle: string, buffer: Buffer) {
