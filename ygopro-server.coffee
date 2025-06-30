@@ -100,6 +100,8 @@ Aragami = require('aragami').Aragami
 
 aragami = global.aragami = new Aragami() # we use memory mode only
 
+PQueue = require('p-queue').default
+
 aragami_classes = global.aragami_classes = require('./aragami-classes.js')
 
 msg_polyfill = global.msg_polyfill = require('./msg-polyfill/index.js')
