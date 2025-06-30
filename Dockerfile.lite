@@ -6,9 +6,9 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/*
 
 WORKDIR /usr/src
-RUN wget -O premake.zip https://github.com/premake/premake-core/releases/download/v5.0.0-beta5/premake-5.0.0-beta5-src.zip && \
+RUN wget -O premake.zip https://github.com/premake/premake-core/releases/download/v5.0.0-beta4/premake-5.0.0-beta4-src.zip && \
     7z x -y premake.zip && \
-    mv premake-5.0.0-beta5-src premake && \
+    mv premake-5.0.0-beta4-src premake && \
     cd premake/build/gmake.unix && \
     make -j$(nproc)
 
