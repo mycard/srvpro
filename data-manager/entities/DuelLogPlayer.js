@@ -98,4 +98,3 @@ __decorate([
 exports.DuelLogPlayer = DuelLogPlayer = DuelLogPlayer_1 = __decorate([
     (0, typeorm_1.Entity)()
 ], DuelLogPlayer);
-//# sourceMappingURL=DuelLogPlayer.js.map

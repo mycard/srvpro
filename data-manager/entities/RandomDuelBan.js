@@ -44,4 +44,3 @@ __decorate([
 exports.RandomDuelBan = RandomDuelBan = __decorate([
     (0, typeorm_1.Entity)()
 ], RandomDuelBan);
-//# sourceMappingURL=RandomDuelBan.js.map

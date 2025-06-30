@@ -22,4 +22,3 @@ __decorate([
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], CreateAndUpdateTimeBase.prototype, "updateTime", void 0);
-//# sourceMappingURL=CreateAndUpdateTimeBase.js.map

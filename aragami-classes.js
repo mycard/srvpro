@@ -9,21 +9,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BasePlayer = void 0;
-const typeorm_1 = require("typeorm");
-const CreateAndUpdateTimeBase_1 = require("./CreateAndUpdateTimeBase");
-class BasePlayer extends CreateAndUpdateTimeBase_1.CreateAndUpdateTimeBase {
-}
-exports.BasePlayer = BasePlayer;
+exports.ClientVersionBlocker = void 0;
+const aragami_1 = require("aragami");
+let ClientVersionBlocker = class ClientVersionBlocker {
+};
+exports.ClientVersionBlocker = ClientVersionBlocker;
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)({ unsigned: true, type: global.PrimaryKeyType || 'bigint' }),
-    __metadata("design:type", Number)
-], BasePlayer.prototype, "id", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "varchar", length: 20 }),
+    (0, aragami_1.CacheKey)(),
     __metadata("design:type", String)
-], BasePlayer.prototype, "name", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "tinyint" }),
-    __metadata("design:type", Number)
-], BasePlayer.prototype, "pos", void 0);
+], ClientVersionBlocker.prototype, "clientKey", void 0);
+exports.ClientVersionBlocker = ClientVersionBlocker = __decorate([
+    (0, aragami_1.CacheTTL)(60000)
+], ClientVersionBlocker);

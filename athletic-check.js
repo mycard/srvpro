@@ -54,4 +54,3 @@ class AthleticChecker {
     }
 }
 exports.AthleticChecker = AthleticChecker;
-//# sourceMappingURL=athletic-check.js.map

@@ -33,4 +33,3 @@ exports.Ban = Ban = __decorate([
     (0, typeorm_1.Entity)(),
     (0, typeorm_1.Unique)(["ip", "name"])
 ], Ban);
-//# sourceMappingURL=Ban.js.map

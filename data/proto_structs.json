@@ -8,7 +8,8 @@
         "HS_KICK":"CTOS_Kick",
         "UPDATE_DECK": "deck",
         "CHANGE_SIDE":"",
-        "CHAT": "chat"
+        "CHAT": "chat",
+        "EXTERNAL_ADDRESS": "CTOS_ExternalAddress"
     },
     "STOC":{
         "JOIN_GAME":"STOC_JoinGame",

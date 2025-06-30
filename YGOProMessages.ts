@@ -8,15 +8,15 @@ import net from "net";
 
 
 class Handler {
-	private handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean | string>;
+	private handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean | string | Buffer>;
 	synchronous: boolean;
-	constructor(handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean | string>, synchronous: boolean) {
+	constructor(handler: (buffer: Buffer, info: any, datas: Buffer[], params: any) => Promise<boolean | string | Buffer>, synchronous: boolean) {
 		this.handler = handler;
 		this.synchronous = synchronous || false;
 	}
-	async handle(buffer: Buffer, info: any, datas: Buffer[], params: any): Promise<boolean | string> {
+	async handle(buffer: Buffer, info: any, datas: Buffer[], params: any): Promise<boolean | string | Buffer> {
 		if (this.synchronous) {
-			return !!(await this.handler(buffer, info, datas, params));
+			return await this.handler(buffer, info, datas, params);
 		} else {
 			const newBuffer = Buffer.from(buffer);
 			const newDatas = datas.map(b => Buffer.from(b));
@@ -237,7 +237,7 @@ export class YGOProMessagesHelper {
 		let messageLength = 0;
 		let bufferProto = 0;
 		let datas: Buffer[] = [];
-		const limit = preconnect ? 2 : this.singleHandleLimit;
+		const limit = preconnect ? protoFilter.length * 3 : this.singleHandleLimit;
 		for (let l = 0; l < limit; ++l) {
 			if (messageLength === 0) {
 				if (messageBuffer.length >= 2) {
@@ -264,7 +264,7 @@ export class YGOProMessagesHelper {
 			} else {
 				if (messageBuffer.length >= 2 + messageLength) {
 					const proto = this.constants[direction][bufferProto];
-					let cancel: string | boolean = proto && protoFilter && !protoFilter.includes(proto);
+					let cancel: string | boolean | Buffer = proto && protoFilter && !protoFilter.includes(proto);
 					if (cancel && preconnect) {
 						feedback = {
 							type: "INVALID_PACKET",
@@ -273,6 +273,7 @@ export class YGOProMessagesHelper {
 						break;
 					}
 					let buffer = messageBuffer.slice(3, 2 + messageLength);
+					let bufferMutated = false;
 					//console.log(l, direction, proto, cancel);
 					for (let priority = 0; priority < 4; ++priority) {
 						if (cancel) {
@@ -281,18 +282,33 @@ export class YGOProMessagesHelper {
 						const handlerCollection: Map<number, Handler[]> = this.handlers[direction][priority];
 						if (proto && handlerCollection.has(bufferProto)) {
 							let struct = this.structs.get(this.proto_structs[direction][proto]);
-							let info = null;
-							if (struct) {
-								struct._setBuff(buffer);
-								info = _.clone(struct.fields);
-							}
-							for (let handler of handlerCollection.get(bufferProto)) {
+							for (const handler of handlerCollection.get(bufferProto)) {
+								let info = null;
+								if (struct) {
+									struct._setBuff(buffer);
+									info = _.clone(struct.fields);
+								}
 								cancel = await handler.handle(buffer, info, datas, params);
 								if (cancel) {
-									if (cancel === '_cancel') {
-										return {
-											datas: [],
-											feedback
+									if (Buffer.isBuffer(cancel)) {
+										buffer = cancel as any;
+										bufferMutated = true;
+										cancel = false;
+									} else if (typeof cancel === "string") { 
+										if (cancel === '_cancel') {
+											return {
+												datas: [],
+												feedback
+											}
+										} else if (cancel.startsWith('_shrink_')) {
+											const targetShrinkCount = parseInt(cancel.slice(8));
+											if (targetShrinkCount > buffer.length) {
+												cancel = true;
+											} else {
+												buffer = buffer.slice(0, buffer.length - targetShrinkCount);
+												bufferMutated = true;
+												cancel = false;
+											}
 										}
 									}
 									break;
@@ -301,7 +317,13 @@ export class YGOProMessagesHelper {
 						}
 					}
 					if (!cancel) {
-						datas.push(messageBuffer.slice(0, 2 + messageLength));
+						if (bufferMutated) {
+							const newLength = buffer.length + 1;
+							messageBuffer.writeUInt16LE(newLength, 0);
+							datas.push(Buffer.concat([messageBuffer.slice(0, 3), buffer]));
+						} else {
+							datas.push(messageBuffer.slice(0, 2 + messageLength));
+						}
 					}
 					messageBuffer = messageBuffer.slice(2 + messageLength);
 					messageLength = 0;

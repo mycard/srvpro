@@ -17,7 +17,7 @@ class Handler {
     }
     async handle(buffer, info, datas, params) {
         if (this.synchronous) {
-            return !!(await this.handler(buffer, info, datas, params));
+            return await this.handler(buffer, info, datas, params);
         }
         else {
             const newBuffer = Buffer.from(buffer);
@@ -183,7 +183,7 @@ class YGOProMessagesHelper {
         let messageLength = 0;
         let bufferProto = 0;
         let datas = [];
-        const limit = preconnect ? 2 : this.singleHandleLimit;
+        const limit = preconnect ? protoFilter.length * 3 : this.singleHandleLimit;
         for (let l = 0; l < limit; ++l) {
             if (messageLength === 0) {
                 if (messageBuffer.length >= 2) {
@@ -223,6 +223,7 @@ class YGOProMessagesHelper {
                         break;
                     }
                     let buffer = messageBuffer.slice(3, 2 + messageLength);
+                    let bufferMutated = false;
                     //console.log(l, direction, proto, cancel);
                     for (let priority = 0; priority < 4; ++priority) {
                         if (cancel) {
@@ -231,19 +232,37 @@ class YGOProMessagesHelper {
                         const handlerCollection = this.handlers[direction][priority];
                         if (proto && handlerCollection.has(bufferProto)) {
                             let struct = this.structs.get(this.proto_structs[direction][proto]);
-                            let info = null;
-                            if (struct) {
-                                struct._setBuff(buffer);
-                                info = underscore_1.default.clone(struct.fields);
-                            }
-                            for (let handler of handlerCollection.get(bufferProto)) {
+                            for (const handler of handlerCollection.get(bufferProto)) {
+                                let info = null;
+                                if (struct) {
+                                    struct._setBuff(buffer);
+                                    info = underscore_1.default.clone(struct.fields);
+                                }
                                 cancel = await handler.handle(buffer, info, datas, params);
                                 if (cancel) {
-                                    if (cancel === '_cancel') {
-                                        return {
-                                            datas: [],
-                                            feedback
-                                        };
+                                    if (Buffer.isBuffer(cancel)) {
+                                        buffer = cancel;
+                                        bufferMutated = true;
+                                        cancel = false;
+                                    }
+                                    else if (typeof cancel === "string") {
+                                        if (cancel === '_cancel') {
+                                            return {
+                                                datas: [],
+                                                feedback
+                                            };
+                                        }
+                                        else if (cancel.startsWith('_shrink_')) {
+                                            const targetShrinkCount = parseInt(cancel.slice(8));
+                                            if (targetShrinkCount > buffer.length) {
+                                                cancel = true;
+                                            }
+                                            else {
+                                                buffer = buffer.slice(0, buffer.length - targetShrinkCount);
+                                                bufferMutated = true;
+                                                cancel = false;
+                                            }
+                                        }
                                     }
                                     break;
                                 }
@@ -251,7 +270,14 @@ class YGOProMessagesHelper {
                         }
                     }
                     if (!cancel) {
-                        datas.push(messageBuffer.slice(0, 2 + messageLength));
+                        if (bufferMutated) {
+                            const newLength = buffer.length + 1;
+                            messageBuffer.writeUInt16LE(newLength, 0);
+                            datas.push(Buffer.concat([messageBuffer.slice(0, 3), buffer]));
+                        }
+                        else {
+                            datas.push(messageBuffer.slice(0, 2 + messageLength));
+                        }
                     }
                     messageBuffer = messageBuffer.slice(2 + messageLength);
                     messageLength = 0;
@@ -281,4 +307,3 @@ class YGOProMessagesHelper {
     }
 }
 exports.YGOProMessagesHelper = YGOProMessagesHelper;
-//# sourceMappingURL=YGOProMessages.js.map

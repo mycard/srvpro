@@ -93,4 +93,3 @@ exports.DuelLog = DuelLog = __decorate([
         }
     })
 ], DuelLog);
-//# sourceMappingURL=DuelLog.js.map

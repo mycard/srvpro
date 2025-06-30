@@ -69,4 +69,3 @@ __decorate([
 exports.RandomDuelScore = RandomDuelScore = __decorate([
     (0, typeorm_1.Entity)()
 ], RandomDuelScore);
-//# sourceMappingURL=RandomDuelScore.js.map

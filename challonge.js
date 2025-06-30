@@ -96,4 +96,3 @@ class Challonge {
     }
 }
 exports.Challonge = Challonge;
-//# sourceMappingURL=challonge.js.map

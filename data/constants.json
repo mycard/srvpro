@@ -24,6 +24,7 @@
         "20": "SURRENDER",
         "21": "TIME_CONFIRM",
         "22": "CHAT",
+        "23": "EXTERNAL_ADDRESS",
         "32": "HS_TODUELIST",
         "33": "HS_TOOBSERVER",
         "34": "HS_READY",
