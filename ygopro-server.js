@@ -2556,7 +2556,7 @@
 
   // 网络连接
   netRequestHandler = function(client) {
-    var closeHandler, dataHandler, server;
+    var client_data_queue, closeHandler, dataHandler, queuedDataHandler, queuedServerDataHandler, server, serverDataHandler, server_data_queue;
     if (!client.isWs) {
       client.physical_ip = client.remoteAddress || "";
       if (CLIENT_set_ip(client)) {
@@ -2683,6 +2683,12 @@
     // 需要重构
     // 客户端到服务端(ctos)协议分析
     client.pre_establish_buffers = new Array();
+    client_data_queue = new PQueue({
+      concurrency: 1
+    });
+    server_data_queue = new PQueue({
+      concurrency: 1
+    });
     dataHandler = async function(ctos_buffer) {
       var bad_ip_count, buffer, ctos_filter, handle_data, j, l, len, len1, preconnect, ref, ref1, room;
       if (client.is_post_watcher) {
@@ -2751,13 +2757,21 @@
         }
       }
     };
+    queuedDataHandler = async function(ctos_buffer) {
+      if (client.isClosed || client.system_kicked) {
+        return;
+      }
+      return (await client_data_queue.add(function() {
+        return dataHandler(ctos_buffer);
+      }));
+    };
     if (client.isWs) {
-      client.on('message', dataHandler);
+      client.on('message', queuedDataHandler);
     } else {
-      client.on('data', dataHandler);
+      client.on('data', queuedDataHandler);
     }
     // 服务端到客户端(stoc)
-    server.on('data', async function(stoc_buffer) {
+    serverDataHandler = async function(stoc_buffer) {
       var buffer, handle_data, j, len, ref;
       handle_data = (await ygopro.helper.handleBuffer(stoc_buffer, "STOC", null, {
         client: server.client,
@@ -2777,7 +2791,16 @@
           await ygopro.helper.send(server.client, buffer);
         }
       }
-    });
+    };
+    queuedServerDataHandler = async function(stoc_buffer) {
+      if (server.isClosed || !server.client || server.client.isClosed) {
+        return;
+      }
+      return (await server_data_queue.add(function() {
+        return serverDataHandler(stoc_buffer);
+      }));
+    };
+    server.on('data', queuedServerDataHandler);
   };
 
   deck_name_match = global.deck_name_match = function(deck_name, player_name) {

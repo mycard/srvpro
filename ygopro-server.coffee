@@ -2010,6 +2010,12 @@ netRequestHandler = (client) ->
 
   client.pre_establish_buffers = new Array()
 
+  client_data_queue = new PQueue 
+    concurrency: 1
+
+  server_data_queue = new PQueue 
+    concurrency: 1
+
   dataHandler = (ctos_buffer) ->
     if client.is_post_watcher
       room=ROOM_all[client.rid]
@@ -2060,13 +2066,18 @@ netRequestHandler = (client) ->
 
     return
 
+  queuedDataHandler = (ctos_buffer) ->
+    if client.isClosed or client.system_kicked
+      return
+    return await client_data_queue.add(() -> dataHandler(ctos_buffer))
+
   if client.isWs
-    client.on 'message', dataHandler
+    client.on 'message', queuedDataHandler
   else
-    client.on 'data', dataHandler
+    client.on 'data', queuedDataHandler
 
   # 服务端到客户端(stoc)
-  server.on 'data', (stoc_buffer)->
+  serverDataHandler = (stoc_buffer)->
     handle_data = await ygopro.helper.handleBuffer(stoc_buffer, "STOC", null, {
       client: server.client,
       server: server
@@ -2080,6 +2091,13 @@ netRequestHandler = (client) ->
       await ygopro.helper.send(server.client, buffer) for buffer in handle_data.datas
 
     return
+
+  queuedServerDataHandler = (stoc_buffer) ->
+    if server.isClosed
+      return
+    return await server_data_queue.add(() -> serverDataHandler(stoc_buffer))
+
+  server.on 'data', queuedServerDataHandler
   return
 
 deck_name_match = global.deck_name_match = (deck_name, player_name) ->
