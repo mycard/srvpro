@@ -6,10 +6,9 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/*
 
 WORKDIR /usr/src
-RUN wget -O premake.zip https://github.com/premake/premake-core/releases/download/v5.0.0-beta6/premake-5.0.0-beta6-src.zip && \
-    7z x -y premake.zip && \
-    mv premake-5.0.0-beta6-src premake && \
-    cd premake/build/gmake2.unix && \
+RUN wget -O premake.zip https://github.com/premake/premake-core/releases/download/v${PREMAKE_VERSION}/premake-${PREMAKE_VERSION}-src.zip && \
+    7z x -y -opremake premake.zip && \
+    cd premake/build/gmake.unix && \
     make -j$(nproc)
 
 FROM node:16-bullseye-slim
