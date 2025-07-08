@@ -1183,7 +1183,7 @@
     if (!settings.modules.mycard.enabled && client.vpass) {
       return client.name_vpass;
     } else if (settings.modules.mycard.enabled || settings.modules.tournament_mode.enabled || settings.modules.challonge.enabled || client.is_local) {
-      return client.name;
+      return client.name || client.ip || 'undefined';
     } else {
       return client.ip + ":" + client.name;
     }
@@ -1604,9 +1604,14 @@
 
   isTrustedProxy = global.isTrustedProxy = function(ip) {
     return settings.modules.trusted_proxies.some(function(trusted) {
-      var cidr;
-      cidr = trusted.includes('/') ? ip6addr.createCIDR(trusted) : ip6addr.createAddrRange(trusted, trusted);
-      return cidr.contains(ip);
+      var cidr, e;
+      try {
+        cidr = trusted.includes('/') ? ip6addr.createCIDR(trusted) : ip6addr.createAddrRange(trusted, trusted);
+        return cidr.contains(ip);
+      } catch (error1) {
+        e = error1;
+        return false;
+      }
     });
   };
 

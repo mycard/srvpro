@@ -904,7 +904,7 @@ CLIENT_get_authorize_key = global.CLIENT_get_authorize_key = (client) ->
   if !settings.modules.mycard.enabled and client.vpass
     return client.name_vpass
   else if settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or settings.modules.challonge.enabled or client.is_local
-    return client.name
+    return client.name or client.ip or 'undefined'
   else
     return client.ip + ":" + client.name
 
@@ -1218,8 +1218,11 @@ toIpv6 = global.toIpv6 = (ip) ->
 
 isTrustedProxy = global.isTrustedProxy = (ip) ->
   return settings.modules.trusted_proxies.some((trusted) ->
-    cidr = if trusted.includes('/') then ip6addr.createCIDR(trusted) else ip6addr.createAddrRange(trusted, trusted)
-    return cidr.contains(ip)
+    try
+      cidr = if trusted.includes('/') then ip6addr.createCIDR(trusted) else ip6addr.createAddrRange(trusted, trusted)
+      return cidr.contains(ip)
+    catch e
+      return false
   )
 
 getRealIp = global.getRealIp = (physical_ip, xff_ip) ->
