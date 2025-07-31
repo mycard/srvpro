@@ -1536,6 +1536,7 @@ class Room
       form_data.append 'start', @start_time
       form_data.append 'end', end_time
       form_data.append 'arena', @arena
+      form_data.append 'nonce', Math.random().toString()
 
       post_score_process = () ->
         axios.post settings.modules.arena_mode.post_score, form_data,

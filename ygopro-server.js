@@ -2011,6 +2011,7 @@
         form_data.append('start', this.start_time);
         form_data.append('end', end_time);
         form_data.append('arena', this.arena);
+        form_data.append('nonce', Math.random().toString());
         post_score_process = function() {
           return axios.post(settings.modules.arena_mode.post_score, form_data, {
             validateStatus: function(status) {
