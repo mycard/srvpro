@@ -3479,14 +3479,10 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
       else
         log.warn("GET ATHLETIC FAIL", client.name, athleticCheckResult.message)
     if settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.deck_check
+      client_deck_obj = YGOProDeck.fromUpdateDeckPayload(buffer)
       if settings.modules.challonge.enabled and client.challonge_info and client.challonge_info.deckbuf
-        trim_deckbuf = (buf) ->
-          mainc = buf.readUInt32LE(0)
-          sidec = buf.readUInt32LE(4)
-          # take first (2 + mainc + sidec) * 4 bytes
-          return buf.slice(0, (2 + mainc + sidec) * 4)
-        deckbuf_from_challonge = Buffer.from(client.challonge_info.deckbuf, "base64")
-        if trim_deckbuf(deckbuf_from_challonge).equals(trim_deckbuf(buffer))
+        deck_obj = YGOProDeck.fromUpdateDeckPayload(Buffer.from(client.challonge_info.deckbuf, "base64"))
+        if deck_obj.isEqual(client_deck_obj, { ignoreOrder: true })
           #log.info("deck ok: " + client.name)
           return deck_ok("${deck_correct_part1} #{client.challonge_info.name} ${deck_correct_part2}")
         else
@@ -3495,16 +3491,14 @@ ygopro.ctos_follow 'UPDATE_DECK', true, (buffer, info, client, server, datas)->
       else
         decks = await fs.promises.readdir(settings.modules.tournament_mode.deck_path)
         if decks.length
-          found_deck=false
-          for deck in decks
-            if deck_name_match(deck, client.name)
-              found_deck=deck
+          found_deck = decks.find((deck) -> deck_name_match(deck, client.name))
           if found_deck
             deck_text = await fs.promises.readFile(settings.modules.tournament_mode.deck_path+found_deck,{encoding:"ASCII"})
             deck_obj = YGOProDeck.fromYdkString(deck_text)
-            deck_main=deck_obj.main.concat(deck_obj.extra)
-            deck_side=deck_obj.side
-            if _.isEqual(buff_main, deck_main) and _.isEqual(buff_side, deck_side)
+            # put extra cards to main
+            deck_obj.main = deck_obj.main.concat(deck_obj.extra)
+            deck_obj.extra = []
+            if client_deck_obj.isEqual(deck_obj, { ignoreOrder: true })
               #log.info("deck ok: " + client.name)
               return deck_ok("${deck_correct_part1} #{found_deck} ${deck_correct_part2}")
             else

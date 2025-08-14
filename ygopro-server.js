@@ -4541,7 +4541,7 @@
   });
 
   ygopro.ctos_follow('UPDATE_DECK', true, async function(buffer, info, client, server, datas) {
-    var athleticCheckResult, buff_main, buff_side, deck, deck_bad, deck_main, deck_obj, deck_ok, deck_side, deck_text, deckbuf_from_challonge, decks, found_deck, i, j, len, oppo_pos, recover_player_data, recoveredDeck, room, trim_deckbuf, win_pos;
+    var athleticCheckResult, buff_main, buff_side, client_deck_obj, deck_bad, deck_obj, deck_ok, deck_text, decks, found_deck, i, oppo_pos, recover_player_data, recoveredDeck, room, win_pos;
     if (settings.modules.reconnect.enabled && client.pre_reconnecting) {
       if (!CLIENT_is_able_to_reconnect(client) && !CLIENT_is_able_to_kick_reconnect(client)) {
         ygopro.stoc_send_chat(client, "${reconnect_failed}", ygopro.constants.COLORS.RED);
@@ -4664,16 +4664,12 @@
         }
       }
       if (settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.deck_check) {
+        client_deck_obj = YGOProDeck.fromUpdateDeckPayload(buffer);
         if (settings.modules.challonge.enabled && client.challonge_info && client.challonge_info.deckbuf) {
-          trim_deckbuf = function(buf) {
-            var mainc, sidec;
-            mainc = buf.readUInt32LE(0);
-            sidec = buf.readUInt32LE(4);
-            // take first (2 + mainc + sidec) * 4 bytes
-            return buf.slice(0, (2 + mainc + sidec) * 4);
-          };
-          deckbuf_from_challonge = Buffer.from(client.challonge_info.deckbuf, "base64");
-          if (trim_deckbuf(deckbuf_from_challonge).equals(trim_deckbuf(buffer))) {
+          deck_obj = YGOProDeck.fromUpdateDeckPayload(Buffer.from(client.challonge_info.deckbuf, "base64"));
+          if (deck_obj.isEqual(client_deck_obj, {
+            ignoreOrder: true
+          })) {
             //log.info("deck ok: " + client.name)
             return deck_ok(`\${deck_correct_part1} ${client.challonge_info.name} \${deck_correct_part2}`);
           } else {
@@ -4683,21 +4679,20 @@
         } else {
           decks = (await fs.promises.readdir(settings.modules.tournament_mode.deck_path));
           if (decks.length) {
-            found_deck = false;
-            for (j = 0, len = decks.length; j < len; j++) {
-              deck = decks[j];
-              if (deck_name_match(deck, client.name)) {
-                found_deck = deck;
-              }
-            }
+            found_deck = decks.find(function(deck) {
+              return deck_name_match(deck, client.name);
+            });
             if (found_deck) {
               deck_text = (await fs.promises.readFile(settings.modules.tournament_mode.deck_path + found_deck, {
                 encoding: "ASCII"
               }));
               deck_obj = YGOProDeck.fromYdkString(deck_text);
-              deck_main = deck_obj.main.concat(deck_obj.extra);
-              deck_side = deck_obj.side;
-              if (_.isEqual(buff_main, deck_main) && _.isEqual(buff_side, deck_side)) {
+              // put extra cards to main
+              deck_obj.main = deck_obj.main.concat(deck_obj.extra);
+              deck_obj.extra = [];
+              if (client_deck_obj.isEqual(deck_obj, {
+                ignoreOrder: true
+              })) {
                 //log.info("deck ok: " + client.name)
                 return deck_ok(`\${deck_correct_part1} ${found_deck} \${deck_correct_part2}`);
               } else {
