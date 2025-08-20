@@ -1304,7 +1304,7 @@ class Room
       @hostinfo.mode = 1
     else if name[0...2] == 'T#'
       @hostinfo.mode = 2
-      @hostinfo.start_lp = 16000
+      @hostinfo.start_lp = settings.hostinfo.start_lp * 2
     else if name[0...3] == 'AI#'
       @hostinfo.rule = 5
       @hostinfo.lflist = -1

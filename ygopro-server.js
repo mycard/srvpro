@@ -1707,7 +1707,7 @@
         this.hostinfo.mode = 1;
       } else if (name.slice(0, 2) === 'T#') {
         this.hostinfo.mode = 2;
-        this.hostinfo.start_lp = 16000;
+        this.hostinfo.start_lp = settings.hostinfo.start_lp * 2;
       } else if (name.slice(0, 3) === 'AI#') {
         this.hostinfo.rule = 5;
         this.hostinfo.lflist = -1;
