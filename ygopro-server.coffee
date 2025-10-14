@@ -412,7 +412,7 @@ init = () ->
     catch
   try
     log.info("Reading YGOPro version.")
-    cppversion = parseInt((await fs.promises.readFile('ygopro/gframe/game.cpp', 'utf8')).match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
+    cppversion = parseInt((await fs.promises.readFile('ygopro/gframe/config.h', 'utf8')).match(/PRO_VERSION = ([x\dABCDEF]+)/)[1], '16')
     await setting_change(settings, "version", cppversion)
     log.info "ygopro version 0x"+settings.version.toString(16), "(from source code)"
   catch
