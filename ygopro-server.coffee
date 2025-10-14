@@ -206,7 +206,7 @@ setInterval ()->
 , 500
 
 try
-  cppversion = parseInt(fs.readFileSync('ygopro/gframe/game.cpp', 'utf8').match(/PRO_VERSION\s?=\s?([x\dABCDEF]+)/)[1], '16')
+  cppversion = parseInt(fs.readFileSync('ygopro/gframe/config.h', 'utf8').match(/PRO_VERSION\s?=\s?([x\dABCDEF]+)/)[1], '16')
   setting_change(settings, "version", cppversion)
   log.info "ygopro version 0x"+settings.version.toString(16), "(from source code)"
 catch
