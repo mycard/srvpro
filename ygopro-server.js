@@ -263,7 +263,7 @@
 
   disconnect_list = {}; // {old_client, old_server, room_id, timeout, deckbuf}
 
-  extra_mode_list = global.extra_mode_list = []; // (rule) => void, with 'this' is ROOM
+  extra_mode_list = global.extra_mode_list = []; // (rule) => void, with 'this' is ROOM 
 
   moment_now = global.moment_now = null;
 
@@ -1866,7 +1866,7 @@
       }
       try {
         this.process = spawn('./ygopro', param, {
-          cwd: 'ygopro/bin/release/x64'
+          cwd: 'ygopro'
         });
         this.process_pid = this.process.pid;
         this.process.on('error', (err) => {
