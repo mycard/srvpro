@@ -1870,7 +1870,7 @@
       }
       try {
         this.process = spawn('./ygopro', param, {
-          cwd: 'ygopro/bin/release/x64'
+          cwd: 'ygopro'
         });
         this.process_pid = this.process.pid;
         this.process.on('error', (err) => {

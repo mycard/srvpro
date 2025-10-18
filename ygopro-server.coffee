@@ -1446,7 +1446,7 @@ class Room
       param.push(firstSeedBuf.toString('base64'))
 
     try
-      @process = spawn './ygopro', param, {cwd: 'ygopro/bin/release/x64'}
+      @process = spawn './ygopro', param, {cwd: 'ygopro'}
       @process_pid = @process.pid
       @process.on 'error', (err)=>
         log.warn 'CREATE ROOM ERROR', err
