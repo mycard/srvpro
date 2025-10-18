@@ -502,10 +502,6 @@
     default_data = (await loadJSONAsync('./data/default_data.json'));
     try {
       tips = global.tips = (await loadJSONAsync('./config/tips.json'));
-      // Set a default value for prefix if not present
-      if (!tips.prefix) {
-        tips.prefix = "Tip: ";
-      }
     } catch (error1) {
       tips = global.tips = default_data.tips;
       await setting_save(tips);
@@ -1870,7 +1866,7 @@
       }
       try {
         this.process = spawn('./ygopro', param, {
-          cwd: 'ygopro'
+          cwd: 'ygopro/bin/release/x64'
         });
         this.process_pid = this.process.pid;
         this.process.on('error', (err) => {
@@ -4108,13 +4104,13 @@
   //tip
   ygopro.stoc_send_random_tip = async function(client) {
     if (settings.modules.tips.enabled && tips.tips.length) {
-      ygopro.stoc_send_chat(client, `${tips.prefix}${tips.tips[Math.floor(Math.random() * tips.tips.length)]}`);
+      ygopro.stoc_send_chat(client, `${settings.modules.tips.prefix}${tips.tips[Math.floor(Math.random() * tips.tips.length)]}`);
     }
   };
 
   ygopro.stoc_send_random_tip_to_room = async function(room) {
     if (settings.modules.tips.enabled && tips.tips.length) {
-      ygopro.stoc_send_chat_to_room(room, `${tips.prefix}${tips.tips[Math.floor(Math.random() * tips.tips.length)]}`);
+      ygopro.stoc_send_chat_to_room(room, `${settings.modules.tips.prefix}${tips.tips[Math.floor(Math.random() * tips.tips.length)]}`);
     }
   };
 
