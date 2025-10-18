@@ -8,6 +8,7 @@
   },
   "tips": {
     "file": "./config/tips.json",
+    "prefix": "Tip: ",
     "tips": [
       "欢迎来到本服务器",
       "本服务器使用萌卡代码搭建"
