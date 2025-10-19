@@ -3085,11 +3085,11 @@ wait_room_start_arena = (room)->
 #tip
 ygopro.stoc_send_random_tip = (client)->
   if settings.modules.tips.enabled && tips.tips.length
-    ygopro.stoc_send_chat(client, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
+    ygopro.stoc_send_chat(client, "#{settings.modules.tips.prefix}#{tips.tips[Math.floor(Math.random() * tips.tips.length)]}")
   await return
 ygopro.stoc_send_random_tip_to_room = (room)->
   if settings.modules.tips.enabled && tips.tips.length
-    ygopro.stoc_send_chat_to_room(room, "Tip: " + tips.tips[Math.floor(Math.random() * tips.tips.length)])
+    ygopro.stoc_send_chat_to_room(room, "#{settings.modules.tips.prefix}#{tips.tips[Math.floor(Math.random() * tips.tips.length)]}")
   await return
 
 loadRemoteData = global.loadRemoteData = (loadObject, name, url)->
