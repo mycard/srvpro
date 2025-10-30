@@ -753,12 +753,13 @@ ROOM_find_or_create_by_name = global.ROOM_find_or_create_by_name = (name, player
     return room
 
 ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_ip)->
+  requested_type = type
   if settings.modules.mysql.enabled
     randomDuelBanRecord = await dataManager.getRandomDuelBan(player_ip)
     if randomDuelBanRecord
       if randomDuelBanRecord.count > 6 and moment_now.isBefore(randomDuelBanRecord.time)
         return {"error": "${random_banned_part1}#{randomDuelBanRecord.reasons.join('${random_ban_reason_separator}')}${random_banned_part2}#{moment(randomDuelBanRecord.time).fromNow(true)}${random_banned_part3}"}
-      if randomDuelBanRecord.count > 3 and moment_now.isBefore(randomDuelBanRecord.time) and randomDuelBanRecord.getNeedTip() and type != 'T'
+      if randomDuelBanRecord.count > 3 and moment_now.isBefore(randomDuelBanRecord.time) and randomDuelBanRecord.getNeedTip() and requested_type != 'T'
         randomDuelBanRecord.setNeedTip(false)
         await dataManager.updateRandomDuelBan(randomDuelBanRecord)
         return {"error": "${random_deprecated_part1}#{randomDuelBanRecord.reasons.join('${random_ban_reason_separator}')}${random_deprecated_part2}#{moment(randomDuelBanRecord.time).fromNow(true)}${random_deprecated_part3}"}
@@ -769,23 +770,38 @@ ROOM_find_or_create_random = global.ROOM_find_or_create_random = (type, player_i
       else if randomDuelBanRecord.count > 2
         randomDuelBanRecord.setNeedTip(true)
         await dataManager.updateRandomDuelBan(randomDuelBanRecord)
-  max_player = if type == 'T' then 4 else 2
+  type = if requested_type then requested_type else settings.modules.random_duel.default_type
+  getMaxPlayer = (mode)->
+    if mode == 'T' then 4 else 2
+  max_player = getMaxPlayer(type)
+  getRoomCapacity = (room)->
+    mode = if typeof room?.random_type is 'string' and room.random_type.length > 0 then room.random_type else type
+    target = getMaxPlayer(mode)
+    if room?.max_player?
+      Math.max(target, room.max_player)
+    else
+      target
   playerbanned = (randomDuelBanRecord and randomDuelBanRecord.count > 3 and moment_now < randomDuelBanRecord.time)
   result = _.find ROOM_all, (room)->
-    return room and room.random_type != '' and !room.disconnector and room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN and !room.windbot and
-    ((type == '' and
-      (room.random_type == settings.modules.random_duel.default_type or
-        settings.modules.random_duel.blank_pass_modes[room.random_type])) or
-      room.random_type == type) and
-    0 < room.get_playing_player().length < max_player and
-    (settings.modules.random_duel.no_rematch_check or room.get_host() == null or
-    room.get_host().ip != ROOM_players_oppentlist[player_ip]) and
-    (playerbanned == room.deprecated or type == 'T')
+    return false unless room
+    random_type = room.random_type
+    return false unless typeof random_type is 'string' and random_type.length > 0
+    return false if room.disconnector or room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN or room.windbot
+    room_capacity = getRoomCapacity(room)
+    type_matched = (requested_type == '' and
+      (random_type == settings.modules.random_duel.default_type or
+        settings.modules.random_duel.blank_pass_modes[random_type])) or
+      random_type == type
+    return false unless type_matched
+    return false unless 0 < room.get_playing_player().length < room_capacity
+    return false unless settings.modules.random_duel.no_rematch_check or room.get_host() == null or room.get_host().ip != ROOM_players_oppentlist[player_ip]
+    return false unless playerbanned == room.deprecated or type == 'T'
+    true
   if result
     result.welcome = '${random_duel_enter_room_waiting}'
+    result.max_player = getRoomCapacity(result)
     #log.info 'found room', player_name
   else if memory_usage < 90 and not (settings.modules.max_rooms_count and rooms_count >= settings.modules.max_rooms_count)
-    type = if type then type else settings.modules.random_duel.default_type
     name = type + ',RANDOM#' + Math.floor(Math.random() * 100000)
     result = new Room(name)
     result.random_type = type
