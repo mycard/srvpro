@@ -25,6 +25,7 @@
     "stop": false,
     "full": "服务器已爆满",
     "max_rooms_count": 0,
+    "max_mem_percentage": 95,
     "side_timeout": false,
     "replay_delay": true,
     "hide_name": false,
