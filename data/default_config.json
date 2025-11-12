@@ -71,7 +71,8 @@
       "enabled": true,
       "get": false,
       "interval": 30000,
-      "interval_ingame": 120000
+      "interval_ingame": 120000,
+      "prefix": "Tip: "
     },
     "dialogues": {
       "enabled": true,
