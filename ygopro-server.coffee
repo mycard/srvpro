@@ -212,7 +212,7 @@ real_windbot_server_ip = null
 long_resolve_cards = []
 ReplayParser = null
 athleticChecker = null
-users_cache = {}
+# users_cache = {}
 geoip = null
 dataManager = null
 windbots = []
@@ -471,25 +471,25 @@ init = () ->
     geoip = require('geoip-country-lite')
 
   if settings.modules.mycard.enabled
-    pgClient = require('pg').Client
-    pg_client = global.pg_client = new pgClient(settings.modules.mycard.auth_database)
-    pg_client.on 'error', (err) ->
-      log.warn "PostgreSQL ERROR: ", err
-      return
-    pg_query = pg_client.query('SELECT username, id from users')
-    pg_query.on 'error', (err) ->
-      log.warn "PostgreSQL Query ERROR: ", err
-      return
-    pg_query.on 'row', (row) ->
-      #log.info "load user", row.username, row.id
-      users_cache[row.username] = row.id
-      return
-    pg_query.on 'end', (result) ->
-      log.info "users loaded", result.rowCount
-      return
-    pg_client.on 'drain', pg_client.end.bind(pg_client)
-    log.info "loading mycard user..."
-    pg_client.connect()
+    # pgClient = require('pg').Client
+    # pg_client = global.pg_client = new pgClient(settings.modules.mycard.auth_database)
+    # pg_client.on 'error', (err) ->
+    #   log.warn "PostgreSQL ERROR: ", err
+    #   return
+    # pg_query = pg_client.query('SELECT username, id from users')
+    # pg_query.on 'error', (err) ->
+    #   log.warn "PostgreSQL Query ERROR: ", err
+    #   return
+    # pg_query.on 'row', (row) ->
+    #   #log.info "load user", row.username, row.id
+    #   users_cache[row.username] = row.id
+    #   return
+    # pg_query.on 'end', (result) ->
+    #   log.info "users loaded", result.rowCount
+    #   return
+    # pg_client.on 'drain', pg_client.end.bind(pg_client)
+    # log.info "loading mycard user..."
+    # pg_client.connect()
     if settings.modules.arena_mode.enabled and settings.modules.arena_mode.init_post.enabled
       postData = qs.stringify({
         ak: settings.modules.arena_mode.init_post.accesskey,
@@ -2422,13 +2422,13 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
 
     decrypted_buffer = null
 
-    if id = users_cache[client.name]
-      secret = id % 65535 + 1
-      decrypted_buffer = Buffer.allocUnsafe(6)
-      for i in [0, 2, 4]
-        decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
-      if check_buffer_indentity(decrypted_buffer)
-        return create_room_with_action(decrypted_buffer, decrypted_buffer)
+    # if id = users_cache[client.name]
+    #   secret = id % 65535 + 1
+    #   decrypted_buffer = Buffer.allocUnsafe(6)
+    #   for i in [0, 2, 4]
+    #     decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
+    #   if check_buffer_indentity(decrypted_buffer)
+    #     return create_room_with_action(decrypted_buffer, decrypted_buffer)
 
     try
       userUrl = "#{settings.modules.mycard.auth_base_url}/users/#{encodeURIComponent(client.name)}.json"
@@ -2438,8 +2438,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
         timeout: 4000
         params:
           api_key: settings.modules.mycard.auth_key,
-          api_username: client.name,
-          skip_track_visit: true
+          # api_username: client.name,
+          # skip_track_visit: true
       userData = userDataRes.data
       #console.log userData
     catch e
@@ -2449,14 +2449,26 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       return
     if client.isClosed
       return
-    users_cache[client.name] = userData.user.id
-    secret = userData.user.id % 65535 + 1
-    decrypted_buffer = Buffer.allocUnsafe(6)
-    for i in [0, 2, 4]
-      decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
-    if check_buffer_indentity(decrypted_buffer)
-      buffer = decrypted_buffer
-    if !check_buffer_indentity(buffer)
+    # users_cache[client.name] = userData.user.id
+    possible_ids = [
+      userData.user.u16Secret,
+      userData.user.u16SecretPrevious,
+      userData.user.id, # TODO: remove this line after use u16Secret
+    ].filter((id) -> id != null)
+    try_decrypt_buffer_with_id = (id) ->
+      secret = id % 65535 + 1
+      decrypted_buffer = Buffer.allocUnsafe(6)
+      for i in [0, 2, 4]
+        decrypted_buffer.writeUInt16LE(buffer.readUInt16LE(i) ^ secret, i)
+      if check_buffer_indentity(decrypted_buffer)
+        return decrypted_buffer
+      return null
+    decrypted_buffer = null
+    for possible_id in possible_ids
+      decrypted_buffer = try_decrypt_buffer_with_id(possible_id)
+      if decrypted_buffer
+        break
+    if !decrypted_buffer
       ygopro.stoc_die(client, '${invalid_password_checksum}')
       return
     return create_room_with_action(buffer, decrypted_buffer)
