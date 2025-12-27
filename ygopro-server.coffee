@@ -2305,15 +2305,15 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
         checksum += buf.readUInt8(i)
       (checksum & 0xFF) == 0
 
-    create_room_with_action = (buffer, decrypted_buffer)->
+    create_room_with_action = (buffer)->
       if client.isClosed
         return
       firstByte = buffer.readUInt8(1)
       action = firstByte >> 4
       opt0 = firstByte & 0xf
-      if buffer != decrypted_buffer and action in [1, 2, 4]
-        ygopro.stoc_die(client, '${invalid_password_unauthorized}')
-        return
+      # if buffer != decrypted_buffer and action in [1, 2, 4]
+      #   ygopro.stoc_die(client, '${invalid_password_unauthorized}')
+      #   return
 
       # 1 create public room
       # 2 create private room
@@ -2469,9 +2469,9 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       if decrypted_buffer
         break
     if !decrypted_buffer
-      ygopro.stoc_die(client, '${invalid_password_checksum}')
+      ygopro.stoc_die(client, '${invalid_password_unauthorized}')
       return
-    return create_room_with_action(buffer, decrypted_buffer)
+    return create_room_with_action(decrypted_buffer)
 
   else if settings.modules.challonge.enabled
     if info.version != settings.version and settings.alternative_versions.includes(info.version)

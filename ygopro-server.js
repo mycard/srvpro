@@ -3037,7 +3037,7 @@
         }
         return (checksum & 0xFF) === 0;
       };
-      create_room_with_action = async function(buffer, decrypted_buffer) {
+      create_room_with_action = async function(buffer) {
         var action, e, firstByte, len2, m, matchPermitRes, match_permit, name, opt0, opt1, opt2, opt3, options, player, ref, ref1, room, room_title, title;
         if (client.isClosed) {
           return;
@@ -3045,11 +3045,11 @@
         firstByte = buffer.readUInt8(1);
         action = firstByte >> 4;
         opt0 = firstByte & 0xf;
-        if (buffer !== decrypted_buffer && (action === 1 || action === 2 || action === 4)) {
-          ygopro.stoc_die(client, '${invalid_password_unauthorized}');
-          return;
-        }
-        // 1 create public room
+        // if buffer != decrypted_buffer and action in [1, 2, 4]
+        //   ygopro.stoc_die(client, '${invalid_password_unauthorized}')
+        //   return
+
+            // 1 create public room
         // 2 create private room
         // 3 join room by id
         // 4 create or join room by id (use for match)
@@ -3245,10 +3245,10 @@
         }
       }
       if (!decrypted_buffer) {
-        ygopro.stoc_die(client, '${invalid_password_checksum}');
+        ygopro.stoc_die(client, '${invalid_password_unauthorized}');
         return;
       }
-      return create_room_with_action(buffer, decrypted_buffer);
+      return create_room_with_action(decrypted_buffer);
     } else if (settings.modules.challonge.enabled) {
       if (info.version !== settings.version && settings.alternative_versions.includes(info.version)) {
         info.version = settings.version;
