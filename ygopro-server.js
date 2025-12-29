@@ -3245,7 +3245,7 @@
         }
       }
       if (!decrypted_buffer) {
-        ygopro.stoc_die(client, '${invalid_password_unauthorized}');
+        ygopro.stoc_die(client, '${invalid_password_checksum}');
         return;
       }
       return create_room_with_action(decrypted_buffer);

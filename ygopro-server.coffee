@@ -2469,7 +2469,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       if decrypted_buffer
         break
     if !decrypted_buffer
-      ygopro.stoc_die(client, '${invalid_password_unauthorized}')
+      ygopro.stoc_die(client, '${invalid_password_checksum}')
       return
     return create_room_with_action(decrypted_buffer)
 
