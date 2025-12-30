@@ -174,9 +174,9 @@
       "post_score": false,
       "get_score": false,
       "punish_quit_before_match": false,
-      "init_post": {
+      "match_api": {
         "enabled": false,
-        "url": "https://sapi.moecube.com:444/ygopro/match/clear",
+        "url": "https://sapi.moecube.com:444/ygopro/match",
         "accesskey": "momobako"
       }
     },
