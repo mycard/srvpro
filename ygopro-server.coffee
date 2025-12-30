@@ -3164,13 +3164,6 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
         ROOM_players_oppentlist[player.ip] = null
     if room.hostinfo.auto_death
       ygopro.stoc_send_chat_to_room(room, "${auto_death_part1}#{room.hostinfo.auto_death}${auto_death_part2}", ygopro.constants.COLORS.BABYBLUE)
-    if settings.modules.hide_name == "start"
-      for player in room.get_playing_player() when player != client
-        ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
-          name: player.name,
-          pos: player.pos
-          padding: 0,
-        })
     if room.arena
       await call_match_api('POST', 'room-start', {
         usernameA: playing_players[0].name,
@@ -3185,6 +3178,13 @@ ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
       clearInterval client.side_interval
       client.side_interval = null
       client.side_tcount = null
+  if settings.modules.hide_name == "start" and room.duel_count == 0
+    for player in room.get_playing_player() when player != client
+      ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
+        name: player.name,
+        pos: player.pos
+        padding: 0,
+      })
   if settings.modules.tips.enabled
     ygopro.stoc_send_random_tip(client)
   deck_text = null

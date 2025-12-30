@@ -4217,19 +4217,6 @@
       if (room.hostinfo.auto_death) {
         ygopro.stoc_send_chat_to_room(room, `\${auto_death_part1}${room.hostinfo.auto_death}\${auto_death_part2}`, ygopro.constants.COLORS.BABYBLUE);
       }
-      if (settings.modules.hide_name === "start") {
-        ref = room.get_playing_player();
-        for (l = 0, len1 = ref.length; l < len1; l++) {
-          player = ref[l];
-          if (player !== client) {
-            ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
-              name: player.name,
-              pos: player.pos,
-              padding: 0
-            });
-          }
-        }
-      }
       if (room.arena) {
         await call_match_api('POST', 'room-start', {
           usernameA: playing_players[0].name,
@@ -4245,6 +4232,19 @@
         clearInterval(client.side_interval);
         client.side_interval = null;
         client.side_tcount = null;
+      }
+    }
+    if (settings.modules.hide_name === "start" && room.duel_count === 0) {
+      ref = room.get_playing_player();
+      for (l = 0, len1 = ref.length; l < len1; l++) {
+        player = ref[l];
+        if (player !== client) {
+          ygopro.stoc_send(client, 'HS_PLAYER_ENTER', {
+            name: player.name,
+            pos: player.pos,
+            padding: 0
+          });
+        }
       }
     }
     if (settings.modules.tips.enabled) {
