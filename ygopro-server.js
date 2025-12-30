@@ -320,13 +320,15 @@
   };
 
   call_match_api = async function(method, path, params) {
-    var e, entry, key, match_api_url, res, val;
+    var e, entry, j, key, len, match_api_url, ref, res, val;
     if (!settings.modules.arena_mode.match_api.enabled) {
       return null;
     }
     match_api_url = new URL(settings.modules.arena_mode.match_api.url + "/" + path);
     match_api_url.searchParams.append('ak', settings.modules.arena_mode.match_api.accesskey);
-    for (entry in Object.entries(params)) {
+    ref = Object.entries(params);
+    for (j = 0, len = ref.length; j < len; j++) {
+      entry = ref[j];
       key = entry[0];
       val = entry[1];
       match_api_url.searchParams.append(key, val);

@@ -251,7 +251,7 @@ call_match_api = (method, path, params) ->
     return null
   match_api_url = new URL(settings.modules.arena_mode.match_api.url + "/" + path)
   match_api_url.searchParams.append('ak', settings.modules.arena_mode.match_api.accesskey)
-  for entry of Object.entries(params)
+  for entry in Object.entries(params)
     key = entry[0]
     val = entry[1]
     match_api_url.searchParams.append(key, val)
