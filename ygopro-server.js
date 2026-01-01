@@ -3188,6 +3188,11 @@
               } else {
                 room.welcome = "${entertain_arena_tip}";
               }
+              await call_match_api('POST', 'player-joined', {
+                username: client.name,
+                arena: room.arena,
+                roomname: room.name
+              });
             }
             break;
           case 5:

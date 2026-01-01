@@ -2421,6 +2421,11 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
               room.welcome = "${athletic_arena_tip}"
             else
               room.welcome = "${entertain_arena_tip}"
+            await call_match_api('POST', 'player-joined', {
+              username: client.name,
+              arena: room.arena,
+              roomname: room.name
+            })
         when 5
           title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room = ROOM_find_by_title(title)
