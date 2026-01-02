@@ -1393,9 +1393,6 @@ class Room
         lflist = parseInt(param[3]) - 1
         @hostinfo.lflist = lflist
 
-      for extra_mode_func from extra_mode_list
-        extra_mode_func.call this, rule
-
       if (rule.match /(^|，|,)(NOLFLIST|NF)(，|,|$)/)
         @hostinfo.lflist = -1
 
@@ -1436,6 +1433,11 @@ class Room
         @recover_duel_log_id = parseInt(param[3])
         @recover_buffers = [[], [], [], []]
         @welcome = "${recover_hint}"
+
+    param = name.match /(.+)#/
+    rule = if param then param[1].toUpperCase() else ''
+    for extra_mode_func from extra_mode_list
+      extra_mode_func.call this, rule, name
 
     @hostinfo.replay_mode = 0
 

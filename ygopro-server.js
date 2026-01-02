@@ -1819,9 +1819,6 @@
           lflist = parseInt(param[3]) - 1;
           this.hostinfo.lflist = lflist;
         }
-        for (extra_mode_func of extra_mode_list) {
-          extra_mode_func.call(this, rule);
-        }
         if (rule.match(/(^|，|,)(NOLFLIST|NF)(，|,|$)/)) {
           this.hostinfo.lflist = -1;
         }
@@ -1865,6 +1862,11 @@
           this.recover_buffers = [[], [], [], []];
           this.welcome = "${recover_hint}";
         }
+      }
+      param = name.match(/(.+)#/);
+      rule = param ? param[1].toUpperCase() : '';
+      for (extra_mode_func of extra_mode_list) {
+        extra_mode_func.call(this, rule, name);
       }
       this.hostinfo.replay_mode = 0;
       if (settings.modules.tournament_mode.enabled) { // 0x1: Save the replays in file
