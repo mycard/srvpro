@@ -2478,8 +2478,8 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     # users_cache[client.name] = userData.user.id
     possible_ids = [
       userData.user.u16Secret,
-      userData.user.u16SecretPrevious,
-      userData.user.id, # TODO: remove this line after use u16Secret
+      userData.user.u16SecretPrevious
+      # userData.user.id,
     ].filter((id) -> id != null)
     try_decrypt_buffer_with_id = (id) ->
       secret = id % 65535 + 1

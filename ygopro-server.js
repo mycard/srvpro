@@ -3251,11 +3251,8 @@
         return;
       }
       // users_cache[client.name] = userData.user.id
-      possible_ids = [
-        userData.user.u16Secret,
-        userData.user.u16SecretPrevious,
-        userData.user.id // TODO: remove this line after use u16Secret
-      ].filter(function(id) {
+      // userData.user.id,
+      possible_ids = [userData.user.u16Secret, userData.user.u16SecretPrevious].filter(function(id) {
         return id !== null;
       });
       try_decrypt_buffer_with_id = function(id) {
