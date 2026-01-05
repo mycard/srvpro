@@ -3151,7 +3151,7 @@ loadRemoteData = global.loadRemoteData = (loadObject, name, url)->
 load_tips = global.load_tips = ()->
   return await loadRemoteData(tips, "tips", settings.modules.tips.get)
 
-ygopro.stoc_follow 'DUEL_START', false, (buffer, info, client, server, datas)->
+ygopro.stoc_follow 'DUEL_START', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and !client.reconnecting
   if room.duel_stage == ygopro.constants.DUEL_STAGE.BEGIN #first start

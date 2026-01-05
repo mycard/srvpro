@@ -4188,7 +4188,7 @@
     return (await loadRemoteData(tips, "tips", settings.modules.tips.get));
   };
 
-  ygopro.stoc_follow('DUEL_START', false, async function(buffer, info, client, server, datas) {
+  ygopro.stoc_follow('DUEL_START', true, async function(buffer, info, client, server, datas) {
     var deck_arena, deck_name, deck_text, j, l, len, len1, player, playing_players, ref, room;
     room = ROOM_all[client.rid];
     if (!(room && !client.reconnecting)) {
