@@ -48,11 +48,13 @@
     "webhook": "node ygopro-webhook.js"
   },
   "devDependencies": {
+    "@types/async": "^3.2.25",
     "@types/bunyan": "^1.8.8",
+    "@types/formidable": "^3.4.6",
     "@types/ip6addr": "^0.2.3",
     "@types/lzma": "^2.3.0",
     "@types/node": "^16.18.126",
-    "@types/underscore": "^1.11.4",
+    "@types/underscore": "^1.13.0",
     "@types/ws": "^8.5.3",
     "coffeescript": "^2.7.0",
     "typescript": "^5.8.3"
