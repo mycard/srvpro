@@ -1,7 +1,6 @@
 # 标准库
 net = require 'net'
 http = require 'http'
-url = require 'url'
 path = require 'path'
 fs = require 'fs'
 os = require 'os'
@@ -3847,7 +3846,11 @@ if true
 
   httpRequestListener = (request, response)->
     parseQueryString = true
-    u = url.parse(request.url, parseQueryString)
+    base = "http://#{request.headers.host or 'localhost'}"
+    urlObj = new URL(request.url, base)
+    u =
+      pathname: urlObj.pathname
+      query: Object.fromEntries(urlObj.searchParams)
     #pass_validated = u.query.pass == settings.modules.http.password
 
     # Allow all CORS + PNA (Private Network Access) requests.

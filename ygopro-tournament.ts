@@ -13,22 +13,24 @@ import * as url from "url";
 import axios from "axios";
 import * as formidable from "formidable";
 import { sync as loadJSON } from "load-json-file";
+import defaultConfig from "./data/default_config.json";
 import { Challonge } from "./challonge";
 import * as asyncLib from "async";
 import YGOProDeckEncode from "ygopro-deck-encode";
 import * as auth from "./ygopro-auth";
 import _ from "underscore";
 
-const settings = loadJSON("./config/config.json") as any;
-const config = settings.modules.tournament_mode as any;
-const challonge_config = settings.modules.challonge as any;
+type Settings = typeof defaultConfig;
+const settings = loadJSON("./config/config.json") as Settings;
+const config = settings.modules.tournament_mode;
+const challonge_config = settings.modules.challonge;
 const challonge = new Challonge(challonge_config);
-const ssl_config = settings.modules.http.ssl as any;
+const ssl_config = settings.modules.http.ssl;
 
 //http长连接
 let responder: http.ServerResponse | null;
 
-config.wallpapers = [""];
+let wallpapers: Array<{ url: string; desc: string }> = [{ url: "", desc: "" }];
 axios
   .get("http://www.bing.com/HPImageArchive.aspx", {
     params: {
@@ -45,14 +47,14 @@ axios
     } else if (!body) {
       console.log("wallpapers error", null, response);
     } else {
-      config.wallpapers = [];
+      wallpapers = [];
       for (const i in body.images) {
         const wallpaper = body.images[i];
         const img = {
           url: "http://s.cn.bing.net" + wallpaper.urlbase + "_768x1366.jpg",
           desc: wallpaper.copyright,
         };
-        config.wallpapers.push(img);
+        wallpapers.push(img);
       }
     }
   })
@@ -295,10 +297,7 @@ async function requestListener(req: http.IncomingMessage, res: http.ServerRespon
     }
     res.writeHead(200);
     res.end(
-      u.query.callback +
-        "(" +
-        JSON.stringify(config.wallpapers[Math.floor(Math.random() * config.wallpapers.length)]) +
-        ");"
+      u.query.callback + "(" + JSON.stringify(wallpapers[Math.floor(Math.random() * wallpapers.length)]) + ");"
     );
   } else if (u.pathname === "/api/get_decks") {
     if (!(await auth.auth(u.query.username as string, u.query.password as string, "deck_dashboard_read", "get_decks"))) {

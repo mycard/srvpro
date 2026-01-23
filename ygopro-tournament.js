@@ -63,7 +63,7 @@ const challonge = new challonge_1.Challonge(challonge_config);
 const ssl_config = settings.modules.http.ssl;
 //http长连接
 let responder;
-config.wallpapers = [""];
+let wallpapers = [{ url: "", desc: "" }];
 axios_1.default
     .get("http://www.bing.com/HPImageArchive.aspx", {
     params: {
@@ -82,14 +82,14 @@ axios_1.default
         console.log("wallpapers error", null, response);
     }
     else {
-        config.wallpapers = [];
+        wallpapers = [];
         for (const i in body.images) {
             const wallpaper = body.images[i];
             const img = {
                 url: "http://s.cn.bing.net" + wallpaper.urlbase + "_768x1366.jpg",
                 desc: wallpaper.copyright,
             };
-            config.wallpapers.push(img);
+            wallpapers.push(img);
         }
     }
 })
@@ -301,10 +301,7 @@ async function requestListener(req, res) {
             return;
         }
         res.writeHead(200);
-        res.end(u.query.callback +
-            "(" +
-            JSON.stringify(config.wallpapers[Math.floor(Math.random() * config.wallpapers.length)]) +
-            ");");
+        res.end(u.query.callback + "(" + JSON.stringify(wallpapers[Math.floor(Math.random() * wallpapers.length)]) + ");");
     }
     else if (u.pathname === "/api/get_decks") {
         if (!(await auth.auth(u.query.username, u.query.password, "deck_dashboard_read", "get_decks"))) {
