@@ -134,12 +134,12 @@ export class Challonge {
     }
   }
 
-  // POST /v1/tournaments/${tournament_id}/participants/bulk_add.json { api_key: string, participants: { name: string }[] } returns ANY
-  async uploadParticipants(participantNames: string[]) { 
+  // POST /v1/tournaments/${tournament_id}/participants/bulk_add.json { api_key: string, participants: { name: string, deckbuf?: string }[] } returns ANY
+  async uploadParticipants(participants: { name: string, deckbuf?: string }[]) { 
     try {
       await axios.post(`${this.config.challonge_url}/v1/tournaments/${this.config.tournament_id}/participants/bulk_add.json`, {
         api_key: this.config.api_key,
-        participants: participantNames.map(name => ({ name })),
+        participants,
       });
       return true;
     } catch (e) {

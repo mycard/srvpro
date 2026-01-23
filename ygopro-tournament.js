@@ -16,7 +16,6 @@ const _ = require('underscore');
 _.str = require('underscore.string');
 _.mixin(_.str.exports());
 const loadJSON = require('load-json-file').sync;
-const axios = require('axios');
 
 const auth = require('./ygopro-auth.js');
 
@@ -28,8 +27,7 @@ const challonge = new Challonge(challonge_config);
 ssl_config = settings.modules.http.ssl;
 
 const _async = require("async");
-const os = require("os");
-const PROCESS_COUNT = os.cpus().length;
+const YGOProDeckEncode = require('ygopro-deck-encode').default;
 
 //http长连接
 let responder;
@@ -75,25 +73,7 @@ const readDeck = async function(deck_name, deck_full_path) {
     const deck={};
     deck.name=deck_name;
     deck_text = await fs.promises.readFile(deck_full_path, { encoding: "ASCII" });
-    deck_array = deck_text.split(/\r?\n/);
-    deck.main = [];
-    deck.extra = [];
-    deck.side = [];
-    current_deck = deck.main;
-    for (l in deck_array) {
-        line = deck_array[l];
-        if (line.indexOf("#extra") >= 0) {
-            current_deck = deck.extra;
-        }
-        if (line.indexOf("!side") >= 0) {
-            current_deck = deck.side;
-        }
-        card = parseInt(line);
-        if (!isNaN(card) && !line.endsWith("#")) {
-            current_deck.push(card);
-        }
-    }
-    return deck;
+    return YGOProDeckEncode.fromYdkString(deck_text);
 }
 
 //读取指定文件夹中所有卡组
@@ -148,7 +128,16 @@ const UploadToChallonge = async function () {
     for (const k in decks_list) {
         const deck_name = decks_list[k];
         if (_.endsWith(deck_name, ".ydk")) {
-            player_list.push(deck_name.slice(0, deck_name.length - 4));
+            player_list.push({
+                name: deck_name.slice(0, deck_name.length - 4),
+                deckbuf: Buffer.from(
+                    YGOProDeckEncode.fromYdkString(
+                        await fs.promises.readFile(config.deck_path + deck_name, { encoding: "ASCII" })
+                    )
+                        .toUpdateDeckPayload()
+                )
+                    .toString('base64')
+            });
         }
     }
     if (!player_list.length) {
@@ -161,7 +150,7 @@ const UploadToChallonge = async function () {
         await challonge.clearParticipants();
         sendResponse("开始上传玩家列表至 Challonge。");
         for (const chunk of _.chunk(player_list, 10)) {
-            sendResponse(`开始上传玩家 ${chunk.join(', ')} 至 Challonge。`);
+            sendResponse(`开始上传玩家 ${chunk.map(c => c.name).join(', ')} 至 Challonge。`);
             await challonge.uploadParticipants(chunk);
         }
         sendResponse("玩家列表上传完成。");
