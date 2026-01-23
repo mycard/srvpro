@@ -216,7 +216,12 @@ const receiveDecks = function (
 
 //建立一个http服务器，接收API操作
 async function requestListener(req: http.IncomingMessage, res: http.ServerResponse) {
-  const u = url.parse(req.url || "", true);
+  const base = `http://${req.headers.host || "localhost"}`;
+  const urlObj = new URL(req.url || "/", base);
+  const u = {
+    pathname: urlObj.pathname,
+    query: Object.fromEntries(urlObj.searchParams),
+  };
 
   // Allow all CORS + PNA (Private Network Access) requests.
   res.setHeader("Access-Control-Allow-Origin", "*");

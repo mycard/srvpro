@@ -47,7 +47,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const http = __importStar(require("http"));
 const https = __importStar(require("https"));
 const fs = __importStar(require("fs"));
-const url = __importStar(require("url"));
 const axios_1 = __importDefault(require("axios"));
 const formidable = __importStar(require("formidable"));
 const load_json_file_1 = require("load-json-file");
@@ -226,7 +225,12 @@ const receiveDecks = function (files, callback) {
 };
 //建立一个http服务器，接收API操作
 async function requestListener(req, res) {
-    const u = url.parse(req.url || "", true);
+    const base = `http://${req.headers.host || "localhost"}`;
+    const urlObj = new URL(req.url || "/", base);
+    const u = {
+        pathname: urlObj.pathname,
+        query: Object.fromEntries(urlObj.searchParams),
+    };
     // Allow all CORS + PNA (Private Network Access) requests.
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Private-Network", "true");
