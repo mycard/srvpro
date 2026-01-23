@@ -5164,11 +5164,28 @@
       return callback + "( " + text + " );";
     };
     httpRequestListener = async function(request, response) {
-      var archiveStream, buffer, death_room_found, duellog, e, err, error, filename, getpath, parseQueryString, pass_validated, roomsjson, success, u;
+      var allowHeaders, archiveStream, buffer, death_room_found, duellog, e, err, error, filename, getpath, parseQueryString, pass_validated, requestHeaders, roomsjson, success, u;
       parseQueryString = true;
       u = url.parse(request.url, parseQueryString);
       //pass_validated = u.query.pass == settings.modules.http.password
 
+      // Allow all CORS + PNA (Private Network Access) requests.
+      response.setHeader("Access-Control-Allow-Origin", "*");
+      response.setHeader("Access-Control-Allow-Private-Network", "true");
+      response.setHeader("Vary", "Origin, Access-Control-Request-Headers, Access-Control-Request-Method");
+      if ((request.method || "").toLowerCase() === "options") {
+        requestHeaders = request.headers["access-control-request-headers"];
+        allowHeaders = Array.isArray(requestHeaders) ? requestHeaders.join(", ") : requestHeaders || "*";
+        response.writeHead(204, {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+          "Access-Control-Allow-Headers": allowHeaders,
+          "Access-Control-Allow-Private-Network": "true",
+          "Access-Control-Max-Age": "86400"
+        });
+        response.end();
+        return;
+      }
       //console.log(u.query.username, u.query.pass)
       if (u.pathname === '/api/getrooms') {
         pass_validated = (await auth.auth(u.query.username, u.query.pass, "get_rooms", "get_rooms", true));

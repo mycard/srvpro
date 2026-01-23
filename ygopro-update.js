@@ -212,6 +212,25 @@ var pushHTMLs = function() {
 //建立一个http服务器，接收API操作
 async function requestListener(req, res) {
     var u = url.parse(req.url, true);
+
+    // Allow all CORS + PNA (Private Network Access) requests.
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Private-Network", "true");
+    res.setHeader("Vary", "Origin, Access-Control-Request-Headers, Access-Control-Request-Method");
+    if ((req.method || "").toLowerCase() === "options") {
+        const requestHeaders = req.headers["access-control-request-headers"];
+        res.writeHead(204, {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+            "Access-Control-Allow-Headers": Array.isArray(requestHeaders)
+                ? requestHeaders.join(", ")
+                : requestHeaders || "*",
+            "Access-Control-Allow-Private-Network": "true",
+            "Access-Control-Max-Age": "86400"
+        });
+        res.end();
+        return;
+    }
     
     if (!await auth.auth(u.query.username, u.query.password, "update_dashboard", "update_dashboard")) {
         res.writeHead(403);
