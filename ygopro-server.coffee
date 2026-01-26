@@ -94,6 +94,7 @@ util = require("util")
 Q = require("q")
 
 YGOProDeck = require('ygopro-deck-encode').default
+YGOProYrp = require('ygopro-yrp-encode').YGOProYrp
 
 Aragami = require('aragami').Aragami
 
@@ -485,7 +486,10 @@ init = () ->
     long_resolve_cards = global.long_resolve_cards = await loadJSONAsync('./data/long_resolve_cards.json')
 
   if settings.modules.tournament_mode.enable_recover
-    ReplayParser = global.ReplayParser = (require "./Replay.js").Replay
+    ReplayParser = global.ReplayParser =
+      fromFile: (filePath) ->
+        buffer = await fs.promises.readFile(filePath)
+        new YGOProYrp().fromYrp(buffer)
 
   if settings.modules.athletic_check.enabled
     AthleticChecker = require("./athletic-check.js").AthleticChecker
@@ -2709,7 +2713,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg <= 144) #SELECT和ANNOUNCE开头的消息
     if room.recovering
-      ygopro.ctos_send(server, 'RESPONSE', room.recover_replay.responses.splice(0, 1)[0])
+      response = room.recover_replay.responses.splice(0, 1)[0]
+      ygopro.ctos_send(server, 'RESPONSE', Buffer.from(response))
       if !room.recover_replay.responses.length
         room.finish_recover()
       return true
