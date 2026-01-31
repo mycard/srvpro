@@ -1907,7 +1907,7 @@
         param.push(firstSeedBuf.toString('base64'));
       }
       try {
-        this.process = global.rawSpawn(param);
+        this.process = global.rawSpawn.call(this, param);
         this.process_pid = this.process.pid;
         this.process.on('error', (err) => {
           log.warn('CREATE ROOM ERROR', err);
