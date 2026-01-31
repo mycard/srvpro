@@ -1700,6 +1700,12 @@
     return true;
   };
 
+  global.rawSpawn = function(param) {
+    return spawn('./ygopro', param, {
+      cwd: 'ygopro'
+    });
+  };
+
   Room = class Room {
     constructor(name, hostinfo) {
       var death_time, draw_count, duel_rule, extra_mode_func, lflist, param, rule, start_hand, start_lp, time_limit;
@@ -1901,9 +1907,7 @@
         param.push(firstSeedBuf.toString('base64'));
       }
       try {
-        this.process = spawn('./ygopro', param, {
-          cwd: 'ygopro'
-        });
+        this.process = global.rawSpawn(param);
         this.process_pid = this.process.pid;
         this.process.on('error', (err) => {
           log.warn('CREATE ROOM ERROR', err);

@@ -1290,6 +1290,9 @@ SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
     await ygopro.helper.send(sk, buffer)
   return true
 
+global.rawSpawn = (param) ->
+  spawn './ygopro', param, {cwd: 'ygopro'}
+
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -1467,7 +1470,7 @@ class Room
       param.push(firstSeedBuf.toString('base64'))
 
     try
-      @process = spawn './ygopro', param, {cwd: 'ygopro'}
+      @process = global.rawSpawn param
       @process_pid = @process.pid
       @process.on 'error', (err)=>
         log.warn 'CREATE ROOM ERROR', err
