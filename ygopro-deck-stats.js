@@ -6,8 +6,8 @@
  
  读取指定文件夹里所有卡组，得出卡片使用量，生成csv
 */
-var sqlite3 = require('sqlite3').verbose();
 var fs = require('fs');
+var initSqlJs = require('sql.js');
 var loadJSON = require('load-json-file').sync;
 var config = loadJSON('./config/deckstats.json'); //{ "deckpath": "../decks", "dbfile": "cards.cdb" }
 var constants = loadJSON('./data/constants.json');
@@ -15,6 +15,23 @@ var constants = loadJSON('./data/constants.json');
 var ALL_MAIN_CARDS={};
 var ALL_SIDE_CARDS={};
 var ALL_CARD_DATAS={};
+
+var sqlJsPromise;
+var SQL = null;
+function ensureSqlJs() {
+    if (!sqlJsPromise) {
+        var wasmPath = require.resolve('sql.js/dist/sql-wasm.wasm');
+        sqlJsPromise = initSqlJs({
+            locateFile: function() {
+                return wasmPath;
+            }
+        }).then(function(SQLLib) {
+            SQL = SQLLib;
+            return SQLLib;
+        });
+    }
+    return sqlJsPromise;
+}
 
 function add_to_deck(deck,id) {
     if (deck[id]) {
@@ -70,15 +87,14 @@ function read_deck_file(filename) {
 }
 
 function load_database(callback) {
-    var db=new sqlite3.Database(config.dbfile);
-    db.each("select * from datas,texts where datas.id=texts.id", function (err,result) {
-        if (err) {
-            console.log(config.dbfile + ":" + err);
-            return;
-        }
-        else {
+    ensureSqlJs().then(function() {
+        var dbBuffer = fs.readFileSync(config.dbfile);
+        var db = new SQL.Database(dbBuffer);
+        var stmt = db.prepare("select * from datas,texts where datas.id=texts.id");
+        while (stmt.step()) {
+            var result = stmt.getAsObject();
             if (result.type & constants.TYPES.TYPE_TOKEN) {
-                return;
+                continue;
             }
             
             var card={};
@@ -140,7 +156,17 @@ function load_database(callback) {
             
             ALL_CARD_DATAS[result.id]=card;
         }
-    }, callback);
+        stmt.free();
+        db.close();
+        if (callback) {
+            callback();
+        }
+    }).catch(function(err) {
+        console.log(config.dbfile + ":" + err);
+        if (callback) {
+            callback(err);
+        }
+    });
 }
 
 function read_decks() {
@@ -190,5 +216,8 @@ function output_csv(list,filename) {
     }
 }
 
-load_database(read_decks);
-
+ensureSqlJs().then(function() {
+    load_database(read_decks);
+}).catch(function(err) {
+    console.error("Failed to load sql.js: " + err);
+});
