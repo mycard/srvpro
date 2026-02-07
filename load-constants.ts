@@ -171,3 +171,7 @@ export const loadConstants = () => {
 };
 
 export default loadConstants;
+
+if (require.main === module) { 
+  console.log(JSON.stringify(loadConstants(), null, 2));
+}

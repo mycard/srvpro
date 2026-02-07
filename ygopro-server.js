@@ -4530,8 +4530,6 @@
           }
         }
     }
-    //when '/test'
-    //  ygopro.stoc_send_hint_card_to_room(room, 2333365)
     if (msg.length > 100) {
       log.warn("SPAM WORD", client.name, client.ip, msg);
       if (client.abuse_count) {

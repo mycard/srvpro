@@ -1,6 +1,0 @@
-{
-    "unsigned int": "word32Ule",
-    "unsigned short": "word16Ule",
-    "unsigned char": "word8",
-    "bool": "bool2"
-}
