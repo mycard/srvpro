@@ -4,6 +4,7 @@ import net from "net";
 import { YGOProCtos, YGOProCtosBase, YGOProStoc, YGOProStocBase } from "ygopro-msg-encode";
 import { applyYGOProMsgStructCompat, fromPartialCompat } from "./ygopro-msg-struct-compat";
 import legacyProtoStructs from "./data/proto_structs.json";
+import { overwriteBuffer } from "./utility";
 
 
 class Handler {
@@ -82,14 +83,7 @@ export class LegacyStructInst {
 		if (!this.buffer || !this.cls) return;
 		const inst = applyYGOProMsgStructCompat(new this.cls().fromPayload(this.buffer));
 		inst[field] = value;
-		const parsed = Buffer.from(inst.toPayload());
-		if (parsed.length >= this.buffer.length) { 
-			// slice it down
-			parsed.copy(this.buffer, 0, 0, this.buffer.length);
-		} else {
-			// copy a small part only
-			parsed.copy(this.buffer, 0, 0, parsed.length);
-		}
+		overwriteBuffer(this.buffer, inst.toPayload());
 	}
 }
 

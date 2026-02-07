@@ -9,6 +9,7 @@ const load_constants_1 = __importDefault(require("./load-constants"));
 const ygopro_msg_encode_1 = require("ygopro-msg-encode");
 const ygopro_msg_struct_compat_1 = require("./ygopro-msg-struct-compat");
 const proto_structs_json_1 = __importDefault(require("./data/proto_structs.json"));
+const utility_1 = require("./utility");
 class Handler {
     constructor(handler, synchronous) {
         this.handler = handler;
@@ -38,15 +39,7 @@ class LegacyStructInst {
             return;
         const inst = (0, ygopro_msg_struct_compat_1.applyYGOProMsgStructCompat)(new this.cls().fromPayload(this.buffer));
         inst[field] = value;
-        const parsed = Buffer.from(inst.toPayload());
-        if (parsed.length >= this.buffer.length) {
-            // slice it down
-            parsed.copy(this.buffer, 0, 0, this.buffer.length);
-        }
-        else {
-            // copy a small part only
-            parsed.copy(this.buffer, 0, 0, parsed.length);
-        }
+        (0, utility_1.overwriteBuffer)(this.buffer, inst.toPayload());
     }
 }
 exports.LegacyStructInst = LegacyStructInst;

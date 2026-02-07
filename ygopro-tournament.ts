@@ -15,7 +15,6 @@ import * as formidable from "formidable";
 import { sync as loadJSON } from "load-json-file";
 import defaultConfig from "./data/default_config.json";
 import { Challonge } from "./challonge";
-import * as asyncLib from "async";
 import YGOProDeckEncode from "ygopro-deck-encode";
 import * as auth from "./ygopro-auth";
 import _ from "underscore";
@@ -82,34 +81,20 @@ const readDeck = async function (deck_name: string, deck_full_path: string) {
 };
 
 //读取指定文件夹中所有卡组
-const getDecks = function (callback: (err: Error | null, decks: any[]) => void) {
-  const decks: any[] = [];
-  asyncLib.auto(
-    {
-      readDir: (done: (err: NodeJS.ErrnoException | null, files?: string[]) => void) => {
-        fs.readdir(config.deck_path, done);
-      },
-      handleDecks: [
-        "readDir",
-        (results: any, done: (err?: Error | null) => void) => {
-          const decks_list = results.readDir as string[];
-          asyncLib.each(
-            decks_list,
-            async (deck_name: string) => {
-              if (deck_name.endsWith(".ydk")) {
-                const deck = await readDeck(deck_name, config.deck_path + deck_name);
-                decks.push(deck);
-              }
-            },
-            done
-          );
-        },
-      ],
-    },
-    (err: Error | null) => {
-      callback(err, decks);
+const getDecks = async function (callback: (err: Error | null, decks: any[]) => void) {
+  try {
+    const decks: any[] = [];
+    const decks_list = await fs.promises.readdir(config.deck_path);
+    for (const deck_name of decks_list) {
+      if (deck_name.endsWith(".ydk")) {
+        const deck = await readDeck(deck_name, config.deck_path + deck_name);
+        decks.push(deck);
+      }
     }
-  );
+    callback(null, decks);
+  } catch (err) {
+    callback(err as Error, []);
+  }
 };
 
 const delDeck = function (deck_name: string, callback: (err?: NodeJS.ErrnoException | null) => void) {
@@ -120,22 +105,18 @@ const delDeck = function (deck_name: string, callback: (err?: NodeJS.ErrnoExcept
   fs.unlink(config.deck_path + deck_name, callback);
 };
 
-const clearDecks = function (callback: (err?: Error | null) => void) {
-  asyncLib.auto(
-    {
-      deckList: (done: (err: NodeJS.ErrnoException | null, files?: string[]) => void) => {
-        fs.readdir(config.deck_path, done);
-      },
-      removeAll: [
-        "deckList",
-        (results: any, done: (err?: Error | null) => void) => {
-          const decks_list = results.deckList as string[];
-          asyncLib.each(decks_list, delDeck as any, done);
-        },
-      ],
-    },
-    callback
-  );
+const clearDecks = async function (callback: (err?: Error | null) => void) {
+  try {
+    const decks_list = await fs.promises.readdir(config.deck_path);
+    for (const deck_name of decks_list) {
+      await new Promise<void>((resolve, reject) => {
+        delDeck(deck_name, (err) => (err ? reject(err) : resolve()));
+      });
+    }
+    callback(null);
+  } catch (err) {
+    callback(err as Error);
+  }
 };
 
 const UploadToChallonge = async function () {
@@ -179,14 +160,13 @@ const UploadToChallonge = async function () {
   return true;
 };
 
-const receiveDecks = function (
+const receiveDecks = async function (
   files: any,
   callback: (err: Error | null, result: Array<{ file: string; status: string }>) => void
 ) {
-  const result: Array<{ file: string; status: string }> = [];
-  asyncLib.eachSeries(
-    files,
-    async (file: any) => {
+  try {
+    const result: Array<{ file: string; status: string }> = [];
+    for (const file of files) {
       if (file.name.endsWith(".ydk")) {
         const deck = await readDeck(file.name, file.path);
         if (deck.main.length >= 40) {
@@ -207,11 +187,11 @@ const receiveDecks = function (
           status: "不是卡组文件",
         });
       }
-    },
-    (err: Error | null) => {
-      callback(err, result);
     }
-  );
+    callback(null, result);
+  } catch (err) {
+    callback(err as Error, []);
+  }
 };
 
 //建立一个http服务器，接收API操作

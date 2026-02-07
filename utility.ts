@@ -20,3 +20,13 @@ export async function retry<T>(
   // 如果全部尝试失败，抛出最后一个错误
   throw lastError;
 }
+
+export const overwriteBuffer = (buf: Buffer, _input: Buffer | Uint8Array) => {
+  const input = Buffer.isBuffer(_input) ? _input : Buffer.from(_input);
+
+  if (input.length >= buf.length) { 
+    input.copy(buf, 0, 0, buf.length);
+  } else {
+    input.copy(buf, 0, 0, input.length);
+  }
+}
