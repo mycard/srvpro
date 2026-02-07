@@ -9,7 +9,7 @@ const underscore_1 = __importDefault(require("underscore"));
 const structs_json_1 = __importDefault(require("./data/structs.json"));
 const typedefs_json_1 = __importDefault(require("./data/typedefs.json"));
 const proto_structs_json_1 = __importDefault(require("./data/proto_structs.json"));
-const constants_json_1 = __importDefault(require("./data/constants.json"));
+const load_constants_1 = __importDefault(require("./load-constants"));
 class Handler {
     constructor(handler, synchronous) {
         this.handler = handler;
@@ -56,7 +56,7 @@ class YGOProMessagesHelper {
         this.structs_declaration = structs_json_1.default;
         this.typedefs = typedefs_json_1.default;
         this.proto_structs = proto_structs_json_1.default;
-        this.constants = constants_json_1.default;
+        this.constants = (0, load_constants_1.default)();
     }
     initStructs() {
         this.structs = new Map();

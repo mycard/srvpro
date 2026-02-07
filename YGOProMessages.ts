@@ -3,7 +3,7 @@ import _ from "underscore";
 import structs_declaration from "./data/structs.json";
 import typedefs from "./data/typedefs.json";
 import proto_structs from "./data/proto_structs.json";
-import constants from "./data/constants.json";
+import loadConstants from "./load-constants";
 import net from "net";
 
 
@@ -102,7 +102,7 @@ export class YGOProMessagesHelper {
 		this.structs_declaration = structs_declaration;
 		this.typedefs = typedefs;
 		this.proto_structs = proto_structs;
-		this.constants = constants;
+		this.constants = loadConstants();
 	}
 
 	initStructs() {

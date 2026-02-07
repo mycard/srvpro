@@ -22,7 +22,7 @@ var loadJSON = require('load-json-file').sync;
 
 var auth = require('./ygopro-auth.js');
 
-var constants = loadJSON('./data/constants.json');
+var constants = require('./load-constants').loadConstants();
 
 var settings = loadJSON('./config/config.json');
 config = settings.modules.pre_util;
