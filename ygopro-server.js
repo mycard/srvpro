@@ -1700,6 +1700,12 @@
     return true;
   };
 
+  global.rawSpawn = function(param) {
+    return spawn('./ygopro', param, {
+      cwd: 'ygopro'
+    });
+  };
+
   Room = class Room {
     constructor(name, hostinfo) {
       var death_time, draw_count, duel_rule, extra_mode_func, lflist, param, rule, start_hand, start_lp, time_limit;
@@ -1901,9 +1907,7 @@
         param.push(firstSeedBuf.toString('base64'));
       }
       try {
-        this.process = spawn('./ygopro', param, {
-          cwd: 'ygopro'
-        });
+        this.process = global.rawSpawn.call(this, param);
         this.process_pid = this.process.pid;
         this.process.on('error', (err) => {
           log.warn('CREATE ROOM ERROR', err);
@@ -1982,6 +1986,9 @@
         if (this.decks[name]) {
           score_form.deck = this.decks[name];
         }
+        if (this.deck_history[name]) {
+          score_form.deck_history = this.deck_history[name];
+        }
         score_array.push(score_form);
       }
       if (settings.modules.random_duel.record_match_scores && this.random_type === 'M') {
@@ -2042,6 +2049,8 @@
         form_data.append('userscoreB', score_array[1].score);
         form_data.append('userdeckA', score_array[0].deck);
         form_data.append('userdeckB', score_array[1].deck);
+        form_data.append('userdeckAHistory', score_array[0].deck_history);
+        form_data.append('userdeckBHistory', score_array[1].deck_history);
         form_data.append('first', JSON.stringify(this.first_list));
         form_data.append('replays', JSON.stringify(formatted_replays));
         form_data.append('start', this.start_time);
@@ -4272,7 +4281,16 @@
     deck_text = null;
     if (client.main && client.main.length) {
       deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n';
-      room.decks[client.name] = deck_text;
+      if (!room.decks[client.name]) {
+        room.decks[client.name] = deck_text;
+      }
+      if (!room.deck_history) {
+        room.deck_history = {};
+      }
+      if (!room.deck_history[client.name]) {
+        room.deck_history[client.name] = [];
+      }
+      room.deck_history[client.name].push(deck_text);
     }
     if (settings.modules.deck_log.enabled && deck_text && !client.deck_saved && !room.windbot) {
       deck_arena = settings.modules.deck_log.arena + '-';

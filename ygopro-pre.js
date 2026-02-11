@@ -9,8 +9,8 @@
 */
 var http = require('http');
 var https = require('https');
-var sqlite3 = require('sqlite3').verbose();
 var fs = require('fs');
+var initSqlJs = require('sql.js');
 var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
 var spawn = require('child_process').spawn;
@@ -36,6 +36,23 @@ var responder;
 var dataver = moment().format("YYYYMMDDHHmmss");
 const _async = require("async");
 
+var sqlJsPromise;
+var SQL = null;
+function ensureSqlJs() {
+    if (!sqlJsPromise) {
+        var wasmPath = require.resolve('sql.js/dist/sql-wasm.wasm');
+        sqlJsPromise = initSqlJs({
+            locateFile: function() {
+                return wasmPath;
+            }
+        }).then(function(SQLLib) {
+            SQL = SQLLib;
+            return SQLLib;
+        });
+    }
+    return sqlJsPromise;
+}
+
 //输出反馈信息，如有http长连接则输出到http，否则输出到控制台
 var sendResponse = function(text) {
     text=""+text;
@@ -50,18 +67,17 @@ var sendResponse = function(text) {
 
 //读取数据库内内容到cardHTMLs，异步
 var loadDb = function(db_file, callback) {
-    var db = new sqlite3.Database(db_file);
-    
-    db.each("select * from datas,texts where datas.id=texts.id", function (err,result) {
-        if (err) {
-            sendResponse(db_file + ":" + err);
-            return;
-        }
-        else {
+    ensureSqlJs().then(function() {
+        var dbBuffer = fs.readFileSync(db_file);
+        var db = new SQL.Database(dbBuffer);
+        var stmt = db.prepare("select * from datas,texts where datas.id=texts.id");
+        var num = 0;
+        while (stmt.step()) {
+            var result = stmt.getAsObject();
             if (result.type & constants.TYPES.TYPE_TOKEN) {
-                return;
+                continue;
             }
-            
+
             var cardHTML="<tr>";
             
             cardHTML+='<td><a href="'+ config.html_img_rel_path + result.id +'.jpg" target="_blank"><img data-original="'+config.html_img_rel_path+config.html_img_thumbnail+ result.id +'.jpg'+ config.html_img_thumbnail_suffix +'" alt="'+ result.name +'"></a></td>';
@@ -191,16 +207,16 @@ var loadDb = function(db_file, callback) {
             cardHTML+='</tr>';
             
             cardHTMLs.push(cardHTML);
+            num++;
         }
-    }, function(err, num) {
-        if(err) {
-            sendResponse(db_file + ":" + err);
-        }
-        else {
-            dataver = moment().format("YYYYMMDDHHmmss");
-            sendResponse("已加载数据库"+db_file+"，共"+num+"张卡。");
-        }
-            callback(err, num);
+        stmt.free();
+        db.close();
+        dataver = moment().format("YYYYMMDDHHmmss");
+        sendResponse("已加载数据库"+db_file+"，共"+num+"张卡。");
+        callback(null, num);
+    }).catch(function(err) {
+        sendResponse(db_file + ":" + err);
+        callback(err);
     });
 }
 
@@ -576,14 +592,20 @@ async function requestListener(req, res) {
 
 }
 
-if (ssl_config.enabled) {
-    const ssl_cert = fs.readFileSync(ssl_config.cert);
-    const ssl_key = fs.readFileSync(ssl_config.key);
-    const options = {
-        cert: ssl_cert,
-        key: ssl_key
+function startServer() {
+    if (ssl_config.enabled) {
+        const ssl_cert = fs.readFileSync(ssl_config.cert);
+        const ssl_key = fs.readFileSync(ssl_config.key);
+        const options = {
+            cert: ssl_cert,
+            key: ssl_key
+        }
+        https.createServer(options, requestListener).listen(config.port);
+    } else { 
+        http.createServer(requestListener).listen(config.port);
     }
-    https.createServer(options, requestListener).listen(config.port);
-} else { 
-    http.createServer(requestListener).listen(config.port);
 }
+
+ensureSqlJs().then(startServer).catch(function(err) {
+    console.error("Failed to load sql.js: " + err);
+});

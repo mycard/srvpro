@@ -1290,6 +1290,9 @@ SOCKET_flush_data = global.SOCKET_flush_data = (sk, datas) ->
     await ygopro.helper.send(sk, buffer)
   return true
 
+global.rawSpawn = (param) ->
+  spawn './ygopro', param, {cwd: 'ygopro'}
+
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
@@ -1467,7 +1470,7 @@ class Room
       param.push(firstSeedBuf.toString('base64'))
 
     try
-      @process = spawn './ygopro', param, {cwd: 'ygopro'}
+      @process = global.rawSpawn.call this, param
       @process_pid = @process.pid
       @process.on 'error', (err)=>
         log.warn 'CREATE ROOM ERROR', err
@@ -1519,6 +1522,8 @@ class Room
       score_form = { name: name, score: score, deck: null, name_vpass: name_vpass }
       if @decks[name]
         score_form.deck = @decks[name]
+      if @deck_history[name]
+        score_form.deck_history = @deck_history[name]
       score_array.push score_form
     if settings.modules.random_duel.record_match_scores and @random_type == 'M'
       if score_array.length == 2
@@ -1556,6 +1561,8 @@ class Room
       form_data.append 'userscoreB', score_array[1].score
       form_data.append 'userdeckA', score_array[0].deck
       form_data.append 'userdeckB', score_array[1].deck
+      form_data.append 'userdeckAHistory', score_array[0].deck_history
+      form_data.append 'userdeckBHistory', score_array[1].deck_history
       form_data.append 'first', JSON.stringify @first_list
       form_data.append 'replays', JSON.stringify formatted_replays
       form_data.append 'start', @start_time
@@ -3209,7 +3216,10 @@ ygopro.stoc_follow 'DUEL_START', true, (buffer, info, client, server, datas)->
   deck_text = null
   if client.main and client.main.length
     deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
-    room.decks[client.name] = deck_text
+    room.decks[client.name] = deck_text unless room.decks[client.name]
+    room.deck_history = {} unless room.deck_history
+    room.deck_history[client.name] = [] if !room.deck_history[client.name]
+    room.deck_history[client.name].push deck_text
   if settings.modules.deck_log.enabled and deck_text and not client.deck_saved and not room.windbot
     deck_arena = settings.modules.deck_log.arena + '-'
     if room.arena
