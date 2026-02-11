@@ -2998,6 +2998,14 @@
       });
       CLIENT_kick(client);
       return;
+    } else if (info.pass.toUpperCase() === "IP") {
+      ygopro.stoc_send_chat(client, "IP: " + client.ip, ygopro.constants.COLORS.BABYBLUE);
+      ygopro.stoc_send(client, 'ERROR_MSG', {
+        msg: 1,
+        code: 9
+      });
+      CLIENT_kick(client);
+      return;
     } else if (info.pass.toUpperCase() === "RC" && settings.modules.tournament_mode.enable_recover) {
       ygopro.stoc_send_chat(client, "${recover_replay_hint}", ygopro.constants.COLORS.BABYBLUE);
       available_logs = (await dataManager.getDuelLogFromRecoverSearch(client.name_vpass));
