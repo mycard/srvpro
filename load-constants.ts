@@ -100,9 +100,10 @@ const buildProtoMap = (
 ) => {
   const out: Record<string, string> = {};
   for (const [id, cls] of registry.protos.entries()) {
-    const rawName = cls.name.startsWith(classPrefix)
-      ? cls.name.slice(classPrefix.length)
-      : cls.name;
+    const className = cls.name.replace(/^_+/, "");
+    const rawName = className.startsWith(classPrefix)
+      ? className.slice(classPrefix.length)
+      : className;
     const name = normalizeProtoName(toConstantName(rawName));
     out[String(id)] = name;
   }
@@ -172,6 +173,6 @@ export const loadConstants = () => {
 
 export default loadConstants;
 
-if (require.main === module) { 
+if (typeof require !== "undefined" && require.main === module) {
   console.log(JSON.stringify(loadConstants(), null, 2));
 }
