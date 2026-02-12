@@ -51,7 +51,6 @@ const axios_1 = __importDefault(require("axios"));
 const formidable = __importStar(require("formidable"));
 const load_json_file_1 = require("load-json-file");
 const challonge_1 = require("./challonge");
-const asyncLib = __importStar(require("async"));
 const ygopro_deck_encode_1 = __importDefault(require("ygopro-deck-encode"));
 const auth = __importStar(require("./ygopro-auth"));
 const underscore_1 = __importDefault(require("underscore"));
@@ -114,27 +113,21 @@ const readDeck = async function (deck_name, deck_full_path) {
     return deck;
 };
 //读取指定文件夹中所有卡组
-const getDecks = function (callback) {
-    const decks = [];
-    asyncLib.auto({
-        readDir: (done) => {
-            fs.readdir(config.deck_path, done);
-        },
-        handleDecks: [
-            "readDir",
-            (results, done) => {
-                const decks_list = results.readDir;
-                asyncLib.each(decks_list, async (deck_name) => {
-                    if (deck_name.endsWith(".ydk")) {
-                        const deck = await readDeck(deck_name, config.deck_path + deck_name);
-                        decks.push(deck);
-                    }
-                }, done);
-            },
-        ],
-    }, (err) => {
-        callback(err, decks);
-    });
+const getDecks = async function (callback) {
+    try {
+        const decks = [];
+        const decks_list = await fs.promises.readdir(config.deck_path);
+        for (const deck_name of decks_list) {
+            if (deck_name.endsWith(".ydk")) {
+                const deck = await readDeck(deck_name, config.deck_path + deck_name);
+                decks.push(deck);
+            }
+        }
+        callback(null, decks);
+    }
+    catch (err) {
+        callback(err, []);
+    }
 };
 const delDeck = function (deck_name, callback) {
     if (deck_name.startsWith("../") || deck_name.match(/\/\.\.\//)) {
@@ -143,19 +136,19 @@ const delDeck = function (deck_name, callback) {
     }
     fs.unlink(config.deck_path + deck_name, callback);
 };
-const clearDecks = function (callback) {
-    asyncLib.auto({
-        deckList: (done) => {
-            fs.readdir(config.deck_path, done);
-        },
-        removeAll: [
-            "deckList",
-            (results, done) => {
-                const decks_list = results.deckList;
-                asyncLib.each(decks_list, delDeck, done);
-            },
-        ],
-    }, callback);
+const clearDecks = async function (callback) {
+    try {
+        const decks_list = await fs.promises.readdir(config.deck_path);
+        for (const deck_name of decks_list) {
+            await new Promise((resolve, reject) => {
+                delDeck(deck_name, (err) => (err ? reject(err) : resolve()));
+            });
+        }
+        callback(null);
+    }
+    catch (err) {
+        callback(err);
+    }
 };
 const UploadToChallonge = async function () {
     if (!challonge_config.enabled) {
@@ -194,34 +187,38 @@ const UploadToChallonge = async function () {
     }
     return true;
 };
-const receiveDecks = function (files, callback) {
-    const result = [];
-    asyncLib.eachSeries(files, async (file) => {
-        if (file.name.endsWith(".ydk")) {
-            const deck = await readDeck(file.name, file.path);
-            if (deck.main.length >= 40) {
-                fs.createReadStream(file.path).pipe(fs.createWriteStream(config.deck_path + file.name));
-                result.push({
-                    file: file.name,
-                    status: "OK",
-                });
+const receiveDecks = async function (files, callback) {
+    try {
+        const result = [];
+        for (const file of files) {
+            if (file.name.endsWith(".ydk")) {
+                const deck = await readDeck(file.name, file.path);
+                if (deck.main.length >= 40) {
+                    fs.createReadStream(file.path).pipe(fs.createWriteStream(config.deck_path + file.name));
+                    result.push({
+                        file: file.name,
+                        status: "OK",
+                    });
+                }
+                else {
+                    result.push({
+                        file: file.name,
+                        status: "卡组不合格",
+                    });
+                }
             }
             else {
                 result.push({
                     file: file.name,
-                    status: "卡组不合格",
+                    status: "不是卡组文件",
                 });
             }
         }
-        else {
-            result.push({
-                file: file.name,
-                status: "不是卡组文件",
-            });
-        }
-    }, (err) => {
-        callback(err, result);
-    });
+        callback(null, result);
+    }
+    catch (err) {
+        callback(err, []);
+    }
 };
 //建立一个http服务器，接收API操作
 async function requestListener(req, res) {

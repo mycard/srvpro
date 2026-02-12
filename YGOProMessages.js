@@ -3,17 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.YGOProMessagesHelper = void 0;
-const struct_1 = require("./struct");
+exports.YGOProMessagesHelper = exports.LegacyStruct = exports.LegacyStructInst = void 0;
 const underscore_1 = __importDefault(require("underscore"));
-const structs_json_1 = __importDefault(require("./data/structs.json"));
-const typedefs_json_1 = __importDefault(require("./data/typedefs.json"));
+const load_constants_1 = __importDefault(require("./load-constants"));
+const ygopro_msg_encode_1 = require("ygopro-msg-encode");
+const ygopro_msg_struct_compat_1 = require("./ygopro-msg-struct-compat");
 const proto_structs_json_1 = __importDefault(require("./data/proto_structs.json"));
-const constants_json_1 = __importDefault(require("./data/constants.json"));
+const utility_1 = require("./utility");
 class Handler {
     constructor(handler, synchronous) {
         this.handler = handler;
-        this.synchronous = synchronous || false;
+        this.synchronous = synchronous;
     }
     async handle(buffer, info, datas, params) {
         if (this.synchronous) {
@@ -27,8 +27,42 @@ class Handler {
         }
     }
 }
+class LegacyStructInst {
+    constructor(cls) {
+        this.cls = cls;
+    }
+    _setBuff(buff) {
+        this.buffer = buff;
+    }
+    set(field, value) {
+        if (!this.buffer || !this.cls)
+            return;
+        const inst = (0, ygopro_msg_struct_compat_1.applyYGOProMsgStructCompat)(new this.cls().fromPayload(this.buffer));
+        inst[field] = value;
+        (0, utility_1.overwriteBuffer)(this.buffer, inst.toPayload());
+    }
+}
+exports.LegacyStructInst = LegacyStructInst;
+class LegacyStruct {
+    constructor(helper) {
+        this.helper = helper;
+        this.protoClasses = new Map();
+        for (const [direction, list] of Object.entries(proto_structs_json_1.default)) {
+            for (const [protoStr, structName] of Object.entries(list)) {
+                if (!structName)
+                    continue;
+                this.protoClasses.set(structName, this.helper.getProtoClass(protoStr, direction));
+            }
+        }
+    }
+    get(structName) {
+        return new LegacyStructInst(this.protoClasses.get(structName));
+    }
+}
+exports.LegacyStruct = LegacyStruct;
 class YGOProMessagesHelper {
-    constructor(singleHandleLimit) {
+    constructor(singleHandleLimit = 1000) {
+        this.singleHandleLimit = singleHandleLimit;
         this.handlers = {
             STOC: [new Map(),
                 new Map(),
@@ -43,56 +77,8 @@ class YGOProMessagesHelper {
                 new Map(),
             ]
         };
-        this.initDatas();
-        this.initStructs();
-        if (singleHandleLimit) {
-            this.singleHandleLimit = singleHandleLimit;
-        }
-        else {
-            this.singleHandleLimit = 1000;
-        }
-    }
-    initDatas() {
-        this.structs_declaration = structs_json_1.default;
-        this.typedefs = typedefs_json_1.default;
-        this.proto_structs = proto_structs_json_1.default;
-        this.constants = constants_json_1.default;
-    }
-    initStructs() {
-        this.structs = new Map();
-        for (let name in this.structs_declaration) {
-            const declaration = this.structs_declaration[name];
-            let result = (0, struct_1.Struct)();
-            for (let field of declaration) {
-                if (field.encoding) {
-                    switch (field.encoding) {
-                        case "UTF-16LE":
-                            result.chars(field.name, field.length * 2, field.encoding);
-                            break;
-                        default:
-                            throw `unsupported encoding: ${field.encoding}`;
-                    }
-                }
-                else {
-                    let type = field.type;
-                    if (this.typedefs[type]) {
-                        type = this.typedefs[type];
-                    }
-                    if (field.length) {
-                        result.array(field.name, field.length, type); //不支持结构体
-                    }
-                    else {
-                        if (this.structs.has(type)) {
-                            result.struct(field.name, this.structs.get(type));
-                        }
-                        else {
-                            result[type](field.name);
-                        }
-                    }
-                }
-            }
-            this.structs.set(name, result);
-        }
+        this.constants = (0, load_constants_1.default)();
+        this.structs = new LegacyStruct(this);
     }
     getDirectionAndProto(protoStr) {
         const protoStrMatch = protoStr.match(/^(STOC|CTOS)_([_A-Z]+)$/);
@@ -117,11 +103,27 @@ class YGOProMessagesHelper {
         }
         return parseInt(translatedProto);
     }
+    getProtoClass(proto, direction) {
+        const identifier = typeof proto === 'number' ? proto : this.translateProto(proto, direction);
+        const registry = direction === 'CTOS' ? ygopro_msg_encode_1.YGOProCtos : direction === 'STOC' ? ygopro_msg_encode_1.YGOProStoc : null;
+        if (!registry) {
+            throw `Invalid direction: ${direction}`;
+        }
+        return registry.get(identifier);
+    }
+    classToProtoStr(cls) {
+        const registry = cls.prototype instanceof ygopro_msg_encode_1.YGOProCtosBase ? ygopro_msg_encode_1.YGOProCtos : cls.prototype instanceof ygopro_msg_encode_1.YGOProStocBase ? ygopro_msg_encode_1.YGOProStoc : null;
+        if (!registry) {
+            throw `Invalid class: ${cls.name}`;
+        }
+        const identifier = cls.identifier;
+        const direction = cls.prototype instanceof ygopro_msg_encode_1.YGOProCtosBase ? 'CTOS' : 'STOC';
+        return `${direction}_${this.constants[direction][identifier]}`;
+    }
     prepareMessage(protostr, info) {
         const { direction, proto } = this.getDirectionAndProto(protostr);
+        const translatedProto = this.translateProto(proto, direction);
         let buffer;
-        //console.log(proto, this.proto_structs[direction][proto]);
-        //const directionProtoList = this.constants[direction];
         if (typeof info === 'undefined') {
             buffer = null;
         }
@@ -129,12 +131,12 @@ class YGOProMessagesHelper {
             buffer = info;
         }
         else {
-            let struct = this.structs.get(this.proto_structs[direction][proto]);
-            struct.allocate();
-            struct.set(info);
-            buffer = struct.buffer();
+            const protoCls = this.getProtoClass(translatedProto, direction);
+            if (!protoCls) {
+                throw `No proto class for ${protostr}`;
+            }
+            buffer = Buffer.from((0, ygopro_msg_struct_compat_1.fromPartialCompat)(protoCls, info).toPayload());
         }
-        const translatedProto = this.translateProto(proto, direction);
         let sendBuffer = Buffer.allocUnsafe(3 + (buffer ? buffer.length : 0));
         if (buffer) {
             sendBuffer.writeUInt16LE(buffer.length + 1, 0);
@@ -231,13 +233,11 @@ class YGOProMessagesHelper {
                         }
                         const handlerCollection = this.handlers[direction][priority];
                         if (proto && handlerCollection.has(bufferProto)) {
-                            let struct = this.structs.get(this.proto_structs[direction][proto]);
                             for (const handler of handlerCollection.get(bufferProto)) {
-                                let info = null;
-                                if (struct) {
-                                    struct._setBuff(buffer);
-                                    info = underscore_1.default.clone(struct.fields);
-                                }
+                                const protoCls = this.getProtoClass(bufferProto, direction);
+                                const info = protoCls
+                                    ? (0, ygopro_msg_struct_compat_1.applyYGOProMsgStructCompat)(new protoCls().fromPayload(buffer))
+                                    : null;
                                 cancel = await handler.handle(buffer, info, datas, params);
                                 if (cancel) {
                                     if (Buffer.isBuffer(cancel)) {

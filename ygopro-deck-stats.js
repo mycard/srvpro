@@ -10,7 +10,7 @@ var fs = require('fs');
 var initSqlJs = require('sql.js');
 var loadJSON = require('load-json-file').sync;
 var config = loadJSON('./config/deckstats.json'); //{ "deckpath": "../decks", "dbfile": "cards.cdb" }
-var constants = loadJSON('./data/constants.json');
+var constants = require('./load-constants').loadConstants();
 
 var ALL_MAIN_CARDS={};
 var ALL_SIDE_CARDS={};

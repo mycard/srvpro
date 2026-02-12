@@ -9,7 +9,6 @@ exec = require('child_process').exec
 execFile = require('child_process').execFile
 spawn = require('child_process').spawn
 spawnSync = require('child_process').spawnSync
-_async = require('async')
 
 # ts utility
 utility = require './utility.js'
@@ -91,10 +90,9 @@ loadJSONAsync = require('load-json-file')
 
 util = require("util")
 
-Q = require("q")
-
 YGOProDeck = require('ygopro-deck-encode').default
 YGOProYrp = require('ygopro-yrp-encode').YGOProYrp
+YGOProMsg = require 'ygopro-msg-encode'
 
 Aragami = require('aragami').Aragami
 
@@ -720,17 +718,12 @@ ROOM_ban_player = global.ROOM_ban_player = (name, ip, reason, countadd = 1)->
 
 ROOM_kick = (name, callback)->
   found = false
-  _async.each(ROOM_all, (room, done)->
-    if !(room and room.established and (name == "all" or name == room.process_pid.toString() or name == room.name))
-      done()
-      return
+  for room in ROOM_all when room and room.established
+    continue unless name == "all" or name == room.process_pid.toString() or name == room.name
     found = true
     room.terminate()
-    done()
-  , (err)->
-    callback(null, found)
-    return
-  )
+  callback(null, found)
+  return
 
 
 ROOM_player_win = global.ROOM_player_win = (name)->
@@ -2687,24 +2680,25 @@ load_dialogues = global.load_dialogues = () ->
 ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and !client.reconnecting
-  msg = buffer.readInt8(0)
-  msg_name = ygopro.constants.MSG[msg]
-  new_buf = await msg_polyfill.polyfillGameMsg(client.actual_version, msg_name, buffer)
+  msg_inst = info.msg
+  msg_name = if msg_inst then ygopro.constants.MSG[msg_inst.identifier] else null
+  new_buf = if msg_name then await msg_polyfill.polyfillGameMsg(client.actual_version, msg_name, buffer) else undefined
   if new_buf
     buffer = new_buf
+  return new_buf unless msg_inst
   record_last_game_msg = () ->
     client.last_game_msg = buffer
     client.last_game_msg_title = msg_name
   #console.log client.pos, "MSG", msg_name
-  if msg_name == 'RETRY' and room.recovering
+  if msg_inst instanceof YGOProMsg.YGOProMsgRetry and room.recovering
     room.finish_recover(true)
     return true
   if settings.modules.retry_handle.enabled
-    if msg_name == 'RETRY'
+    if msg_inst instanceof YGOProMsg.YGOProMsgRetry
       if !client.retry_count?
         client.retry_count = 0
       client.retry_count++
-      log.warn "MSG_RETRY detected", client.name, client.ip, msg, client.retry_count
+      log.warn "MSG_RETRY detected", client.name, client.ip, msg_inst.identifier, client.retry_count
       if settings.modules.retry_handle.max_retry_count and client.retry_count >= settings.modules.retry_handle.max_retry_count
         ygopro.stoc_send_chat_to_room(room, client.name + "${retry_too_much_room_part1}" + settings.modules.retry_handle.max_retry_count + "${retry_too_much_room_part2}", ygopro.constants.COLORS.BABYBLUE)
         ygopro.stoc_send_chat(client, "${retry_too_much_part1}" + settings.modules.retry_handle.max_retry_count + "${retry_too_much_part2}", ygopro.constants.COLORS.RED)
@@ -2722,11 +2716,11 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
     else
       record_last_game_msg()
       # log.info(client.name, client.last_game_msg_title)
-  else if msg_name != 'RETRY'
+  else if !(msg_inst instanceof YGOProMsg.YGOProMsgRetry)
     record_last_game_msg()
     # log.info(client.name, client.last_game_msg_title)
 
-  if (msg >= 10 and msg < 30) or msg == 132 or (msg >= 140 and msg <= 144) #SELECT和ANNOUNCE开头的消息
+  if msg_inst instanceof YGOProMsg.YGOProMsgResponseBase #SELECT和ANNOUNCE开头的消息
     if room.recovering
       response = room.recover_replay.responses.splice(0, 1)[0]
       ygopro.ctos_send(server, 'RESPONSE', Buffer.from(response))
@@ -2739,8 +2733,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       #log.info("#{msg_name}等待#{room.waiting_for_player.name}")
 
   #log.info 'MSG', msg_name
-  if msg_name == 'START'
-    playertype = buffer.readUInt8(1)
+  if msg_inst instanceof YGOProMsg.YGOProMsgStart
+    playertype = msg_inst.playerType
     client.is_first = !(playertype & 0xf)
     client.lp = room.hostinfo.start_lp
     client.card_count = 0 if room.hostinfo.mode != 2
@@ -2763,12 +2757,12 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   #ygopro.stoc_send_chat_to_room(room, "LP跟踪调试信息: #{client.name} 初始LP #{client.lp}")
 
-  if msg_name == 'HINT'
-    hint_type = buffer.readUInt8(1)
+  if msg_inst instanceof YGOProMsg.YGOProMsgHint
+    hint_type = msg_inst.type
     if hint_type == 3
       client.last_hint_msg = buffer
 
-  if msg_name == 'NEW_TURN'
+  if msg_inst instanceof YGOProMsg.YGOProMsgNewTurn
     if client.pos == 0
       room.turn++
       if room.recovering and room.recover_from_turn <= room.turn
@@ -2789,8 +2783,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       client.surrend_confirm = false
       ygopro.stoc_send_chat(client, "${surrender_canceled}", ygopro.constants.COLORS.BABYBLUE)
 
-  if msg_name == 'NEW_PHASE'
-    phase = buffer.readInt16LE(1)
+  if msg_inst instanceof YGOProMsg.YGOProMsgNewPhase
+    phase = msg_inst.phase
     oppo_pos = if room.hostinfo.mode == 2 then 2 else 1
     if client.pos == 0 and room.death == -2 and not (phase == 0x1 and room.turn < 2)
       if room.dueling_players[0].lp != room.dueling_players[oppo_pos].lp
@@ -2801,14 +2795,14 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
         room.death = -1
         ygopro.stoc_send_chat_to_room(room, "${death_remain_final}", ygopro.constants.COLORS.BABYBLUE)
 
-  if msg_name == 'WIN' and client.pos == 0
+  if msg_inst instanceof YGOProMsg.YGOProMsgWin and client.pos == 0
     if room.recovering
       room.finish_recover(true)
       return true
-    pos = buffer.readUInt8(1)
+    pos = msg_inst.player
     pos = 1 - pos unless client.is_first or pos == 2 or room.duel_stage != ygopro.constants.DUEL_STAGE.DUELING
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
-    reason = buffer.readUInt8(2)
+    reason = msg_inst.type
     #log.info {winner: pos, reason: reason}
     #room.duels.push {winner: pos, reason: reason}
     room.winner = pos
@@ -2832,42 +2826,42 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       else
         room.death = 5
 
-  if msg_name == 'MATCH_KILL' and client.pos == 0
+  if msg_inst instanceof YGOProMsg.YGOProMsgMatchKill and client.pos == 0
     room.match_kill = true
 
   #lp跟踪
-  if msg_name == 'DAMAGE' and client.pos == 0
-    pos = buffer.readUInt8(1)
+  if msg_inst instanceof YGOProMsg.YGOProMsgDamage and client.pos == 0
+    pos = msg_inst.player
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
-    val = buffer.readInt32LE(2)
+    val = msg_inst.value
     if room.dueling_players[pos]
       room.dueling_players[pos].lp -= val
       room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
       if 0 < room.dueling_players[pos].lp <= 100
         ygopro.stoc_send_chat_to_room(room, "${lp_low_opponent}", ygopro.constants.COLORS.PINK)
 
-  if msg_name == 'RECOVER' and client.pos == 0
-    pos = buffer.readUInt8(1)
+  if msg_inst instanceof YGOProMsg.YGOProMsgRecover and client.pos == 0
+    pos = msg_inst.player
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
-    val = buffer.readInt32LE(2)
+    val = msg_inst.value
     if room.dueling_players[pos]
       room.dueling_players[pos].lp += val
 
-  if msg_name == 'LPUPDATE' and client.pos == 0
-    pos = buffer.readUInt8(1)
+  if msg_inst instanceof YGOProMsg.YGOProMsgLpUpdate and client.pos == 0
+    pos = msg_inst.player
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
-    val = buffer.readInt32LE(2)
+    val = msg_inst.lp
     if room.dueling_players[pos]
       room.dueling_players[pos].lp = val
 
-  if msg_name == 'PAY_LPCOST' and client.pos == 0
-    pos = buffer.readUInt8(1)
+  if msg_inst instanceof YGOProMsg.YGOProMsgPayLpCost and client.pos == 0
+    pos = msg_inst.player
     pos = 1 - pos unless client.is_first
     pos = pos * 2 if pos >= 0 and room.hostinfo.mode == 2
-    val = buffer.readInt32LE(2)
+    val = msg_inst.cost
     if room.dueling_players[pos]
       room.dueling_players[pos].lp -= val
       room.dueling_players[pos].lp = 0 if room.dueling_players[pos].lp < 0
@@ -2876,32 +2870,30 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   #track card count
   #todo: track card count in tag mode
-  if msg_name == 'MOVE' and room.hostinfo.mode != 2
-    pos = buffer.readUInt8(5)
+  if msg_inst instanceof YGOProMsg.YGOProMsgMove and room.hostinfo.mode != 2
+    pos = msg_inst.previous.controller
     pos = 1 - pos unless client.is_first
-    loc = buffer.readUInt8(6)
+    loc = msg_inst.previous.location
     client.card_count-- if (loc & 0xe) and pos == 0
-    pos = buffer.readUInt8(9)
+    pos = msg_inst.current.controller
     pos = 1 - pos unless client.is_first
-    loc = buffer.readUInt8(10)
+    loc = msg_inst.current.location
     client.card_count++ if (loc & 0xe) and pos == 0
 
-  if msg_name == 'DRAW' and room.hostinfo.mode != 2
-    pos = buffer.readUInt8(1)
+  if msg_inst instanceof YGOProMsg.YGOProMsgDraw and room.hostinfo.mode != 2
+    pos = msg_inst.player
     pos = 1 - pos unless client.is_first
     if pos == 0
-      count = buffer.readInt8(2)
+      count = msg_inst.count
       client.card_count += count
 
   # check panel confirming cards in heartbeat
-  if settings.modules.heartbeat_detection.enabled and msg_name == 'CONFIRM_CARDS'
+  if settings.modules.heartbeat_detection.enabled and msg_inst instanceof YGOProMsg.YGOProMsgConfirmCards
     check = false
-    count = buffer.readInt8(2)
-    max_loop = 3 + (count - 1) * 7
     deck_found = 0
     limbo_found = 0 # support custom cards which may be in location 0 in KoishiPro or EdoPro
-    for i in [3..max_loop] by 7
-      loc = buffer.readInt8(i + 5)
+    for card in msg_inst.cards
+      loc = card.location
       if (loc & 0x41) > 0
         deck_found++
       else if loc == 0
@@ -2915,8 +2907,8 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
 
   # chain detection
   if settings.modules.heartbeat_detection.enabled and client.pos == 0
-    if msg_name == 'CHAINING'
-      card = buffer.readUInt32LE(1)
+    if msg_inst instanceof YGOProMsg.YGOProMsgChaining
+      card = msg_inst.code
       found = false
       for id in long_resolve_cards when id == card
         found = true
@@ -2926,46 +2918,46 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
         # console.log(0,card)
       else
         delete room.long_resolve_card
-    else if msg_name == 'CHAINED' and room.long_resolve_card
-      chain = buffer.readInt8(1)
+    else if msg_inst instanceof YGOProMsg.YGOProMsgChained and room.long_resolve_card
+      chain = msg_inst.chainCount
       if !room.long_resolve_chain
         room.long_resolve_chain = []
       room.long_resolve_chain[chain] = true
       # console.log(1,chain)
       delete room.long_resolve_card
-    else if msg_name == 'CHAIN_SOLVING' and room.long_resolve_chain
-      chain = buffer.readInt8(1)
+    else if msg_inst instanceof YGOProMsg.YGOProMsgChainSolving and room.long_resolve_chain
+      chain = msg_inst.chainCount
       # console.log(2,chain)
       if room.long_resolve_chain[chain]
         for player in room.get_playing_player()
           player.heartbeat_protected = true
-    else if (msg_name == 'CHAIN_NEGATED' or msg_name == 'CHAIN_DISABLED') and room.long_resolve_chain
-      chain = buffer.readInt8(1)
+    else if (msg_inst instanceof YGOProMsg.YGOProMsgChainNegated or msg_inst instanceof YGOProMsg.YGOProMsgChainDisabled) and room.long_resolve_chain
+      chain = msg_inst.chainCount
       # console.log(3,chain)
       delete room.long_resolve_chain[chain]
-    else if msg_name == 'CHAIN_END'
+    else if msg_inst instanceof YGOProMsg.YGOProMsgChainEnd
       # console.log(4,chain)
       delete room.long_resolve_card
       delete room.long_resolve_chain
 
   #登场台词
   if settings.modules.dialogues.enabled and !room.recovering
-    if msg_name == 'SUMMONING' or msg_name == 'SPSUMMONING' or msg_name == 'CHAINING'
-      card = buffer.readUInt32LE(1)
-      trigger_location = buffer.readUInt8(6)
+    if msg_inst instanceof YGOProMsg.YGOProMsgSummoning or msg_inst instanceof YGOProMsg.YGOProMsgSpSummoning or msg_inst instanceof YGOProMsg.YGOProMsgChaining
+      card = msg_inst.code
+      trigger_location = msg_inst.location
       if dialogues.dialogues[card] and (msg_name != 'CHAINING' or (trigger_location & 0x8) and client.ready_trap)
         for line in _.lines dialogues.dialogues[card][Math.floor(Math.random() * dialogues.dialogues[card].length)]
           ygopro.stoc_send_chat(client, line, ygopro.constants.COLORS.PINK)
-    if msg_name == 'POS_CHANGE'
-      loc = buffer.readUInt8(6)
-      ppos = buffer.readUInt8(8)
-      cpos = buffer.readUInt8(9)
+    if msg_inst instanceof YGOProMsg.YGOProMsgPosChange
+      loc = msg_inst.card.location
+      ppos = msg_inst.previousPosition
+      cpos = msg_inst.currentPosition
       client.ready_trap = !!(loc & 0x8) and !!(ppos & 0xa) and !!(cpos & 0x5)
-    else if msg_name != 'UPDATE_CARD' and msg_name != 'WAITING'
+    else if !(msg_inst instanceof YGOProMsg.YGOProMsgUpdateCard) and !(msg_inst instanceof YGOProMsg.YGOProMsgWaiting)
       client.ready_trap = false
 
   if room.recovering and client.pos < 4
-    if msg_name != 'WAITING'
+    if !(msg_inst instanceof YGOProMsg.YGOProMsgWaiting)
       room.recover_buffers[client.pos].push(buffer)
     return true
 
@@ -3391,8 +3383,6 @@ ygopro.ctos_follow 'CHAT', true, (buffer, info, client, server, datas)->
           else
             ygopro.stoc_send_chat(client, "${get_chat_color_default}", ygopro.constants.COLORS.BABYBLUE)
 
-    #when '/test'
-    #  ygopro.stoc_send_hint_card_to_room(room, 2333365)
   if (msg.length>100)
     log.warn "SPAM WORD", client.name, client.ip, msg
     client.abuse_count=client.abuse_count+2 if client.abuse_count
@@ -3902,10 +3892,7 @@ if true
         response.end(addCallback(u.query.callback, '{"rooms":[{"roomid":"0","roomname":"密码错误","needpass":"true"}]}'))
       else
         roomsjson = [];
-        _async.each(ROOM_all, (room, done)->
-          if !(room and room.established)
-            done()
-            return
+        for room in ROOM_all when room and room.established
           roomsjson.push({
             roomid: room.process_pid.toString(),
             roomname: if pass_validated then room.name else room.name.split('$', 2)[0],
@@ -3924,11 +3911,8 @@ if true
             ), "pos"),
             istart: if room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN then (if settings.modules.http.show_info then ("Duel:" + room.duel_count + " " + (if room.duel_stage == ygopro.constants.DUEL_STAGE.SIDING then "Siding" else "Turn:" + (if room.turn? then room.turn else 0) + (if room.death then "/" + (if room.death > 0 then room.death - 1 else "Death") else ""))) else 'start') else 'wait'
           })
-          done()
-        , ()->
-          response.writeHead(200)
-          response.end(addCallback(u.query.callback, JSON.stringify({rooms: roomsjson})))
-        )
+        response.writeHead(200)
+        response.end(addCallback(u.query.callback, JSON.stringify({rooms: roomsjson})))
 
 
     else if u.pathname == '/api/duellog' and settings.modules.mysql.enabled
@@ -4015,9 +3999,8 @@ if true
           response.writeHead(200)
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
-        _async.each ROOM_all, (room)->
-          if room and room.established
-            ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
+        for room in ROOM_all when room and room.established
+          ygopro.stoc_send_chat_to_room(room, u.query.shout, ygopro.constants.COLORS.YELLOW)
         response.writeHead(200)
         response.end(addCallback(u.query.callback, "['shout ok', '" + u.query.shout + "']"))
 
@@ -4115,21 +4098,15 @@ if true
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         death_room_found = false
-        _async.each(ROOM_all, (room, done)->
-          if !(room and (u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name))
-            done()
-            return
+        for room in ROOM_all when room
+          continue unless u.query.death == "all" or u.query.death == room.process_pid.toString() or u.query.death == room.name
           if room.start_death()
             death_room_found = true
-          done()
-          return
-        , () ->
-          response.writeHead(200)
-          if death_room_found
-            response.end(addCallback(u.query.callback, "['death ok', '" + u.query.death + "']"))
-          else
-            response.end(addCallback(u.query.callback, "['room not found', '" + u.query.death + "']"))
-        )
+        response.writeHead(200)
+        if death_room_found
+          response.end(addCallback(u.query.callback, "['death ok', '" + u.query.death + "']"))
+        else
+          response.end(addCallback(u.query.callback, "['room not found', '" + u.query.death + "']"))
 
       else if u.query.deathcancel
         if !await auth.auth(u.query.username, u.query.pass, "start_death", "cancel_death")
@@ -4137,20 +4114,15 @@ if true
           response.end(addCallback(u.query.callback, "['密码错误', 0]"))
           return
         death_room_found = false
-        _async.each(ROOM_all, (room, done)->
-          if !(room and (u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString() or u.query.deathcancel == room.name))
-            done()
-            return
+        for room in ROOM_all when room
+          continue unless u.query.deathcancel == "all" or u.query.deathcancel == room.process_pid.toString() or u.query.deathcancel == room.name
           if room.cancel_death()
             death_room_found = true
-          done()
-        , () ->
-          response.writeHead(200)
-          if death_room_found
-            response.end(addCallback(u.query.callback, "['death cancel ok', '" + u.query.deathcancel + "']"))
-          else
-            response.end(addCallback(u.query.callback, "['room not found', '" + u.query.deathcancel + "']"))
-        )
+        response.writeHead(200)
+        if death_room_found
+          response.end(addCallback(u.query.callback, "['death cancel ok', '" + u.query.deathcancel + "']"))
+        else
+          response.end(addCallback(u.query.callback, "['room not found', '" + u.query.deathcancel + "']"))
 
       else if u.query.reboot
         if !await auth.auth(u.query.username, u.query.pass, "stop", "reboot")

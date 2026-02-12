@@ -2,7 +2,6 @@ _ = require 'underscore'
 _.str = require 'underscore.string'
 _.mixin(_.str.exports())
 
-Struct = require('./struct.js').Struct
 loadJSON = require('load-json-file').sync
 
 @i18ns = loadJSON './data/i18n.json'
@@ -23,9 +22,6 @@ YGOProMessagesHelper = require("./YGOProMessages.js").YGOProMessagesHelper # 为
 @helper = new YGOProMessagesHelper(9000)
 
 @structs = @helper.structs
-@structs_declaration = @helper.structs_declaration
-@typedefs = @helper.typedefs
-@proto_structs = @helper.proto_structs
 @constants = @helper.constants
 
 translateHandler = (handler) ->
@@ -89,26 +85,6 @@ translateHandler = (handler) ->
   for client in room.watchers
     @stoc_send_chat(client, msg, player) if client
   room.recordChatMessage(msg, player)
-  return
-
-@stoc_send_hint_card_to_room = (room, card)->
-  if !room
-    console.log "err stoc_send_hint_card_to_room"
-    return
-  for client in room.players
-    @stoc_send client, 'GAME_MSG', {
-      curmsg: 2,
-      type: 10,
-      player: 0,
-      data: card
-    } if client
-  for client in room.watchers
-    @stoc_send client, 'GAME_MSG', {
-      curmsg: 2,
-      type: 10,
-      player: 0,
-      data: card
-    } if client
   return
 
 @stoc_die = (client, msg)->
