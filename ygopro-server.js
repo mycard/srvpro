@@ -4290,9 +4290,6 @@
       if (!room.decks[client.name]) {
         room.decks[client.name] = deck_text;
       }
-      if (!room.deck_history) {
-        room.deck_history = {};
-      }
       if (!room.deck_history[client.name]) {
         room.deck_history[client.name] = [];
       }
