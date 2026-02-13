@@ -1303,6 +1303,7 @@ class Room
     @welcome = ''
     @scores = {}
     @decks = {}
+    @deck_history = {}
     @duel_count = 0
     @death = 0
     @turn = 0
@@ -1554,8 +1555,10 @@ class Room
       form_data.append 'userscoreB', score_array[1].score
       form_data.append 'userdeckA', score_array[0].deck
       form_data.append 'userdeckB', score_array[1].deck
-      form_data.append 'userdeckAHistory', score_array[0].deck_history
-      form_data.append 'userdeckBHistory', score_array[1].deck_history
+      if score_array[0].deck_history?
+        form_data.append 'userdeckAHistory', JSON.stringify(score_array[0].deck_history)
+      if score_array[1].deck_history?
+        form_data.append 'userdeckBHistory', JSON.stringify(score_array[1].deck_history)
       form_data.append 'first', JSON.stringify @first_list
       form_data.append 'replays', JSON.stringify formatted_replays
       form_data.append 'start', @start_time
