@@ -165,29 +165,38 @@ const receiveDecks = async function (
   callback: (err: Error | null, result: Array<{ file: string; status: string }>) => void
 ) {
   try {
+    // formidable parse() 返回的 files 通常是对象：{ fieldName: File | File[] }
+    // 老代码按数组 for..of 会直接抛：TypeError: files is not iterable
+    const fileList: any[] = Array.isArray(files)
+      ? files
+      : files && typeof files === "object"
+        ? Object.values(files).flatMap((v: any) => (Array.isArray(v) ? v : [v]))
+        : [];
+
     const result: Array<{ file: string; status: string }> = [];
-    for (const file of files) {
-      if (file.name.endsWith(".ydk")) {
-        const deck = await readDeck(file.name, file.path);
+
+    for (const f of fileList) {
+      const filename: string = (f?.originalFilename ?? f?.name ?? "") as string;
+      const filepath: string = (f?.filepath ?? f?.path ?? "") as string;
+
+      if (!filename || !filepath) {
+        result.push({ file: filename || "(unknown)", status: "上传文件信息缺失" });
+        continue;
+      }
+
+      if (filename.endsWith(".ydk")) {
+        const deck = await readDeck(filename, filepath);
         if (deck.main.length >= 40) {
-          fs.createReadStream(file.path).pipe(fs.createWriteStream(config.deck_path + file.name));
-          result.push({
-            file: file.name,
-            status: "OK",
-          });
+          fs.createReadStream(filepath).pipe(fs.createWriteStream(config.deck_path + filename));
+          result.push({ file: filename, status: "OK" });
         } else {
-          result.push({
-            file: file.name,
-            status: "卡组不合格",
-          });
+          result.push({ file: filename, status: "卡组不合格" });
         }
       } else {
-        result.push({
-          file: file.name,
-          status: "不是卡组文件",
-        });
+        result.push({ file: filename, status: "不是卡组文件" });
       }
     }
+
     callback(null, result);
   } catch (err) {
     callback(err as Error, []);
