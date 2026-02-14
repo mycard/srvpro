@@ -29,7 +29,7 @@
     "request": "^2.88.2",
     "sql.js": "^1.13.0",
     "typeorm": "^0.2.29",
-    "underscore": "^1.11.0",
+    "underscore": "^1.12.1",
     "underscore.string": "^3.3.6",
     "ws": "^8.9.0",
     "ygopro-deck-encode": "^1.0.15",
