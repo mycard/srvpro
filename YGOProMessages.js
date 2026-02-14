@@ -6,10 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.YGOProMessagesHelper = exports.LegacyStruct = exports.LegacyStructInst = void 0;
 const underscore_1 = __importDefault(require("underscore"));
 const load_constants_1 = __importDefault(require("./load-constants"));
+const bunyan_1 = __importDefault(require("bunyan"));
 const ygopro_msg_encode_1 = require("ygopro-msg-encode");
 const ygopro_msg_struct_compat_1 = require("./ygopro-msg-struct-compat");
 const proto_structs_json_1 = __importDefault(require("./data/proto_structs.json"));
 const utility_1 = require("./utility");
+const log = global.log || bunyan_1.default.createLogger({ name: "mycard" });
 class Handler {
     constructor(handler, synchronous) {
         this.handler = handler;
@@ -235,9 +237,25 @@ class YGOProMessagesHelper {
                         if (proto && handlerCollection.has(bufferProto)) {
                             for (const handler of handlerCollection.get(bufferProto)) {
                                 const protoCls = this.getProtoClass(bufferProto, direction);
-                                const info = protoCls
-                                    ? (0, ygopro_msg_struct_compat_1.applyYGOProMsgStructCompat)(new protoCls().fromPayload(buffer))
-                                    : null;
+                                let info = null;
+                                if (protoCls) {
+                                    try {
+                                        info = (0, ygopro_msg_struct_compat_1.applyYGOProMsgStructCompat)(new protoCls().fromPayload(buffer));
+                                    }
+                                    catch (e) {
+                                        // 解析失败不能卡死服务器：记录 warn，然后把 info 置为 {} 继续走 handler
+                                        log.warn({
+                                            err: e,
+                                            direction,
+                                            proto,
+                                            bufferProto,
+                                            messageLength,
+                                            protoCls: protoCls?.name,
+                                            bufferHex: buffer?.toString("hex")?.slice(0, 256),
+                                        }, "YGOPro message parse failed");
+                                        info = {};
+                                    }
+                                }
                                 cancel = await handler.handle(buffer, info, datas, params);
                                 if (cancel) {
                                     if (Buffer.isBuffer(cancel)) {

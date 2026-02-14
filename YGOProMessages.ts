@@ -1,10 +1,13 @@
 import _ from "underscore";
 import loadConstants from "./load-constants";
 import net from "net";
+import bunyan from "bunyan";
 import { YGOProCtos, YGOProCtosBase, YGOProStoc, YGOProStocBase } from "ygopro-msg-encode";
 import { applyYGOProMsgStructCompat, fromPartialCompat } from "./ygopro-msg-struct-compat";
 import legacyProtoStructs from "./data/proto_structs.json";
 import { overwriteBuffer } from "./utility";
+
+const log: bunyan = ((global as any).log as bunyan) || bunyan.createLogger({ name: "mycard" });
 
 
 class Handler {
@@ -286,9 +289,27 @@ export class YGOProMessagesHelper {
 						if (proto && handlerCollection.has(bufferProto)) {
 							for (const handler of handlerCollection.get(bufferProto)) {
 								const protoCls = this.getProtoClass(bufferProto, direction);
-								const info = protoCls
-									? applyYGOProMsgStructCompat(new protoCls().fromPayload(buffer))
-									: null;
+								let info: any = null;
+								if (protoCls) {
+									try {
+										info = applyYGOProMsgStructCompat(new protoCls().fromPayload(buffer));
+									} catch (e: any) {
+										// 解析失败不能卡死服务器：记录 warn，然后把 info 置为 {} 继续走 handler
+										log.warn(
+											{
+												err: e,
+												direction,
+												proto,
+												bufferProto,
+												messageLength,
+												protoCls: protoCls?.name,
+												bufferHex: buffer?.toString("hex")?.slice(0, 256),
+											},
+											"YGOPro message parse failed"
+										);
+										info = {};
+									}
+								}
 								cancel = await handler.handle(buffer, info, datas, params);
 								if (cancel) {
 									if (Buffer.isBuffer(cancel)) {
