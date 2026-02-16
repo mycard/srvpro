@@ -3211,9 +3211,9 @@ ygopro.stoc_follow 'DUEL_START', true, (buffer, info, client, server, datas)->
   deck_text = null
   if client.main and client.main.length
     deck_text = '#ygopro-server deck log\n#main\n' + client.main.join('\n') + '\n!side\n' + client.side.join('\n') + '\n'
-    room.decks[client.name] = deck_text unless room.decks[client.name]
+    room.decks[client.name] = deck_text if room.duel_count == 0
     room.deck_history[client.name] = [] if !room.deck_history[client.name]
-    room.deck_history[client.name].push deck_text
+    room.deck_history[client.name][room.duel_count] = deck_text
   if settings.modules.deck_log.enabled and deck_text and not client.deck_saved and not room.windbot
     deck_arena = settings.modules.deck_log.arena + '-'
     if room.arena
