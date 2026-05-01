@@ -158,11 +158,11 @@ function listreplay(data) {
         tr.append($("<td>"+duellog.name+"</td>"));
 
         if(duellog.roommode != 2) {
-            tr.append($("<td>"+((duellog.players) ? (duellog.players[0].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[0].name : "")+"</td>"));
-            tr.append($("<td>"+((duellog.players) ? (duellog.players[1].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[1].name : "")+"</td>"));
+            tr.append($("<td>"+getPlayerName(duellog, 0)+"</td>"));
+            tr.append($("<td>"+getPlayerName(duellog, 1)+"</td>"));
         } else {
-            tr.append($("<td>"+((duellog.players) ? (duellog.players[0].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[0].name + "<br>" + duellog.players[1].name : "")+"</td>"));
-            tr.append($("<td>"+((duellog.players) ? (duellog.players[2].winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + duellog.players[2].name + "<br>" + duellog.players[3].name : "")+"</td>"));
+            tr.append($("<td>"+getPlayerName(duellog, 0)+"<br>"+getPlayerName(duellog, 1)+"</td>"));
+            tr.append($("<td>"+getPlayerName(duellog, 2)+"<br>"+getPlayerName(duellog, 3)+"</td>"));
         }
         tr.append($("<td>"+duellog.cloud_replay_id+"</td>"));
         tr.append($("<td><a href='"+get_http() + "/api/replay/"+duellog.replay_filename+"?username="+get_value("#username")+"&pass="+get_value("#password")+"' download><span class='glyphicon glyphicon-download-alt'></span></a></td>"));
@@ -172,6 +172,14 @@ function listreplay(data) {
     }
     $("#rooms tbody").remove();
     $("#rooms").append(tbody);
+}
+
+function getPlayerName(duellog, index) {
+    var player = duellog.players && duellog.players[index];
+    if (!player) {
+        return "";
+    }
+    return (player.winner ? "<span class='glyphicon glyphicon-bookmark'></span> " : "") + player.name;
 }
 
 </script>
