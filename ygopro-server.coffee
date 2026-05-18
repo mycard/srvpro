@@ -1560,6 +1560,7 @@ class Room
       if score_array[1].deck_history?
         form_data.append 'userdeckBHistory', JSON.stringify(score_array[1].deck_history)
       form_data.append 'first', JSON.stringify @first_list
+      form_data.append 'wins', JSON.stringify @wins if @wins
       form_data.append 'replays', JSON.stringify formatted_replays
       form_data.append 'start', @start_time
       form_data.append 'end', end_time
@@ -2820,9 +2821,14 @@ ygopro.stoc_follow 'GAME_MSG', true, (buffer, info, client, server, datas)->
       room.winner_name = room.dueling_players[pos].name_vpass
       #log.info room.dueling_players, pos
       room.scores[room.winner_name] = room.scores[room.winner_name] + 1
+      room.wins = [] unless room.wins
+      room.wins.push room.winner_name
       if room.match_kill
         room.match_kill = false
         room.scores[room.winner_name] = 99
+    else if room and !room.finished and pos == 2
+      room.wins = [] unless room.wins
+      room.wins.push ''
     if room.death
       if settings.modules.http.quick_death_rule == 1 or settings.modules.http.quick_death_rule == 3
         room.death = -1
