@@ -30,7 +30,7 @@ COPY --from=premake-builder /usr/src/premake/bin/release/premake5 /usr/bin/prema
 RUN git clone --branch=server --recursive --depth=1 https://code.mycard.moe/mycard/ygopro && \
     cd ygopro && \
     git submodule foreach git checkout master && \
-    premake5 gmake --lua-deb && \
+    premake5 gmake --lua-deb --use-simd=sse2 && \
     cd build && \
     make config=release -j$(nproc) && \
     cd .. && \
