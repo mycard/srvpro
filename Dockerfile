@@ -21,7 +21,8 @@ FROM ${BASE_IMAGE}
 LABEL Author="Nanahira <nanahira@momobako.com>"
 
 RUN apk add --no-cache mono && \
-    npm install -g pm2
+    npm install -g pm2 && \
+    npm cache clean --force
 
 # windbot
 COPY --from=windbot-builder /usr/src/windbot/bin/Release /ygopro-server/windbot

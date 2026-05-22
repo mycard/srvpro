@@ -117,7 +117,8 @@ RUN cd ygopro-src && \
 
 FROM base AS npm-ci
 COPY package.json package-lock.json ./
-RUN NODE_ENV=production npm ci
+RUN NODE_ENV=production npm ci && \
+    npm cache clean --force
 
 FROM base
 # srvpro
