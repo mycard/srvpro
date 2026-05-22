@@ -1,5 +1,5 @@
 # Dockerfile for SRVPro Lite
-ARG DEBIAN_VERSION=trixie
+ARG ALPINE_VERSION=3.23
 ARG NODE_VERSION=24
 ARG GIT_IMAGE=alpine/git:v2.52.0
 ARG PREMAKE5_REPO=https://github.com/premake/premake-core.git
@@ -65,32 +65,27 @@ RUN set -eux; \
     git clone --branch="${IRRLICHT_BRANCH}" --depth=1 "${IRRLICHT_REPO}" irrlicht && \
     cp -rf premake/* .
 
-FROM debian:${DEBIAN_VERSION} AS premake-builder
+FROM alpine:${ALPINE_VERSION} AS premake-builder
 
-RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y build-essential uuid-dev && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/*
+RUN apk add --no-cache build-base util-linux-dev
 
 COPY --from=premake-source /usr/src/premake /usr/src/premake
 WORKDIR /usr/src/premake
 RUN \
     ./Bootstrap.sh
 
-FROM node:${NODE_VERSION}-${DEBIAN_VERSION}-slim AS base
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
 LABEL Author="Nanahira <nanahira@momobako.com>"
 
-# apt
-RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y python3 python-is-python3 && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# apk
+RUN apk add --no-cache python3 && \
+    ln -sf python3 /usr/bin/python
 
 WORKDIR /ygopro-server
 
 FROM base AS ygopro-builder
 ARG USE_SIMD
-RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y build-essential && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apk add --no-cache build-base libuuid
 COPY --from=premake-builder /usr/src/premake/bin/release/premake5 /usr/bin/premake5
 WORKDIR /usr/src
 COPY --from=ygopro-source /usr/src/ygopro-src /usr/src/ygopro-src
@@ -122,7 +117,7 @@ RUN cd ygopro-src && \
 
 FROM base AS npm-ci
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN NODE_ENV=production npm ci
 
 FROM base
 # srvpro

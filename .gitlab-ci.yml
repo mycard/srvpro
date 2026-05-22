@@ -5,6 +5,7 @@ stages:
 
 variables:
   GIT_DEPTH: "1"
+  ALPINE_VERSION: "3.23"
 
 .docker-op:
   before_script:
@@ -31,7 +32,7 @@ variables:
 .build_lite:
   stage: build
   script:
-    - docker build --build-arg USE_MAT_CACHER=$USE_MAT_CACHER --build-arg USE_SIMD=$USE_SIMD --pull --no-cache -f ./Dockerfile.lite -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$ARCH-lite .
+    - docker build --build-arg ALPINE_VERSION=$ALPINE_VERSION --build-arg USE_MAT_CACHER=$USE_MAT_CACHER --build-arg USE_SIMD=$USE_SIMD --pull --no-cache -f ./Dockerfile.lite -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$ARCH-lite .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$ARCH-lite
 
 build_lite_x86:
@@ -50,7 +51,7 @@ build_lite_avx2_x86:
   variables:
     USE_SIMD: avx2
   script:
-    - docker build --build-arg USE_MAT_CACHER=$USE_MAT_CACHER --build-arg USE_SIMD=$USE_SIMD --pull --no-cache -f ./Dockerfile.lite -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-x86-avx2-lite .
+    - docker build --build-arg ALPINE_VERSION=$ALPINE_VERSION --build-arg USE_MAT_CACHER=$USE_MAT_CACHER --build-arg USE_SIMD=$USE_SIMD --pull --no-cache -f ./Dockerfile.lite -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-x86-avx2-lite .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-x86-avx2-lite
 
 .build_full:
@@ -161,8 +162,7 @@ upload_stuff_to_minio:
     - linux
   image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-x86-full
   script:
-    - apt update ; apt -y install python3-pip
-    - pip3 install -U -i https://mirrors.aliyun.com/pypi/simple/ awscli
+    - apk add --no-cache aws-cli
     - cd /ygopro-server
     - mkdir /dist
     - tar zcfv /dist/ygopro-server.tar.gz ./*

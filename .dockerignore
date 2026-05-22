@@ -43,5 +43,8 @@ $RECYCLE.BIN/
 Dockerfile*
 /docs
 /README.md
-/*.coffee
+*.coffee
+**/*.coffee
+*.ts
+**/*.ts
 /LICENSE

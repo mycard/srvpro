@@ -20,10 +20,8 @@ RUN xbuild /property:Configuration=Release /property:TargetFrameworkVersion="${W
 FROM ${BASE_IMAGE}
 LABEL Author="Nanahira <nanahira@momobako.com>"
 
-RUN apt update && \
-    apt -y install mono-complete && \
-    npm install -g pm2 && \
-    rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* /var/log/*
+RUN apk add --no-cache mono && \
+    npm install -g pm2
 
 # windbot
 COPY --from=windbot-builder /usr/src/windbot/bin/Release /ygopro-server/windbot
