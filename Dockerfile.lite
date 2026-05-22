@@ -1,44 +1,82 @@
 # Dockerfile for SRVPro Lite
-FROM debian:bullseye as premake-builder
+ARG DEBIAN_VERSION=trixie
+ARG NODE_VERSION=24
+ARG GIT_IMAGE=alpine/git:v2.52.0
+ARG PREMAKE5_REPO=https://github.com/premake/premake-core.git
+ARG PREMAKE5_VERSION=5.0.0-beta8
+ARG YGOPRO_REPO=https://code.moenext.com/mycard/ygopro
+ARG YGOPRO_BRANCH=server
+ARG OCGCORE_BRANCH=master
+ARG SCRIPT_BRANCH=master
+
+FROM ${GIT_IMAGE} AS premake-source
+ARG PREMAKE5_REPO
+ARG PREMAKE5_VERSION
+WORKDIR /usr/src
+RUN git clone --depth=1 --branch="v${PREMAKE5_VERSION}" "${PREMAKE5_REPO}" premake
+
+FROM ${GIT_IMAGE} AS ygopro-source
+ARG YGOPRO_REPO
+ARG YGOPRO_BRANCH
+ARG OCGCORE_BRANCH
+ARG SCRIPT_BRANCH
+WORKDIR /usr/src
+RUN git clone --branch="${YGOPRO_BRANCH}" --recursive --depth=1 "${YGOPRO_REPO}" ygopro-src && \
+    cd ygopro-src && \
+    cd ocgcore && \
+    git checkout "${OCGCORE_BRANCH}" && \
+    cd ../script && \
+    git checkout "${SCRIPT_BRANCH}"
+
+FROM debian:${DEBIAN_VERSION} AS premake-builder
 
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y wget build-essential p7zip-full uuid-dev && \
+    env DEBIAN_FRONTEND=noninteractive apt install -y build-essential uuid-dev && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/*
 
-WORKDIR /usr/src
-RUN wget -O premake.zip https://github.com/premake/premake-core/releases/download/v5.0.0-beta7/premake-5.0.0-beta7-src.zip && \
-    7z x -y -opremake premake.zip && \
-    cd premake/build/gmake.unix && \
-    make -j$(nproc)
+COPY --from=premake-source /usr/src/premake /usr/src/premake
+WORKDIR /usr/src/premake
+RUN \
+    ./Bootstrap.sh
 
-FROM node:16-bullseye-slim
+FROM node:${NODE_VERSION}-${DEBIAN_VERSION}-slim AS base
 LABEL Author="Nanahira <nanahira@momobako.com>"
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y wget git build-essential libevent-dev libsqlite3-dev p7zip-full python3 python-is-python3 liblua5.3-dev && \
+    env DEBIAN_FRONTEND=noninteractive apt install -y build-essential libevent-dev libsqlite3-dev liblzma-dev xz-utils python3 python-is-python3 liblua5.4-dev && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# srvpro
-COPY . /ygopro-server
 WORKDIR /ygopro-server
-RUN npm ci && \
-    mkdir config decks replays logs
 
+FROM base AS ygopro-builder
 COPY --from=premake-builder /usr/src/premake/bin/release/premake5 /usr/bin/premake5
-
-RUN git clone --branch=server --recursive --depth=1 https://code.mycard.moe/mycard/ygopro && \
-    cd ygopro && \
-    git submodule foreach git checkout master && \
+WORKDIR /usr/src
+COPY --from=ygopro-source /usr/src/ygopro-src /usr/src/ygopro-src
+RUN cd ygopro-src && \
     premake5 gmake --lua-deb --use-simd=sse2 && \
     cd build && \
     make config=release -j$(nproc) && \
     cd .. && \
     mv ./bin/release/ygopro . && \
     strip ygopro && \
-    mkdir replay expansions && \
-    rm -rf .git* bin obj build ocgcore cmake lua premake* sound textures .travis.yml *.txt appveyor.yml LICENSE README.md *.lua strings.conf system.conf && \
-    ls gframe | sed '/config.h/d' | xargs -I {} rm -rf gframe/{}
+    mkdir -p /usr/src/ygopro-dist/gframe /usr/src/ygopro-dist/replay /usr/src/ygopro-dist/expansions && \
+    cp ygopro lflist.conf cards.cdb /usr/src/ygopro-dist/ && \
+    cp -a script /usr/src/ygopro-dist/script && \
+    cp gframe/config.h /usr/src/ygopro-dist/gframe/config.h && \
+    rm -f /usr/src/ygopro-dist/script/.git
+
+FROM base AS npm-ci
+COPY package.json package-lock.json ./
+RUN npm ci
+
+FROM base
+# srvpro
+COPY . /ygopro-server
+RUN mkdir -p config decks replays logs
+
+COPY --from=npm-ci /ygopro-server/node_modules /ygopro-server/node_modules
+COPY --from=ygopro-builder /usr/src/ygopro-dist /ygopro-server/ygopro
 
 # infos
 WORKDIR /ygopro-server
