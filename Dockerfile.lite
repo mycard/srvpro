@@ -8,6 +8,15 @@ ARG YGOPRO_REPO=https://code.moenext.com/mycard/ygopro
 ARG YGOPRO_BRANCH=server
 ARG OCGCORE_BRANCH=master
 ARG SCRIPT_BRANCH=master
+ARG IRRLICHT_REPO=https://code.moenext.com/mycard/irrlicht-1.9.git
+ARG IRRLICHT_BRANCH=master
+ARG USE_MAT_CACHER=0
+ARG LUA_VERSION=5.4.8
+ARG SQLITE_VERSION=3510300
+ARG EVENT_VERSION=2.1.12-stable
+ARG ZLIB_VERSION=1.3.2
+ARG LZMA_VERSION=5.8.3
+ARG USE_SIMD=sse2
 
 FROM ${GIT_IMAGE} AS premake-source
 ARG PREMAKE5_REPO
@@ -20,13 +29,41 @@ ARG YGOPRO_REPO
 ARG YGOPRO_BRANCH
 ARG OCGCORE_BRANCH
 ARG SCRIPT_BRANCH
+ARG IRRLICHT_REPO
+ARG IRRLICHT_BRANCH
+ARG USE_MAT_CACHER
+ARG LUA_VERSION
+ARG SQLITE_VERSION
+ARG EVENT_VERSION
+ARG ZLIB_VERSION
+ARG LZMA_VERSION
 WORKDIR /usr/src
-RUN git clone --branch="${YGOPRO_BRANCH}" --recursive --depth=1 "${YGOPRO_REPO}" ygopro-src && \
+RUN set -eux; \
+    if [ "${USE_MAT_CACHER}" = "1" ]; then \
+        url_prefix="https://mat-cacher.moenext.com/"; \
+    else \
+        url_prefix=""; \
+    fi; \
+    fetch() { wget -O - "${url_prefix}$1" | tar zxf -; }; \
+    git clone --branch="${YGOPRO_BRANCH}" --recursive --depth=1 "${YGOPRO_REPO}" ygopro-src && \
     cd ygopro-src && \
     cd ocgcore && \
     git checkout "${OCGCORE_BRANCH}" && \
     cd ../script && \
-    git checkout "${SCRIPT_BRANCH}"
+    git checkout "${SCRIPT_BRANCH}" && \
+    cd .. && \
+    fetch "https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz" && \
+    mv "lua-${LUA_VERSION}" lua && \
+    fetch "https://www.sqlite.org/2026/sqlite-autoconf-${SQLITE_VERSION}.tar.gz" && \
+    mv "sqlite-autoconf-${SQLITE_VERSION}" sqlite3 && \
+    fetch "https://github.com/libevent/libevent/releases/download/release-${EVENT_VERSION}/libevent-${EVENT_VERSION}.tar.gz" && \
+    mv "libevent-${EVENT_VERSION}" event && \
+    fetch "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz" && \
+    mv "zlib-${ZLIB_VERSION}" zlib && \
+    fetch "https://github.com/tukaani-project/xz/releases/download/v${LZMA_VERSION}/xz-${LZMA_VERSION}.tar.gz" && \
+    mv "xz-${LZMA_VERSION}" lzma && \
+    git clone --branch="${IRRLICHT_BRANCH}" --depth=1 "${IRRLICHT_REPO}" irrlicht && \
+    cp -rf premake/* .
 
 FROM debian:${DEBIAN_VERSION} AS premake-builder
 
@@ -44,17 +81,34 @@ LABEL Author="Nanahira <nanahira@momobako.com>"
 
 # apt
 RUN apt update && \
-    env DEBIAN_FRONTEND=noninteractive apt install -y build-essential libevent-dev libsqlite3-dev liblzma-dev xz-utils python3 python-is-python3 liblua5.4-dev && \
+    env DEBIAN_FRONTEND=noninteractive apt install -y python3 python-is-python3 && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 WORKDIR /ygopro-server
 
 FROM base AS ygopro-builder
+ARG USE_SIMD
+RUN apt update && \
+    env DEBIAN_FRONTEND=noninteractive apt install -y build-essential && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 COPY --from=premake-builder /usr/src/premake/bin/release/premake5 /usr/bin/premake5
 WORKDIR /usr/src
 COPY --from=ygopro-source /usr/src/ygopro-src /usr/src/ygopro-src
 RUN cd ygopro-src && \
-    premake5 gmake --lua-deb --use-simd=sse2 && \
+    cd event && \
+    (chmod +x configure build-aux/* || true) && \
+    ./configure --disable-openssl --enable-static=yes --enable-shared=no && \
+    sed -f make-event-config.sed < config.h > ./include/event2/event-config.h && \
+    cd .. && \
+    BUILD_LUA=1 \
+        BUILD_EVENT=1 \
+        BUILD_SQLITE=1 \
+        BUILD_IRRLICHT=1 \
+        BUILD_ZLIB=1 \
+        BUILD_LZMA=1 \
+        SERVER_ZIP_SUPPORT=1 \
+        USE_SIMD="${USE_SIMD}" \
+        premake5 gmake && \
     cd build && \
     make config=release -j$(nproc) && \
     cd .. && \
