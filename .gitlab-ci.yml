@@ -155,18 +155,3 @@ deploy_latest:
     DEPLOY_TAG: latest
   only:
     - master
-
-upload_stuff_to_minio:
-  stage: deploy
-  tags:
-    - linux
-  image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-x86-full
-  script:
-    - apk add --no-cache aws-cli
-    - cd /ygopro-server
-    - mkdir /dist
-    - tar zcfv /dist/ygopro-server.tar.gz ./*
-    - aws s3 --endpoint=https://minio.mycard.moe:9000 cp
-      /dist/ygopro-server.tar.gz s3://mycard/srvpro/ygopro-server.tar.gz
-  only:
-    - master
