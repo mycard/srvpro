@@ -5081,7 +5081,8 @@
   ygopro.stoc_follow('REPLAY', true, async function(buffer, info, client, server, datas) {
     var i, j, l, len, len1, player, playerInfos, ref, ref1, replay_filename, room;
     room = ROOM_all[client.rid];
-    if (room && !room.replays[room.duel_count - 1]) {
+    // Persist the copy delivered to original position 0 so MSG_WIN has updated room.winner first.
+    if (room && client.pos === 0 && !room.replays[room.duel_count - 1]) {
       // console.log("Replay saved: ", room.duel_count - 1, client.pos)
       room.replays[room.duel_count - 1] = buffer;
       if (settings.modules.mysql.enabled || room.has_ygopro_error) {
@@ -5128,9 +5129,9 @@
           dataManager.saveDuelLog(room.name, room.process_pid, room.cloud_replay_id, replay_filename, room.hostinfo.mode, room.duel_count, playerInfos); // no synchronize here because too slow
         }
       }
-      if (settings.modules.mysql.enabled && settings.modules.cloud_replay.enabled && settings.modules.tournament_mode.enabled) {
-        ygopro.stoc_send_chat(client, `\${cloud_replay_delay_part1}R#${room.cloud_replay_id}\${cloud_replay_delay_part2}`, ygopro.constants.COLORS.BABYBLUE);
-      }
+    }
+    if (room && settings.modules.mysql.enabled && settings.modules.cloud_replay.enabled && settings.modules.tournament_mode.enabled) {
+      ygopro.stoc_send_chat(client, `\${cloud_replay_delay_part1}R#${room.cloud_replay_id}\${cloud_replay_delay_part2}`, ygopro.constants.COLORS.BABYBLUE);
     }
     return settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player || settings.modules.replay_delay && room && room.hostinfo.mode === 1;
   });
