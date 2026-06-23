@@ -3098,14 +3098,34 @@ ygopro.stoc_follow 'FIELD_FINISH', true, (buffer, info, client, server, datas)->
 ygopro.stoc_follow 'DUEL_END', true, (buffer, info, client, server, datas)->
   room=ROOM_all[client.rid]
   return unless room and settings.modules.replay_delay and room.hostinfo.mode == 1
-  await SOCKET_flush_data(client, datas)
-  await CLIENT_send_replays(client, room)
-  if !room.replays_sent_to_watchers
-    room.replays_sent_to_watchers = true
+  room.replay_seal ?= {}
+  unless room.replay_seal.promise
+    room.replay_seal.promise = new Promise (resolve) ->
+      room.replay_seal.resolve = resolve
+  if client.pos == 0
+    room.replay_seal.sealed = true
+    room.replay_seal.resolve?()
+    await SOCKET_flush_data(client, datas)
+    await CLIENT_send_replays(client, room)
     for player in room.players when player and player.pos > 3
       CLIENT_send_replays(player, room)
     for player in room.watchers when player
       CLIENT_send_replays(player, room)
+  else
+    unless room.replay_seal.sealed
+      timed_out = false
+      await Promise.race [
+        room.replay_seal.promise
+        new Promise (resolve) ->
+          setTimeout (() ->
+            timed_out = true
+            resolve()
+          ), 5000
+      ]
+      if timed_out and !room.replay_seal.sealed
+        log.warn "DUEL_END replay seal timeout", room.name, room.process_pid, room.duel_count, client.pos, room.replays.length
+    await SOCKET_flush_data(client, datas)
+    await CLIENT_send_replays(client, room)
   return false
 
 wait_room_start = (room, time)->

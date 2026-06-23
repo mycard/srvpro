@@ -4109,15 +4109,26 @@
   });
 
   ygopro.stoc_follow('DUEL_END', true, async function(buffer, info, client, server, datas) {
-    var j, l, len, len1, player, ref, ref1, room;
+    var base1, j, l, len, len1, player, ref, ref1, room, timed_out;
     room = ROOM_all[client.rid];
     if (!(room && settings.modules.replay_delay && room.hostinfo.mode === 1)) {
       return;
     }
-    await SOCKET_flush_data(client, datas);
-    await CLIENT_send_replays(client, room);
-    if (!room.replays_sent_to_watchers) {
-      room.replays_sent_to_watchers = true;
+    if (room.replay_seal == null) {
+      room.replay_seal = {};
+    }
+    if (!room.replay_seal.promise) {
+      room.replay_seal.promise = new Promise(function(resolve) {
+        return room.replay_seal.resolve = resolve;
+      });
+    }
+    if (client.pos === 0) {
+      room.replay_seal.sealed = true;
+      if (typeof (base1 = room.replay_seal).resolve === "function") {
+        base1.resolve();
+      }
+      await SOCKET_flush_data(client, datas);
+      await CLIENT_send_replays(client, room);
       ref = room.players;
       for (j = 0, len = ref.length; j < len; j++) {
         player = ref[j];
@@ -4132,6 +4143,25 @@
           CLIENT_send_replays(player, room);
         }
       }
+    } else {
+      if (!room.replay_seal.sealed) {
+        timed_out = false;
+        await Promise.race([
+          room.replay_seal.promise,
+          new Promise(function(resolve) {
+            return setTimeout((function() {
+              timed_out = true;
+              return resolve();
+            }),
+          5000);
+          })
+        ]);
+        if (timed_out && !room.replay_seal.sealed) {
+          log.warn("DUEL_END replay seal timeout", room.name, room.process_pid, room.duel_count, client.pos, room.replays.length);
+        }
+      }
+      await SOCKET_flush_data(client, datas);
+      await CLIENT_send_replays(client, room);
     }
     return false;
   });
