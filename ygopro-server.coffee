@@ -3150,7 +3150,7 @@ wait_room_start_arena = (room)->
     if room.waiting_for_player_time > 0
       unless room.waiting_for_player_time % 5
         for player in room.players when player
-          display_name = room.getMaskedPlayerName(player, room.waiting_for_player)
+          display_name = room.getMaskedPlayerName(room.waiting_for_player, player)
           ygopro.stoc_send_chat(player, "#{if room.waiting_for_player_time <= 9 then ' ' else ''}#{room.waiting_for_player_time}${kick_count_down_arena_part1} #{display_name} ${kick_count_down_arena_part2}", if room.waiting_for_player_time <= 9 then ygopro.constants.COLORS.RED else ygopro.constants.COLORS.LIGHTBLUE)
     else
       ygopro.stoc_send_chat_to_room(room, "#{room.waiting_for_player.name} ${kicked_by_system}", ygopro.constants.COLORS.RED)

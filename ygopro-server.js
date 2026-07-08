@@ -4204,7 +4204,7 @@
             if (!(player)) {
               continue;
             }
-            display_name = room.getMaskedPlayerName(player, room.waiting_for_player);
+            display_name = room.getMaskedPlayerName(room.waiting_for_player, player);
             ygopro.stoc_send_chat(player, `${room.waiting_for_player_time <= 9 ? ' ' : ''}${room.waiting_for_player_time}\${kick_count_down_arena_part1} ${display_name} \${kick_count_down_arena_part2}`, room.waiting_for_player_time <= 9 ? ygopro.constants.COLORS.RED : ygopro.constants.COLORS.LIGHTBLUE);
           }
         }
