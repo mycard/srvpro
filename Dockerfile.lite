@@ -2,6 +2,7 @@
 ARG ALPINE_VERSION=3.23
 ARG NODE_VERSION=24
 ARG GIT_IMAGE=alpine/git:v2.52.0
+ARG USE_APK_CHINA_MIRROR=0
 ARG PREMAKE5_REPO=https://github.com/premake/premake-core.git
 ARG PREMAKE5_VERSION=5.0.0-beta8
 ARG YGOPRO_REPO=https://code.moenext.com/mycard/ygopro
@@ -75,10 +76,14 @@ RUN \
     ./Bootstrap.sh
 
 FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
+ARG USE_APK_CHINA_MIRROR
 LABEL Author="Nanahira <nanahira@momobako.com>"
 
 # apk
-RUN apk add --no-cache python3 && \
+RUN if [ "${USE_APK_CHINA_MIRROR}" = "1" ]; then \
+        sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
+    fi && \
+    apk add --no-cache python3 && \
     ln -sf python3 /usr/bin/python
 
 WORKDIR /ygopro-server

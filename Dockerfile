@@ -1,6 +1,7 @@
 ARG BASE_IMAGE=git-registry.moenext.com/mycard/srvpro:lite
 ARG GIT_IMAGE=alpine/git:v2.52.0
 ARG MONO_IMAGE=mono:6.12
+ARG USE_APK_CHINA_MIRROR=0
 ARG WINDBOT_REPO=https://code.moenext.com/mycard/windbot
 ARG WINDBOT_BRANCH=master
 ARG WINDBOT_TARGET_FRAMEWORK=v4.8
@@ -18,9 +19,13 @@ WORKDIR /usr/src/windbot
 RUN xbuild /property:Configuration=Release /property:TargetFrameworkVersion="${WINDBOT_TARGET_FRAMEWORK}"
 
 FROM ${BASE_IMAGE}
+ARG USE_APK_CHINA_MIRROR
 LABEL Author="Nanahira <nanahira@momobako.com>"
 
-RUN apk add --no-cache mono && \
+RUN if [ "${USE_APK_CHINA_MIRROR}" = "1" ]; then \
+      sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
+    fi && \
+    apk add --no-cache mono && \
     npm install -g pm2 && \
     npm cache clean --force
 
