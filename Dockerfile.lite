@@ -110,10 +110,11 @@ RUN cd ygopro-src && \
         USE_SIMD="${USE_SIMD}" \
         premake5 gmake && \
     cd build && \
-    make config=release -j$(nproc) && \
+    make config=release LDFLAGS="-Wl,-z,stack-size=1048576" -j$(nproc) && \
     cd .. && \
     mv ./bin/release/ygopro . && \
     strip ygopro && \
+    readelf -W -l ygopro | awk '$1 == "GNU_STACK" { print; ok = ($6 == "0x100000" && $7 == "RW") } END { exit !ok }' && \
     mkdir -p /usr/src/ygopro-dist/gframe /usr/src/ygopro-dist/replay /usr/src/ygopro-dist/expansions && \
     cp ygopro lflist.conf cards.cdb /usr/src/ygopro-dist/ && \
     cp -a script /usr/src/ygopro-dist/script && \
