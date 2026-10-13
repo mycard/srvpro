@@ -13,6 +13,7 @@ spawnSync = require('child_process').spawnSync
 # ts utility
 utility = require './utility.js'
 DuelFinalization = require('./duel-finalization.js').DuelFinalization
+lobbyInvites = require './lobby-invites.js'
 
 # 三方库
 _ = global._ = require 'underscore'
@@ -1329,6 +1330,7 @@ global.rawSpawn = (param) ->
 class Room
   constructor: (name, @hostinfo) ->
     @name = name
+    @inviteId = lobbyInvites.createKey()
     #@alive = true
     @players = []
     @player_datas = []
@@ -1934,6 +1936,10 @@ class Room
       return false
 
   join_player: (client) ->
+    # Recheck immediately before connect reserves a slot. An invite never watches.
+    if !lobbyInvites.mayAdmit(this, client, settings)
+      ygopro.stoc_die(client, "${invalid_password_not_found}")
+      return false
     if @error
       ygopro.stoc_die(client, @error)
       return false
@@ -2244,6 +2250,12 @@ ygopro.ctos_follow 'PLAYER_INFO', true, (buffer, info, client, server, datas)->
   await return false
 
 ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
+  if lobbyInvites.negotiate(info, client)
+    struct = ygopro.structs.get("CTOS_JoinGame")
+    struct._setBuff(buffer)
+    struct.set("gameid", 0)
+  # Invitation intent bypasses old-session reconnect selection. MyCard action 6
+  # still passes through the existing user lookup and decrypted-header checks.
   check_version = () ->
     bad_version = (msg) ->
       ygopro.stoc_send_chat(client, msg, ygopro.constants.COLORS.RED)
@@ -2285,7 +2297,10 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
 #log.info info
   info.pass=info.pass.trim()
   client.pass = info.pass
-  if CLIENT_is_able_to_reconnect(client) or CLIENT_is_able_to_kick_reconnect(client)
+  if client.invitationRequest and !lobbyInvites.enabled(settings)
+    ygopro.stoc_die(client, "${invalid_password_not_found}")
+    return
+  if !client.invitationRequest and info.pass[0...2].toUpperCase() != "I#" and (CLIENT_is_able_to_reconnect(client) or CLIENT_is_able_to_kick_reconnect(client))
     CLIENT_pre_reconnect(client)
     return
   else if settings.modules.stop
@@ -2397,6 +2412,10 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
       # 3 join room by id
       # 4 create or join room by id (use for match)
       # 5 join room by title
+      # 6 join one public waiting room incarnation, after normal authentication
+      if client.invitationRequest and action != 6
+        ygopro.stoc_die(client, '${invalid_password_action}')
+        return
       switch action
         when 1,2
           name = crypto.createHash('md5').update(info.pass + client.name).digest('base64')[0...10].replace('+', '-').replace('/', '_')
@@ -2484,6 +2503,11 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
               arena: room.arena,
               roomname: room.name
             })
+        when 6
+          room = lobbyInvites.findForInvitation(ROOM_all, info.pass.slice(8), client, settings)
+          if !room
+            ygopro.stoc_die(client, '${invalid_password_not_found}')
+            return
         when 5
           title = info.pass.slice(8).replace(String.fromCharCode(0xFEFF), ' ')
           room = ROOM_find_by_title(title)
@@ -2623,6 +2647,16 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
   else if !settings.modules.tournament_mode.enabled and !settings.modules.challonge.enabled and badwordR.level1.test(client.name)
     log.warn("BAD NAME LEVEL 1", client.name, client.ip)
     ygopro.stoc_die(client, "${bad_name_level1}")
+    return
+  else if client.invitationRequest or info.pass[0...2].toUpperCase() == "I#"
+    await polyfill_version()
+    return if client.isClosed
+    key = if info.pass[0...2] == "I#" then info.pass.slice(2) else null
+    room = lobbyInvites.findForInvitation(ROOM_all, key, client, settings)
+    if !room
+      ygopro.stoc_die(client, "${invalid_password_not_found}")
+    else
+      room.join_player(client)
     return
   else if info.pass.length && !ROOM_validate(info.pass)
     ygopro.stoc_die(client, "${invalid_password_room}")
@@ -3029,6 +3063,12 @@ ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server, datas)->
   #   return true
   client.is_host = is_host
   client.pos = selftype
+  metadata = lobbyInvites.metadata(ROOM_all[client.rid], client, settings)
+  if metadata
+    # Preserve the native TYPE_CHANGE bytes, then append negotiated metadata.
+    datas.push ygopro.helper.prepareMessage("STOC_TYPE_CHANGE", buffer)
+    datas.push metadata
+    return true
   #console.log "TYPE_CHANGE to #{client.name}:", info, selftype, is_host
   await return false
 
@@ -3877,7 +3917,10 @@ if true
       return
 
     #console.log(u.query.username, u.query.pass)
-    if u.pathname == '/api/getrooms'
+    if u.pathname == '/api/lobby-invites'
+      response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+      response.end(JSON.stringify(lobbyInvites.listing(ROOM_all, settings)))
+    else if u.pathname == '/api/getrooms'
       pass_validated = await auth.auth(u.query.username, u.query.pass, "get_rooms", "get_rooms", true)
       if !settings.modules.http.public_roomlist and !pass_validated
         response.writeHead(200)
