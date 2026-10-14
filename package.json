@@ -41,6 +41,7 @@
     "build": "coffee -c *.coffee && tsc",
     "test:deck-delete": "node deck-delete.test.js",
     "test:duel-finalization": "node duel-finalization.test.js",
+    "test:lobby-invites": "node lobby-invites.test.js",
     "start": "node ygopro-server.js | bunyan",
     "tournament": "node ygopro-tournament.js",
     "pre": "node ygopro-pre.js",
