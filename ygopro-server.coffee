@@ -1019,7 +1019,7 @@ CLIENT_is_able_to_reconnect = global.CLIENT_is_able_to_reconnect = (client, deck
   if client.system_kicked
     return false
   disconnect_info = disconnect_list[CLIENT_get_authorize_key(client)]
-  unless disconnect_info and disconnect_info.deckbuf
+  unless disconnect_info and disconnect_info.deckbuf and disconnect_info.old_server and !disconnect_info.old_server.isClosed
     return false
   room = ROOM_all[disconnect_info.room_id]
   if !room
@@ -1031,7 +1031,7 @@ CLIENT_is_able_to_reconnect = global.CLIENT_is_able_to_reconnect = (client, deck
 
 CLIENT_get_kick_reconnect_target = global.CLIENT_get_kick_reconnect_target = (client, deckbuf) ->
   for room in ROOM_all when room and room.duel_stage != ygopro.constants.DUEL_STAGE.BEGIN and !room.windbot
-    for player in room.get_playing_player() when !player.isClosed and player.name == client.name and (settings.modules.challonge.enabled or player.pass == client.pass) and (settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or player.ip == client.ip or (client.vpass and client.vpass == player.vpass)) and (!deckbuf or deckbuf.equals(player.start_deckbuf))
+    for player in room.get_playing_player() when !player.isClosed and player.server and !player.server.isClosed and player.name == client.name and (settings.modules.challonge.enabled or player.pass == client.pass) and (settings.modules.mycard.enabled or settings.modules.tournament_mode.enabled or player.ip == client.ip or (client.vpass and client.vpass == player.vpass)) and (!deckbuf or deckbuf.equals(player.start_deckbuf))
       return player
   return null
 
@@ -2037,37 +2037,37 @@ netRequestHandler = (client) ->
   client.on 'error', closeHandler
 
 
-  server.on 'close', (had_error) ->
-    server.isClosed = true unless server.isClosed
-    if !server.client
-      return
-    #log.info "server isClosed", server.client.name, had_error
-    room=ROOM_all[server.client.rid]
-    #log.info "server close", server.client.ip, ROOM_connected_ip[server.client.ip]
-    room.disconnector = 'server' if room and !server.system_kicked and !server.had_new_reconnection
-    unless server.client.isClosed
-      ygopro.stoc_send_chat(server.client, "${server_closed}", ygopro.constants.COLORS.RED)
-      #if room and settings.modules.replay_delay
-      #  room.send_replays()
-      CLIENT_kick(server.client)
+  # Native EOF may race asynchronous message parsing and delayed replay delivery.
+  # Stop admission now, then retire only the captured client after accepted writes.
+  # The deadline exceeds the existing five-second delayed-replay capture wait.
+  terminal_close = null
+  finishServerClose = (error) ->
+    server.isClosed = error or server.isClosed or true
+    return if terminal_close
+    target_client = server.client
+    terminal_close = {client: target_client, done: false}
+    finish = (timed_out) ->
+      return if terminal_close.done
+      terminal_close.done = true
+      clearTimeout(terminal_close.timer)
+      if target_client and server.client is target_client and target_client.server is server
+        room = ROOM_all[target_client.rid]
+        room.disconnector = 'server' if room and !server.system_kicked and !server.had_new_reconnection
+        log.warn('Native terminal forwarding drain timed out') if timed_out
+        unless target_client.isClosed
+          message = if error then "${server_error}: #{error}" else "${server_closed}"
+          ygopro.stoc_send_chat(target_client, message, ygopro.constants.COLORS.RED)
+          CLIENT_kick(target_client)
+      # This cleanup searches by the exact native socket, independently of the
+      # external client reference that a reconnect may already have replaced.
       SERVER_clear_disconnect(server)
+      return
+    terminal_close.timer = setTimeout((-> finish(true)), 10000)
+    server_data_queue.onIdle().then(-> finish(false))
     return
 
-  server.on 'error', (error)->
-    server.isClosed = error
-    if !server.client
-      return
-    #log.info "server error", client.name, error
-    room=ROOM_all[server.client.rid]
-    #log.info "server err close", client.ip, ROOM_connected_ip[client.ip]
-    room.disconnector = 'server' if room and !server.system_kicked and !server.had_new_reconnection
-    unless server.client.isClosed
-      ygopro.stoc_send_chat(server.client, "${server_error}: #{error}", ygopro.constants.COLORS.RED)
-      #if room and settings.modules.replay_delay
-      #  room.send_replays()
-      CLIENT_kick(server.client)
-      SERVER_clear_disconnect(server)
-    return
+  server.on 'close', (had_error) -> finishServerClose()
+  server.on 'error', (error) -> finishServerClose(error)
 
   if settings.modules.cloud_replay.enabled
     client.open_cloud_replay = (replay)->
@@ -2159,25 +2159,28 @@ netRequestHandler = (client) ->
     client.on 'data', queuedDataHandler
 
   # 服务端到客户端(stoc)
-  serverDataHandler = (stoc_buffer)->
+  serverDataHandler = (stoc_buffer, target_client) ->
+    current_target = -> target_client and server.client is target_client and target_client.server is server
+    return unless current_target()
     handle_data = await ygopro.helper.handleBuffer(stoc_buffer, "STOC", null, {
-      client: server.client,
+      client: target_client,
       server: server
     })
+    return unless current_target()
     if handle_data.feedback
-      log.warn(handle_data.feedback.message, server.client.name, server.client.ip)
+      log.warn(handle_data.feedback.message, target_client.name, target_client.ip)
       if handle_data.feedback.type == "OVERSIZE"
         server.destroy()
         return
-    if server.client and !server.client.isClosed
-      await ygopro.helper.send(server.client, buffer) for buffer in handle_data.datas
-
+    for buffer in handle_data.datas
+      return unless current_target() and !target_client.isClosed
+      await ygopro.helper.send(target_client, buffer)
     return
 
   queuedServerDataHandler = (stoc_buffer) ->
-    if server.isClosed
-      return
-    return await server_data_queue.add(() -> serverDataHandler(stoc_buffer))
+    return if server.isClosed
+    target_client = server.client
+    return await server_data_queue.add(() -> serverDataHandler(stoc_buffer, target_client))
 
   server.on 'data', queuedServerDataHandler
   return
