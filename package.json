@@ -45,7 +45,8 @@
     "tournament": "node ygopro-tournament.js",
     "pre": "node ygopro-pre.js",
     "updated": "node ygopro-update.js",
-    "webhook": "node ygopro-webhook.js"
+    "webhook": "node ygopro-webhook.js",
+    "test:terminal-forwarding": "node terminal-forwarding.test.js && node terminal-forwarding-loopback.test.js"
   },
   "devDependencies": {
     "@types/bunyan": "^1.8.8",
