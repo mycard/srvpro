@@ -29,7 +29,7 @@
         session = {
           username: identity.username,
           roomName,
-          blocked: !identity.active
+          blockedByMultipleRooms: false
         };
         this.sessions.set(client, session);
       }
@@ -48,7 +48,7 @@
         ref = rooms.values();
         for (roomSessions of ref) {
           for (current of roomSessions) {
-            current.blocked = true;
+            current.blockedByMultipleRooms = true;
           }
         }
       }
@@ -93,9 +93,15 @@
       }
     }
 
-    blocked(client) {
-      var ref;
-      return !!((ref = this.sessions.get(client)) != null ? ref.blocked : void 0);
+    blocked(client, restrictMultiRoom = false, restrictUnverified = false) {
+      var blockedByMultipleRooms, blockedByUnverifiedEmail, ref, session;
+      session = this.sessions.get(client);
+      if (!session) {
+        return false;
+      }
+      blockedByMultipleRooms = restrictMultiRoom && session.blockedByMultipleRooms;
+      blockedByUnverifiedEmail = restrictUnverified && ((ref = this.identities.get(client)) != null ? ref.active : void 0) === false;
+      return !!(blockedByMultipleRooms || blockedByUnverifiedEmail);
     }
 
   };

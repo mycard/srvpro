@@ -15,6 +15,9 @@ utility = require './utility.js'
 DuelFinalization = require('./duel-finalization.js').DuelFinalization
 MycardSpectatorReplay = require('./mycard-spectator-replay.js').MycardSpectatorReplay
 mycardSpectatorReplay = new MycardSpectatorReplay()
+mycardSpectatorReplayEnabled = ->
+  config = settings.modules.mycard
+  return config.enabled and (config.restrict_multi_room_spectator_replay or config.restrict_unverified_spectator_replay)
 
 # 三方库
 _ = global._ = require 'underscore'
@@ -1210,7 +1213,7 @@ CLIENT_get_partner = global.CLIENT_get_partner = (client) ->
     return room.dueling_players[5 - client.pos]
 
 CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
-  if settings.modules.mycard.enabled and settings.modules.mycard.restrict_spectator_replay and (client.is_post_watcher or client.pos == 7) and mycardSpectatorReplay.blocked(client)
+  if mycardSpectatorReplayEnabled() and (client.is_post_watcher or client.pos == 7) and mycardSpectatorReplay.blocked(client, settings.modules.mycard.restrict_multi_room_spectator_replay, settings.modules.mycard.restrict_unverified_spectator_replay)
     return false
   return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.isClosed
   client.replays_sent = true
@@ -1935,7 +1938,7 @@ class Room
         client.is_post_watcher = true
         ygopro.stoc_send_chat_to_room(this, "#{client.name} ${watch_join}")
         @watchers.push client
-        mycardSpectatorReplay.observe(client, @name) if settings.modules.mycard.restrict_spectator_replay
+        mycardSpectatorReplay.observe(client, @name) if mycardSpectatorReplayEnabled()
         ygopro.stoc_send_chat(client, "${watch_watching}", ygopro.constants.COLORS.BABYBLUE)
         for buffer in @watcher_buffers
           await ygopro.helper.send(client, buffer)
@@ -2567,7 +2570,7 @@ ygopro.ctos_follow 'JOIN_GAME', true, (buffer, info, client, server, datas)->
     if !decrypted_buffer
       ygopro.stoc_die(client, '${invalid_password_unauthorized}')
       return
-    mycardSpectatorReplay.authenticate(client, userData.user) if settings.modules.mycard.restrict_spectator_replay
+    mycardSpectatorReplay.authenticate(client, userData.user) if mycardSpectatorReplayEnabled()
     return create_room_with_action(decrypted_buffer)
 
   else if settings.modules.challonge.enabled
@@ -3044,7 +3047,7 @@ ygopro.stoc_follow 'TYPE_CHANGE', true, (buffer, info, client, server, datas)->
   #   return true
   client.is_host = is_host
   client.pos = selftype
-  if settings.modules.mycard.enabled and settings.modules.mycard.restrict_spectator_replay
+  if mycardSpectatorReplayEnabled()
     room = ROOM_all[client.rid]
     if room and selftype == 7
       mycardSpectatorReplay.observe(client, room.name)

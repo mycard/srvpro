@@ -15,7 +15,7 @@ class MycardSpectatorReplay
     session = @sessions.get(client)
     if !session or session.roomName != roomName
       @unobserve(client)
-      session = {username: identity.username, roomName, blocked: !identity.active}
+      session = {username: identity.username, roomName, blockedByMultipleRooms: false}
       @sessions.set(client, session)
     rooms = @observers.get(session.username)
     unless rooms
@@ -29,7 +29,7 @@ class MycardSpectatorReplay
     if rooms.size > 1
       for roomSessions from rooms.values()
         for current from roomSessions
-          current.blocked = true
+          current.blockedByMultipleRooms = true
     return
 
   unobserve: (client) ->
@@ -54,7 +54,11 @@ class MycardSpectatorReplay
       @observers.delete(username) unless rooms.size
     return
 
-  blocked: (client) ->
-    return !!@sessions.get(client)?.blocked
+  blocked: (client, restrictMultiRoom = false, restrictUnverified = false) ->
+    session = @sessions.get(client)
+    return false unless session
+    blockedByMultipleRooms = restrictMultiRoom and session.blockedByMultipleRooms
+    blockedByUnverifiedEmail = restrictUnverified and @identities.get(client)?.active is false
+    return !!(blockedByMultipleRooms or blockedByUnverifiedEmail)
 
 module.exports = {MycardSpectatorReplay}

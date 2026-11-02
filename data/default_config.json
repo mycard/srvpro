@@ -137,7 +137,8 @@
     },
     "mycard": {
       "enabled": false,
-      "restrict_spectator_replay": false,
+      "restrict_multi_room_spectator_replay": false,
+      "restrict_unverified_spectator_replay": false,
       "auth_base_url": "https://sapi.moecube.com:444/accounts",
       "auth_database": "postgres://233@233.mycard.moe/233",
       "ban_get": "https://sapi.moecube.com:444/ygopro/big-brother/ban",
