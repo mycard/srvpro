@@ -17,7 +17,8 @@ MycardSpectatorReplay = require('./mycard-spectator-replay.js').MycardSpectatorR
 mycardSpectatorReplay = new MycardSpectatorReplay()
 mycardSpectatorReplayEnabled = ->
   config = settings.modules.mycard
-  return config.enabled and (config.restrict_multi_room_spectator_replay or config.restrict_unverified_spectator_replay)
+  return false unless config.enabled
+  return config.restrict_multi_room_spectator_replay or config.restrict_unverified_spectator_replay
 
 # 三方库
 _ = global._ = require 'underscore'
@@ -1213,8 +1214,14 @@ CLIENT_get_partner = global.CLIENT_get_partner = (client) ->
     return room.dueling_players[5 - client.pos]
 
 CLIENT_send_replays = global.CLIENT_send_replays = (client, room) ->
-  if mycardSpectatorReplayEnabled() and (client.is_post_watcher or client.pos == 7) and mycardSpectatorReplay.blocked(client, settings.modules.mycard.restrict_multi_room_spectator_replay, settings.modules.mycard.restrict_unverified_spectator_replay)
-    return false
+  if mycardSpectatorReplayEnabled() and (client.is_post_watcher or client.pos == 7)
+    config = settings.modules.mycard
+    blocked = mycardSpectatorReplay.blocked(
+      client,
+      config.restrict_multi_room_spectator_replay,
+      config.restrict_unverified_spectator_replay
+    )
+    return false if blocked
   return false unless settings.modules.replay_delay and not (settings.modules.tournament_mode.enabled and settings.modules.tournament_mode.block_replay_to_player) and room.replays.length and room.hostinfo.mode == 1 and !client.replays_sent and !client.isClosed
   client.replays_sent = true
   i = 0

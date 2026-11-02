@@ -35,7 +35,10 @@
   mycardSpectatorReplayEnabled = function() {
     var config;
     config = settings.modules.mycard;
-    return config.enabled && (config.restrict_multi_room_spectator_replay || config.restrict_unverified_spectator_replay);
+    if (!config.enabled) {
+      return false;
+    }
+    return config.restrict_multi_room_spectator_replay || config.restrict_unverified_spectator_replay;
   };
 
   // 三方库
@@ -1610,9 +1613,13 @@
   };
 
   CLIENT_send_replays = global.CLIENT_send_replays = async function(client, room) {
-    var buffer, i, j, len, ref;
-    if (mycardSpectatorReplayEnabled() && (client.is_post_watcher || client.pos === 7) && mycardSpectatorReplay.blocked(client, settings.modules.mycard.restrict_multi_room_spectator_replay, settings.modules.mycard.restrict_unverified_spectator_replay)) {
-      return false;
+    var blocked, buffer, config, i, j, len, ref;
+    if (mycardSpectatorReplayEnabled() && (client.is_post_watcher || client.pos === 7)) {
+      config = settings.modules.mycard;
+      blocked = mycardSpectatorReplay.blocked(client, config.restrict_multi_room_spectator_replay, config.restrict_unverified_spectator_replay);
+      if (blocked) {
+        return false;
+      }
     }
     if (!(settings.modules.replay_delay && !(settings.modules.tournament_mode.enabled && settings.modules.tournament_mode.block_replay_to_player) && room.replays.length && room.hostinfo.mode === 1 && !client.replays_sent && !client.isClosed)) {
       return false;
