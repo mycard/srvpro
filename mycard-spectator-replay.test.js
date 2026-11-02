@@ -67,6 +67,7 @@ const sender = source.slice(
   source.indexOf('CLIENT_send_replays_and_kick ='),
 );
 let sent = 0;
+let hints = 0;
 const context = {
   settings: {
     modules: {
@@ -78,7 +79,9 @@ const context = {
   mycardSpectatorReplay: policy,
   ygopro: {
     constants: { COLORS: {} },
-    stoc_send_chat: async () => {},
+    stoc_send_chat: async () => {
+      hints++;
+    },
     stoc_send: async () => {
       sent++;
     },
@@ -97,6 +100,7 @@ const room = { replays: [Buffer.from('replay')], hostinfo: { mode: 1 } };
       false,
     );
     assert.strictEqual(inactive.replays_sent, undefined);
+    assert.strictEqual(hints, 0);
     delete inactive.pos;
     delete inactive.is_post_watcher;
   }
@@ -107,11 +111,13 @@ const room = { replays: [Buffer.from('replay')], hostinfo: { mode: 1 } };
     'duelists retain their replays',
   );
   assert.strictEqual(sent, 1);
+  assert.strictEqual(hints, 1);
   inactive.pos = 7;
   delete inactive.replays_sent;
   context.settings.modules.mycard.restrict_spectator_replay = false;
   assert.strictEqual(await context.CLIENT_send_replays(inactive, room), true);
   assert.strictEqual(sent, 2);
+  assert.strictEqual(hints, 2);
   console.log('Mycard spectator replay regression tests passed');
 })().catch((error) => {
   console.error(error);
