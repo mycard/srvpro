@@ -1716,7 +1716,7 @@
   };
 
   CLIENT_set_ip = global.CLIENT_set_ip = function(client, xff_ip) {
-    var client_prev_ip, connect_count;
+    var client_prev_ip, connect_count, counted;
     client_prev_ip = client.ip;
     client.ip = getRealIp(client.physical_ip, xff_ip);
     if (client_prev_ip === client.ip) {
@@ -1730,13 +1730,22 @@
     }
     client.is_local = client.ip && (client.ip.includes('127.0.0.1') || client.ip.includes(real_windbot_server_ip));
     connect_count = ROOM_connected_ip[client.ip] || 0;
-    if (!settings.modules.test_mode.no_connect_count_limit && !client.is_local && !isTrustedProxy(client.ip)) {
+    counted = !settings.modules.test_mode.no_connect_count_limit && !client.is_local && !isTrustedProxy(client.ip);
+    client.ip_count_released = false;
+    if (counted) {
       connect_count++;
     }
     ROOM_connected_ip[client.ip] = connect_count;
     // log.info "connect", client.ip, ROOM_connected_ip[client.ip]
     if (ROOM_bad_ip[client.ip] > 5 || ROOM_connected_ip[client.ip] > 10) {
       log.info('BAD IP', client.ip);
+      if (counted) {
+        ROOM_connected_ip[client.ip]--;
+        if (ROOM_connected_ip[client.ip] <= 0) {
+          delete ROOM_connected_ip[client.ip];
+        }
+      }
+      client.ip_count_released = true;
       client.destroy();
       return true;
     }
@@ -2696,7 +2705,7 @@
       }
       room = ROOM_all[client.rid];
       connect_count = ROOM_connected_ip[client.ip];
-      if (connect_count && connect_count > 0) {
+      if (!client.ip_count_released && connect_count && connect_count > 0) {
         connect_count--;
         if (connect_count === 0) {
           delete ROOM_connected_ip[client.ip];
